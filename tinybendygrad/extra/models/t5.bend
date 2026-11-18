@@ -15,7 +15,7 @@ import ./../../mixin/rand.bend as RD
 import ./../../nn/optim.bend as OPT
 import ./../datasets/__init__.bend as D
 
-# stub -- 1:1 path mirror of extra/models/t5.py (285 loc). not yet ported.
+# not yet ported.
 #
 # T5 is the cheapest of the attention files and the reason is worth naming:
 # of the five in this slice that have attention -- transformer:27, bert:279,

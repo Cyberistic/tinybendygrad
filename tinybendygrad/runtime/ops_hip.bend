@@ -5,8 +5,6 @@ import ./ops_cuda.bend as CU
 
 # tinybendygrad/runtime/ops_hip.bend -- port of tinygrad/runtime/ops_hip.py.
 #
-# one `.bend` per upstream `.py`, at the same path. This file was 290 lines of
-# `runtime/ops_cl.bend` until the 1:1 ruling. It imports `ops_cl.bend` as `CL.`
 # (the shared trace) and `ops_cuda.bend` as `CU.`, and imports neither of them
 # back: bend has NO IMPORT CYCLE (MEASURED).
 #
@@ -17,7 +15,6 @@ import ./ops_cuda.bend as CU
 # three-vendor columns of `t_vend`/`t_check`/`t_err` live here. A reader asking
 # "what does HIP call that CUDA spells differently" finds the whole answer in
 # one file instead of three.
-#
 #
 # PART 3 -- HIP. `ops_hip.py`, all 71 lines.
 #

@@ -1,4 +1,4 @@
-# stub -- 1:1 path mirror of extra/datasets/kits19.py (219 loc upstream). not yet ported.
+# not yet ported.
 #
 # WHAT UPSTREAM IS. The KiTS19 kidney tumour 3-D segmentation loader. It is (b) and
 # the honest headline is that it is the only file in this slice that imports BOTH

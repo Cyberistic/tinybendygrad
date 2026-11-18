@@ -1,4 +1,4 @@
-# stub -- 1:1 path mirror of extra/datasets/wikipedia.py (398 loc upstream). not yet ported.
+# not yet ported.
 #
 # WHAT UPSTREAM IS. The largest file in this slice and the one with the most PORTABLE
 # logic: the BERT BasicTokenizer + Wordpiece front end is pure string work over

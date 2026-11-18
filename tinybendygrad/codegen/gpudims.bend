@@ -3,14 +3,10 @@
 # `pm_range_to_special`.
 #
 
-# ONE OF THREE. `codegen/rewriter.bend` was ONE file for `simplify.py` +
-# `late/coalesce.py` + `gpudims.py`; the 1:1 ruling -- one `.bend` per upstream
-# `.py`, AT THE SAME PATH, no merging and no prefixes standing in for a directory
-# -- made it three, and this is `gpudims.py`'s. The 54 rows the merged file printed
-# CONCATENATE IN PYTHON'S ORDER (`simplify.bend`, `late/coalesce.bend`, then this)
-# to exactly those 54, and `.agents/slop/codegen3-gate.sh` is that invariant
-# against the pre-split snapshot. The cut itself is
-# `.agents/slop/split-codegen3.py`, which moved every body by LINE RANGE.
+# The 54 rows the merged file printed CONCATENATE IN PYTHON'S ORDER
+# (`simplify.bend`, `late/coalesce.bend`, then this) to exactly those 54, and
+# `.agents/slop/codegen3-gate.sh` is that invariant against the pre-split
+# snapshot.
 #
 # the shared substrate is imported, not copied. `Rew` (the rule's answer), the
 # `rw_*` node readers and `G` (the fixture's index map) live in

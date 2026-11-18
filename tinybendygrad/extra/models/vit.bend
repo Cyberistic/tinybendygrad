@@ -13,7 +13,7 @@ import ./../../mixin/rand.bend as RD
 import ./transformer.bend as TR
 import ./../datasets/__init__.bend as D
 
-# stub -- 1:1 path mirror of extra/models/vit.py (73 loc). not yet ported.
+# not yet ported.
 #
 # the only model in this directory that does not begin with a convolution, and
 # that is the whole of its distinctive blocker. Every other file here names

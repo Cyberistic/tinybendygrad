@@ -11,7 +11,7 @@ import ./../mixin/gradient.bend as GR
 import ./../extra/models/resnet.bend as RESNET
 import ./../extra/datasets/__init__.bend as D
 
-# stub -- 1:1 path mirror of examples/train_resnet.py (45 loc). not yet ported.
+# not yet ported.
 #
 #  this file is blocked on a backward pass that nobody has ever executed. 
 #

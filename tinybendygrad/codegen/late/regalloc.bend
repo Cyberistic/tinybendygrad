@@ -1,11 +1,5 @@
 # codegen/late/regalloc.bend -- port of tinygrad/codegen/late/regalloc.py
 #
-# ONE OF THREE SLICES. `codegen/late.bend` held `linearizer.py`, `regalloc.py` and
-# `gater.py` together and the 1:1 ruling gives each upstream .py its own file at its
-# own path. Nothing moved but the file it lives in: the rows are the rows. The
-# DEF-BY-DEF MAP for all three is `linearizer.bend`'s head and the FOUR WALLS (W1-W4)
-# are named there.
-#
 # the shared substrate is imported, not copied. `RaTb`, `RaEn` and the `tb_*` readers
 # and writers stand in for Python's `dict` and `defaultdict`, which have no Bend
 # equivalent that is `U32`-keyed; they are declared in `linearizer.bend` (first in

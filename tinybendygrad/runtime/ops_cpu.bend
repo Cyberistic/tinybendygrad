@@ -1,10 +1,5 @@
 # tinybendygrad/runtime/ops_cpu.bend -- port of tinygrad/runtime/ops_cpu.py
 #
-# ONE BEND FILE PER UPSTREAM .py, AT THE SAME PATH. This was `ops_cpu_null.bend`,
-# which held `ops_cpu.py` (96 lines) AND `ops_null.py` (70 lines); the 1:1 ruling
-# gives each its own file. `runtime/ops_null.bend` is the other half and the rows are
-# the SAME rows -- 308 across the pair before the split, 308 after.
-#
 # ops_cpu.py is the backend EVERY OTHER BACKEND INHERITS FROM. It has no renderer of
 # its own, it owns the `arch` string every Clang target shares, and its `Program` is
 # the one that mmaps a machine-code blob and calls it. `ops_null.py` is the DEGENERATE

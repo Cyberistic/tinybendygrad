@@ -1,23 +1,3 @@
-# tinybendygrad/schedule/prepare.bend
-# Port of tinygrad/schedule/prepare.py (278 lines). `prepare_rangeify`.
-#
-# what this file is, in one paragraph. `prepare.py` is a scheduling pass: it
-# takes a UOp graph and rewrites it into a form the device can run. Almost all of
-# it is DECISION -- eleven functions and five `PatternMatcher`s, most of whose
-# rules are lambdas -- and the decisions are arithmetic over SHAPES (a `prod`, a
-# `src_prefix`, a `%` inside the split search, two itemsizes and a `rate`, an
-# `argsort`) or over the ARENA (a `toposort` with a gate, a `base` reachability
-# map, a `placed` substitution). What it BUILDS is a set of nodes through
-# `UOp.store`, `.after`, `.index`, `.pad_to`, `.contiguous`, `.usum` and
-# `UOp.unique_num`, and those builders are the wall named below.
-#
-# the order of the file is python's order: `forward_call_outputs` (11-38),
-# `walk_mop` (40-43), `found_after` (45-53) and its table (56-62), `_mop_index`
-# (65-74) and `pm_mops` (76-83), then the "0. cleanup" block: the hazard pair
-# (89-101), `split_reduceop` (103-125), `resolve_function` (127-150),
-# `expand_bitcast` (153-162), the three materialisers (164-182),
-# `pm_inline_calls` (184-187), `pm_disk_copy` (189-197), `earliest_rewrites`
-# (199-269) and `prepare_rangeify` (271-278).
 #
 # UPSTREAM'S EXPLANATORY COMMENTS, BY THE DEF THEY BELONG TO.  The port has the
 # TABLES and the DECISIONS and not most of the bodies, so these are the notes a

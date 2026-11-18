@@ -1,4 +1,4 @@
-# stub -- 1:1 path mirror of extra/datasets/squad.py (148 loc upstream). not yet ported.
+# not yet ported.
 #
 # WHAT UPSTREAM IS. SQuAD v1.1 to BERT features. It is (b) and the interesting part is
 # that HALF of it is pure arithmetic that ports cleanly once the tokenizer exists:

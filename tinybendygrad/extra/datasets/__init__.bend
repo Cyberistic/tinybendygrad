@@ -1,4 +1,4 @@
-# stub -- 1:1 path mirror of extra/datasets/__init__.py (43 loc upstream). not yet ported.
+# not yet ported.
 #
 # WHAT UPSTREAM IS. Two loaders, and NEITHER is a bare `fetch`: both do real work on
 # the bytes AFTER the download, which is why this file is class (b) and not (a).

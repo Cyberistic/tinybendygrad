@@ -13,8 +13,7 @@ import ./../../mixin/rand.bend as RD
 import ./../../mixin/elementwise.bend as E
 import ./../datasets/__init__.bend as D
 
-# stub -- 1:1 path mirror of extra/models/efficientnet.py (164 loc). not yet
-# PORTED.
+# not yet ported.
 #
 # the only model here that stores its weights as bare `Tensor`s rather than in
 # LAYER CLASSES, and that single design decision removes this file's most

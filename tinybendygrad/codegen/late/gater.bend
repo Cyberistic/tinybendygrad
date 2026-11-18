@@ -1,11 +1,5 @@
 # codegen/late/gater.bend -- port of tinygrad/codegen/late/gater.py
 #
-# ONE OF THREE SLICES. `codegen/late.bend` held `linearizer.py`, `regalloc.py` and
-# `gater.py` together and the 1:1 ruling gives each upstream .py its own file at its
-# own path. The other two are `linearizer.bend` and `regalloc.bend` beside this one,
-# the rows are the rows, and the DEF-BY-DEF MAP for all three is
-# `linearizer.bend`'s head.
-#
 # W4 APPLIES HERE AND IS NOT RESTATED: `gater.py:6-7` compares
 # `a.src[0].dtype == l.dtype` and `gater.py:25-28` annotates `dtype=dtypes.bool`, and
 # a dtype cannot be CARRIED in bend 2.0.34. Every rule below takes its dtype predicate

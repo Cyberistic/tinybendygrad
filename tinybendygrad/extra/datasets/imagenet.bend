@@ -1,4 +1,4 @@
-# 1:1 PATH MIRROR of extra/datasets/imagenet.py (91 LOC upstream). PORTED -- the
+# PORTED -- the
 # file-list half, over a user-provided root.
 #
 # WHAT UPSTREAM IS. Three defs that answer "which files are the dataset", and

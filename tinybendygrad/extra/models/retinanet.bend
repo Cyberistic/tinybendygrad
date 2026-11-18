@@ -16,7 +16,7 @@ import ./../../mixin/rand.bend as RD
 import ./../../nn/optim.bend as OPT
 import ./../datasets/__init__.bend as D
 
-# stub -- 1:1 path mirror of extra/models/retinanet.py (263 loc). not yet ported.
+# not yet ported.
 #
 # retinanet is the one file in this slice that asks for nothing new. Its
 # layer needs are a SUBSET of resnet.bend's, and that is the measured finding of

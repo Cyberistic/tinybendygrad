@@ -12,7 +12,7 @@ import ./../../mixin/creation.bend as CR
 import ./../../mixin/elementwise.bend as E
 import ./../datasets/__init__.bend as D
 
-# stub -- 1:1 path mirror of extra/models/unet.py (262 loc). not yet ported.
+# not yet ported.
 #
 # the largest file in this directory after inception.py, and the only one that
 # IS NOT A VISION CLASSIFIER: it is a Stable-Diffusion UNet, so it brings

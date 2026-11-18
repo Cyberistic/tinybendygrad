@@ -2,14 +2,10 @@
 # image-load VALID simplification, as the two pattern tables the lowerer runs.
 #
 
-# ONE OF THREE. `codegen/rewriter.bend` was ONE file for `simplify.py` +
-# `late/coalesce.py` + `gpudims.py`; the 1:1 ruling -- one `.bend` per upstream
-# `.py`, AT THE SAME PATH, no merging and no prefixes standing in for a directory
-# -- made it three, and this is `late/coalesce.py`'s. The 54 rows the merged file
-# printed CONCATENATE IN PYTHON'S ORDER (`simplify.bend`, then this, then
-# `gpudims.bend`) to exactly those 54, and `.agents/slop/codegen3-gate.sh` is that
-# invariant against the pre-split snapshot. The cut itself is
-# `.agents/slop/split-codegen3.py`, which moved every body by LINE RANGE.
+# The 54 rows the merged file printed CONCATENATE IN PYTHON'S ORDER
+# (`simplify.bend`, then this, then `gpudims.bend`) to exactly those 54, and
+# `.agents/slop/codegen3-gate.sh` is that invariant against the pre-split
+# snapshot.
 #
 # THIS IS THE SMALLEST OF THE THREE, and it is small for the reason upstream is
 # small: two of coalesce.py's nine defs are TABLES and the seven around them are

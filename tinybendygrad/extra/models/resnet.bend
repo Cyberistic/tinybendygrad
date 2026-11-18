@@ -10,7 +10,7 @@ import ./../../mixin/movement.bend as MX
 import ./../../mixin/reduce.bend as RC
 import ./../datasets/__init__.bend as D
 
-# stub -- 1:1 path mirror of extra/models/resnet.py (170 loc). not yet ported.
+# not yet ported.
 #
 # This is the ResNet DEFINITION and the first thing that has to exist before
 # any ImageNet-shaped number can be produced, so the header states the distance

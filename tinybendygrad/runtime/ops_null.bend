@@ -1,7 +1,5 @@
 # tinybendygrad/runtime/ops_null.bend -- port of tinygrad/runtime/ops_null.py
 #
-# one BEND file per upstream .py, at the same path. This was `ops_cpu_null.bend`,
-#
 # ops_null.py is the DEGENERATE BACKEND: `NullQueue` writes FOUR words per command
 #
 # THE SPLIT, restated because it is the whole discipline here: a def EITHER BUILDS THE
@@ -28,7 +26,6 @@
 # and `pack_args` is imported at `tinygrad/runtime/ops_null.py:9`.
 # THE FIX IS TO MOVE THEM to `runtime/support/hcq2.bend`;
 # flagged here and in the report, not done, because hcq2.bend is read-only here.
-#
 import Base
 import ../helpers.bend as H
 import ../device.bend as D
@@ -1087,7 +1084,6 @@ def main() -> IO(Unit):
 #        There is no duplicate to plant, and planting one would assert a state
 #        the table cannot be in.
 #
-#
 # THE MEASURED ENTRIES for the rules above. The other 109 - these and the
 # CPU half's, which is in `ops_cpu.bend` - are filed by the def each names;
 # `cn-mutate.py` walked them in order M1..M109 across the pre-split file.
@@ -1143,4 +1139,3 @@ def main() -> IO(Unit):
 #   M107    1  nr.zero_table: `randn` marked as NOT all-zero (M86 does `rand`)
 #   M108    1  nprog.writes: nothing is stamped
 #   M109    3  nprog.stamp_val: nanoseconds, not microseconds -- and the other way
-#

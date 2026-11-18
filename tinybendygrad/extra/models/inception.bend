@@ -11,8 +11,7 @@ import ./../../mixin/op.bend as MO
 import ./../../mixin/movement.bend as MX
 import ./../datasets/__init__.bend as D
 
-# stub -- 1:1 path mirror of extra/models/inception.py (344 loc). not yet
-# PORTED.
+# not yet ported.
 #
 # the largest file in this directory, and the only one with a second, foreign
 # MATHEMATICS REQUIREMENT AT THE END. Two thirds of it is ordinary Inception v3;

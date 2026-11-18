@@ -11,7 +11,7 @@ import ./../../mixin/movement.bend as MX
 import ./../../mixin/elementwise.bend as E
 import ./../datasets/__init__.bend as D
 
-# stub -- 1:1 path mirror of extra/models/convnext.py (63 loc). not yet ported.
+# not yet ported.
 #
 # what changed since `resnet.bend` was written, and this file is the evidence:
 # the port's `resnet.bend` headline block still reads "nn.Conv2d, nn.BatchNorm2d and nn.Linear are all

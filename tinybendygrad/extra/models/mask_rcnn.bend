@@ -16,7 +16,7 @@ import ./../../mixin/rand.bend as RD
 import ./../../nn/optim.bend as OPT
 import ./../datasets/__init__.bend as D
 
-# stub -- 1:1 path mirror of extra/models/mask_rcnn.py (1214 loc). not yet ported.
+# not yet ported.
 #
 # mask r-cnn is the biggest file in this slice and it has one symbol the other
 # SEVEN DO NOT ASK FOR. Everything else it names is on resnet.bend's list, or on

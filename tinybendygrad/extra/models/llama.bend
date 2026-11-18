@@ -15,7 +15,7 @@ import ./../../mixin/rand.bend as RD
 import ./../../nn/optim.bend as OPT
 import ./../datasets/__init__.bend as D
 
-# stub -- 1:1 path mirror of extra/models/llama.py (286 loc). not yet ported.
+# not yet ported.
 #
 # llama is the furthest of the three transformers and it is furthest by a
 # different reason than the other two. bert.bend and t5.bend both fail on a layer

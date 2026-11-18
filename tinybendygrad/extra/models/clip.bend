@@ -15,7 +15,7 @@ import ./../../mixin/rand.bend as RD
 import ./../../nn/optim.bend as OPT
 import ./../datasets/__init__.bend as D
 
-# stub -- 1:1 path mirror of extra/models/clip.py (480 loc). not yet ported.
+# not yet ported.
 #
 # clip is both halves at once, and that is why it is the one file in this slice
 # whose walls overlap resnet.bend's and bert.bend's rather than choosing.

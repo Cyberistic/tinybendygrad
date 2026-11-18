@@ -1,12 +1,5 @@
 # renderer/tc_ptx.bend -- port of tinygrad/renderer/ptx.py
 #
-# one BEND file per upstream .py, at the same path. This file used to hold
-# `renderer/ptx.py` AND `renderer/tc.py`; the 1:1 ruling separates them and
-# `renderer/tc.bend` is the other half. This file is the ptx.py HALF and it is
-# 343 rows; `tc.bend` is the tc.py half's 289. The union is 632 rows, and the
-# ONE frame line between the two stages is the only byte a `diff` of the union
-# would report.
-#
 # the tensor-core tables are imported, not copied: `renderer/ptx.py` calls
 # `get_cuda`/`get_amd` for its warp-level `wmma` and `mma` shapes, and those are
 # `tinygrad/renderer/tc.py:60-66` (upstream's `cuda_81616` and the five tables

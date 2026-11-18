@@ -1,14 +1,5 @@
 # multi.bend -- tinygrad/schedule/multi.py. Multi-device scheduling: the UNSHARD-splitting
 # rules, the device-group COPY rules, and the MSELECT/MSTACK rewrites.
-# WHAT THIS FILE IS. `multi.py` is 311 lines and THIRTY defs, and almost none of it is
-# arithmetic. Two thirds of the defs are GRAPH BUILDERS (`.unshard`, `.alu`, `.mselect`,
-# `.copy_to_device`, `._shard`, `.cat`, `.store`, `.replace`, `UOp(Ops.STACK, ...)`) and not
-# one of those is ported (ops.py:423 through :32, every one a `TODO(p3)` in `ops.bend`).
-# What IS here is the DECISION and the INDEX ARITHMETIC each of those thirty defs makes
-# before it reaches for a builder -- which axes a REDUCE consumes, where a RESHAPE's shard
-# boundary lands, which axis a PERMUTE sends a shard to and which it FLIPs, whether a
-# shrink resolves its own UNSHARD, whether an INDEX is contiguously or strided owned, and
-# the three-way per-source decision in `shard_srcs` that the resharding fallbacks all call.
 # the one wall that cuts across every line: `UOp._min_max` (ops.py:1094), which
 # `int(rng.vmax)+1` needs in `shard_srcs`, `shrink_multi`, `reshape_multi` and
 # `copy_multi`. `uop/fold.bend:5088 symbol=ranged` names it at 1104 in its own PROSE and carries it as

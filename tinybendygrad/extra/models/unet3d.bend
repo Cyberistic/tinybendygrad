@@ -11,7 +11,7 @@ import ./../../mixin/op.bend as MO
 import ./../../mixin/movement.bend as MX
 import ./../datasets/__init__.bend as D
 
-# stub -- 1:1 path mirror of extra/models/unet3d.py (59 loc). not yet ported.
+# not yet ported.
 #
 # the shortest file in the directory and the only one that is 3-d, and those
 # two facts pull in opposite directions. It is short because it has four classes

@@ -1,4 +1,4 @@
-# stub -- 1:1 path mirror of extra/datasets/openimages.py (209 loc upstream). not yet ported.
+# not yet ported.
 #
 # WHAT UPSTREAM IS. Open Images v6 -> COCO, for the detection MLPerf benchmark. It is
 # (b), and it is the only file in this slice whose constant table is bigger than its

@@ -1,10 +1,5 @@
 # memory.bend -- tinygrad/schedule/memory.py, the memory planner.
 #
-# WHAT THIS FILE IS. `memory.py` is 62 lines and one function. It takes a LINEAR of kernels,
-# works out how long each internal buffer is live, packs the non-overlapping ones into one
-# shared arena per (device, copy/compute) lane, and returns the linear with every buffer
-# replaced by a BITCAST into that arena. There is no PatternMatcher here and no rule table:
-# this is a straight fold over the kernels.
 #
 # DEPENDENCY ON A SIBLING. `schedule/__init__.py` is owned by another agent and is the only
 # caller of `memory_plan_rewrite`. Nothing here imports it and the gate fixtures are built

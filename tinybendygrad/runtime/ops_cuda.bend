@@ -4,12 +4,9 @@ import ./ops_cl.bend as CL
 
 # tinybendygrad/runtime/ops_cuda.bend -- port of tinygrad/runtime/ops_cuda.py.
 #
-# one `.bend` per upstream `.py`, at the same path. This file was 707 lines of
-# `runtime/ops_cl.bend` until the 1:1 ruling; it now holds ONLY what
 # ops_cuda.py says, plus its half of the gate. The shared trace -- `OP_*`,
 # `Tr`, `Tr.*`, `vend.argname`, `u32s`, `one_s`, the row printers -- is imported
 # from `ops_cl.bend` as `CL.`, which is the DAG's only edge in one direction.
-#
 #
 # PART 2 -- CUDA. `ops_cuda.py`. STALE-LINE NOTE: the pre-split header said
 # "all 136 lines" and cited `cu:132` and `cu:134-136`; MEASURED against this

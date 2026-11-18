@@ -1,12 +1,5 @@
 # tinybendygrad/runtime/ops_cl.bend -- port of tinygrad/runtime/ops_cl.py.
 #
-# ONE `.bend` PER upstream `.py`, AT the same path. This file used to hold THREE
-# ports -- ops_cl.py, ops_cuda.py and ops_hip.py -- and the 1:1 ruling made it
-# three files. `ops_cuda.bend` and `ops_hip.bend` import this one; this one
-# imports neither, because bend has NO IMPORT CYCLE (MEASURED: "an import
-# cycle through .../a.bend"), and an acyclic graph of three files has exactly
-# one leaf.
-#
 # SO the cross-CUTTING rationale stays here and the three vendor tables do not.
 # The header below is about all three files and is part of the reason this file
 # is the leaf; the tables are DATA about one file each, and a `vend.cu` in
@@ -36,7 +29,6 @@
 # this is the leaf of the DAG. `vend.cu`, `cu_err_*`, `Spec` and `cu.*` are in
 # `ops_cuda.bend`; `vend.hp`, `hp_err_of`, `timing.scale_hp` and `hp.*` are in
 # `ops_hip.bend`.
-#
 #
 # ONE device, THREE vendor spellings. `ops_cl.py` is the BASE class for CUDA and
 # HIP: `CUDADevice` and `HIPDevice` are both `Compiled`, and `Program.__call__`
@@ -177,9 +169,6 @@
 #    TODO(p3) runtime/ops_cl.py:27  symbol=__init__ -- the md5 digest.
 #
 # 6. POINTER ARITHMETIC and `ctypes.byref`/`addressof`. cl:58's
-#    `getattr(ctypes, f"c_int{dt.bitsize}")(vals[...])` is a VALUE boxed into a
-#    1/2/4/8-byte ctypes int and passed BY REFERENCE to `clSetKernelArg`; that is
-#    why the port carries `Sig.bits` as a `U32` and lets the seam do the box.
 #
 # 7. `ctypes.string_at(hip.hipGetErrorString(status)).decode()` (hp:10). The
 #    FUNCTION is a symbol and the port names it (`vend.hp.of(OP_ERRSTR)`); the

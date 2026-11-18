@@ -1,9 +1,5 @@
 # schedule/realize.bend -- the port's own realize-to-sink driver.
 #
-# WHAT THIS FILE IS. The link between the port's `Tensor` graph and the port's
-# `schedule()`: it takes a program the port built and answers the SINK OF AFTERs
-# that upstream's `prepare_rangeify` answers for the same program.
-#
 # THE CHAIN IT MIRRORS, and every hop's `file:line` ON BOTH SIDES:
 #
 #   1. THE PROGRAM. `Tensor.empty(4,5)`, `(4,3) @ (3,5)`, `t.assign(...)`.

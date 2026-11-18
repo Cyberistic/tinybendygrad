@@ -3,10 +3,6 @@
 # THE GENERATOR. 289 Python lines that walk a libclang AST and EMIT Python
 # source: `tinygrad/runtime/autogen/*.py`, `renderer/amd/`, `am/regs.py`.
 #
-# WHAT THIS FILE IS. The pure half of that generator -- the constant tables,
-# the type-name derivation, and the emission templates -- over a FIXTURE AST.
-# The other half is WALL 1.
-#
 #   THE SIZE OF WALL 1, MEASURED, because "200+ clang_get* calls" was WRONG.
 #   `.agents/slop/ag-wall1-census.py` runs this very generator over 26 real
 #   headers (libc, llvm-c, objc, dispatch, zlib) with a call counter on every
@@ -15,7 +11,6 @@
 #   `libclang.py` binds -- 278 of which it NEVER touches.  A naive port of
 #   `libclang.py` would be 324 symbols of which 278 are dead.
 #   `.agents/slop/ag-wall1-census.txt`.
-#
 
 # THE FOUR WALLS. Stated once, here, rather than as a TODO per arm.
 #

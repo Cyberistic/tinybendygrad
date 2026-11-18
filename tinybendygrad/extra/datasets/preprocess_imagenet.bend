@@ -1,4 +1,4 @@
-# stub -- 1:1 path mirror of extra/datasets/preprocess_imagenet.py (21 loc upstream). not yet ported.
+# not yet ported.
 #
 # WHAT UPSTREAM IS. An `if __name__ == "__main__":` block and NOTHING else -- all 21
 # lines are a top-level script that packs 3200 ImageNet rows into two `disk:` buffers.

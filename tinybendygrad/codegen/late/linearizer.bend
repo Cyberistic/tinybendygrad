@@ -1,10 +1,5 @@
 # codegen/late/linearizer.bend -- port of tinygrad/codegen/late/linearizer.py
 #
-# one BEND file per upstream .py, at the same path. This was `codegen/late.bend`
-# until the 1:1 ruling; `codegen/late/regalloc.bend` and `codegen/late/gater.bend` are
-# the other two slices, the rows are the SAME rows, and 128 before the split is 128
-# across the three after it.
-#
 # this file also carries the shared substrate. `linearizer.py` needs an assoc list
 # (`out_degree`, `priorities`, `nkey`, `CFGContext.deps`, `CFGContext.nesting`) and so
 # does every other table in the lowerer, and Bend's `Map` is string-keyed only while

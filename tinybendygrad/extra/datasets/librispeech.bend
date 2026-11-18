@@ -1,4 +1,4 @@
-# stub -- 1:1 path mirror of extra/datasets/librispeech.py (82 loc upstream). not yet ported.
+# not yet ported.
 #
 # WHAT UPSTREAM IS. A SPEECH-FEATURE EXTRACTOR, and it is the only file in this
 # directory whose WORK HAPPENS AT IMPORT TIME rather than inside a def.

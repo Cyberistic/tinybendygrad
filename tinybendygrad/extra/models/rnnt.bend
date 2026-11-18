@@ -15,7 +15,7 @@ import ./../../mixin/rand.bend as RD
 import ./../../nn/optim.bend as OPT
 import ./../datasets/__init__.bend as D
 
-# stub -- 1:1 path mirror of extra/models/rnnt.py (202 loc). not yet ported.
+# not yet ported.
 #
 # rnn-t is the only file in this slice that asks for a kind of layer the port
 # HAS NEVER HAD AT ALL. resnet.bend asked for more of the layers that exist

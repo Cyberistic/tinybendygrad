@@ -1,15 +1,6 @@
 # allreduce.bend -- tinygrad/schedule/allreduce.py, the ring / all2all / naive
 # allreduce lowering.
 #
-# what this file is, and what it is not. `allreduce.py` is 75 lines and two defs:
-# `handle_allreduce` and `create_allreduce_function`. Almost all of
-# `handle_allreduce` is BUILDING A GRAPH -- `mselect`, `copy_to_device`, `shrink`,
-# `pad`, `mstack`, `usum`, `reshape`, `allreduce` -- and not one of those builders is
-# ported (each is a `TODO(p3)` in `ops.bend`, ops.py:423 through :853). So what is
-# here is the part that is ARITHMETIC AND DECISION, and that part is the whole
-# algorithm: which of the three reductions runs, and with what chunk boundaries. The
-# graph each one assembles is the wall, and it is named where it bites.
-#
 # DEPENDENCY ON A SIBLING. `schedule/__init__.py` owns the only caller of
 # `handle_allreduce`, through `replace_allreduce` / `_early_allreduce` in
 # `schedule/multi.py`. Nothing here imports either, and the gate fixtures are built

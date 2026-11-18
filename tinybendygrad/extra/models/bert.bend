@@ -15,7 +15,7 @@ import ./../../mixin/rand.bend as RD
 import ./../../nn/optim.bend as OPT
 import ./../datasets/__init__.bend as D
 
-# stub -- 1:1 path mirror of extra/models/bert.py (300 loc). not yet ported.
+# not yet ported.
 #
 # the first missing thing is `nn.Embedding`, and it is one of the four the
 # VISION MODELS NEVER ASKED FOR. `grep -rnwE "def .*Embedding" --include='*.bend'

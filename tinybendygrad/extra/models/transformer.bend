@@ -15,7 +15,7 @@ import ./../../mixin/rand.bend as RD
 import ./../../nn/optim.bend as OPT
 import ./../datasets/__init__.bend as D
 
-# stub -- 1:1 path mirror of extra/models/transformer.py (61 loc). not yet ported.
+# not yet ported.
 #
 # the headline, and it is the answer to "do these models need anything the vision
 # models did not ask for": yes, and it is exactly one name.

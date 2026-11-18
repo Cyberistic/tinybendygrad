@@ -1,4 +1,4 @@
-# stub -- 1:1 path mirror of extra/datasets/imagenet_download.py (51 loc upstream). not yet ported.
+# not yet ported.
 #
 # WHAT UPSTREAM IS. The ILSVRC2012 fetcher, and it is NOT class (c). The obvious
 # reason to skip it -- "ImageNet is behind a registration wall" -- was CHECKED AND IS

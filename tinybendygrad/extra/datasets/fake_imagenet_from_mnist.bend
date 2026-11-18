@@ -1,4 +1,4 @@
-# stub -- 1:1 path mirror of extra/datasets/fake_imagenet_from_mnist.py (40 loc upstream). not yet ported.
+# not yet ported.
 #
 # WHAT UPSTREAM IS. The `MNISTMOCK` path made real: it writes a 10-class ImageNet
 # tree of upscaled 28x28 MNIST digits so `imagenet.py`'s mock branch has something to

@@ -1,4 +1,4 @@
-# stub -- 1:1 path mirror of extra/datasets/wikipedia_download.py (53 loc upstream). not yet ported.
+# not yet ported.
 #
 # WHAT UPSTREAM IS. The MLPerf BERT 2020 corpus fetcher, off Google Drive. Not class
 # (c): the Drive ids are public links and `gdown` is a plain HTTP client, not a

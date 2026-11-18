@@ -7,7 +7,6 @@ import ./../nn/onnx.bend as ONNX
 import ./../engine/jit.bend as JIT
 import ./../extra/datasets/__init__.bend as D
 
-# STUB -- 1:1 PATH MIRROR of examples/test_pkl_imagenet.py (19 LOC).
 # NOT YET PORTED.
 #
 # this is the eval path and it is the first milestone toward imagenet,
