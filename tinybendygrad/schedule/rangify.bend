@@ -84,6 +84,7 @@ import Base
 import ./../helpers.bend as H
 
 import ./../uop/ops.bend as O
+import ./../LAWS/spec.bend as S
 
 import ./../uop/fold.bend as F
 
@@ -606,6 +607,109 @@ def rr_merge(+ar: O.Arena, +tb: F.Table, +ctx: IX.IxCtx, +x: U32, +tbl: List<&2,
   +n = rr_new.all(rr_dims(ar, tb, x), tbl, Nil{})
   RrRs{0, RrRs.rs(n), RrRs.tbl(n)}
 
+# `_apply_reshape` -- indexing.py:148-160, and the ONLY piece of `apply_movement_op`
+# that MINTS. The symbolic normalization upstream runs after it
+# (`symbolic+pm_simplify_valid+pm_drop_and_clauses`) is NOT applied: the expression is
+# CORRECT without it and only wider than CPython's (a `% 20` that CPython folds away),
+# and the driver it needs is its own unit. MEASURED, the three reshapes on the fullchain
+# program are `(15,)->(1,3,5)`, `(12,)->(4,1,3)` and `(20,)->(4,5)`.
+def rr_mulc.go(one: Bool, +ar: O.Arena, k: U32, +src: U32) -> O.Found:
+  match one:
+    case True{}: O.Found{ar, src}
+    case False{}:
+      +c = O.UOp.cconst(ar, O.CInt{H.i64_of_i32(k)}, S.int32())
+      O.UOp.alu(O.Found.ar(c), O.OpsMUL{}, [O.Found.i(c), src])
+
+def rr_mulc(+ar: O.Arena, +k: U32, +src: U32) -> O.Found:
+  rr_mulc.go(U32.is_eq(k, 1), ar, k, src)
+
+# `sum(axes_in)`; one element is itself and an empty list is the ADD identity.
+def rr_usum.pair(x: U32, +f: O.Found, +ar: O.Arena) -> O.Found:
+  O.UOp.alu(O.Found.ar(f), O.OpsADD{}, [x, O.Found.i(f)])
+
+def rr_usum(+ar: O.Arena, +xs: List<&2, U32>) -> O.Found:
+  match xs:
+    case Nil{}: O.UOp.cconst(ar, O.CInt{H.i64_of_i32(0)}, S.int32())
+    case x <> Nil{}: O.Found{ar, x}
+    case x <> t: rr_usum.pair(x, rr_usum(ar, t), ar)
+
+# the loop state as a RECORD, not a 3-tuple: a `Pair` whose second Kind is a `List` and
+# whose third is `U32` fails kind inference in Base (`_ => U32`), and a record is what
+# the rest of this file uses for the same reason.
+type RAx is Data:
+  RAx{ar: O.Arena, xs: List<&2, U32>, k: U32}
+
+def RAx.ar(x: RAx) -> O.Arena: match x: case RAx{a, xs, k}: a
+def RAx.xs(x: RAx) -> List<&2, U32>: match x: case RAx{a, xs, k}: xs
+def RAx.k(x: RAx) -> U32: match x: case RAx{a, xs, k}: k
+
+# the input axes, `acc * src` for every OUT axis taken in REVERSE, with `acc` the
+# product of the out dims seen so far.
+def rr_axes_in.go(+os: List<&2, U32>, +ar: O.Arena, k: U32, +rs: List<&2, U32>, +acc: RAx) -> RAx:
+  match os:
+    case Nil{}: acc
+    case o <> ot:
+      match rs:
+        case Nil{}: acc
+        case r <> rt:
+          +a0 = RAx.ar(acc)
+          +k0 = RAx.k(acc)
+          +m = rr_mulc(a0, k0, r)
+          rr_axes_in.go(ot, O.Found.ar(m), U32.mul(k0, o), rt,
+                        RAx{O.Found.ar(m), List.append(&2, U32, RAx.xs(acc), [O.Found.i(m)]), U32.mul(k0, o)})
+
+# the output axes: `combined % s` then `combined // s`, per IN dim in reverse.
+def rr_axes_out.go(+ss: List<&2, U32>, +ar: O.Arena, +acc: RAx) -> RAx:
+  match ss:
+    case Nil{}: acc
+    case s <> t:
+      +a0 = RAx.ar(acc)
+      +comb = RAx.k(acc)
+      +c = O.UOp.cconst(a0, O.CInt{H.i64_of_i32(s)}, S.int32())
+      +mo = O.UOp.alu(O.Found.ar(c), O.OpsTRUNCMOD{}, [comb, O.Found.i(c)])
+      +dv = O.UOp.alu(O.Found.ar(mo), O.OpsTRUNCDIV{}, [comb, O.Found.i(c)])
+      rr_axes_out.go(t, O.Found.ar(dv),
+                     RAx{O.Found.ar(dv), List.append(&2, U32, RAx.xs(acc), [O.Found.i(mo)]), O.Found.i(dv)})
+
+def rr_reshape.comb(+p: RAx, +ins: List<&2, U32>) -> RAx:
+  +ar = RAx.ar(p)
+  +c = rr_usum(ar, RAx.xs(p))
+  rr_axes_out.go(List.reverse(&2, U32, ins), O.Found.ar(c), RAx{O.Found.ar(c), Nil{}, O.Found.i(c)})
+
+def rr_reshape.fin(+p: RAx) -> (O.Arena & List<&2, U32>):
+  +ar = RAx.ar(p)
+  (ar, List.reverse(&2, U32, RAx.xs(p)))
+
+def rr_reshape.go(+ar: O.Arena, +ins: List<&2, U32>, +outs: List<&2, U32>, +rngs: List<&2, U32>) -> (O.Arena & List<&2, U32>):
+  +p1 = rr_axes_in.go(List.reverse(&2, U32, outs), ar, 1, List.reverse(&2, U32, rngs), RAx{ar, Nil{}, 1})
+  rr_reshape.fin(rr_reshape.comb(p1, ins))
+
+# the arithmetic needs one range per OUT axis and a non-empty IN shape; anything else is
+# refused rather than folded into a wrong index (upstream asserts; a refusal is a value).
+def rr_reshape.ok(+ins: List<&2, U32>, +outs: List<&2, U32>, +rngs: List<&2, U32>) -> Bool:
+  Bool.and(Bool.not(U32.is_zero(U32.from_nat(List.length(&2, U32, ins)))),
+    Bool.and(Bool.not(U32.is_zero(U32.from_nat(List.length(&2, U32, outs)))),
+      U32.is_eq(U32.from_nat(List.length(&2, U32, rngs)), U32.from_nat(List.length(&2, U32, outs)))))
+
+# `ok` TRUE means DO THE MATH; a shape the port cannot read answers the identity, which is
+# the pre-W-A behaviour and not a wrong index.
+def rr_reshape.same(ok: Bool, +ar: O.Arena, +ins: List<&2, U32>, +outs: List<&2, U32>, +rngs: List<&2, U32>) -> (O.Arena & List<&2, U32>):
+  match ok:
+    case True{} : rr_reshape.go(ar, ins, outs, rngs)
+    case False{}: (ar, rngs)
+
+def rr_reshape(+ar: O.Arena, +ins: List<&2, U32>, +outs: List<&2, U32>, +rngs: List<&2, U32>) -> (O.Arena & List<&2, U32>):
+  rr_reshape.same(rr_reshape.ok(ins, outs, rngs), ar, ins, outs, rngs)
+
+# `apply_movement_op`'s FOUR arms, with the arena they grow. `O.u32_list_eq` is the
+# port's list equality (`H.u32_list_eq`); an unchanged shape is the identity.
+def rr_mvx(op: O.Op, +ar: O.Arena, +tb: F.Table, +x: U32, +arg: List<&2, U32>, +out: List<&2, U32>) -> (O.Arena & List<&2, U32>):
+  match op:
+    case O.OpsPERMUTE{}: (ar, IX.ix_mv_permute(arg, out))
+    case O.OpsEXPAND{} : (ar, IX.ix_mv_expand(arg, out))
+    case O.OpsRESHAPE{}: rr_reshape(ar, rr_dims(ar, tb, O.Arena.src0(ar, x)), arg, out)
+    case _: (ar, out)
+
 # `apply_movement_op` -- `indexing.py:165-180`. PERMUTE AND EXPAND ARE FULLY
 # PORTED -- `indexing.bend`'s OWN `ix_mv_permute` AND `ix_mv_expand`, REUSED AND
 # NOT COPIED. RESHAPE IS W-A (`_apply_reshape`: `UOp.sink`, `usum`, `%`, `//`
@@ -631,8 +735,35 @@ def rr_marg.of2(m: Maybe<&2, List<&2, U32>>) -> List<&2, U32>:
     case Some{ys}: ys
     case _: Nil{}
 
-def rr_marg(+ar: O.Arena, x: U32) -> List<&2, U32>:
-  rr_marg.of2(rr_marg.of(O.Arena.arg(ar, x)))
+# `x.marg` IS NOT ALWAYS THE ARG. Upstream `_mop` builds a movement op as
+# `UOp(op, src=(self,)+UOp.sink(*usrcs).simplify().src)` (ops.py:790-791), so the target
+# shape is `src[1]` and `arg` is None -- and `.marg` READS `src[1].as_shape` for RESHAPE,
+# EXPAND and PERMUTE (ops.py:772/815). MEASURED: `rr_marg` read only `ATuple`, so every
+# movement op on this program answered an EMPTY marg and `_apply_reshape` was refused.
+def rr_dim_of(+ar: O.Arena, +n: U32) -> U32:
+  Maybe.default(&2, U32, O.ParamArg.size.const(O.Arena.arg(ar, n)), 0)
+
+def rr_stack_dims.go(+ar: O.Arena, +ss: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
+  match ss:
+    case Nil{}: acc
+    case s <> t: rr_stack_dims.go(ar, t, List.append(&2, U32, acc, [rr_dim_of(ar, s)]))
+
+def rr_marg.op(op: O.Op, +ar: O.Arena, +n: U32) -> List<&2, U32>:
+  match op:
+    case O.OpsSTACK{}: rr_stack_dims.go(ar, O.Arena.srcs(ar, n), Nil{})
+    case _: [rr_dim_of(ar, n)]
+
+def rr_marg.src(+ar: O.Arena, +x: U32) -> List<&2, U32>:
+  +n = O.Arena.src(ar, x, 1)
+  rr_marg.op(O.Arena.op(ar, n), ar, n)
+
+def rr_marg.fb(m: Maybe<&2, List<&2, U32>>, +ar: O.Arena, +x: U32) -> List<&2, U32>:
+  match m:
+    case Some{ys}: ys
+    case _: rr_marg.src(ar, x)
+
+def rr_marg(+ar: O.Arena, +x: U32) -> List<&2, U32>:
+  rr_marg.fb(rr_marg.of(O.Arena.arg(ar, x)), ar, x)
 
 # the reduce's reduced axes: `x.arg[1]` is the number of reduced axes.
 def rr_reduce_n.of(a: O.Arg) -> U32:
@@ -723,12 +854,15 @@ def rr_p4.stack(isstack: Bool, +m: RrMap, +out: List<&2, U32>, +rngs: List<&2, U
     case True{}: RrMap.put(m, out, List.drop(&2, U32, out, 1n), RrMap.e(m), RrMap.b(m), RrMap.ne(m))
     case False{}: RrMap.put(m, out, rngs, RrMap.e(m), RrMap.b(m), RrMap.ne(m))
 
-def rr_p4.move(+ar: O.Arena, +tb: F.Table, +ctx: IX.IxCtx, +m: RrMap, +x: U32) -> RrMap:
+def rr_p4.move.of(p: (O.Arena & List<&2, U32>), isstack: Bool, +m: RrMap, +out: List<&2, U32>) -> (O.Arena & RrMap):
+  (+ar, rngs) = p
+  (ar, rr_p4.stack(isstack, m, out, rngs))
+
+def rr_p4.move(+ar: O.Arena, +tb: F.Table, +ctx: IX.IxCtx, +m: RrMap, +x: U32) -> (O.Arena & RrMap):
   +out = RrMap.out(m)
   +op = O.Arena.op(ar, x)
   +arg = rr_marg(ar, x)
-  +rngs = rr_mv.of(O.eq_op(op, O.OpsPERMUTE{}), O.eq_op(op, O.OpsEXPAND{}), arg, out)
-  rr_p4.stack(rr_is_stack(ar, x), m, out, rngs)
+  rr_p4.move.of(rr_mvx(op, ar, tb, x, arg, out), rr_is_stack(ar, x), m, out)
 
 def rr_p4.reduce(+ar: O.Arena, +tb: F.Table, +ctx: IX.IxCtx, +m: RrMap, +x: U32) -> RrMap:
   # - the grown table is the point: `rr_new.all` appends the reduce-axis
@@ -743,12 +877,12 @@ def rr_p4.reduce(+ar: O.Arena, +tb: F.Table, +ctx: IX.IxCtx, +m: RrMap, +x: U32)
   RrMap{RrMap.ctx(m), RrMap.ends(m), RrRs.tbl(n), RrMap.out(m),
         List.append(&2, U32, RrRs.rs(n), RrMap.out(m)), RrMap.e(m), RrMap.b(m), RrMap.ne(m)}
 
-def rr_p4.pick(isred: Bool, +ar: O.Arena, +tb: F.Table, +ctx: IX.IxCtx, +m: RrMap, +x: U32) -> RrMap:
+def rr_p4.pick(isred: Bool, +ar: O.Arena, +tb: F.Table, +ctx: IX.IxCtx, +m: RrMap, +x: U32) -> (O.Arena & RrMap):
   match isred:
-    case True{}: rr_p4.reduce(ar, tb, ctx, m, x)
+    case True{}: (ar, rr_p4.reduce(ar, tb, ctx, m, x))
     case False{}: rr_p4.move(ar, tb, ctx, m, x)
 
-def rr_p4(+ar: O.Arena, +tb: F.Table, +rev: List<&2, U32>, +m: RrMap, +x: U32) -> RrMap:
+def rr_p4(+ar: O.Arena, +tb: F.Table, +rev: List<&2, U32>, +m: RrMap, +x: U32) -> (O.Arena & RrMap):
   rr_p4.pick(rr_is_reduce(ar, x), ar, tb, RrMap.ctx(m), m, x)
 
 # THE P5 PHASE: THE RANGE MAP's ENTRY (`indexing.py:306`).
@@ -770,21 +904,29 @@ def rr_p6(+m: RrMap) -> RrMap:
   RrMap.with_ends(List.append(&2, Bool, RrMap.ends(m), [RrMap.e(m)]), m)
 
 # THE STEP, IN UPSTREAM's ORDER.
-def rr_step(+ar: O.Arena, +tb: F.Table, +rev: List<&2, U32>, +m: RrMap, +x: U32) -> RrMap:
-  rr_p6(rr_p5(ar, tb, rev, rr_p4(ar, tb, rev, rr_p3(rr_p2(ar, tb, rev, rr_p1(ar, tb, rev, rr_p0(ar, tb, rev, m, x), x), x)), x), x))
+def rr_step.fin(p: (O.Arena & RrMap), +tb: F.Table, +rev: List<&2, U32>, +x: U32) -> (O.Arena & RrMap):
+  (+ar, m) = p
+  (ar, rr_p6(rr_p5(ar, tb, rev, m, x)))
+
+def rr_step(+ar: O.Arena, +tb: F.Table, +rev: List<&2, U32>, +m: RrMap, +x: U32) -> (O.Arena & RrMap):
+  rr_step.fin(rr_p4(ar, tb, rev, rr_p3(rr_p2(ar, tb, rev, rr_p1(ar, tb, rev, rr_p0(ar, tb, rev, m, x), x), x)), x), tb, rev, x)
 
 # THE FOLD, OVER THE REVERSED TOPOSORT (`indexing.py:200`).
-def rr_range_map.go(+xs: List<&2, U32>, +ar: O.Arena, +tb: F.Table, +rev: List<&2, U32>,
-                    +m: RrMap) -> RrMap:
+def rr_step2(acc: (O.Arena & RrMap), +tb: F.Table, +rev: List<&2, U32>, +x: U32) -> (O.Arena & RrMap):
+  (+ar, m) = acc
+  rr_step(ar, tb, rev, m, x)
+
+def rr_range_map.go(+xs: List<&2, U32>, acc: (O.Arena & RrMap), +tb: F.Table,
+                    +rev: List<&2, U32>) -> (O.Arena & RrMap):
   match xs:
-    case Nil{}: m
-    case x <> t: rr_range_map.go(t, ar, tb, rev, rr_step(ar, tb, rev, m, x))
+    case Nil{}: acc
+    case x <> t: rr_range_map.go(t, rr_step2(acc, tb, rev, x), tb, rev)
 
 # the realize map is filled before the LOOP (`indexing.py:188`:
 # `graph_rewrite(tsink, pm_generate_realize_map, ctx=rctx)`), SO THE CONTEXT
 # starts with it -- and it is the port's own `rr_realize`, which agrees with
 # CPython's `rr_py_realize` EXACTLY.
-def rr_range_map(+ar: O.Arena, +tb: F.Table, sink: U32) -> RrMap:
+def rr_range_map(+ar: O.Arena, +tb: F.Table, sink: U32) -> (O.Arena & RrMap):
   # => and the realize map is filled before the toposort -- - and that is
   # upstream's order too (`indexing.py:188` is the realize rewrite and `:192` is the
   # toposort), - and `sink` is read twice, so the order matters: the realize map
@@ -803,7 +945,7 @@ def rr_range_map(+ar: O.Arena, +tb: F.Table, sink: U32) -> RrMap:
   # and nothing ELSE ... upstream fills the realize map before the RANGE-map LOOP
   # (`indexing.py:188`), SO THE LOOP's CONTEXT STARTS WITH IT."*
   +ctx = IX.ix_ctx_realize(rm)
-  rr_range_map.go(rev, ar, tb, rev, RrMap{ctx, Nil{}, [IX.ix_rg_c0()], Nil{}, Nil{}, False{}, False{}, False{}})
+  rr_range_map.go(rev, (ar, RrMap{ctx, Nil{}, [IX.ix_rg_c0()], Nil{}, Nil{}, False{}, False{}, False{}}), tb, rev)
 
 # 3. THE ROWS.
 
@@ -1506,16 +1648,20 @@ def rr_wall_count.go(+ns: List<&2, U32>, +ar: O.Arena, +ctx: IX.IxCtx, acc: U32)
     case x <> t:
       rr_wall_count.go(t, ar, ctx, U32.add(acc, Bool.to_u32(rr_ap_wall_hit(ar, ctx, x))))
 
-def rr_run_rangeify(+ar: O.Arena, sink: U32) -> O.Found:
+def rr_run_rangeify.go(p: (O.Arena & RrMap), sink: U32, +tb: F.Table) -> O.Found:
+  (+ar, +m) = p
   +sk = sink
-  +tb = F.Folded.t(F.folded(ar))
-  +m = rr_range_map(ar, tb, sk)
   +ctx = RrMap.ctx(m)
   +tbl = RrMap.tbl(m)
   +ns = O.UOp.toposort(O.Arena.budget(ar), ar, sk)
   +rep = rr_ap_walk(ar, tb, tbl, ctx, ns)
   +root = rr_ap_root(ApFin.fin(rep), sk)
   O.Found{ApFin.ar(rep), root}
+
+def rr_run_rangeify(+ar: O.Arena, sink: U32) -> O.Found:
+  +sk = sink
+  +tb = F.Folded.t(F.folded(ar))
+  rr_run_rangeify.go(rr_range_map(ar, tb, sk), sk, tb)
 
 # THE PORT's `get_kernel_graph` -- `rangeify.py:341-376`: THE PORT's OWN
 # `run_rangeify` and then the engine's six table stages. - and the composition

@@ -1,25 +1,22 @@
 chain_kernel_op=4
 chain_kernel_nsrc=4
-chain_body=80 committed=103 reduced=125
-chain_lst_n=34
-chain_linear_n=34
-chain_ku_n=34
-chain_lin_ops=9,0,3,9,0,0,9,0,0,0,9,1,6,9,0,0,5,2,9,0,3,0,9,0,3,0,0,0,6,5,2,6,5,7
-chain_ku_sig=CONST: OTHER(CAST):0 OTHER(PARAM):1 CONST: OTHER(CAST):3 OTHER(PARAM):4 CONST: OTHER(CAST):6 OTHER(PARAM):7 CONST: OTHER(BUFFER):9 CONST: OTHER(CAST):11 STORE:10,10 OTHER(RANGE):12 END:13,14 AFTER:10,15,14 INDEX:5 INDEX:8 OTHER(MUL):17,18 OTHER(ADD):16,19 STORE:16,20 END:21,14 CONST: OTHER(CAST):23 CONST: OTHER(CAST):25 OTHER(RANGE):24 OTHER(RANGE):26 INDEX:2,27,28 AFTER:10,22 STORE:29,30 END:31,27,28 SINK:32
-chain_dump_sched=SINK:other:END;END:none:STORE,RANGE,RANGE;STORE:none:INDEX,REDUCE;RANGE:other:CONST;RANGE:other:CONST;INDEX:none:PARAM,RANGE,RANGE;REDUCE:other:MUL,RANGE;CONST:cother:;CONST:cother:;PARAM:other:CONST;MUL:none:INDEX,INDEX;RANGE:other:CONST;CONST:cother:;INDEX:none:PARAM;INDEX:none:PARAM;CONST:cother:;PARAM:other:CONST;PARAM:other:CONST;CONST:cother:;CONST:cother:
-chain_dump_committed=SINK:other:END;END:none:STORE,RANGE,RANGE;STORE:none:INDEX,REDUCE;RANGE:other:OTHER;RANGE:other:OTHER;INDEX:none:PARAM,RANGE,RANGE;REDUCE:other:MUL,RANGE;OTHER:other:CONST;OTHER:other:CONST;PARAM:other:OTHER;MUL:none:INDEX,INDEX;RANGE:other:OTHER;CONST:cother:;CONST:cother:;OTHER:other:CONST;INDEX:none:PARAM;INDEX:none:PARAM;OTHER:other:CONST;CONST:cother:;PARAM:other:OTHER;PARAM:other:OTHER;CONST:cother:;OTHER:other:CONST;OTHER:other:CONST;CONST:cother:;CONST:cother:
-chain_dump_reduced=SINK:other:END;END:none:STORE,RANGE,RANGE;STORE:none:INDEX,AFTER;RANGE:other:OTHER;RANGE:other:OTHER;INDEX:none:PARAM,RANGE,RANGE;AFTER:none:BUFFER,END;OTHER:other:CONST;OTHER:other:CONST;PARAM:other:OTHER;BUFFER:other:CONST;END:none:STORE,RANGE;CONST:cother:;CONST:cother:;OTHER:other:CONST;CONST:cother:;STORE:none:AFTER,ADD;RANGE:other:OTHER;CONST:cother:;AFTER:none:BUFFER,END,RANGE;ADD:none:AFTER,MUL;OTHER:other:CONST;END:none:STORE,RANGE;MUL:none:INDEX,INDEX;CONST:cother:;STORE:none:BUFFER,BUFFER;INDEX:none:PARAM;INDEX:none:PARAM;PARAM:other:OTHER;PARAM:other:OTHER;OTHER:other:CONST;OTHER:other:CONST;CONST:cother:;CONST:cother:
-chain_c_nbytes=351
+chain_body=104 committed=123 reduced=143
+chain_lst_n=29
+chain_linear_n=29
+chain_ku_n=29
+chain_lin_ops=9,0,3,9,0,0,9,1,6,9,0,0,5,2,9,0,3,0,9,0,3,0,0,0,6,5,2,6,7
+chain_ku_sig=CONST: OTHER(CAST):0 OTHER(PARAM):1 CONST: OTHER(CAST):3 OTHER(PARAM):4 CONST: OTHER(CAST):6 OTHER(PARAM):7 CONST: OTHER(BUFFER):9 CONST: OTHER(CAST):11 CONST: OTHER(CAST):13 STORE:10,12 OTHER(RANGE):14 END:15,16 AFTER:10,17,16 INDEX:5,12 INDEX:8,12 OTHER(MUL):19,20 OTHER(ADD):18,21 STORE:18,22 END:23,16 INDEX:2,12 AFTER:10,24 STORE:25,26 SINK:27
+chain_dump_sched=SINK:other:STORE;STORE:none:INDEX,REDUCE;INDEX:none:PARAM,CONST;REDUCE:other:MUL,RANGE;PARAM:other:CONST;CONST:cother:;MUL:none:INDEX,INDEX;RANGE:other:CONST;CONST:cother:;INDEX:none:PARAM,CONST;INDEX:none:PARAM,CONST;CONST:cother:;PARAM:other:CONST;PARAM:other:CONST;CONST:cother:;CONST:cother:
+chain_dump_committed=SINK:other:STORE;STORE:none:INDEX,REDUCE;INDEX:none:PARAM,OTHER;REDUCE:other:MUL,RANGE;PARAM:other:OTHER;OTHER:other:CONST;MUL:none:INDEX,INDEX;RANGE:other:OTHER;OTHER:other:CONST;CONST:cother:;INDEX:none:PARAM,OTHER;INDEX:none:PARAM,OTHER;OTHER:other:CONST;CONST:cother:;PARAM:other:OTHER;PARAM:other:OTHER;CONST:cother:;OTHER:other:CONST;OTHER:other:CONST;CONST:cother:;CONST:cother:
+chain_dump_reduced=SINK:other:STORE;STORE:none:INDEX,AFTER;INDEX:none:PARAM,OTHER;AFTER:none:BUFFER,END;PARAM:other:OTHER;OTHER:other:CONST;BUFFER:other:CONST;END:none:STORE,RANGE;OTHER:other:CONST;CONST:cother:;CONST:cother:;STORE:none:AFTER,ADD;RANGE:other:OTHER;CONST:cother:;AFTER:none:BUFFER,END,RANGE;ADD:none:AFTER,MUL;OTHER:other:CONST;END:none:STORE,RANGE;MUL:none:INDEX,INDEX;CONST:cother:;STORE:none:BUFFER,OTHER;INDEX:none:PARAM,OTHER;INDEX:none:PARAM,OTHER;PARAM:other:OTHER;PARAM:other:OTHER;OTHER:other:CONST;OTHER:other:CONST;CONST:cother:;CONST:cother:
+chain_c_nbytes=252
 chain_c=
 void test(float* restrict data0_20, float* restrict data1_12, float* restrict data2_15) {
   float buf0[1];
-  *((float*)(buf0)) = buf0;
-  for (int Lidx2 = 0; Lidx2 < 3; Lidx2++) {
+  *((float*)(buf0)) = 0;
+  for (int Lidx0 = 0; Lidx0 < 3; Lidx0++) {
   }
-  *buf0 = (buf0+((data1_12+)*(data2_15+)));
+  *buf0 = (buf0+((data1_12+0)*(data2_15+0)));
 }
-for (int Lidx0 = 0; Lidx0 < 4; Lidx0++) {
-  for (int Lidx1 = 0; Lidx1 < 5; Lidx1++) {
-    *(data0_20+Lidx0) = buf0;
-  }
+*(data0_20+0) = buf0;
 }
