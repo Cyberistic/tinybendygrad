@@ -1462,15 +1462,8 @@ def pd_of(+marg: List<&2, Bd>, +axs: List<&2, U32>) -> List<&2, Bd>:
 # rather than pretending the copy is free. THE UPSTREAM BODY IS IN
 # `.agents/slop/tables/schedule-multi-1460.md`.
 #
-# FOUR per-axis outcomes, and the ORDER is the whole function:
-#   0 OWN      -- the shrink IS this range's own shard, so the UNSHARD RESOLVES and the axis
-#                 leaves `remaining`. "a fragment indexed by its LOCAL thread range becomes that
-#                 thread's REG shard, no copy needed".
-#   1 WHOLE    -- the axis is not shrunk at all (`(s,l) == (0, shape[ax])`), so it stays sharded
-#                 and only the OTHER axes shrink locally.
-#   2 PARTITION -- the LEGACY device path: one partition copied to all devices, which
-#                 multi.py:174-175 explicitly deprecates.
-#   3 RAISE    -- `shrinking not supported`.
+# FOUR per-axis outcomes, and the ORDER is the whole function: THE LIST IS IN
+# `.agents/slop/tables/schedule-multi-1465.md`.
 # The OWN test has TWO conjuncts and both are load-bearing: the LENGTH must equal the shard size
 # (so the shrink covers this shard exactly) and the START must be `rng * shard_sz` (so it starts
 # where this shard starts). A port that tested only the length would resolve an UNSHARD for a
