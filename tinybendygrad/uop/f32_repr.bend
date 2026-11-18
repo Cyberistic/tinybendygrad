@@ -5,18 +5,6 @@
 # `F32.show` is the shortest decimal that reads back as the same F32, and CPython's `repr` of the
 # f64 an F32 widens to is a LONGER string for every value that is not exactly a short decimal.
 # cstyle.py:27 is `f"{c.val}f"`, i.e. `repr`, so the two disagree on the bytes of a rendered
-#   F32.show                 1.442695
-# render.bend:209 recorded that gap and called it a WALL ("no def can print the 17-significant-
-#   1. EXACT EXPANSION.  x = m * 2^e with m a 24-bit integer, so x = m * 5^|e| * 10^-|e| for
-# the pair that went wrong twice while the algorithm was being worked out, recorded because both
-# are easy to re-introduce:
-#   * a trailing zero is ABSORBED into the exponent and never dropped: "43431769050439315619840"
-#     times 10^0 is not "4343176905043931561984" times 10^0;
-#   * the interval is CLOSED. A candidate landing exactly on a bound is a tie between x and its
-#     neighbour, and round-half-even breaks it toward the EVEN mantissa -- which for an F32
-#     widened to an f64 is always x, since the 24-bit significand leaves 29 zero bits at the
-#     bottom of the f64's 52. MEASURED: 3.598600411231027e16 is exactly the bound and CPython
-# THE ORACLE. `.agents/slop/perf/f32_repr_proto.py` carries the same algorithm in Python, where
 
 import Base
 import ./../helpers.bend as H
@@ -71,9 +59,6 @@ def big_n(+k: U32, +f: Nat, +ds: List<&2, U32>) -> List<&2, U32>:
     case 1n+g: big_n(k, g, big_mul(k, ds))
 
 # ADD ONE / SUBTRACT ONE. Least significant first, so the carry or borrow walks toward the most
-# significant end and the digits before it are untouched -- and BOTH ARE ONE RECURSIVE DEF whose
-# recursion is a plain structural descent on the digit list. The addition is `(h + carry) mod 10`
-# with `div 10` as the next carry, which is the whole of it for a carry that is only ever 0 or 1.
 def add1.end(z: Bool) -> List<&2, U32>:
   match z:
     case True{}: Nil{}
@@ -115,8 +100,6 @@ def is_pow2(+m: U32) -> Bool:
   U32.is_eq(m, U32.shln(1, Nat.sub(U32.to_nat(blen(m)), 1n)))
 
 # EXACT EXPANSION. `scale` is the one primitive: digits times a power of two, answered as digits
-# and the power of ten they are cut by. A NEGATIVE power is the only one that needs 5s, because
-# 2^-k = 5^k / 10^k.
 
 type Scaled is Data:
   Scaled{+dg: List<&2, U32>, +ex: H.I64}
@@ -397,8 +380,6 @@ def step(+p: Nat, +c: Ctx) -> Maybe<&2, String>:
   step.go(Nat.is_le(String.length(Ctx.d(c)), p), p, c)
 
 # the fuel is the termination argument, so the digit count is derived from it: p = 18 - f walks
-# 1..17 as f walks 17..1. f = 0 is unreachable -- the 17-digit candidate always fits -- and it
-# answers the exact expansion rather than a wrong string if that ever stops being true.
 def search(+f: Nat, +m: Maybe<&2, String>, +c: Ctx) -> String:
   match f m:
     case f0 Some{x}: x
@@ -433,8 +414,6 @@ def repr.exp.go(sub: Bool, +be: U32) -> H.I64:
 def repr.exp(+be: U32) -> H.I64: repr.exp.go(U32.is_zero(be), be)
 
 # the trailing zero BITS of the significand are stripped first, and not for tidiness: they are
-# what makes the exponent's 5s cheap. 1.0 is m=0x800000, e=-23, and stripping turns that into
-# m=1, e=0 -- one digit and no multiplications at all.
 type ME is Data:
   ME{+m: U32, +e: H.I64}
 

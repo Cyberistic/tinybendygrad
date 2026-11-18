@@ -89,11 +89,6 @@ def wk_dt(+fx: F.Folded, i: U32) -> S.Dt:
   Maybe.default(&2, S.Dt, F.fold.dt(F.Folded.ar(fx), F.Folded.t(fx), i), S.void())
 
 # `commit_dtype` (dtype.py:16) -- `commit_int(self._uop.vmin, self._uop.vmax, default_int)
-# `D.commit_dtype` is ported (`mixin/dtype.bend`) and takes the node's dtype and its two
-# bounds ALREADY RESOLVED. What was missing is ONE call that joins them, and it could not
-# be written where the arithmetic lives: `mixin/dtype.bend` does not import `uop/weak.bend`
-# and `wk_dt` is here. MEASURED, the edge this file adds -- `weak.bend -> mixin/dtype.bend`
-# `BndInt` is the only arm that COMMITS: `commit_int` takes two ints, so an infinite bound
 def wk_bnd_i64.of(b: F.Bnd) -> Maybe<&1, H.I64>:
   match b:
     case F.BndInt{neg, mag}: Some{H.i64_neg(neg, mag)}
@@ -105,8 +100,6 @@ def wk_bnd_i64(m: Maybe<&2, F.Bnd>) -> Maybe<&1, H.I64>:
     case _: None{}
 
 # `__float__` NEEDS THE OTHER HALF OF `Bnd`, which is `BndFlt{v}` rather than
-# `BndInt{neg,mag}` -- a separate reader rather than a flag on this one, because the two arms
-# return different types and a `Maybe<(I64, F32)>` would make every caller match a tuple.
 def wk_bnd_f32.of(b: F.Bnd) -> Maybe<&1, F32>:
   match b:
     case F.BndFlt{v}: Some{v}
@@ -118,9 +111,6 @@ def wk_bnd_f32(m: Maybe<&2, F.Bnd>) -> Maybe<&1, F32>:
     case _: None{}
 
 # `UOp._eval` -- tinygrad/uop/ops.py:521. THREE CHECKS, IN PYTHON'S ORDER:
-#   1. assert self.dtype in dtype                 -- the caller's dtype SET
-# CHECK 3 IS IMPLIED BY CHECK 1 HERE: `Cls` IS the type of the value, so a bound reading as
-# THE bounds are re-READ rather than held, and that is forced by linearity rather than
 def wk_same(lo: Maybe<&1, H.I64>, hi: Maybe<&1, H.I64>) -> Bool:
   match lo, hi:
     case Some{a}, Some{b}: O.eq_i64(a, b)
@@ -217,15 +207,10 @@ def wk_dt_list(+fx: F.Folded, ss: List<&2, U32>) -> List<&2, S.Dt>:
   wk_dt_list.go(fx, ss, Nil{})
 
 # promo_dtype -- ops.py:120, which the port hoisted into `fold.bend`.
-# THE HOIST IS `promo_dtype` AT fold.bend:296 symbol=promo_dtype. THE `symbol=` IS ON
-# ITS own line because a `.py` CITATION on the same line takes it and is judged
-# AGAINST UPSTREAM's `promo_dtype` INSTEAD OF THE PORT's.
 def wk_meet(+fx: F.Folded, ss: List<&2, U32>) -> S.Dt:
   F.promo_dtype(wk_dt_list(fx, ss))
 
 # `any(...)` over the srcs, as a fold with the answer THREADED, so the walk stays one
-# self-call: a `None` returned from the middle of a self-call would need a def that returns
-# to the self-call, and that is mutual recursion, which Bend refuses.
 def wk_any_weak.go(+fx: F.Folded, ss: List<&2, U32>, acc: Bool) -> Bool:
   match ss:
     case Nil{}: acc
@@ -253,8 +238,6 @@ def wk_ready(+fx: F.Folded, +self: U32) -> Bool:
   wk_ready.go(fx, wk_srcs(fx, self), wk_known(fx, self))
 
 # `dtype_from_uop` OVER A CHOSEN src LIST. `F.fold.shape`/`device`/`addr` answer
-# `Maybe<&2, Maybe<&2, T>>`: the OUTER Maybe is "the fold did not answer this node" and the
-# INNER one is Python's own `None` (`_shape` is `tuple|None`). `Derived` wants the inner one.
 
 def wk_shape_of(m: Maybe<&2, Maybe<&2, List<&2, O.Sint>>>) -> Maybe<&2, List<&2, O.Sint>>:
   match m:
@@ -298,18 +281,11 @@ def wk_dtshape_dt(m: Maybe<&2, F.DtShape>) -> Maybe<&2, S.Dt>:
     case None{}: None{}
 
 # dtype_from_uop(u.op, src, u.arg) with the node's OWN op and arg and a src list of my
-# choosing. `None` is Python's `raise RuntimeError`, which `derived_dtypes` turns into
-# "not derived".
 def wk_dtype_at(+fx: F.Folded, +self: U32, dss: List<&2, F.Derived>) -> Maybe<&2, S.Dt>:
   wk_dtshape_dt(F.dt_shape(F.Folded.ar(fx), self, O.Arena.op(F.Folded.ar(fx), self),
     O.Arena.arg(F.Folded.ar(fx), self), dss))
 
 # `DType.const` -- dtype.py:79-84. A float destination is `truncate.get(self, float)(float(val))`,
-# IT is a chunky algorithm and not a two-TERM sum, because the two-term form needs `hi`
-# EXACTLY and `U32.to_f32` cannot give it: f32 has 24 mantissa bits, so
-# `U32.to_f32(0xFFFFFFFF)` is 2**32, not 4294967295. MEASURED: -1 and -2 BOTH converted to
-#     x = c2 * 2**48 + c1 * 2**24 + c0        c0, c1 < 2**24   c2 < 2**16
-# The chunks are cut from the MAGNITUDE's two's complement bits, and `i64_neg` gives those
 def wk_i64_to_f32.c0(lo: U32) -> F32: U32.to_f32(U32.and(lo, 16777215))
 
 def wk_i64_to_f32.c1(hi: U32, lo: U32) -> F32:
@@ -379,8 +355,6 @@ def wk_dt_const(+dt: S.Dt, v: O.Const) -> Maybe<&1, O.Const>:
   wk_dt_const.cls(S.Dt.cls(dt), dt, v)
 
 # `wk_blocked`: this rule wants a `dt.const` at a sealed dtype. `bare` is
-# `derived_dtypes(...) is not None`; when it holds only a weak CONST src reaches `dt.const`
-# and when it does not hold EVERY weak src does.
 def wk_blocked.of(sealed: Bool, bare: Bool, ss: List<&2, U32>, +fx: F.Folded) -> Bool:
   match sealed:
     case True{}: Bool.or(Bool.not(bare), wk_any_weak_const(fx, ss))
@@ -390,8 +364,6 @@ def wk_blocked(+fx: F.Folded, dt: S.Dt, bare: Bool, ss: List<&2, U32>) -> Bool:
   wk_blocked.of(wk_sealed(dt), bare, ss, fx)
 
 # THE walks that grow the arena. `Walk` is a `Data` record because a rule may read the
-# arena as often as it likes and each walk step needs the arena and the rebuilt src list
-# together.
 
 type Walk is Data:
   Walk{ar: O.Arena, srcs: List<&2, U32>}
@@ -414,15 +386,10 @@ def walk_keep(+w: Walk, s: U32) -> Walk:
   Walk{Walk.ar(w), List.append(&2, U32, Walk.srcs(w), [s])}
 
 # THE NODE BUILDERS. `UOp.replace` IS the hash-consing constructor `UOp(op, src=..., kwargs)`,
-# so it is `UOp.new` here, and Python's `ret is u` is `UOp.make`'s interning handing back
-# the same index -- which is why the identity check below is exactly Python's `is`.
 def replace_in(+ar: O.Arena, +self: U32, +src: List<&2, U32>) -> O.Found:
   O.UOp.new(ar, O.Arena.op(ar, self), src, O.Arena.arg(ar, self), O.Arena.tag(ar, self))
 
 # TWO spellings, AND the difference is LOAD-BEARING. A walk that made nodes carries a GROWN
-# arena, and the closing `replace` has to be interned in THAT arena or it names a `src` index
-# the original arena does not have. Only `uncast_const` -- whose walk is pure -- may reach for
-# the fold's own.
 def wk_replace(+fx: F.Folded, +self: U32, +src: List<&2, U32>) -> O.Found:
   replace_in(F.Folded.ar(fx), self, src)
 
@@ -440,8 +407,6 @@ def wk_const_of(m: Maybe<&1, O.Const>) -> O.Const:
   wk_const_of.pick(m)
 
 # mixin/dtype.py:36 `cast`: `self if self.dtype == (dt := to_dtype(dtype)) else
-# self._uop.alu(Ops.CAST, arg=dt)`. ops.bend:2020's `UOp.alu` takes no arg, so the CAST is
-# spelled with `UOp.new` and the `ADt` arg.
 def wk_cast_at.of(same: Bool, +fx: F.Folded, self: U32, +dt: S.Dt) -> O.Found:
   match same:
     case True{}: O.Found{F.Folded.ar(fx), self}
@@ -451,8 +416,6 @@ def wk_cast_at(+fx: F.Folded, +self: U32, +dt: S.Dt) -> O.Found:
   wk_cast_at.of(wk_eq_dt(wk_dt(fx, self), dt), fx, self, dt)
 
 # ops.py:632-638 `UOp.const`: `UOp(Ops.CONST, arg=dtype.const(b), src=()).cast(dtype)` -- the
-# bare CONST the fold derives a dtype from, PLUS the CAST. `.cast` folds away at exactly
-# bool/weakint/weakfloat, so for those three Python has ONE node and this has two.
 def wk_const_at(+fx: F.Folded, +dt: S.Dt, cv: Maybe<&1, O.Const>) -> O.Found:
   wk_cast_at.of(False{}, fx, O.Found.i(O.UOp.const(F.Folded.ar(fx), wk_const_of(cv))), dt)
 
@@ -477,8 +440,6 @@ def wk_ccast(+fx: F.Folded, +self: U32, +dt: S.Dt) -> O.Found:
 # WHY it lives here and not in `mixin/elementwise.bend`. `tensor.bend` NEEDS it, and that is
 # not a preference. CPython's `self.eq(inf)` runs `_broadcasted`'s `promote`
 # (elementwise.py:29-31), whose weak-CONST arm IS `remint`. So `self.eq(+inf)` REMINTS
-# AND this is the lowest module that can hold it: `wk_dt_const`, `wk_const_of` and
-# `W.wk_remint` IS CALLED BY `mixin/elementwise.bend` (`ew_promote.b`) AND BY `tensor.bend`
 def wk_remint.folds(dt: S.Dt) -> Bool:
   match dt:
     case S.Dt{pri, bits, S.CWeakInt{}, nm}: True{}
@@ -492,8 +453,6 @@ def wk_remint.mkconst(bare: Bool, +dt: S.Dt, +made: O.Found) -> O.Found:
     case False{}: O.UOp.new(O.Found.ar(made), O.OpsCAST{}, [O.Found.i(made)], O.ADt{dt}, O.TNone{})
 
 # `UOp.const(val, dt)` -- ops.py:629-635. `wk_bare_const` is the same value truncation and
-# the same two nodes, but it builds in the arena the CALLER'S `Folded` names rather than the
-# one this walk has grown, so it is the wrong store here.
 def wk_remint.cast(+ar: O.Arena, u: U32, +dt: S.Dt) -> O.Found:
   v = wk_const_of(wk_dt_const(dt, wk_ccast.val(F.folded(ar), u)))
   wk_remint.mkconst(wk_remint.folds(dt), dt, O.UOp.new(ar, O.OpsCONST{}, Nil{}, O.APy{v}, O.TNone{}))
@@ -509,9 +468,6 @@ def wk_remint.put(+child: O.Found, +ar: O.Arena, +u: U32) -> O.Found:
   replace_in(O.Found.ar(child), u, List.append(&2, U32, [O.Found.i(child)], O.Arena.src_from(ar, u, 1)))
 
 # It recurses on `u.src[0]` and it GROWS the arena, so it is one self-recursive def with the
-# FUEL FIRST and it threads `+O.Arena`. `wk_remint.put` is a leaf, so the self-call can be an
-# ARGUMENT of a `case` arm and there is no mutual recursion -- which is the only way Bend can
-# express `a.alu(op, f(b))` at all.
 def wk_remint.go(fuel: Nat, isc: Bool, +ar: O.Arena, +u: U32, +dt: S.Dt) -> O.Found:
   match fuel isc:
     case 0n _        : O.Found{ar, u}
@@ -522,9 +478,6 @@ def wk_remint(fuel: Nat, +ar: O.Arena, +u: U32, +dt: S.Dt) -> O.Found:
   wk_remint.go(fuel, wk_remint.isc(ar, u), ar, u, dt)
 
 # THE PYTHON, in weak.py's order. Every rule body here is `(Folded, U32) ->
-# Maybe<&2, Found>`: Python's `UOp -> UOp|None` arrives whole, as the arena the rewrite built
-# AND the index it named. A rule GROWS the arena, so the fold the caller holds is stale the
-# moment one fires; `wk_rewrite` re-folds ONCE, at the end.
 
 type Dts is Data:
   Dts{dts_some: Bool, meet: S.Dt, result: S.Dt}
@@ -623,8 +576,6 @@ def commit_weak_srcs(+fx: F.Folded, +self: U32) -> Maybe<&2, O.Found>:
 # is made and no accumulator is needed. And the predicate a weak CAST over a const is not
 # a commit, it is still resolving -- so the drop is allowed.
 # uncast_const -- weak.py:80-87.
-# drop the CAST off a committed const where the consumer re-derives it anyway, so
-#   src = tuple(s.src[0] if s.op is Ops.CAST and s.dtype not in dtypes.weaks and
 
 def uncast_const.hit(+fx: F.Folded, +s: U32) -> Bool:
   Bool.and(Bool.and(wk_op_is(fx, s, O.OpsCAST{}), Bool.not(wk_is_weak(fx, s))),
@@ -710,7 +661,6 @@ def commit_weak_consts.walked(some: Bool, dt: ODt, +fx: F.Folded, +self: U32, +s
 # is already there is the no-op Python's own hash-consing produces. The pattern's first src
 # is a bare `UPat`, so `early_reject` is empty.
 # THE pm_commit_weak RULE 1 LAMBDA -- weak.py:37-38, the one rule here with no def of its
-#   lambda u: u.replace(src=(u.src[0], u.src[1].ccast(u.src[0].dtype), *u.src[2:]))
 
 def wk_store_cast.bad.of(sealed: Bool, isconst: Bool) -> Bool:
   Bool.and(sealed, isconst)
@@ -748,7 +698,6 @@ def OP_BC() -> List<&2, O.Op>:
 # no CONST arm: a concrete CAST over a weak CONST is already committed, minted that way by
 # UOp.const
 # pm_commit_weak -- weak.py:35-41. THREE rules in Python; TWO here. It rides every round
-# that can mint a weak const, and must reach fixpoint before pm_lower_weak below defaults one.
 def wk_commit_table() -> O.PMEntrys:
   O.PMEntrys{[
     O.PMEntry{0, OP_BC(),        Nil{}},   # 36  commit_weak_srcs

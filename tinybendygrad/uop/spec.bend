@@ -2,14 +2,10 @@
 # `spec.py` is not a rewriter. It answers, for ONE node, "is this node legal in the graph
 # THE ANSWER IS THREE-VALUED. Python's rule bodies return `True`, `False`, or `None`, and
 #     ret = check_spec.rewrite(uop)          # spec.py:42
-# so `VTrue` is the only passing answer and BOTH `VFalse` and `VSkip` fail. They are not
-# WHY SIX DISPATCHES. `spec.py` has six tables, each its own `PatternMatcher`, and
-# WHAT IS SHARED AND WHAT IS NOT. Shared: the property readers (`sp_*`), the `early_reject`
 
 # two facts that are easy to invert, both measured against `spec.py`.
 # 1. `early_reject` IS A NECESSARY CONDITION, not a veto, despite the name:
 #    `ops.py:1701` is `if not early_reject.issubset(ler): continue`, so the rule
-# 2. a name bound twice must emit an identity check (`upat.py:100-105` builds it
 
 import Base
 import ./../helpers.bend as H
@@ -50,7 +46,6 @@ def show_v(v: O.Verdict) -> U32:
 # because a node's dtype/shape/device/base/addrspace are derived properties and
 # `fold.bend` is the only well-founded way to answer them: Bend refuses the mutual
 # recursion Python breaks with `recursive_property`'s memo (ops.py:218).
-# A `Data` record parameter is NOT implicitly copyable -- two reads of `fx` in one
 
 def sp_ar(fx: F.Folded) -> O.Arena: F.Folded.ar(fx)
 
@@ -115,8 +110,6 @@ def sp_is_int(+fx: F.Folded, self: U32) -> Bool:
   dt_int(sp_dt(fx, self))
 
 # `x.shape == ()` -- `spec.py:90`, the ONLY line in spec.py that writes it. The
-# fold's shape is a double `Maybe`: the outer is "the table has no entry", the inner
-# is ops.py's `_shape` returning `None` for a node that has no shape at all.
 def shp_of.go(m: Maybe<&2, Maybe<&2, List<&2, O.Sint>>>) -> Maybe<&2, List<&2, O.Sint>>:
   match m:
     case Some{s}: s
@@ -153,8 +146,6 @@ def sp_base(+fx: F.Folded, self: U32) -> Maybe<&1, U32>:
   F.fold.base(sp_ar(fx), sp_tb(fx), self)
 
 # `x.is_invalid` -- ops.py:267, `self.op is Ops.CONST and self.val is Invalid`.
-# The fold is not consulted: the test is on the node's OWN arg, which is why this
-# reader is total where `sp_base` is not.
 def is_invalid_of(a: O.Arg, op: O.Op) -> Bool:
   match a op:
     case O.APy{O.CInvalid{}} O.OpsCONST{}: True{}
@@ -300,9 +291,6 @@ def arg_axis.go(a: O.Arg) -> Maybe<&1, O.AxisType>:
     case _: None{}
 
 # `int(rng.arg[-1])`... no: `isinstance(rng.arg[-1], AxisType)` -- spec.py:82.
-# `ARange` is Python's `(axis_id, axis_type)` tuple already split, so the axis
-# type IS a field and the whole of spec.py:81-82's lambda is this arm plus a
-# non-empty `ids`.
 def arg_axis(a: O.Arg) -> Maybe<&1, O.AxisType>:
   arg_axis.go(a)
 
@@ -323,8 +311,6 @@ def arg_ink.go(a: O.Arg) -> Bool:
 
 # `isinstance(x.arg, tuple) and len(x.arg) == 2 and isinstance(x.arg[0], str)
 # and isinstance(x.arg[1], DType)` -- spec.py:107, and spec.py:122's same shape
-# without the `arg[0]` half. `AInk` IS that pair, and it is the only constructor
-# that is.
 def arg_ink(a: O.Arg) -> Bool:
   arg_ink.go(a)
 
@@ -344,8 +330,6 @@ def arg_call.go(a: O.Arg) -> Maybe<&2, S.Dt>:
     case _: None{}
 
 # spec.py:113 `lambda x: isinstance(x.arg, CallInfo)` -- the WHOLE rule at HEAD. The
-# x.dtype-is-x.arg.dtype conjunct was ADDED at 6f4bfde23 and REMOVED at ad117c928, so
-# arg_call and sh_23.body are STRICTER THAN THE SPEC. Not retypable: AUTHORING.
 def arg_call(a: O.Arg) -> Maybe<&2, S.Dt>:
   arg_call.go(a)
 
@@ -355,8 +339,6 @@ def arg_param.go(a: O.Arg) -> Maybe<&1, O.ParamArg>:
     case _: None{}
 
 # `isinstance(x.arg, ParamArg)` -- spec.py:93, :148, :151, :158, :217, :264,
-# :265, :267. One arm, and it hands back the payload every one of those rules
-# then reads.
 def arg_param(a: O.Arg) -> Maybe<&1, O.ParamArg>:
   arg_param.go(a)
 
@@ -411,8 +393,6 @@ def arg_const_int(a: O.Arg) -> Maybe<&2, H.I64>:
   arg_const_int.of(a)
 
 # THE FOLDS OVER A NODE'S SRCS. One def each, threaded `Bool` accumulator, self-call
-# on the TAIL. Python's `all(... for s in u.src)` and `any(...)` become the same
-# shape here; there is no early exit, which is a cost and not a semantic change.
 
 def all_void(srcs: List<&2, U32>, +fx: F.Folded, acc: Bool) -> Bool:
   match srcs:
@@ -473,9 +453,6 @@ def all_const_or_param(srcs: List<&2, U32>, +fx: F.Folded, acc: Bool) -> Bool:
     case s <> t: all_const_or_param(t, fx, Bool.and(acc, sp_const_or_param(fx, s)))
 
 # `all_same(x.src)` -- helpers.py, on NODE INDICES. tinygrad compares UOp objects
-# and UOp equality IS identity, so the index comparison is the same test. Python's
-# `all_same([])` is True and then `x.src[0]` raises, so an EMPTY src has no answer
-# and `mstack_body` skips rather than inventing a src[0].
 def all_same(srcs: List<&2, U32>, +head: U32, acc: Bool) -> Bool:
   match srcs:
     case Nil{}: acc
@@ -532,11 +509,6 @@ def validate_index.of(n: U32, bad: Bool) -> Maybe<&1, Bool>:
   validate_index.tie(U32.is_eq(n, 2), bad)
 
 # `validate_index` -- spec.py:11-27.
-#     if len(uidx.src) != 2: return True
-# The first two returns are ported and they are both `True`, so they are the whole
-# of what this port can state. Everything past them needs one of four things it does
-# not have: `CHECK_OOB`, `max_numel` (a product over `shape` with `ssimplify` in it),
-# `vmin`/`vmax` (`_min_max`, ops.py:1104) and z3 (`tinygrad/uop/validate.py`, not
 
 def validate_index(+fx: F.Folded, +uidx: U32) -> Maybe<&1, Bool>:
   validate_index.of(sp_nsrc(fx, uidx), is_invalid_at(sp_ar(fx), sp_src0(fx, uidx)))
@@ -568,8 +540,6 @@ def sp_claimed(ops: List<&2, O.Op>, ar: O.Arena, self: U32) -> Bool:
   O.op_in(ops, O.Arena.op(ar, self))
 
 # the folds and readers the rules share. a rule body is Python's lambda with `self`
-# spelled out, and these are the pieces it reaches for. `sp_src0` is `sp_src(.., 0)`
-# because `src[0]` is written most.
 
 def sp_src(fx: F.Folded, self: U32, n: U32) -> U32:
   O.Arena.src(sp_ar(fx), self, n)
@@ -624,9 +594,6 @@ def sp_vb.go(b: Bool) -> O.Verdict:
     case False{}: O.VFalse{}
 
 # `C if b else None` where C is ITSELF tri-state -- which is spec.py:127's shape,
-# `validate_index(uidx, gate) if matches_dtype(alt, load.dtype) else False`, except
-# that `validate_index` answers `None` when it cannot decide, and a `None` under a
-# taken guard is still a `None`.
 def sp_tri_v.go(b: Bool, v: Maybe<&1, Bool>) -> Maybe<&1, Bool>:
   match b:
     case True{}: v
@@ -640,7 +607,6 @@ def sp_vb(b: Bool) -> O.Verdict:
 
 # `or_casted()` / `or_bitcasted()` / `or_after()` are `UPat.any`, and `is_any`
 # compiles to a DISJUNCTION (upat.py:18-20), so `X or CAST(X)` is exactly
-# the wrapper test is the node's own op, not its src's: `or_casted` wraps the node,
 def alt_of(plain: Bool, wrapped: Bool, inner: Bool) -> Bool:
   Bool.or(plain, Bool.and(wrapped, inner))
 
@@ -661,15 +627,10 @@ def buf_or_bitcasted(+fx: F.Folded, +s: U32) -> Bool:
   alt_of(sp_op_in(fx, s, OP_PARAMISH()), sp_op(fx, s, O.OpsBITCAST{}), sp_op_in(fx, sp_src0(fx, s), OP_PARAMISH()))
 
 # `UPat.cvar().or_casted()` -- spec.py:208's third src. `UPat.cvar()` IS `UPat(Ops.CONST)`
-# (ops.py:1505), so `955037870`'s `UPat(Ops.CONST).or_casted()` and `ded106b18`'s
-# `UPat.cvar().or_casted()` are the SAME rule under a renamed constructor: a spelling change.
 def const_or_casted(+fx: F.Folded, +s: U32) -> Bool:
   alt_of(sp_src_op(fx, s, 0, O.OpsCONST{}), sp_src_op(fx, s, 0, O.OpsCAST{}), sp_op_in(fx, sp_src0(fx, s), [O.OpsCONST{}]))
 
 # `spec_shared` -- spec.py:49-138. Thirty-three rules, and the three every other
-# table ends with. The op set is `pdict`'s key and `rej` is `early_reject`; the
-# rule's own op/dtype/arity/src tests are the pattern and its body is the lambda.
-# spec.py:51  (UPat(Ops.SINK, dtypes.void), lambda: True) -- no `src`, so NO arity test.
 def sh_0(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(Bool.and(sp_op(fx, self, O.OpsSINK{}), sp_dt_is(fx, self, S.void())), O.VTrue{})
 
@@ -717,8 +678,6 @@ def sh_4.body(+fx: F.Folded, +self: U32) -> Bool:
   sh_4.body.of(all_same_shapes(fx, sp_srcs(fx, self)), all_mdw(sp_srcs(fx, self), fx, sp_dt_v(fx, self), True{}))
 
 # spec.py:61  (UPat(Ops.STACK, src=(UPat(),), allow_any_len=True, name="s"),
-#              lambda s: all_same([x.shape for x in s.src]) and
-#                        all(matches_dtype(x, s.dtype) or x.dtype in dtypes.weaks for x in s.src))
 def sh_4(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(Bool.and(sp_op(fx, self, O.OpsSTACK{}), nsrc_ge(fx, self, 1)), sp_vb(sh_4.body(fx, self)))
 
@@ -773,9 +732,6 @@ def OP_BITS() -> List<&2, O.Op>:
   [O.OpsAND{}, O.OpsOR{}, O.OpsXOR{}, O.OpsSHL{}, O.OpsSHR{}]
 
 # spec.py:70  (UPat((Ops.AND, Ops.OR, Ops.XOR, Ops.SHL, Ops.SHR), name="x"),
-#              lambda x: False if any(dtypes.is_float(s.dtype) for s in x.src) else None)
-# the first rule that claims a shl, and it is the one that carries the `False`, which
-# is load-bearing: `sh_8` claims a SHL too and would answer `True`.
 def sh_7(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(sp_op_in(fx, self, OP_BITS()), sp_vd(sp_tri(any_float(sp_srcs(fx, self), fx, False{}), False{})))
 
@@ -793,9 +749,6 @@ def sh_9.body(+fx: F.Folded, +self: U32) -> Bool:
   Bool.or(sp_is_int(fx, self), any_base_invalid(sp_srcs(fx, self), fx, False{}))
 
 # spec.py:73  (UPat((Ops.TRUNCDIV, Ops.TRUNCMOD, Ops.DIV, Ops.MOD), name="x"),
-#              lambda x: None if dtypes.is_int(x.dtype) or any(s.base.is_invalid for s in x.src)
-#                        else False)
-# `None` rather than `False`, which is load-bearing for every later rule for these ops.
 def sh_9(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(sp_op_in(fx, self, OP_IDIVS()), sp_vd(sp_tri(sh_9.body(fx, self), False{})))
 
@@ -827,9 +780,6 @@ def sh_13.body(+fx: F.Folded, +self: U32) -> Bool:
   Bool.and(nsrc_ge(fx, self, 1), all_int_or_base_invalid(sp_src_from(fx, self, 1), fx, True{}))
 
 # spec.py:83  (UPat(Ops.INDEX, name="x"),
-#              lambda x: len(x.src)>0 and all(dtypes.is_int(y.dtype) or y.base.is_invalid
-#                            for y in x.src[1:]) or None)
-# `None` rather than `False`, which is load-bearing for every later rule for INDEX.
 def sh_13(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(sp_op(fx, self, O.OpsINDEX{}), sp_vd(sp_tri(sh_13.body(fx, self), True{})))
 
@@ -840,8 +790,6 @@ def sh_14.body(+fx: F.Folded, +self: U32) -> Bool:
   Bool.and(arg_none(sp_arg(fx, self)), all_range_int(sp_src_from(fx, self, 1), fx, True{}))
 
 # spec.py:86  (UPat(Ops.END, src=(UPat(dtype=dtypes.void),), allow_any_len=True, name="x"),
-#              lambda x: x.arg is None and all(u.op is Ops.RANGE and dtypes.is_int(u.dtype)
-#                            for u in x.src[1:]))
 def sh_14(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(sh_14.pat(fx, self), sp_vb(sh_14.body(fx, self)))
 
@@ -909,12 +857,6 @@ def OP_AFTER19() -> List<&2, O.Op>:
    O.OpsCONST{}, O.OpsCAST{}, O.OpsNOOP{}, O.OpsSTACK{}]
 
 # spec.py:101 (UPat(Ops.AFTER, src=(UPat(Movement|PARAM|BUFFER|ALLOC|STAGE|INDEX|AFTER|
-# the SRC clause is a pattern clause and it has to be one. Upstream's rule is a
-# PATTERN: a node whose src[0] is not in the set does not MATCH it, so the rule is
-# SKIPPED and the rules after it get their turn. The port had the src-op test in
-# the BODY, and a `False` STOPS the fold, so the port answered False at rule 19
-# where upstream answers None -- and that made upstream's rule 20 (spec.py:104, an
-# the four ops at the end are upstream's re-vendor (86c4f1343, 2026-10-16): the pin's
 def sh_19.pat.of(op: Bool, n: Bool, s: Bool) -> Bool:
   Bool.and(op, Bool.and(n, s))
 
@@ -946,10 +888,6 @@ def sh_21(+fx: F.Folded, +self: U32) -> O.Verdict:
 
 # THE WALL IS CLOSED, and it closed the only way it could: by the `Arg` datatype
 # growing a constructor. `uop/ops.bend` carries `CustomFunction` (ops.py:1394
-# the staleness was invisible to every count, which is the part worth keeping. At the
-# pin `spec.py:110` read `lambda x: isinstance(x.arg, str)`; at HEAD it reads
-# THE TWENTY-THIRD TENSOR RULE), which moved `te_len` and `fu_len`; the rule that
-# SURVIVED had to change its own predicate. Both rows below move, in OPPOSITE
 def sh_22(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(sp_op(fx, self, O.OpsCUSTOM_FUNCTION{}), sp_vb(arg_customfunction(sp_arg(fx, self))))
 
@@ -1035,8 +973,6 @@ def sh_28.pat(+fx: F.Folded, +self: U32) -> Bool:
   sh_28.pat.of(sp_op(fx, self, O.OpsLOAD{}), sh_28.uidx(fx, self), nsrc_is(fx, self, 1))
 
 # spec.py:125 (UPat((Ops.INDEX, Ops.SHRINK), name="uidx").or_casted().load(), validate_index)
-# `uidx` is bound in BOTH `is_any` alternatives, which is the SAFE duplicate the
-# header describes: no identity check, and `uidx_or_casted` is a disjunction.
 def sh_28(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(sh_28.pat(fx, self), sp_vd(validate_index(fx, sp_src(fx, self, 0))))
 
@@ -1050,8 +986,6 @@ def sh_29.body(+fx: F.Folded, +self: U32) -> Bool:
   sp_md(fx, sp_src(fx, self, 1), sp_dt_v(fx, self))
 
 # spec.py:126 (... .load(UPat.var("alt"), UPat.var("gate", dtype=dtypes.bool), name="load"),
-#              lambda uidx,gate,alt,load: validate_index(uidx, gate)
-#                                           if matches_dtype(alt, load.dtype) else False)
 def sh_29(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(sh_29.pat(fx, self), sp_vd(sp_tri_v(sh_29.body(fx, self), validate_index(fx, sp_src(fx, self, 0)))))
 
@@ -1323,7 +1257,6 @@ def pa_of.all(size: Maybe<&2, U32>, vmin_vmax: Maybe<&2, O.PyRange>, device: May
 
 # `size` IS `src[0]`, not a field (`72f98ffe0`), so this takes the OWNER -- the
 # folded arena and the node's own index -- for the same reason `graphcmp.py:703`'s
-# `size_of(n)` takes a `UOp`. `pa_of`'s caller already had both.
 def pa_of.pick(m: Maybe<&1, O.ParamArg>, size: Maybe<&2, U32>) -> Pa:
   match m:
     case Some{O.ParamArg{slot, dtype, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}}:
@@ -1350,23 +1283,12 @@ def sp_dev_is(+fx: F.Folded, s: U32) -> Bool:
   dopt_is(dev_opt(dev_of(sp_dev(fx, s))))
 
 # `all(isinstance(s.device, str) for s in x.src)` -- spec.py:184, :271. A `D1`
-# IS a device name and a `Dn` is a tuple of them, so "is a str" and "is a tuple of
-# strs" are both just "is a `Some`". That a `U32` tag really names a `str` is P6's
-# job, and CPython CANNOT be the witness -- see the `is_device` note below.
 def all_dev(srcs: List<&2, U32>, +fx: F.Folded, acc: Bool) -> Bool:
   match srcs:
     case Nil{}: acc
     case s <> t: all_dev(t, fx, Bool.and(acc, sp_dev_is(fx, s)))
 
 # `is_device` -- spec.py:140.
-# what this port can state, plainly. Python's `device` is `str | tuple[str, ...]`
-# and `S.Dev` is `D1{tag} | Dn{tags}`: `D1` is the `str` case and `Dn` is the
-# `tuple` case, so the two `isinstance` tests are the two constructors and the
-# `all(...)` is the `List` being well-formed. Both are TRUE of every `S.Dev` BY
-# CONSTRUCTION, so `is_device` is total on a `Dev` and only the `None` case is a
-# question, which Python answers False and so do I.
-# WHAT IT CANNOT STATE: that a `U32` tag really names a `str`. CPython's device IS a
-# string end to end, so there is no index for a tag to be checked against: `uop/ops.py:34`
 
 def is_device(m: Maybe<&2, S.Dev>) -> Bool:
   dopt_is(dev_opt(m))
@@ -1391,8 +1313,6 @@ def some_list(a: Maybe<&2, List<&2, U32>>) -> Bool:
   some_list.go(a)
 
 # `facts and valid_device_range(...)`, and the `None` when the range is
-# undecidable: a `None` under a taken guard is still a `None`, so the conjunction
-# collapses to a two-arm match rather than a fold.
 def sp_and_vdr.go(facts: Bool, vdr: Maybe<&1, Bool>) -> Maybe<&1, Bool>:
   match vdr:
     case Some{v}: Some{Bool.and(facts, v)}
@@ -1430,9 +1350,6 @@ def te_2.size_ok(+present: Bool) -> Bool:
   Bool.or(Bool.not(present), present)
 
 # `isinstance(x.arg, ParamArg)`, `x.arg.buffer is None` and
-# `x.arg.size is None or isinstance(x.arg.size, int)`. The last is a TAUTOLOGY in
-# this port -- `size` is `Maybe<U32>` and "is an int" is "is not None" -- and it is
-# written out anyway, so no conjunct is silently dropped.
 def te_2.facts(+p: Pa) -> Bool:
   Bool.and(Pa.ok(p), Bool.and(Bool.not(Pa.buf(p)), te_2.size_ok(Pa.size(p))))
 
@@ -1476,8 +1393,6 @@ def te_3.body(fx: F.Folded, self: U32) -> Bool:
   dopt_none(Pa.dev(pa_of(fx, self)))
 
 # spec.py:160 (UPat(Ops.PARAM, src=(UPat(Ops.STACK, src=()),), name="buf"), lambda buf: buf.arg.device is None if buf.is_variable else None)
-# `is_variable` (ops.py:1018) is a PARAM with a ParamArg carrying a value range,
-# the ALU addrspace AND a scalar shape -- all four, and all four are here.
 def te_3(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(Bool.and(sp_op(fx, self, O.OpsPARAM{}), nsrc_is(fx, self, 1)),
             sp_vd(sp_tri(te_3.guard(fx, self), te_3.body(fx, self))))
@@ -1526,8 +1441,6 @@ def te_8.body.of(rop: Maybe<&1, O.Op>, widths: Bool) -> Bool:
   te_8.body.pick(rop, widths)
 
 # `dtypes.ints` is `uints + sints` and `dtypes.weakint` is the weak sibling, so
-# `(weakint, int)` is `is_int` plus `CWeakInt` -- and `S.Dt.is_int` already
-# answers exactly `weakint | uint | sint`, so the whole disjunct is `is_int`.
 def sp_int_or_weak(fx: F.Folded, s: U32) -> Bool:
   sp_is_int(fx, s)
 
@@ -1574,8 +1487,6 @@ def te_10.body(+fx: F.Folded, +self: U32) -> Bool:
   te_10.body.of(arg_reduce_op_of_allred(sp_arg(fx, self)), is_device(arg_allred_dev(sp_arg(fx, self))))
 
 # spec.py:176 (UPat(Ops.ALLREDUCE, name="red", src=(UPat(),)),
-#              lambda red: isinstance(red.arg, tuple) and len(red.arg) == 2 and
-#                red.arg[0] in GroupOp.Reduce and is_device(red.arg[1]))
 def te_10(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(Bool.and(sp_op(fx, self, O.OpsALLREDUCE{}), nsrc_is(fx, self, 1)), sp_vb(te_10.body(fx, self)))
 
@@ -1622,9 +1533,6 @@ def mselect_ok(+fx: F.Folded, +self: U32) -> Bool:
   mselect_ok.of(dev_of(sp_dev(fx, sp_src(fx, self, 0))), arg_tuple(sp_arg(fx, self)))
 
 # spec.py:183 (UPat(Ops.MSELECT, name="x"),
-#              lambda x: isinstance(x.src[0].device, tuple) and x.arg < len(x.src[0].device))
-# `x.arg` is a bare int in Python; `Arg` has no bare-int constructor and
-# `ops.bend` models MSELECT's arg as `ATuple`, so the index is its one element.
 def te_12(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(sp_op(fx, self, O.OpsMSELECT{}), sp_vb(mselect_ok(fx, self)))
 
@@ -1636,8 +1544,6 @@ def mstack_body(+fx: F.Folded, +self: U32) -> Bool:
     dopt_none(dev_opt(dev_of(sp_dev(fx, sp_src(fx, self, 0))))))
 
 # spec.py:184 (UPat(Ops.MSTACK, name="x"),
-#              lambda x: all(isinstance(s.device, str) for s in x.src)
-#                        or (all_same(x.src) and x.src[0].device is None))
 def te_13(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(sp_op(fx, self, O.OpsMSTACK{}), sp_vb(mstack_body(fx, self)))
 
@@ -1645,9 +1551,6 @@ def OP_DETACH() -> List<&2, O.Op>:
   [O.OpsDETACH{}, O.OpsCONTIGUOUS_BACKWARD{}]
 
 # spec.py:187 (UPat((Ops.DETACH, Ops.CONTIGUOUS_BACKWARD), src=(UPat(),), arg=None), lambda: True)
-# `arg=None` in a `UPat` is NOT `self.arg is None` -- `upat.py:27` emits a clause
-# only `if self.arg is not None` -- so it is a no-op here and the rule is an arity
-# test and `True`.
 def te_14(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(Bool.and(sp_op_in(fx, self, OP_DETACH()), nsrc_is(fx, self, 1)), O.VTrue{})
 
@@ -1664,9 +1567,6 @@ def te_17(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(Bool.and(Bool.and(sp_op(fx, self, O.OpsSOURCE{}), sp_dt_is(fx, self, S.void())), nsrc_is(fx, self, 0)), O.VTrue{})
 
 # the pipeline PREFIX, and it is cumulative: a 2-src PROGRAM has SINK and LINEAR, a
-# 4-src one has all four. Positions at or past the arity are never asked about --
-# `Arena.src` answers the bottom's op for an index past the end, so a shared "test
-# all four" would fail a 1-src PROGRAM on a src it does not have.
 def prog1(fx: F.Folded, self: U32) -> Bool:
   sp_src_op(fx, self, 0, O.OpsSINK{})
 
@@ -1721,21 +1621,6 @@ def bump(n: U32, ts: O.PMEntrys) -> O.PMEntrys:
 # THE OLD TEXT claimed `tensor_own()` was "CPython's 22 tensor rules plus a DUPLICATE of
 # one of the 33 shared ones" -- i.e. a rule the port's author added by mistake. THAT IS
 # WRONG, and the pin settles it:
-#     git show 6c3d401cf324:tinygrad/uop/spec.py     # OUR PIN
-# At the pin, `spec_tensor`'s fourth rule WAS `Ops.CUSTOM_FUNCTION`, at spec.py:161, and
-#     PIN   (UPat(Ops.CUSTOM_FUNCTION, name="x", allow_any_len=True),
-# So upstream stopped giving a CUSTOM_FUNCTION a `str` arg and started giving it a
-# the three-line tell was the clue and it was read backwards. Every `# NN` on the rows
-# WHAT THE DELETION WAS WORTH. `tensor_table()` was 23 + 33 = 56 and is now 22 + 33 = 55,
-# and renumbering the table was the easy half. three things ELSE read the same numbers and
-#   * `te_dispatch.go`'s ladder still read `case N: te_(N-1)` for every N from 5 up, so
-#     tag 5 answered `te_4` and tag 21 answered `te_20`. Renaming the right-hand sides of
-#     a `match` does NOT renumber its left-hand arms, and that is precisely the trap in
-#     agent-core.md: a tag that stops selecting the rule it was written for lands on a
-#     DIFFERENT rule.
-# `spec-offsets.py` now checks all fourteen offsets against the table sizes AND checks that
-# every dispatch ladder reads `case N: _N` pairwise. Those three bugs are why it exists.
-# THE TABLE. `spec.py:199` is `])+spec_shared`, so this list is followed by
 
 def tensor_own() -> O.PMEntrys:
   O.PMEntrys{[
@@ -1816,8 +1701,6 @@ def tensor_rewrite(fx: F.Folded, self: U32) -> O.Verdict:
   te_rewrite(tensor_table(), fx, self)
 
 # `GroupOp.All` is every op, so `GroupOp.All-GroupOp.Defines` is "there is an op
-# here" MINUS the size-defining ops: `UOp.is_none` is the arena's bottom slot (the
-# port's `x.op is None`) and `Arena.op` is the op `GroupOp.defines` reads.
 def pr_0.claims(+fx: F.Folded, +self: U32) -> Bool:
   Bool.and(Bool.not(O.UOp.is_none(self)), Bool.not(O.GroupOp.defines(O.Arena.op(sp_ar(fx), self))))
 
@@ -1825,9 +1708,6 @@ def pr_0.body(+fx: F.Folded, +self: U32) -> Bool:
   Bool.and(Bool.not(sp_op(fx, self, O.OpsCAST{})), any_const(sp_srcs(fx, self), fx, False{}))
 
 # `spec_program` -- spec.py:205-228. Nine rules, then `+ spec_shared`.
-# ⇒⇒⇒ AND **UPSTREAM's **OWN **COMMENT **NAMES **ONLY **THE **THREE** ("a bare CONST only
-# appears under its width CAST or as a PARAM/BUFFER/ALLOC size", `spec.py:207`) **⇒⇒⇒ AND **AND
-# ⇒⇒⇒ AND **THE **STALE **QUOTE **THAT **WAS **HERE** ("`Defines = {Ops.PARAM, Ops.BUFFER,
 def pr_0(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(pr_0.claims(fx, self), sp_vd(sp_tri(pr_0.body(fx, self), False{})))
 
@@ -1851,8 +1731,6 @@ def pr_2(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(pr_2.pat(fx, self), O.VTrue{})
 
 # spec.py:211 (UPat(GroupOp.Movement), lambda: False)
-# movement ops are not allowed in programs. A REPLACEMENT, not a skip: a RESHAPE in
-# a program graph is wrong even though `spec_tensor` accepts one.
 def pr_3(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(O.GroupOp.movement(O.Arena.op(sp_ar(fx), self)), O.VFalse{})
 
@@ -1903,8 +1781,6 @@ def pr_8(+fx: F.Folded, +self: U32) -> O.Verdict:
             sp_vb(arg_str(sp_arg(fx, self))))
 
 # `GroupOp.All` is the whole enum, and `Arena.op` answers `Op`, so the set is
-# every constructor `ops.bend` declares. Writing it out is the alternative to a
-# `Bool`-per-op predicate, and it is what `pdict` does anyway.
 def OP_ALL() -> List<&2, O.Op>:
   [O.OpsSPECIAL{}, O.OpsBUFFER{}, O.OpsALLOC{}, O.OpsNOOP{}, O.OpsREWRITE_ERROR{},
    O.OpsPARAM{}, O.OpsREFPARAM{}, O.OpsCALL{}, O.OpsPROGRAM{}, O.OpsLINEAR{}, O.OpsSOURCE{}, O.OpsBINARY{},
@@ -2045,13 +1921,6 @@ def hcq_rewrite(fx: F.Folded, self: U32) -> O.Verdict:
   hq_rewrite(hcq_table(), fx, self)
 
 # `spec_full` -- spec.py:238-250. Four rules, then
-# python's literal list is 139 entries and four of this file's blocks are
-# 4 + 22 + 34 + 9 + 2 = 71. THE OTHER 68 ARE DEAD: `spec_shared` appears three times
-# in `spec_full`'s 139 and only the FIRST is reachable, because the fold is
-# first-wins -- a rule that skipped in the first block skips again in the second,
-# and a rule that answered has already stopped the fold. `full_len` in the gate is
-# the row that states the count.
-# spec.py:239 (UPat(Ops.REWRITE_ERROR, dtypes.void, name="x"), lambda x: isinstance(x.arg, str))
 def fu_0(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(Bool.and(sp_op(fx, self, O.OpsREWRITE_ERROR{}), sp_dt_is(fx, self, S.void())),
             sp_vb(arg_str(sp_arg(fx, self))))
@@ -2070,8 +1939,6 @@ def fu_1(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(fu_1.pat(fx, self), sp_vb(fu_1.body(fx, self)))
 
 # spec.py:246 (UPat(Ops.AFTER, src=(UPat(),), allow_any_len=True), lambda: True)
-# "allow any AFTER": this is the INTERMEDIATE spec, where everything should have
-# been deleted by now, so it is deliberately the loosest of the three AFTER rules.
 def fu_2(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(Bool.and(sp_op(fx, self, O.OpsAFTER{}), nsrc_ge(fx, self, 1)), O.VTrue{})
 
@@ -2189,8 +2056,6 @@ def kg_2.pat(+fx: F.Folded, +self: U32) -> Bool:
   kg_2.pat.of(sp_op(fx, self, O.OpsCAST{}), kg_2.inner(fx, self), nsrc_is(fx, self, 1))
 
 # spec.py:259 (UPat(Ops.CAST, src=(UPat(Ops.CONST, src=()),)), lambda: True)
-# the third non-empty `early_reject`: the inner CONST is a single-op upat, so `[CONST]`.
-# "a 0-size/bound reduce keeps its const casted" is the whole comment.
 def kg_2(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(kg_2.pat(fx, self), O.VTrue{})
 
@@ -2227,9 +2092,6 @@ def kg_5.body(+fx: F.Folded, +self: U32) -> Bool:
                valid_device_range(Pa.dev(pa_of(fx, self)), sp_srcs(fx, self), fx))
 
 # spec.py:265 (UPat(Ops.BUFFER, name="x"), lambda x: isinstance(x.arg, ParamArg) and
-#              valid_device_range(x.arg.device, x.src) and
-#              (x.arg.buffer is not None if x.addrspace is AddrSpace.GLOBAL
-#                            else x.addrspace in (AddrSpace.LOCAL, AddrSpace.REG)))
 def kg_5(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(Bool.and(sp_op(fx, self, O.OpsBUFFER{}), nsrc_ge(fx, self, 1)), sp_vb(kg_5.body(fx, self)))
 
@@ -2246,8 +2108,6 @@ def kg_6.body(+fx: F.Folded, +self: U32) -> Bool:
                valid_device_range(Pa.dev(pa_of(fx, self)), sp_srcs(fx, self), fx))
 
 # spec.py:267 (UPat(Ops.ALLOC, name="x"), lambda x: isinstance(x.arg, ParamArg) and
-#              x.addrspace is AddrSpace.GLOBAL and x.arg.buffer is None and
-#              valid_device_range(x.arg.device, x.src))
 def kg_6(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(Bool.and(sp_op(fx, self, O.OpsALLOC{}), nsrc_ge(fx, self, 1)), sp_vb(kg_6.body(fx, self)))
 
@@ -2273,9 +2133,6 @@ def kg_10.axis(a: O.Arg) -> Bool:
   kg_10.axis.go(arg_axis(a))
 
 # spec.py:274 (UPat(Ops.RANGE, name="r"), lambda r: r.axis_type is AxisType.DEVICE)
-# "open DEVICE ranges are bound per device at launch (e.g. the range on a
-# multi-device BUFFER/ALLOC)". `ARange` carries the axis type as a field, so this
-# is the arg and nothing else.
 def kg_10(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(sp_op(fx, self, O.OpsRANGE{}), sp_vb(kg_10.axis(sp_arg(fx, self))))
 
@@ -2376,8 +2233,6 @@ def topo_budget(+fx: F.Folded) -> Nat:
   U32.to_nat(U32.add(1, U32.add(O.Arena.next(sp_ar(fx)), topo_budget.f(O.Arena.nodes(sp_ar(fx)), 0))))
 
 # ONE FOLD PER TABLE, and the duplication is the same one as the dispatch: the step
-# has to call a table's `rewrite` and there is no way to name "a table's rewrite".
-# `Some{j}` short-circuits, which is Python's `raise`.
 def bad.pick(v: O.Verdict, i: U32) -> Maybe<&2, U32>:
   match v:
     case O.VTrue{}: None{}
@@ -2481,9 +2336,6 @@ def buf_param() -> O.ParamArg:
 
 # THE FIXTURES. Two hand-built arenas, and the gate below is a set of claims
 # ABOUT them that Python specifies. Every row is one the gate could get WRONG: a
-# the landmarks are resolved, not counted, and that is not tidiness. The first
-# version of this gate hard-coded `22` and `23` for the two GETADDRs and
-# `hcq_plain` printed 1 -- for the WRONG REASON: node 22 is the AFTER, so the hcq
 
 type Land is Data:
   Land{fx: F.Folded, k: U32, noop: U32, sink: U32, fsub: U32, isub: U32, stack: U32,
@@ -2513,8 +2365,6 @@ def main_arena() -> Land:
   +n16 = O.UOp.new(O.Found.ar(n15), O.OpsLINEAR{}, [O.Found.i(n2)], O.ANone{}, O.TNone{})
   +n17 = O.UOp.new(O.Found.ar(n16), O.OpsSOURCE{}, Nil{}, O.ANone{}, O.TNone{})
   # the BINARY whose arg is `b"abcd"`: `ABlob` holds the BYTES, because ops.py:201's
-  # key holds the `bytes` object and compares its content. Only the LENGTH is ever read
-  # (`binary_n`, spec.py:96's `isinstance(x.arg, bytes)`), and it is still 4.
   +n18 = O.UOp.new(O.Found.ar(n17), O.OpsBINARY{}, Nil{}, O.ABlob{[97, 98, 99, 100]}, O.TNone{})
   +n19 = O.UOp.new(O.Found.ar(n18), O.OpsPROGRAM{}, [O.Found.i(n3), O.Found.i(n16), O.Found.i(n17), O.Found.i(n18)], O.AProgram{O.ProgramInfo.of()}, O.TNone{})
   +n20 = O.UOp.special(O.Found.ar(n19), O.Found.i(n1), "0")
@@ -2625,9 +2475,6 @@ def mdev_param() -> O.ParamArg:
              False{}, None{}, Some{0}, False{}, None{}}
 
 # THE TWO MULTI-DEVICE ARENAS, and they are separate on purpose: the rows they feed
-# differ by ONE THING -- the RANGE's axis type -- and a fixture that differed by
-# anything else would not be testing `valid_device_range`.  0 bottom, 1 CONST(2),
-# 2 RANGE over it, 3 BUFFER(int32, [2]) on two devices with a size and a buffer.
 def main_mdev(ax: O.AxisType) -> Mdev:
   +d1 = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(2)})
   +d2 = O.UOp.range_end(O.Found.ar(d1), O.Found.i(d1), [0], ax)
@@ -2635,8 +2482,6 @@ def main_mdev(ax: O.AxisType) -> Mdev:
   Mdev{F.folded(O.Found.ar(d3)), O.Found.i(d3)}
 
 # THE ROWS. `1` is `VTrue`, `0` is `VFalse`, `9` is `VSkip` -- a real answer and
-# not a failure. Every value here is DERIVABLE from `spec.py`, and the table at
-# the bottom of this file says which line of `spec.py` fixes each one.
 
 def tbl_len(ts: O.PMEntrys) -> U32:
   U32.from_nat(List.length(&2, O.PMEntry, O.PMEntrys.es(ts)))
@@ -2688,8 +2533,6 @@ def t_tag_const() -> U32:
                  O.PMEntry.rej(entry_at(shared_table(), 2)))
 
 # the reject sets that NAME A SOURCE OP, and the one that names ALL of a four-src
-# PROGRAM's sources. A misspelling makes the rule skip a node it should accept,
-# and no other row would notice.
 def t_tag_rej.of(a: Bool, b: U32) -> U32:
   if_b(Bool.and(a, U32.is_eq(b, 4)))
 
@@ -2701,8 +2544,6 @@ def t_tag_rej() -> U32:
 def t_sink_ok() -> U32: show_v(shared_rewrite(Land.fx(main_arena()), Land.sink(main_arena())))
 
 # spec.py:54 -- a NOOP is `True` in every table EXCEPT `spec_kernel_graph`, which is
-# not composed with `spec_shared`. Two rows for one node, and the second is the one
-# that catches a `+ spec_shared` appearing where spec.py has no `+`.
 def t_noop_ok() -> U32: show_v(shared_rewrite(Land.fx(main_arena()), Land.noop(main_arena())))
 
 def t_noop_kg() -> U32: show_v(kernel_graph_rewrite(Land.fx(main_arena()), Land.noop(main_arena())))
@@ -2712,18 +2553,12 @@ def t_noop_kg() -> U32: show_v(kernel_graph_rewrite(Land.fx(main_arena()), Land.
 def t_const_ok() -> U32: show_v(shared_rewrite(Land.fx(main_arena()), Land.k(main_arena())))
 
 # spec.py:62 -- a STACK whose srcs are one float and one int is REJECTED, because
-# the STACK's dtype is `least_upper(float32, int32) = float32` and int32 is neither
-# that nor weak.
 def t_stack_dt() -> U32: show_v(shared_rewrite(Land.fx(main_arena()), Land.stack(main_arena())))
 
 # spec.py:70 vs :71. BOTH claim a SHL and they DISAGREE: `sh_7` says `False` for a
-# float shift and `sh_8` says `True`. First-wins is the row; last-wins prints 1
-# here, and accepting a float shift is exactly the bug this catches.
 def t_shl_wins() -> U32: show_v(shared_rewrite(Land.fx(main_arena()), Land.shl_f(main_arena())))
 
 # the control: the int shift, where `sh_7` SKIPS because no src is a float, so
-# `sh_8` is the rule that answers. If this row ever equals `t_shl_wins` then the two
-# rules are not both being tried.
 def t_shl_ok() -> U32: show_v(shared_rewrite(Land.fx(main_arena()), Land.shl_i(main_arena())))
 
 # spec.py:110 -- `sh_22`, and the row that COULD NOT BE WRITTEN while `sh_22` was the
@@ -2759,20 +2594,14 @@ def t_cf_arg_noop() -> U32:
 def t_backedge_ok() -> U32: show_v(shared_rewrite(Land.fx(main_arena()), Land.backedge(main_arena())))
 
 # spec.py:198 -- a FOUR-src PROGRAM. `te_21`'s `rej` is all four of its src ops, so
-# `ler` has to fold over ALL of `src`: a two-element `ler` can never contain four
-# ops and this rule would never fire.
 def t_prog4_ok() -> U32: show_v(tensor_rewrite(Land.fx(main_arena()), Land.prog(main_arena())))
 
 # spec.py:231 -- the `or_after` DISJUNCTION, both ways. A conjunction would accept
-# only `GETADDR(AFTER(BUFFER))` and reject the bare `GETADDR(BUFFER)` that spec.py's
-# `is_any` matches; the first row is the bare one.
 def t_hcq_plain() -> U32: show_v(hcq_rewrite(Land.fx(main_arena()), Land.ga_plain(main_arena())))
 
 def t_hcq_after() -> U32: show_v(hcq_rewrite(Land.fx(main_arena()), Land.ga_after(main_arena())))
 
 # spec.py:34 -- `int(rng.vmax)+1 == len(device)`, with `device` a two-name tuple and
-# the range's end a CONST(2). `_min_max` reduces a RANGE's `vmax` to
-# `(src[0]-1).vmax`, so this is `2 == 2`.
 def t_multidev_ok() -> U32: show_v(tensor_rewrite(Mdev.fx(main_mdev(O.AXIS_DEVICE{})), Mdev.buf(main_mdev(O.AXIS_DEVICE{}))))
 
 # the same BUFFER with the RANGE on the GLOBAL axis: `rng.axis_type is DEVICE`
@@ -2782,38 +2611,3 @@ def t_multidev_bad() -> U32: show_v(tensor_rewrite(Mdev.fx(main_mdev(O.AXIS_GLOB
 # NOT PORTED, one line each, and the WALL each one is behind. The Python line
 # the four that are genuinely unavailable, and they are all P3 or later.
 # TODO(p3) upat.py:173  symbol=upat_compile  -- the pyrender GLOBALS: NOT IN
-# the rest are not unavailable, they are behind a property FOLD, and each one names
-# the fold that owns it so the phase is unambiguous.
-# TODO(p3) spec.py:11  def validate_index -- the first two returns
-# WHAT NEXT, in the order the walls fall.
-#   1. `_min_max` (ops.py:1104) unblocks `validate_index`'s body, `valid_device_range`
-#   sh_len=33    spec.py:50-138 is 33 entries. A count, so a MISSING rule shows.
-# MUTATIONS, all re-run 2026-09-30 against this file. A row that only one mutation
-# | mutation | rows that moved | how many |
-# ADDED 2026-10-03, for the twenty-third-rule deletion. 12 mutations, 5 localised,
-# | mutation | rows that moved | how many |
-# the first row is the one that answers "was the deletion worth making": three rows, not
-# the four tag-space blind spots share one reason and it is worth naming. Nothing in the
-# gate drives `full_table()` or the tensor-to-shared HANDOFF on any fixture, so every
-# offset in `full_table.go` and `fu_dispatch.of` and `te_dispatch.go`'s `case _` arm is
-# ungated: `fu_len` counts entries and `bump` does not change how many there are. Two of
-# those offsets were WRONG for part of this session -- `fu_dispatch.of` said 27 / 60 / 69
-# the third spelling was the one that stayed wrong for five days. `fu_block.go`'s three
-# thresholds are a THIRD copy of the same bases, and the twenty-third tensor rule's
-# deletion (2026-10-17) moved two of the three and left this one at 27 / 60 / 69 -- so
-# every tag past `full_own`'s four entered the WRONG table's dispatch, and dropping the
-# `gates/specreach-gate.py` is the checker, and it is OUTSIDE this file's gate on purpose:
-# a mutation this gate cannot see is exactly what a checker outside the gate is for. It
-# checks all THREE spellings against the table sizes, checks every ladder reads
-# `case N: _N`, checks that every entry of the composed table lands on its OWN rule, and
-# grades the cells `gates/specreach-map.rows` prints. MEASURED: with the thresholds put
-# the three `te_dispatch.go` ladder blind spots are pure coverage. `Land` has no special
-# the first row is the interesting one, and it is a negative result worth keeping.
-# Flipping the subset test's `and` for its `or` moves NOTHING, and that is the
-# MEASURED PROOF of a claim this file's header makes: every non-empty
-# THE SECOND ROW IS THE CORRECTION, and it is the same shape as the `keep` mutation
-# THE THIRD ROW IS A REPORT ABOUT `ops.bend`, and it is the reason this file needed
-# its own `sp_ler`. `ops.bend`'s `pm_ler` reads `src[0]` and `src[1]` and appends,
-# so it can only ever see two ops; `spec.py:201`'s reject set is FOUR ops long, so
-# The rows are consumers: each calls a def above through `P.`, and the
-# Its rows are the census this file prints, and `gates/<name>-gate.bend` is the

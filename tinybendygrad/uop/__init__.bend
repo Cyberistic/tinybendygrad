@@ -4,27 +4,15 @@
 #   * `Ops` is `ops.bend`'s `type Op is Data` (uop/ops.bend:170 symbol=Op), with the members
 #     in `__init__.py`'s declaration order, which is load-bearing --
 #     `__init__.py:12` says "the order of these Ops controls the order of the
-# SO WHAT IS LEFT IS `GroupOp.All` (`__init__.py:134`, `All = set(Ops)`), the one
-#     schedule/rangeify.py:47    UPat(GroupOp.All, name="b")
-# the set differences are not ported here, and the reason is one line: `All` is
-# A DEF OVER A CLOSED DATATYPE IS A TAUTOLOGY, and saying so is worth more than
-#     n_ops=77         CPython `len(Ops)`           -- the COUNT, and the row
-# The first three are COUNT rows, which is the brief's rule: a boolean about a
-# NOT PORTED, with the reason:
 
 import Base
 import ./ops.bend as O
 
 # `All = set(Ops)` -- __init__.py:135. Every op, which over a closed datatype is
-# the identity. The parameter is read by NO arm, and an unused parameter is
-# accepted (measured: `uop/spec.bend`'s rule 2), which is the only reason this
-# one line is legal at all.
 def GroupOp.all(op: O.Op) -> Bool:
   True{}
 
 # `len(Ops)` / `len(GroupOp.All)`. CPython: 77 and 77. The BEND-ONLY count is
-# the `Op` type's constructor arity, read off `uop/ops.bend:170 symbol=Op`; the row that
-# compares it to CPython is `n_ops` below.
 def n_ops() -> U32:
   77
 
