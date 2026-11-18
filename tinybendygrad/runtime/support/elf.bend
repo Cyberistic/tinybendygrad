@@ -962,11 +962,6 @@ def Sections.build(+h: String, +e: Ehdr, +x: Bool) -> List<&2, ElfSection>:
 # return ... except: pass` returns the FIRST hit, and in bend a `Bool.pick` of
 # two self-calls on the SAME list is mutual recursion (refused) while one on a
 # SHORTER list is the descent -- so the short-circuit shape cannot be written.
-# `Link.pick` is a FOLD THAT KEEPS THE FIRST hit (`Link.pos` returns `acc`
-# unless `acc` is still 1) and it returns the 1-BASED position of the winner, so
-# 0 means "nobody exported it" -- which is the refusal. It is a position and not
-# an address because bend cannot ask a dynamic linker for an address, and the
-# position names the library the address would have come from.
 
 type Link is Data:
   Link{l_name: String, l_syms: List<&2, String>}
@@ -1302,11 +1297,6 @@ def Built.keep(+st: Step, +acc: List<&2, ElfSection>) -> List<&2, ElfSection>:
 # because there is no `let` in bend and a helper whose parameter is the computed
 # value is the only way to name it twice. The cost is a second image splice; the
 # fixtures are kilobytes.
-# THE FOLD CARRIES A `Step`, NOT AN `Img`, because the image and the section that
-# produced it have to travel TOGETHER -- the section is the one `Built.landed`
-# rewrote, and separating them is how two independent `Built.step` calls end up
-# naming different sections. The initial `Step.sec` is never read: `Built.keep`
-# only ever sees a step `Built.step` has already rewritten.
 def Built.go(xs: List<&2, ElfSection>, +st: Step, +force: U32,
              +acc: List<&2, ElfSection>) -> Built:
   match xs:

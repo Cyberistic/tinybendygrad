@@ -453,8 +453,6 @@ def CALL_PROF() -> U32: 9
 # `uvm(cmd, ...)` call passes its code straight through to the ioctl, so the
 # NUMBER is load-bearing at the seam and INVISIBLE to the trace, which is the
 # one thing in this file a wrong ordinal can do that a wrong class id cannot:
-# it sends a well-formed word the driver does not accept. The seam owns the
-# translation and `nv_uvm_wire` is where it would be checked.
 def ESC_RM_ALLOC() -> U32: 2
 def ESC_RM_CONTROL() -> U32: 3
 def ESC_RM_FREE() -> U32: 5

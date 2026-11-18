@@ -13,8 +13,6 @@
 # algebra, `Field`'s bitfield slice/mask/merge, `Field._resolve`'s throwaway
 # ctypes class, `register_fields`, `record`, `Struct.__init__`'s
 # positional-then-keyword order, and `findlib`'s path and file-name predicates.
-# Each of those is a `getenv`, a `pathlib.Path.is_file` or a `ctypes` call in
-# Python, and a pure integer or string function here.
 #
 
 # the six things measured that nobody would guess
@@ -28,12 +26,6 @@
 #
 # 2. `findlib` NEVER PUTS `nm` IN A FILE NAME. The base names are built from
 #    `p`, the loop variable over `paths`, not from `nm`:
-#      `for p in paths: ... for base in [f"lib{p}.dylib", f"{p}.dylib", str(p)]`
-#    `nm` reaches only the `nm_PATH` env key and the `('libc','m')` arm. So
-#    `findlib('zzz', ['P'])` finds a file called `libP.dylib`, and
-#    `findlib('zzz', ['zzz'])` in the SAME directory finds nothing.
-#    `fl_osx_bases_tested` is c.py's own ladder, captured by shimming
-#    `c.__dict__['pathlib']` so every `is_file()` argument is recorded.
 #
 # 3. THE FILESYSTEM SEARCH IS INSIDE `for p in paths`. `paths=[]` never looks
 #    at the disk, and an ABSOLUTE path that is not a file `continue`s PAST the
@@ -52,7 +44,6 @@
 # 5. `init_c_struct_t` SETS `_fields_` AND NEVER TOUCHES `SIZE`. `record` sets
 #    `_fields_` FROM `cls.SIZE`, in the other direction, so a class made by
 #    `init_c_struct_t(8, ...)` has `SIZE == 0` and `sizeof == 8`.
-#    `ics_sizes=0,8` and `ics_size_attr_stays_0=0` are the same fact twice.
 #
 # 6. `Array`'s KEY IS A TYPING OBJECT, NOT A TUPLE. `get_args(Literal[3])` is
 #    `(3,)`; `get_args((3,))` is `()` and `c.Array[c_uint, (3,)]` raises
@@ -191,20 +182,9 @@ def Array_.getitem(typ: U32, n: U32, has_args: Bool) -> U32:
 #     class Struct(ctypes.Structure):
 #       SIZE = 0
 #       def __init__(self, *args, kwargs):
-#         ctypes.Structure.__init__(self)
-#         for f,v in [*zip((rf[0] for rf in self._real_fields_), args), *kwargs.items()]: setattr(self, f, v)
-#       @classmethod
-#       def register_fields(cls, fields):
-#         setattr(cls, "_real_fields_", fields)
-#         for i, (name, *args) in enumerate(fields): setattr(cls, name, Field(*args, name=name, idx=i))
 #
 #     class Field:
 #       def __init__(self, typ, off, bit_width=None, bit_off=0, *, name=None, idx=0): ...
-#       def __set_name__(self, owner, name):
-#         entry = (name, self.typ, self.off) + ((self.bit_width, self.bit_off) if self.bit_width else ())
-#         if hasattr(owner, "_real_fields_"): owner._real_fields_.append(entry)
-#         else: setattr(owner, "_real_fields_", [entry])
-#         self.name, self.idx = name, len(owner._real_fields_) - 1
 #
 # `Entry` IS PORT-LOCAL. It is ONE `_real_fields_` tuple -- `(name, typ, off)`
 # or `(name, typ, off, bit_width, bit_off)` -- and upstream spells it as a
@@ -486,8 +466,6 @@ def Field.dummy_names_row(idx: U32) -> String:
 # `_fields_` is ONE entry, so `Struct.mem_name` and `Struct.mem_len` have no
 # index and no search: `_mem_` at `SIZE` bytes. `sizeof` is that length and
 # `SIZE` is the class attribute, which `init_c_struct_t` never sets.
-# `record(cls)`: `setattr(cls, "_fields_", [('_mem_', ctypes.c_byte * cls.SIZE)])`
-# -- the length comes FROM `SIZE`, so the two agree here and only here.
 def Struct.of(+size: U32, fields: List<&2, Field>) -> Struct:
   Struct{size, size, fields}
 
@@ -561,9 +539,6 @@ def mem_hex.go(ms: List<&2, U32>, acc: String) -> String:
 #
 #     @functools.cache
 #     def init_c_struct_t(sz:int, fields: tuple[tuple, ...]):
-#       (CStruct:=type("CStruct", (Struct,), {'_fields_': [('_mem_', ctypes.c_byte * sz)]})).register_fields(fields)
-#       return CStruct
-#     def init_c_var(ty, creat_cb): return (creat_cb(v:=ty()), v)[1]
 #
 # `_fields_` IS SET DIRECTLY HERE AND `SIZE` IS NOT, which is the whole of fact
 # 5. `functools.cache` is process-wide memoisation: a WALL, since it is the
@@ -606,9 +581,6 @@ def findlib.env_key(nm: String) -> String:
 # `emsg=""` takes the default (`dll_emsg_empty_is_falsy`), and NO dash
 # replacement, which is the disagreement of fact 4. The Bool is a PARAMETER
 # because convention 4 refuses a `match` on a computed value.
-# THE KEY THE MESSAGE NAMES -- `nm.upper()+'_PATH'`, with NO dash
-# replacement. That is half of fact 4 and it is a def because `findlib`'s key
-# is the other half and the two have to be comparable.
 def DLL.emsg_key(nm: String) -> String: String.concat([String.to_upper(nm), "_PATH"])
 
 def DLL.emsg.of(is_empty: Bool, nm: String, emsg: String) -> String:
@@ -648,10 +620,6 @@ def findlib.osx_lib(nm: String, is_special: Bool, osx: Bool) -> String:
 # POSIX arm reads `PATH` too and `findlib` raises `KeyError: 'PATH'` when it is
 # absent -- `fl_no_path_key` is that, and it is the one row in this file that
 # records a crash rather than a value.
-# `[d for d in os.environ.get('LD_LIBRARY_PATH','').split(os.pathsep) if d]`
-# -- the `if d` is what makes the `::` in `"/lddir1::/lddir2"` collapse to two
-# entries and not four. `os.pathsep` is `:` on POSIX and `;` on NT, so it is a
-# PARAMETER rather than a constant of this file.
 def str_nonempty(s: String) -> Bool: Bool.not(String.is_empty(s))
 
 def libpaths.posix(ld: String, sep: Char) -> List<&2, String>:
@@ -680,9 +648,6 @@ def findlib.prefixes(+env: String, osname_list: List<&2, String>, plat_list: Lis
 
 # `if (pth:=pathlib.Path(p)).is_absolute(): if pth.is_file(): return p; else: continue`
 # `0` is the `continue`, `1` is the `return p`, `2` is "search the prefixes".
-# An absolute non-file entry SKIPS the whole search for that `p` and no other,
-# which is why `fl_found_paths_abs_then_rel` is 1 and `fl_found_paths_two_abs`
-# is 0.
 def findlib.abs(is_abs: Bool, is_file: Bool) -> U32:
   match is_abs:
     case True{}:
@@ -703,8 +668,6 @@ def findlib.base.win(p: String) -> List<&2, String>:
 # `re.fullmatch(f"lib{p}\.so[.0-9]*", l.name)`. The prefix is
 # `lib{p}.so` and EVERY remaining character must be `.` or a digit -- so
 # `libz.soa` fails, `libz.so.` passes, and `libz.so.06` passes.
-# (The `.` in `p` is NOT escaped in c.py, so a `p` containing a dot becomes a
-# wildcard. Not gated here: no `paths` entry upstream contains one.)
 def findlib.so_tail(+cp: U32) -> Bool:
   Bool.or(U32.is_eq(cp, 46), Bool.and(U32.is_ge(cp, 48), U32.is_le(cp, 57)))
 

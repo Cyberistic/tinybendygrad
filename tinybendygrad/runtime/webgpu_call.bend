@@ -1026,9 +1026,6 @@ def Cs.uniform_bytes(+c: Cs) -> List<&2, U32>:
 # cons into. `Cs.calls` already builds one of these for `Call`, and this is the
 # `U32` counterpart -- it exists so `uniform_bytes` does not hand `List.append` a
 # list of a different element type, which does not typecheck.
-# 0, 1, 2, ... in mint order. THE QUESTION NO OTHER ROW ASKS: is the counter
-# actually counting? A frozen counter hands out the same handle forever and every
-# other row in the file stays green, because nothing else reads `next`.
 def Cs.dupe_of.go(n: Nat, xs: List<&2, U32>, +seen: List<&2, U32>, +got: U32) -> U32:
   match n:
     case 0n: got

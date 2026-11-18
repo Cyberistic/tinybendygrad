@@ -348,7 +348,6 @@ def tmap_rev(xs: List<&2, TE>) -> List<&2, TE>:
 # `uints` is six explicit kinds. `ints` is `uints + ` the six signed ones, in
 # THAT order -- not sorted -- so `ints` is a genuine reordering and the gate can
 # see it. `fps` is (FunctionProto 111, FunctionNoProto 110), also not ascending.
-# `specs` is one kind: 40.
 
 def uints() -> List<&2, U32>:
   [ty_char_u(), ty_uchar(), ty_ushort(), ty_uint(), ty_ulong(), ty_ulonglong()]
@@ -423,8 +422,6 @@ def normalize(+n: String) -> String:
 # The filter is on a CHILD's kind. 400 is CXCursor_FirstAttr and 500 is
 # CXCursor_FirstPreprocessing, so the window is attributes ONLY. Half-open at
 # BOTH ends, and that is what `attrs_holds_b` rows check from either side:
-# NSReturnsRetained(420) is IN, MacroDefinition(501) is OUT, FirstAttr(400) is
-# IN, FirstPreprocessing(500) is OUT.
 
 def attrs_holds(+k: U32) -> Bool: Bool.and(U32.is_ge(k, cur_firstattr()), U32.is_le(k, cur_lastattr()))
 
@@ -530,7 +527,6 @@ def anon_name(g: G, tag: String) -> String:
 # that Python's `replace` FINDS THE PATTERN AT ANY OFFSET: `"a::b"` has its
 # "::" at offset 1, so a walk that took the chars in PAIRS would only ever see
 # "::" at even offsets and would answer "a::b" where Python answers "a_b".
-# A fixed stride is therefore NOT the same function, and the fixed-stride
 #
 # The pending state IS the escape from the two-descents shape this file
 # documents at :55-82: a general substring replace wants "either consume 1 or

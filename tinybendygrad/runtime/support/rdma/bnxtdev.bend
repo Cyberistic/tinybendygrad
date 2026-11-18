@@ -392,10 +392,6 @@ def CQ_STRIDE() -> U32: SIZEOF_CQ_BASE()
 #
 # TWO HALVES and they are NOT symmetrical, which is the whole reason this file
 # carries them separately:
-#   HIGH: WHICH QUEUE -- the xid, the path and the VALID bit.
-#   LOW:  WHERE in it -- the index and the EPOCH.
-# `db.of` also takes the whole word as (hi, lo) so a gate row can hold both,
-# and `db.hi`/`db.lo` are the two the trace writes.
 
 def db.hi(+xid: U32, typ: U32) -> U32:
   U32.or(U32.or(U32.and(xid, DBC_DBC_XID_MASK()), U32.or(DBC_DBC_PATH_ROCE(), typ)),
@@ -422,8 +418,6 @@ def db.lo(+index: U32, +epoch: U32) -> U32:
 #
 #   * byte 0. Send puts `0` there and receive puts `0x80`, which is the "this
 #     is a receive" bit. Byte 0 is the LOW byte of word 0.
-#   * byte 1. Send puts `SQ_SEND_FLAGS_SIGNAL_COMP` (1) there -- "ring the
-#     completion queue when this send retires" -- and receive puts 0.
 #
 # and the one that is easy to get wrong. Word 0 is little-endian, so it is
 #
@@ -595,8 +589,6 @@ def pbl.refuses(n: U32) -> Bool: U32.is_gt(pbl.table_pages(n), PBL_MAX_PAGES())
 #
 #   read(i):  ring[(off := i % (size // stride) * stride) : off + stride]
 #   write(i, data, aux):
-#     off = size + i % (size // stride) * 8 if aux else i % (size//stride)*stride
-#     ring[off:off + len(data)] = data
 #
 # `size // stride` IS THE SLOT COUNT and it is the ONLY place the ring wraps.
 # `alloc_queue`'s default `entries = 0x1000 // stride` is chosen so that a
@@ -655,9 +647,6 @@ def q.pbl_pages_of(alloc_bytes: U32) -> U32: ceildiv(alloc_bytes, PAGE())
 # THE ROW PRINTERS. One `name=value` line per claim; the gate is that the
 # interpreted lane, the native lane and `.agents/slop/bnxt_oracle.txt` all
 # print the same lines. A row is never a restatement of the def under test:
-# every expectation in the oracle is produced by CALLING CPYTHON, and where
-# Python can run the function the oracle calls it rather than transcribing it.
-# THE GATE MOVED TO `gates/bnxtdev-gate.bend`.
 #
 # The rows are consumers: each calls a def above through `P.`, and the
 # driver defines nothing this file needs, which is the line

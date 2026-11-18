@@ -985,15 +985,6 @@ def RING_EQ_CQ() -> Bool: U32.is_eq(RING_ENTRIES(), CQ_ENTRIES())
 # Python's precedence is `&` then `^` then `|`, so the value is
 # `(((n // CQ_ENTRIES) & 1) ^ 1) | (2 if is_recv else 0)` and there are THREE
 # facts in it:
-#   * the slot is `n`, not `n + 1` -- the doorbell rang the NEXT slot, the wait
-#     polls THIS one. `rdma_wait_slot_is_n`.
-#   * the epoch is the doorbell's epoch INVERTED. The doorbell says "I have
-#     passed slot k of pass p"; the wait says "I am waiting for slot n of pass
-#     NOT p", because the NIC flips a TOGGLE in the completion entry when the
-#     slot is consumed. Dropping the `^ 1` compiles and hangs -- nothing ever
-#     matches -- and `rdma_epoch_inverted` is the row.
-#   * the top bit is `2` for a receive and `0` for a send, so a receive and a send
-#     on the same completion queue can never be confused. `rdma_wait_recv_bit`.
 def cq_slot_of(+n: U32) -> U32: U32.mod(n, CQ_ENTRIES())
 
 def cq_epoch_of(+n: U32) -> U32: U32.xor(U32.and(U32.div(n, CQ_ENTRIES()), 1), 1)
@@ -1109,9 +1100,6 @@ def ops.chunk_size(+nbytes: U32, +off: U32) -> U32: chunk_size(nbytes, off)
 # NIC would simply transfer the wrong data. So it is a REFUSAL and not a clamp,
 # and the whole batch produces NO instructions at all: `copies.guard` returns a
 # trace truncated at the refusal, which is what `rdma_cap_refuse_n` reads.
-# `min(RING_ENTRIES, CQ_ENTRIES)` is 4096 and BOTH are, so the cap is the ring
-# size -- `rdma_eq_ring_cq` says so rather than letting a reader assume which of
-# the two bounds it.
 
 def RING_CAP() -> U32: U32.min(RING_ENTRIES(), CQ_ENTRIES())
 

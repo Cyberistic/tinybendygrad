@@ -5,8 +5,6 @@
 # `fcntl.flock`, `socket.create_connection`, `ctypes.CDLL`, and the sysfs reads
 # that answer "is this GPU here". None of that is an arithmetic kernel, and none
 # of it is a Bend type. What survives the crossing is the part that DECIDES:
-# which constant goes in which register, which string gets passed to `sudo`,
-# which path gets opened with which flags, and in what ORDER.
 #
 # So this file is a trace. `Tr` records every OS call the Python makes, and every
 # def either BUILDS THE ARGUMENT of one call (pure, and the gate diffs it) or
@@ -1049,7 +1047,6 @@ def bars.mem_base16(mem_base: U32) -> U32: U32.and(U32.shrn(mem_base, 16n), U16M
 # bits 16..31 of the 64-bit value, and those live ENTIRELY IN THE LOW WORD, so the
 # high word does not participate and (32<<30) answers 0. My first version invented a
 # borrow from the high word and answered 8, which is `(pref_mem_base >> 32)`.
-# `bars.pref_base16` takes both halves and IGNORES the high one, which is the claim.
 def bars.pref_base16(+hi: U32, +lo: U32) -> U32: U32.and(U32.shrn(lo, 16n), U16MAX())
 
 # `pref_mem_base >> 32` -- the HIGH half, and it is 8 for 32 GiB.

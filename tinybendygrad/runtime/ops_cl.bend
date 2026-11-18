@@ -180,9 +180,6 @@
 #    `getattr(ctypes, f"c_int{dt.bitsize}")(vals[...])` is a VALUE boxed into a
 #    1/2/4/8-byte ctypes int and passed BY REFERENCE to `clSetKernelArg`; that is
 #    why the port carries `Sig.bits` as a `U32` and lets the seam do the box.
-#    The ctypes TYPE NAME is portable and is ported exactly -- `ct.typename` is a
-#    real table and a real gate row, and it is the one part of this that is
-#    compared string-for-string against CPython.
 #
 # 7. `ctypes.string_at(hip.hipGetErrorString(status)).decode()` (hp:10). The
 #    FUNCTION is a symbol and the port names it (`vend.hp.of(OP_ERRSTR)`); the
@@ -295,8 +292,6 @@ import ../helpers.bend as H
 #                 trace seam (`OP_*`, `Call`, `Tr`, `Sig`, `Arg`, `Buf`,
 #                 `Made`, `u32_dec`, `u32s`, `one_s`, `one_u`, `vend.argname`,
 #                 `cl_dev_index`, the row printers).
-#   ops_cuda.bend imports ops_cl.bend as `CL.`
-#   ops_hip.bend  imports ops_cl.bend as `CL.` and ops_cuda.bend as `CU.`
 #
 # bend REFUSES an import cycle -- MEASURED, `a.bend` importing `b.bend` with
 # `b` importing `a` back reports "an import cycle through .../a.bend". So a
@@ -307,9 +302,6 @@ import ../helpers.bend as H
 #
 #   V_CUDA, V_HIP     nothing indexes them once the picks are per file.
 #   vend.name.at      the `Bool.pick` ladder over three tables.
-#   the `v` argument  on four signatures -- 61 `vend.trace(v, cs)` call sites,
-#                     20 `vend.name(v, op)`, 17 `vend.checked(v, op)`,
-#                     11 `chk_count(v)`, 11 `vend.count(v)`, 3 `V_*` records.
 #
 # What it ADDED: `cu.sync` in `ops_cuda.bend` -- cu:82 is CUDA's own
 # `cuCtxSynchronize`, and before the split CUDA called `cl.sync` because this
@@ -479,14 +471,6 @@ def vend.count() -> U32: vend.count.at(vend.cl())
 #          `UOp.custom_function(fn.__name__).call(...)` -- there is no status to
 #          check, because the port has not lowered the call yet. That is SIX ops
 #          and it is the largest unchecked set of the three.
-#   HIP  : exactly one, `hipEventCreate` at hp:16, which is the only `hip*` call
-#          in the three files with no `check` around it.
-#   CL   : none AT THE OP LEVEL. Three cl* calls are unchecked at a SITE --
-#          the value-returning `clGetDeviceInfo` at cl:105/107/114 whose status is
-#          `(…, buf.value.decode())[1]`, the build-log reads at cl:29/30, and the
-#          device PROBE at cl:98 whose status is compared against 0 instead.
-#          Those are three facts with their own rows, because "cl is checked" is
-#          otherwise a claim the gate cannot see.
 
 def cl_unchecked() -> List<&2, U32>: Nil{}
 
@@ -1029,8 +1013,6 @@ def cl.probe_init(+p: Prb, +t: Tr) -> Prb:
 #
 #   arch = ",".join(self.device_exts)
 #   if "cl_khr_image2d_from_buffer" in self.device_exts:
-#     check(clGetDeviceInfo(..., CL_DEVICE_IMAGE_PITCH_ALIGNMENT, 4, byref(ipa), None))
-#     arch += f",IMAGE_PITCH_ALIGNMENT={ipa.value}"
 #
 # so the suffix is there ONLY for that one extension and it is appended AFTER the
 # join, which is why a device WITH the extension has one more comma-separated
@@ -1059,10 +1041,6 @@ def cl.has_img_ext(+exts: List<&2, String>) -> Bool: List.contains(~String, ~Str
 
 # cl:105-123 -- THE INIT SEQUENCE, in order. Eleven calls when the extension is
 # absent and twelve when it is there, and the ORDER is the whole of this def.
-# cl:105 `self.device_name = (clGetDeviceInfo(self.cl_dev, CL_DEVICE_NAME, 256,
-# buf, None), buf.value.decode())[1]` -- UNCHECKED (cl_info_checked). The `arg` is
-# the INFO PARAM, which is what distinguishes the five `clGetDeviceInfo` calls
-# from each other in the trace.
 def cl.info_name(+t: Tr) -> Tr: Tr.emit(OP_GET_DEVICE_INFO(), U32.show(CL_DEVICE_NAME()), t)
 
 # cl:107 the same shape for CL_DRIVER_VERSION.
@@ -1499,9 +1477,6 @@ def prog.launch(+want: Bool, +p: Prog) -> Prog:
 # cl:78-89 -- `CLAllocator`. Four methods, and the ASYMMETRY between them is the
 # content: `_copyout` calls `self.dev.synchronize()` and `_copyin` does not, and
 # `_free` calls nothing at all.
-# cl:80 `BufferStorage(checked(clCreateBuffer(self.dev.context, CL_MEM_READ_WRITE,
-# size, None, status), status))` -- the `arg` is the SIZE, so `cl_alloc_args`
-# reads the size straight out of the trace rather than out of the record.
 def alloc.of(+size: U32, +t: Tr) -> Made:
   Made{Buf{Tr.here(t), size}, Tr.checked(OP_ALLOC(), U32.show(size), t)}
 

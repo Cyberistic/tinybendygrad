@@ -760,10 +760,6 @@ def nv.cover_at(+v: U32, lv: U32) -> U32: nv.at(nv.shifts_nat(v), nv.covers(v), 
 
 # the `i`th element of a U32 list. The list is `+`, so the walk may read it again
 # after the head; the decrement is on the Nat fuel, never on the index.
-# `mm.pte_covers[self.lv]` -- and at `lv == level_cnt` the REAL nvdev.py raises
-# IndexError, because `pte_covers` has `level_cnt` entries. The port answers the
-# SENTINEL 4294967295, which is a distinct value from any real cover, so the
-# out-of-range level is visible rather than silently reading cover[0].
 
 def nv.huge_cover(+v: U32, +lv: U32) -> U32:
   Bool.pick(U32, U32.is_ge(lv, nv.level_cnt(v)), 4294967295, nv.cover_at(v, lv))
