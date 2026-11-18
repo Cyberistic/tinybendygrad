@@ -353,36 +353,6 @@ def RrMap.with_ctx(+ctx: IX.IxCtx, +x: RrMap) -> RrMap:
 def RrMap.with_ends(+ends: List<&2, Bool>, +x: RrMap) -> RrMap:
   RrMap{RrMap.ctx(x), ends, RrMap.tbl(x), RrMap.out(x), RrMap.inp(x), RrMap.e(x), RrMap.b(x), RrMap.ne(x)}
 
-# 4a. the shape. `x.shape` (ops.py:456) is a double `Maybe`, and every dim of
-# this program is concrete (`rr_py_shapes` against the port's own arena: 23 of
-# 23 NODES AGREE).
-
-def rr_dim.of(m: Maybe<&2, O.Sint>) -> Maybe<&2, U32>:
-  match m:
-    case Some{s}:
-      match s:
-        case O.SI{i}: Some{H.lo32(i)}
-        case _: None{}
-    case _: None{}
-
-def rr_num(m: Maybe<&2, U32>) -> U32:
-  match m:
-    case Some{v}: v
-    case _: 0
-
-def rr_dims.go(+ds: List<&2, O.Sint>, +acc: List<&2, U32>) -> List<&2, U32>:
-  match ds:
-    case Nil{}: acc
-    case d <> t: rr_dims.go(t, List.append(&2, U32, acc, [rr_num(rr_dim.of(Some{d}))]))
-
-def rr_dims.of(m: Maybe<&2, Maybe<&2, List<&2, O.Sint>>>) -> List<&2, U32>:
-  match m:
-    case Some{Some{ds}}: rr_dims.go(ds, Nil{})
-    case _: Nil{}
-
-def rr_dims(+ar: O.Arena, +tb: F.Table, n: U32) -> List<&2, U32>:
-  rr_dims.of(F.fold.shape(ar, tb, n))
-
 # 4b. the consumer map. `consumer_map[x][c]` is "c's data srcs contain x"
 # (`indexing.py:193-196`), AND `data_srcs` IS `indexing.bend`'s OWN
 # `ix_ds_take` twice -- so the port's own decision is reused, not copied.
@@ -541,7 +511,7 @@ def rr_ended_pick(+axes: List<&2, U32>, +rngs: List<&2, U32>) -> List<&2, U32>:
 def rr_ended_one.bcast(bc: Bool, +ar: O.Arena, +tb: F.Table, +ctx: IX.IxCtx, +c: U32, +x: U32,
                        +e: IX.IxRngs) -> List<&2, U32>:
   match bc:
-    case True{}: rr_ended_pick(IX.ix_bax(rr_dims(ar, tb, x), rr_dims(ar, tb, c)), IX.IxRngs.inp(e))
+    case True{}: rr_ended_pick(IX.ix_bax(IX.rr_dims(ar, tb, x), IX.rr_dims(ar, tb, c)), IX.IxRngs.inp(e))
     case False{}: Nil{}
 
 def rr_ended_one(+ar: O.Arena, +tb: F.Table, +ctx: IX.IxCtx, +c: U32, +x: U32,
@@ -591,7 +561,7 @@ def rr_cons_rngs(+ctx: IX.IxCtx, +cs: List<&2, U32>) -> List<&2, U32>:
 # ONE CONSUMER's RANGES: `broadcast_rngs(c, x, rctx.range_map[c][0])`.
 def rr_one_rngs.of(m: Maybe<&2, IX.IxRngs>, +ar: O.Arena, +tb: F.Table, +ctx: IX.IxCtx, +c: U32, +x: U32) -> List<&2, U32>:
   match m:
-    case Some{e}: IX.broadcast_rngs(O.Arena.op(ar, c), rr_dims(ar, tb, x), rr_dims(ar, tb, c), IX.IxRngs.inp(e))
+    case Some{e}: IX.broadcast_rngs(O.Arena.op(ar, c), IX.rr_dims(ar, tb, x), IX.rr_dims(ar, tb, c), IX.IxRngs.inp(e))
     case _: Nil{}
 
 def rr_one_rngs(+ar: O.Arena, +tb: F.Table, +ctx: IX.IxCtx, +c: U32, +x: U32) -> List<&2, U32>:
@@ -604,132 +574,8 @@ def rr_one_rngs(+ar: O.Arena, +tb: F.Table, +ctx: IX.IxCtx, +c: U32, +x: U32) ->
 # => and the branch is not exercised by the measured program: no node has two
 # consumers in the RANGE map (measured, and `rr_cons_rngs` is the instrument).
 def rr_merge(+ar: O.Arena, +tb: F.Table, +ctx: IX.IxCtx, +x: U32, +tbl: List<&2, IX.IxRange>) -> RrRs:
-  +n = rr_new.all(rr_dims(ar, tb, x), tbl, Nil{})
+  +n = rr_new.all(IX.rr_dims(ar, tb, x), tbl, Nil{})
   RrRs{0, RrRs.rs(n), RrRs.tbl(n)}
-
-# `_apply_reshape` -- indexing.py:148-160, and the ONLY piece of `apply_movement_op`
-# that MINTS. The symbolic normalization upstream runs after it
-# (`symbolic+pm_simplify_valid+pm_drop_and_clauses`) is NOT applied: the expression is
-# CORRECT without it and only wider than CPython's (a `% 20` that CPython folds away),
-# and the driver it needs is its own unit. MEASURED, the three reshapes on the fullchain
-# program are `(15,)->(1,3,5)`, `(12,)->(4,1,3)` and `(20,)->(4,5)`.
-def rr_mulc.go(one: Bool, +ar: O.Arena, k: U32, +src: U32) -> O.Found:
-  match one:
-    case True{}: O.Found{ar, src}
-    case False{}:
-      +c = O.UOp.cconst(ar, O.CInt{H.i64_of_i32(k)}, S.int32())
-      O.UOp.alu(O.Found.ar(c), O.OpsMUL{}, [O.Found.i(c), src])
-
-def rr_mulc(+ar: O.Arena, +k: U32, +src: U32) -> O.Found:
-  rr_mulc.go(U32.is_eq(k, 1), ar, k, src)
-
-# `sum(axes_in)`; one element is itself and an empty list is the ADD identity.
-def rr_usum.pair(x: U32, +f: O.Found, +ar: O.Arena) -> O.Found:
-  O.UOp.alu(O.Found.ar(f), O.OpsADD{}, [x, O.Found.i(f)])
-
-def rr_usum(+ar: O.Arena, +xs: List<&2, U32>) -> O.Found:
-  match xs:
-    case Nil{}: O.UOp.cconst(ar, O.CInt{H.i64_of_i32(0)}, S.int32())
-    case x <> Nil{}: O.Found{ar, x}
-    case x <> t: rr_usum.pair(x, rr_usum(ar, t), ar)
-
-# the loop state as a RECORD, not a 3-tuple: a `Pair` whose second Kind is a `List` and
-# whose third is `U32` fails kind inference in Base (`_ => U32`), and a record is what
-# the rest of this file uses for the same reason.
-type RAx is Data:
-  RAx{ar: O.Arena, xs: List<&2, U32>, k: U32}
-
-def RAx.ar(x: RAx) -> O.Arena: match x: case RAx{a, xs, k}: a
-def RAx.xs(x: RAx) -> List<&2, U32>: match x: case RAx{a, xs, k}: xs
-def RAx.k(x: RAx) -> U32: match x: case RAx{a, xs, k}: k
-
-# the input axes, `acc * src` for every OUT axis taken in REVERSE, with `acc` the
-# product of the out dims seen so far.
-def rr_axes_in.go(+os: List<&2, U32>, +ar: O.Arena, k: U32, +rs: List<&2, U32>, +acc: RAx) -> RAx:
-  match os:
-    case Nil{}: acc
-    case o <> ot:
-      match rs:
-        case Nil{}: acc
-        case r <> rt:
-          +a0 = RAx.ar(acc)
-          +k0 = RAx.k(acc)
-          +m = rr_mulc(a0, k0, r)
-          rr_axes_in.go(ot, O.Found.ar(m), U32.mul(k0, o), rt,
-                        RAx{O.Found.ar(m), List.append(&2, U32, RAx.xs(acc), [O.Found.i(m)]), U32.mul(k0, o)})
-
-# the output axes: `combined % s` then `combined // s`, per IN dim in reverse.
-def rr_axes_out.go(+ss: List<&2, U32>, +ar: O.Arena, +acc: RAx) -> RAx:
-  match ss:
-    case Nil{}: acc
-    case s <> t:
-      +a0 = RAx.ar(acc)
-      +comb = RAx.k(acc)
-      +c = O.UOp.cconst(a0, O.CInt{H.i64_of_i32(s)}, S.int32())
-      +mo = O.UOp.alu(O.Found.ar(c), O.OpsTRUNCMOD{}, [comb, O.Found.i(c)])
-      +dv = O.UOp.alu(O.Found.ar(mo), O.OpsTRUNCDIV{}, [comb, O.Found.i(c)])
-      rr_axes_out.go(t, O.Found.ar(dv),
-                     RAx{O.Found.ar(dv), List.append(&2, U32, RAx.xs(acc), [O.Found.i(mo)]), O.Found.i(dv)})
-
-def rr_reshape.comb(+p: RAx, +ins: List<&2, U32>) -> RAx:
-  +ar = RAx.ar(p)
-  +c = rr_usum(ar, RAx.xs(p))
-  rr_axes_out.go(List.reverse(&2, U32, ins), O.Found.ar(c), RAx{O.Found.ar(c), Nil{}, O.Found.i(c)})
-
-def rr_reshape.fin(+p: RAx) -> (O.Arena & List<&2, U32>):
-  +ar = RAx.ar(p)
-  (ar, List.reverse(&2, U32, RAx.xs(p)))
-
-def rr_reshape.go(+ar: O.Arena, +ins: List<&2, U32>, +outs: List<&2, U32>, +rngs: List<&2, U32>) -> (O.Arena & List<&2, U32>):
-  +p1 = rr_axes_in.go(List.reverse(&2, U32, outs), ar, 1, List.reverse(&2, U32, rngs), RAx{ar, Nil{}, 1})
-  rr_reshape.fin(rr_reshape.comb(p1, ins))
-
-# the arithmetic needs one range per OUT axis and a non-empty IN shape; anything else is
-# refused rather than folded into a wrong index (upstream asserts; a refusal is a value).
-def rr_reshape.ok(+ins: List<&2, U32>, +outs: List<&2, U32>, +rngs: List<&2, U32>) -> Bool:
-  Bool.and(Bool.not(U32.is_zero(U32.from_nat(List.length(&2, U32, ins)))),
-    Bool.and(Bool.not(U32.is_zero(U32.from_nat(List.length(&2, U32, outs)))),
-      U32.is_eq(U32.from_nat(List.length(&2, U32, rngs)), U32.from_nat(List.length(&2, U32, outs)))))
-
-# POSITIONS -> ENTRIES -> NODES. Upstream's map holds UOps; this one holds `IxRange`, so
-# the boundary is explicit and kind 2 is the node arm that makes it possible.
-def rr_ents.go(+pos: List<&2, U32>, +tbl: List<&2, IX.IxRange>, +acc: List<&2, IX.IxRange>) -> List<&2, IX.IxRange>:
-  match pos:
-    case Nil{}: acc
-    case r <> t: rr_ents.go(t, tbl, List.append(&2, IX.IxRange, acc, [IX.ix_tbl_at(tbl, r)]))
-
-def rr_nodes.go(+ents: List<&2, IX.IxRange>, +ar: O.Arena, +acc: List<&2, U32>) -> (O.Arena & List<&2, U32>):
-  match ents:
-    case Nil{}: (ar, acc)
-    case e <> t:
-      +f = IX.ix_rg_node(O.AXIS_WEAK{}, ar, e)
-      rr_nodes.go(t, O.Found.ar(f), List.append(&2, U32, acc, [O.Found.i(f)]))
-
-def rr_wrap.go(+ns: List<&2, U32>, +acc: List<&2, IX.IxRange>) -> List<&2, IX.IxRange>:
-  match ns:
-    case Nil{}: acc
-    case n <> t: rr_wrap.go(t, List.append(&2, IX.IxRange, acc, [IX.ix_rg_n(n)]))
-
-def rr_reshape.fin3(p: (O.Arena & List<&2, U32>)) -> (O.Arena & List<&2, IX.IxRange>):
-  (ar, ns) = p
-  (ar, rr_wrap.go(ns, Nil{}))
-
-def rr_reshape.fin2(p: (O.Arena & List<&2, U32>), +ins: List<&2, U32>, +outs: List<&2, U32>) -> (O.Arena & List<&2, IX.IxRange>):
-  (ar, rngs) = p
-  rr_reshape.fin3(rr_reshape.go(ar, ins, outs, rngs))
-
-def rr_reshape.mk(+ar: O.Arena, +ins: List<&2, U32>, +outs: List<&2, U32>, +pos: List<&2, U32>, +tbl: List<&2, IX.IxRange>) -> (O.Arena & List<&2, IX.IxRange>):
-  rr_reshape.fin2(rr_nodes.go(rr_ents.go(pos, tbl, Nil{}), ar, Nil{}), ins, outs)
-
-# `ok` TRUE means DO THE MATH; a shape the port cannot read answers its own entries back,
-# which is the pre-W-A behaviour and not a wrong index.
-def rr_reshape.same(ok: Bool, +ar: O.Arena, +ins: List<&2, U32>, +outs: List<&2, U32>, +pos: List<&2, U32>, +tbl: List<&2, IX.IxRange>) -> (O.Arena & List<&2, IX.IxRange>):
-  match ok:
-    case True{} : rr_reshape.mk(ar, ins, outs, pos, tbl)
-    case False{}: (ar, rr_ents.go(pos, tbl, Nil{}))
-
-def rr_reshape(+ar: O.Arena, +ins: List<&2, U32>, +outs: List<&2, U32>, +pos: List<&2, U32>, +tbl: List<&2, IX.IxRange>) -> (O.Arena & List<&2, IX.IxRange>):
-  rr_reshape.same(rr_reshape.ok(ins, outs, pos), ar, ins, outs, pos, tbl)
 
 def rr_marg.of(a: O.Arg) -> Maybe<&2, List<&2, U32>>:
   match a:
@@ -821,11 +667,11 @@ def rr_shrink(+ar: O.Arena, +x: U32, +out: List<&2, U32>, +tbl: List<&2, IX.IxRa
 # `apply_movement_op`'s FOUR arms, with the arena they grow and the ENTRIES they answer.
 def rr_mvx(op: O.Op, +ar: O.Arena, +tb: F.Table, +x: U32, +arg: List<&2, U32>, +out: List<&2, U32>, +tbl: List<&2, IX.IxRange>) -> (O.Arena & List<&2, IX.IxRange>):
   match op:
-    case O.OpsPERMUTE{}: (ar, rr_ents.go(IX.ix_mv_permute(arg, out), tbl, Nil{}))
-    case O.OpsEXPAND{} : (ar, rr_ents.go(IX.ix_mv_expand(arg, out), tbl, Nil{}))
-    case O.OpsRESHAPE{}: rr_reshape(ar, rr_dims(ar, tb, O.Arena.src0(ar, x)), arg, out, tbl)
+    case O.OpsPERMUTE{}: (ar, IX.rr_ents.go(IX.ix_mv_permute(arg, out), tbl, Nil{}))
+    case O.OpsEXPAND{} : (ar, IX.rr_ents.go(IX.ix_mv_expand(arg, out), tbl, Nil{}))
+    case O.OpsRESHAPE{}: IX.rr_reshape(ar, IX.rr_dims(ar, tb, O.Arena.src0(ar, x)), arg, out, tbl)
     case O.OpsSHRINK{} : rr_shrink(ar, x, out, tbl)
-    case _: (ar, rr_ents.go(out, tbl, Nil{}))
+    case _: (ar, IX.rr_ents.go(out, tbl, Nil{}))
 
 # append each entry to the table, answering its POSITION. The table is the map, so the
 # positions are the ranges' names for the rest of the apply.
@@ -890,8 +736,8 @@ def rr_p0(+ar: O.Arena, +tb: F.Table, +rev: List<&2, U32>, +m: RrMap, +x: U32) -
 # entry is the same answer by the direct route, not a workaround.
 def rr_p1.shape.go(isstore: Bool, +ar: O.Arena, +tb: F.Table, +x: U32) -> List<&2, U32>:
   match isstore:
-    case True{}: rr_dims(ar, tb, O.Arena.src0(ar, x))
-    case False{}: rr_dims(ar, tb, x)
+    case True{}: IX.rr_dims(ar, tb, O.Arena.src0(ar, x))
+    case False{}: IX.rr_dims(ar, tb, x)
 
 def rr_p1.shape(+ar: O.Arena, +tb: F.Table, +x: U32) -> List<&2, U32>:
   rr_p1.shape.go(O.eq_op(O.Arena.op(ar, x), O.OpsSTORE{}), ar, tb, x)
@@ -941,7 +787,7 @@ def rr_p1(+ar: O.Arena, +tb: F.Table, +rev: List<&2, U32>, +m: RrMap, +x: U32) -
 # realize every axis and give the node new ranges (`indexing.py:264-270`).
 def rr_p2.fire(+ar: O.Arena, +tb: F.Table, +ctx: IX.IxCtx, +m: RrMap, +x: U32) -> RrMap:
   +out = RrMap.out(m)
-  +shape = rr_dims(ar, tb, x)
+  +shape = IX.rr_dims(ar, tb, x)
   +n = rr_new.all(List.take(&2, U32, shape, U32.to_nat(U32.from_nat(List.length(&2, U32, out)))), RrMap.tbl(m), Nil{})
   RrMap{rr_real(ctx, x, rr_axes(U32.from_nat(List.length(&2, U32, out)))),
         RrMap.ends(m), RrRs.tbl(n), RrRs.rs(n), Nil{}, False{}, RrMap.b(m), RrMap.ne(m)}
@@ -965,7 +811,7 @@ def rr_p2(+ar: O.Arena, +tb: F.Table, +rev: List<&2, U32>, +m: RrMap, +x: U32) -
 # (`pool_rm = 32:STORE`, `fw_rm = 49:STORE`), so no STAGE is ever built and every
 # bufferize rule downstream is unreachable.
 #
-# `all(isinstance(y, int) ...)` is `rr_dims(x)` non-empty: every dim the shape fold answers
+# `all(isinstance(y, int) ...)` is `IX.rr_dims(x)` non-empty: every dim the shape fold answers
 # is a number by the time it answers.
 def rr_p3.exp.go(isexp: Bool, +ar: O.Arena, +tbl: List<&2, IX.IxRange>, +out: List<&2, U32>, +x: U32) -> Bool:
   match isexp:
@@ -1014,7 +860,7 @@ def rr_p4.reduce(+ar: O.Arena, +tb: F.Table, +ctx: IX.IxCtx, +m: RrMap, +x: U32)
   # so the RANGE's INDEX pointed at a table that never received it. - this is
   # the class "a key that is not the key": the RANGE was created and nothing
   # COULD READ IT.
-  +n = rr_new.all(List.take(&2, U32, rr_dims(ar, tb, O.Arena.src0(ar, x)),
+  +n = rr_new.all(List.take(&2, U32, IX.rr_dims(ar, tb, O.Arena.src0(ar, x)),
                             U32.to_nat(rr_reduce_n.of(O.Arena.arg(ar, x)))),
                   RrMap.tbl(m), Nil{})
   RrMap{RrMap.ctx(m), RrMap.ends(m), RrRs.tbl(n), RrMap.out(m),
@@ -1212,7 +1058,7 @@ def rr_ap_inp.of(m: Maybe<&2, IX.IxRngs>) -> List<&2, U32>:
 # materialisation is after the broadcast (`broadcast_rngs` substitutes the
 # CONST 0 for a broadcast axis, => and that is a table substitution).
 def rr_ap_bcast(+ar: O.Arena, +tb: F.Table, +ctx: IX.IxCtx, +x: U32, +s: U32) -> List<&2, U32>:
-  IX.broadcast_rngs(O.Arena.op(ar, x), rr_dims(ar, tb, x), rr_dims(ar, tb, s),
+  IX.broadcast_rngs(O.Arena.op(ar, x), IX.rr_dims(ar, tb, x), IX.rr_dims(ar, tb, s),
                     rr_ap_inp.of(IX.ix_rngm_get(IX.IxCtx.rngm(ctx), x)))
 
 # one SRC, rebuilt (`indexing.py:78-94`). => and the two cases are disjoint: a SRC is
@@ -1865,7 +1711,7 @@ def rr_reduce_reading(+ar: O.Arena, +tb: F.Table, +x: U32) -> String:
   +red = rr_is_reduce(ar, x)
   Bool.pick(String, red,
     String.concat(["n=", U32.show(rr_reduce_n.of(O.Arena.arg(ar, x))),
-                   " src0=", rr_dims_str(rr_dims(ar, tb, O.Arena.src0(ar, x)))]),
+                   " src0=", rr_dims_str(IX.rr_dims(ar, tb, O.Arena.src0(ar, x)))]),
     "")
 
 def rr_dims_row.go(+ns: List<&2, U32>, +ar: O.Arena, +tb: F.Table,
@@ -1874,7 +1720,7 @@ def rr_dims_row.go(+ns: List<&2, U32>, +ar: O.Arena, +tb: F.Table,
     case Nil{}: acc
     case x <> t:
       rr_dims_row.go(t, ar, tb, List.append(&2, String, acc,
-        [String.concat([rr_node_str(ar, x), "=", rr_dims_str(rr_dims(ar, tb, x)),
+        [String.concat([rr_node_str(ar, x), "=", rr_dims_str(IX.rr_dims(ar, tb, x)),
                         rr_reduce_reading(ar, tb, x)])]))
 
 def rr_tbl_str.go(+tbl: List<&2, IX.IxRange>, +acc: List<&2, String>) -> List<&2, String>:

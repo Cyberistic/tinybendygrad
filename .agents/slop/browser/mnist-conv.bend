@@ -466,8 +466,8 @@ def sd_row(+pr: RZ.RZProg) -> String:
   +dst = SCH.sc_src0(ar, st)
   +tb = F.Folded.t(F.folded(ar))
   String.concat(["dst=", RR.rr_node_str(ar, dst),
-                 " dst_dims=", RR.rr_dims_str(RR.rr_dims(ar, tb, dst)),
-                 " st_dims=", RR.rr_dims_str(RR.rr_dims(ar, tb, st))])
+                 " dst_dims=", RR.rr_dims_str(IX.rr_dims(ar, tb, dst)),
+                 " st_dims=", RR.rr_dims_str(IX.rr_dims(ar, tb, st))])
 
 # DOES THE FOLD TRUNCATE? `Kahn.run` returns a PARTIAL table when its fuel runs out, and the
 # fuel is `next + edges` -- so a graph with more work than that leaves a suffix UNKNOWN.
@@ -545,9 +545,9 @@ def xp_dims() -> String:
   +tb = F.Folded.t(F.folded(ar))
   +v = SCH.sc_src(ar, SCH.sc_src(ar, SCH.sc_src0(ar, sk), 1), 1)
   +s0 = SCH.sc_src0(ar, v)
-  String.concat(["v_dims=", RR.rr_dims_str(RR.rr_dims(ar, tb, v)),
+  String.concat(["v_dims=", RR.rr_dims_str(IX.rr_dims(ar, tb, v)),
                  " marg=", RR.rr_dims_str(RR.rr_marg(ar, v)),
-                 " src_dims=", RR.rr_dims_str(RR.rr_dims(ar, tb, s0)),
+                 " src_dims=", RR.rr_dims_str(IX.rr_dims(ar, tb, s0)),
                  " nsrc=", U32.show(O.Arena.nsrc(ar, v))])
 
 # IS THE CLOSED LIST ONE ENTRY PER DIM? `flatten_bufferize` zips `x.shape` with the STAGE's
@@ -558,8 +558,8 @@ def xp_len() -> String:
   +tb = F.Folded.t(F.folded(ar))
   +v = SCH.sc_src(ar, SCH.sc_src(ar, SCH.sc_src0(ar, sk), 1), 1)
   +r = SCH.sc_src0(ar, v)
-  String.concat(["red_dims=", RR.rr_dims_str(RR.rr_dims(ar, tb, r)),
-                 " n=", U32.show(U32.from_nat(List.length(&2, U32, RR.rr_dims(ar, tb, r)))),
+  String.concat(["red_dims=", RR.rr_dims_str(IX.rr_dims(ar, tb, r)),
+                 " n=", U32.show(U32.from_nat(List.length(&2, U32, IX.rr_dims(ar, tb, r)))),
                  " out=", RR.rr_rngm_row(ar, sk, r)])
 
 # `rr_new.all` ON THE REDUCE'S OWN DIMS: one entry per dim, or not?
@@ -609,7 +609,7 @@ def xw_row() -> String:
   +v = SCH.sc_src(ar, st, 1)
   +r = SCH.sc_src0(ar, v)
   String.concat(["rm=", rm_row(RZ.rz_rebuild(xw_prog(), False{}, False{})),
-                 " red_dims=", RR.rr_dims_str(RR.rr_dims(ar, tb, r)),
+                 " red_dims=", RR.rr_dims_str(IX.rr_dims(ar, tb, r)),
                  " red=", RR.rr_rngm_row(ar, sk, r),
                  " kg=", RR.rr_dump(O.Found.ar(RR.rr_kernel_graph(ar, sk)), O.Found.i(RR.rr_kernel_graph(ar, sk)))])
 
