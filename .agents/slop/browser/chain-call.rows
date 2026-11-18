@@ -11,7 +11,7 @@ chain_tm_sched=tm197=195:ADD/999,1:CONST/20 tm203=201:ADD/999,7:CONST/12 tm209=2
 chain_dump_sched=SINK:other:END;END:none:STORE,RANGE,RANGE;STORE:none:INDEX,REDUCE;RANGE:other:CONST;RANGE:other:CONST;INDEX:none:PARAM,OTHER;REDUCE:other:MUL,RANGE;CONST:cother:;CONST:cother:;PARAM:other:CONST;OTHER:none:ADD,OTHER;MUL:none:INDEX,INDEX;RANGE:other:CONST;CONST:cother:;ADD:none:RANGE,MUL;OTHER:other:CONST;INDEX:none:PARAM,OTHER;INDEX:none:PARAM,OTHER;CONST:cother:;MUL:none:OTHER,RANGE;PARAM:other:CONST;OTHER:none:ADD,OTHER;PARAM:other:CONST;OTHER:none:ADD,OTHER;OTHER:other:CONST;CONST:cother:;ADD:none:RANGE,ADD;OTHER:other:CONST;CONST:cother:;ADD:none:RANGE,ADD;OTHER:other:CONST;ADD:none:MUL,MUL;ADD:none:MUL,MUL;MUL:none:OTHER,CONST;MUL:none:OTHER,RANGE;MUL:none:OTHER,RANGE;MUL:none:OTHER,CONST;OTHER:other:CONST;CONST:cother:
 chain_dump_committed=SINK:other:END;END:none:STORE,RANGE,RANGE;STORE:none:INDEX,REDUCE;RANGE:other:OTHER;RANGE:other:OTHER;INDEX:none:PARAM,OTHER;REDUCE:other:MUL,RANGE;OTHER:other:CONST;OTHER:other:CONST;PARAM:other:OTHER;OTHER:none:ADD,CONST;MUL:none:INDEX,INDEX;RANGE:other:OTHER;CONST:cother:;CONST:cother:;OTHER:other:CONST;ADD:none:OTHER,MUL;CONST:cother:;INDEX:none:PARAM,OTHER;INDEX:none:PARAM,OTHER;OTHER:other:CONST;OTHER:other:RANGE;MUL:none:CONST,OTHER;PARAM:other:OTHER;OTHER:none:ADD,CONST;PARAM:other:OTHER;OTHER:none:ADD,CONST;CONST:cother:;OTHER:other:RANGE;OTHER:other:CONST;ADD:none:OTHER,ADD;CONST:cother:;OTHER:other:CONST;ADD:none:OTHER,ADD;CONST:cother:;OTHER:other:RANGE;ADD:none:MUL,MUL;ADD:none:MUL,MUL;MUL:none:OTHER,OTHER;MUL:none:CONST,OTHER;MUL:none:CONST,OTHER;MUL:none:OTHER,OTHER;OTHER:other:CONST;CONST:cother:
 chain_dump_reduced=SINK:other:END;END:none:STORE,RANGE,RANGE;STORE:none:INDEX,AFTER;RANGE:other:OTHER;RANGE:other:OTHER;INDEX:none:PARAM,OTHER;AFTER:none:BUFFER,END;OTHER:other:CONST;OTHER:other:CONST;PARAM:other:OTHER;OTHER:none:ADD,CONST;BUFFER:other:CONST;END:none:STORE,RANGE;CONST:cother:;CONST:cother:;OTHER:other:CONST;ADD:none:OTHER,MUL;CONST:cother:;CONST:cother:;STORE:none:AFTER,ADD;RANGE:other:OTHER;OTHER:other:RANGE;MUL:none:CONST,OTHER;AFTER:none:BUFFER,END,RANGE;ADD:none:AFTER,MUL;OTHER:other:CONST;OTHER:other:RANGE;END:none:STORE,RANGE;MUL:none:INDEX,INDEX;CONST:cother:;STORE:none:AFTER,OTHER;INDEX:none:PARAM,OTHER;INDEX:none:PARAM,OTHER;AFTER:none:BUFFER,RANGE,RANGE;OTHER:other:CONST;PARAM:other:OTHER;OTHER:none:ADD,CONST;PARAM:other:OTHER;OTHER:none:ADD,CONST;CONST:cother:;OTHER:other:CONST;ADD:none:OTHER,ADD;CONST:cother:;OTHER:other:CONST;ADD:none:OTHER,ADD;CONST:cother:;OTHER:other:RANGE;ADD:none:MUL,MUL;ADD:none:MUL,MUL;MUL:none:OTHER,OTHER;MUL:none:CONST,OTHER;MUL:none:CONST,OTHER;MUL:none:OTHER,OTHER
-chain_c_nbytes=527
+chain_c_nbytes=536
 chain_c=
 void test(float* restrict data0_20, float* restrict data1_12, float* restrict data2_15) {
   float buf0[1];
@@ -23,8 +23,8 @@ void test(float* restrict data0_20, float* restrict data1_12, float* restrict da
       int cast0 = ((int)(Lidx0));
       int cast1 = ((int)(Lidx1));
       int cast2 = ((int)(Lidx2));
-      *buf0 = (buf0+((data1_12+((cast2+(3*0)+(*cast1))%))*(data2_15+((cast0+(*cast2)+(15*0))%))));
+      *buf0 = (buf0+((data1_12+((cast2+(3*0)+(3*cast1))%12))*(data2_15+((cast0+(5*cast2)+(15*0))%15))));
     }
-    *(data0_20+((cast0+(*cast1))%)) = buf0;
+    *(data0_20+((cast0+(5*cast1))%20)) = buf0;
   }
 }

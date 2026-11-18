@@ -2173,7 +2173,11 @@ def _render.named(+dev: U32, +i: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +st:
 def _render.one.go(op: O.Op, dev: U32, i: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +st: St) -> St:
   match op:
     case O.OpsNOOP{}: st_put(st, "")
-    case O.OpsCONST{}: st_put(st, "")
+    # A CONST's ROW IS ITS VALUE, not the empty string. `Rows` is the `ctx[u]` dict's
+    # dense twin -- one row per node, in position order -- and every consumer reads it
+    # with `rt`. MEASURED: "" here made the RESHAPE's modulus divisor print as `` and the
+    # C read `...%`; the const's value (20/12/15) was never in the row table at all.
+    case O.OpsCONST{}: st_put(st, ku_const_repr.of(KU.arg(k)))
     case O.OpsCUSTOM_FUNCTION{}: st_put(st, "")
     case O.OpsSINK{}: st_put(st_name(st, KUArg.sink_name(KU.arg(k))), "")
     case O.OpsSTACK{}: Bool.pick(St, U32.is_eq(KU.nsrc(k), 0), st_put(st, ""),
