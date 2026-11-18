@@ -6,10 +6,6 @@
 # INPUT AND THE PORT HAD NO DEVICE.
 #
 # THE DELTA IS THE `srcs` FIELD, AND IT IS A RE-INDEXING.  `KU.srcs` are
-# POSITIONS in the `KU` list, not arena indices, because the list is
-# post-order: every uop's srcs sit at a lower INDEX, so a position is also a
-# "defined before" marker.  The converter searches the index list for each
-# SRC's arena index and answers the position.
 #
 # THE UPSTREAM SIDE OF EVERY FIELD, WITH `file:line`:
 #
@@ -65,6 +61,21 @@ def kuconv.addr(+fx: F.Folded, a: U32) -> S.Addr:
 # the shape.  `F.fold.shape` is a double-`Maybe` too: the outer one is "the
 # FOLD knows this node" and the inner one is "`_shape` is not None"
 # (`ops.py:323`).  a `None` shape and an unknown node are the same empty
+# list here, and both give a `numel` of one -- which is upstream's answer,
+# BECAUSE `max_numel` IS `prod(max_shape)` AND `max_shape` OF AN ABSENT SHAPE
+# IS `()` (`movement.py:55`).
+#
+# `O.Sint` IS EITHER A LITERAL (`SI{i}`) OR A SYMBOLIC DIMENSION (`SU{u}`),
+# AND `KU.shape` IS A `List<&2, U32>`.  `SI{i}` IS AN `H.I64` AND `KU.shape`
+# IS `U32`, SO THE LOW WORD IS THE answer.
+#
+# `SU{u}` IS A NAMED LIMIT AND NOT A SILENT ONE: upstream's `max_shape`
+# REPLACES A SYMBOLIC DIMENSION WITH ITS MAXIMUM (`ops.py:1861`'s
+# `to_max_shape`), AND `to_max_shape` IS A WALL IN THIS PORT
+# (`renderer/cstyle.bend` NAMES IT).  SO A `SU` HAS NO `U32` ANSWER HERE AND
+# THE CONVERTER ANSWERS ZERO -- WRONG IS THE POINT: A SYMBOLIC DIMENSION THAT
+# RENDERED AS A PLAUSIBLE NUMBER WOULD BE A KERNEL THAT COMPILES AND
+# MISCOMPUTES.  ALL FIVE OF THE MEASURED CPU KERNELS HAVE CONCRETE SHAPES.
 def kuconv.sint(s: O.Sint) -> U32:
   match s:
     case O.SI{i}: H.lo32(i)
@@ -265,6 +276,12 @@ def ku_c.fill(+done: List<&2, C.KU>, +k: C.KU) -> C.KU:
   Bool.pick(C.KU, ku_c.refused(C.KU.op(k), k), ku_c.fill.of(done, C.KU.op(k), k), k)
 
 # the pass.  `done` is the completed list, in the same order as the input, so
+# POSITION `p` IS POSITION `p` IN BOTH.
+#
+# THE ARGUMENT ORDER IS (shrinking, changing), WHICH IS `linearizer.bend`'s OWN
+# `lt_deg.go(+ar, rest, +acc)` SHAPE WITH THE UNCHANGED ARGUMENT DROPPED: THE
+# COMPILER READS THE ARGUMENTS LEFT TO RIGHT AND EACH IS PASSED UNCHANGED
+# UNTIL ONE SHRINKS.
 def ku_c.go(+rest: List<&2, C.KU>, +done: List<&2, C.KU>) -> List<&2, C.KU>:
   match rest:
     case Nil{}: done
