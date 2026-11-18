@@ -503,7 +503,11 @@ def rm_row(+pr: RZ.RZProg) -> String:
 def xp_prog() -> RZ.RZProg:
   +dst = RZ.rz_input(O.Arena.empty(), 0, 392, [2, 1, 14, 14])
   +x = RZ.rz_input(T.Tensor.ar(dst), 1, 784, [1, 1, 28, 28])
-  +aft = RZ.rz_after(dst, MX.mxw_expand(cn_pool(x), [2, 1, 14, 14]))
+  # `marg` FOR `EXPAND` IS THE NEW LEADING DIMS, NOT THE FULL TARGET (`ops.py:412`'s
+  # `_shape` is `tuple(self.marg) + ps`, and `apply_movement_op`'s arm is
+  # `rngs = rngs[len(arg):]`). Passing the full shape makes `len(arg) == len(rngs)` and the
+  # slice removes EVERYTHING -- MEASURED, that is the empty `inp` in the row above.
+  +aft = RZ.rz_after(dst, MX.mxw_expand(cn_pool(x), [2]))
   +snk = RZ.rz_sink(O.Found.ar(aft), O.Found.i(aft))
   RZ.RZProg{O.Found.ar(snk), O.Found.i(snk)}
 
@@ -532,6 +536,20 @@ def xp_val_row() -> String:
   String.concat(["v=", RR.rr_node_str(ar, v), " [", RR.rr_rngm_row(ar, sk, v), "]",
                  " src0=", RR.rr_node_str(ar, o), " [", RR.rr_rngm_row(ar, sk, o), "]"])
 
+# THE EXPAND's SHAPE: upstream's `_shape` for EXPAND is `marg ++ src_shape` (ops.py:412), so
+# `apply_movement_op`'s `rngs[len(arg):]` leaves the source's part. If the fold answers only
+# the target shape, that slice removes EVERYTHING -- which is the empty `inp` measured above.
+def xp_dims() -> String:
+  +ar = RZ.RZProg.ar(RZ.rz_rebuild(xp_prog(), False{}, False{}))
+  +sk = RZ.RZProg.sink(RZ.rz_rebuild(xp_prog(), False{}, False{}))
+  +tb = F.Folded.t(F.folded(ar))
+  +v = SCH.sc_src(ar, SCH.sc_src(ar, SCH.sc_src0(ar, sk), 1), 1)
+  +s0 = SCH.sc_src0(ar, v)
+  String.concat(["v_dims=", RR.rr_dims_str(RR.rr_dims(ar, tb, v)),
+                 " marg=", RR.rr_dims_str(RR.rr_marg(ar, v)),
+                 " src_dims=", RR.rr_dims_str(RR.rr_dims(ar, tb, s0)),
+                 " nsrc=", U32.show(O.Arena.nsrc(ar, v))])
+
 def main() -> IO(Unit):
   do IO<Unit>:
     _ : Unit <- IO.print(String.concat(["pool_rr=", pool_rr()]))
@@ -559,6 +577,7 @@ def main() -> IO(Unit):
     _ : Unit <- IO.print(String.concat(["pool_rl=", rl_row(RZ.rz_rebuild(pool_prog(), False{}, False{}))]))
     _ : Unit <- IO.print(String.concat(["fw_rl=", rl_row(RZ.rz_rebuild(fw_prog(), False{}, False{}))]))
     _ : Unit <- IO.print(String.concat(["xp_rm=", rm_row(RZ.rz_rebuild(xp_prog(), False{}, False{}))]))
+    _ : Unit <- IO.print(String.concat(["xp_dims=", xp_dims()]))
     _ : Unit <- IO.print(String.concat(["xp_val=", xp_val_row()]))
     _ : Unit <- IO.print(String.concat(["xp_lk=", xp_lk()]))
     _ : Unit <- IO.print(String.concat(["xp_kg=", xp_kg()]))
