@@ -144,24 +144,7 @@
 #     itself is W4.
 #
 
-# THE GATE. Every row is DERIVED FROM PYTHON by the oracle named at the foot; the
-# interpreted lane, the native lane and CPython must print the same rows in the
-# same order, so
-#   diff <(.venv/bin/python gates/linearizer_census-oracle.py) <(./bin/bend tinybendygrad/codegen/late/linearizer.bend)
-# is the acceptance test and NEITHER side can be nudged to match the other.
-# both sides of that line were wrong and the oracle is now named. It read
-# `python3 /tmp/opencode/late-oracle.py`, which has never existed, against
-# `tinybendygrad/codegen/late.bend`, which the port moved INTO `late/` as this file --
-# MEASURED 2026-10-16: `late-oracle.py` is absent at every path on every ref
-# (`git rev-list --all --objects` names it zero times) and `tinybendygrad/codegen/late.bend`
-# was `D` in this tree's history. The oracle that replaced it is
-# `gates/linearizer_census-oracle.py`, which is 71 rows, RUNS (rc=0), and READS THIS FILE.
-# `oracles/tinybendygrad_codegen_late.bend.rows` is ALSO in HEAD at 128 rows and is NOT in
-# `differ.declared()` and has NO CODE READER -- a snapshot with neither a generator nor a
-# consumer, reported rather than deleted, because deleting it is not this unit's call.
-# The per-UOP gate shape and the two identity rows are described here; regalloc's
-# half of the same paragraph is in `regalloc.bend`'s header.
-#
+# THE TABLE IS IN `.agents/slop/tables/codegen-late-linearizer-147.md` -- THE GATE. Every row is DERIVED FROM PYTHON by the oracle named at the foot; the
 import Base
 import ./../../helpers.bend as H
 import ./../../LAWS/spec.bend as S
@@ -370,64 +353,7 @@ def lt_rc.go(vmaxs: List<&2, U32>, +acc: U32) -> U32:
 def lt_rc(vmaxs: List<&2, U32>) -> U32:
   lt_rc.go(vmaxs, 1)
 
-# THE PRIORITY LADDER, linearizer.py:24-32. PORTED IN FULL, all eight arms.
-#
-# UPSTREAM'S FIVE COMMENTS ON IT ARE THE DOCSTRING OF THE WHOLE SCHEDULING
-# DECISION, and they are kept because the numbers alone do not say why:
-#
-#   "get consumers and assign priorities" (14)
-#   "NOTE: this requires the lst be locally toposorted" (15)
-#       the priorities are assigned in a REVERSED toposort walk, so a node's
-#       consumers are all known before it is numbered -- but that only works
-#       if the list is toposorted to begin with.
-#   "we place UOps with higher run_counts later" (19)
-#       so the primary key is the RUN COUNT -- how many times the node's body
-#       executes -- and a node that runs MORE is placed LATER. A node inside a
-#       big loop is deferred; a node outside it is hoisted. That is the
-#       "innermost last" shape of a generated kernel.
-#   "simple priority override. this is all bottom up now, smaller numbers will
-#    be closer to the top" (22)
-#       the priority is an OVERRIDE on the run-count order, and it is read
-#       bottom-up: a SMALLER priority number means CLOSER TO THE TOP. So the
-#       negative numbers are the ones that get hoisted.
-#   "the order and placement of these defines is important" (25)
-#       and this is a warning about the ARM ORDER, not about the values: the
-#       ladder is a `match` on the op and the arms are not interchangeable.
-#       `PARAM` is first and it is the only one with an `extra`.
-#
-#     match u.op:
-#       case Ops.PARAM: priority, extra = -20, u.arg.slot
-#       case Ops.BUFFER | Ops.ALLOC: priority = -17 if u.addrspace == AddrSpace.LOCAL else -18
-#       case Ops.LOAD: priority = -1    # place loads early
-#       case Ops.STORE: priority = 1    # place stores late
-#       case Ops.RANGE: priority = 5    # placing RANGE is good
-#       case Ops.END | Ops.BACKEDGE: priority = -5     # placing loop exits is bad
-#       case _: priority = 0            # everything else has priority 0
-#
-# AND THE THREE ARMS THAT CARRY THEIR OWN REASON INLINE -- upstream's own
-# comments on the ladder's arms -- are the whole of what the numbers mean:
-# "place loads early" (-1), "place stores late" (1), "placing RANGE is good"
-# (5), and "placing loop exits is bad" (-5). A LOOP EXIT is bad because it
-# ends a loop: hoisting it above the loop body would close the loop early.
-#
-# EVERY PRIORITY IS NEGATIVE and Bend has no signed `U32`, so this returns
-# `priority + 20`: the OFFSET, on 0..25, order-isomorphic to the priority. The
-# `po=` column of every `lin_u<i>` row is that offset and not the priority.
-#
-# `extra` -- `u.arg.slot` for a PARAM, `None` for everything else -- is NOT a
-# field here, and that is a claim rather than an omission: `extra` is only ever
-# REACHED when `run_count` AND `priority` are equal, and priority -20 is the
-# PARAM's alone, so any two entries that meet at `extra` are both PARAMs and both
-# slots. Python would raise `TypeError` comparing `None` with an `int` if that
-# were not true, and `lin_exmix=0` is the row that checks it on the fixture.
-# `lin_exmix` COUNTS the pairs that tie on (run_count, priority) and disagree on
-# whether `extra` is None -- so it is a gate, not a comment.
-#
-# `# TODO(p3) linearizer.py:50  symbol=linearize  the DEBUG_LINEARIZE print reads `extra` -- the one
-# place Python reads the field, and env-gated.`
-#
-# W4: the BUFFER/ALLOC arm's `u.addrspace == AddrSpace.LOCAL` is a PARAMETER. The
-# arm is `lt_po.w1(local, is_bufalloc)`; `lt_po_glob`/`lt_po_loc` are the two rows.
+# THE TABLE IS IN `.agents/slop/tables/codegen-late-linearizer-373.md` -- THE PRIORITY LADDER, linearizer.py:24-32. PORTED IN FULL, all eight arms.
 
 # THE OP PREDICATES, LEAF FIRST. Seven arms of the ladder would be seven
 # two-armed `match`es if each were written out, and each gets ITS OWN row (`po_*`)
@@ -974,28 +900,7 @@ def lt_vm_lst() -> List<&2, U32>:
 def lt_vm_call() -> List<&2, U32>:
   [0, 0, 0, 0, 0, 0]
 
-# the gate, part one: the linearizer. Every row is derived from python by
-# /tmp/opencode/late-oracle.py, which drives tinygrad/codegen/late/linearizer.py
-# over this exact fixture and prints its rows in THIS ORDER and with THIS
-# SPELLING, so
-#   diff <(.venv/bin/python gates/linearizer_census-oracle.py) <(./bin/bend tinybendygrad/codegen/late/linearizer.bend)
-# is the acceptance test and NEITHER side can be nudged to match the other.
-# both sides of that line were wrong and the oracle is now named. It read
-# `python3 /tmp/opencode/late-oracle.py`, which has never existed, against
-# `tinybendygrad/codegen/late.bend`, which the port moved INTO `late/` as this file --
-# MEASURED 2026-10-16: `late-oracle.py` is absent at every path on every ref
-# (`git rev-list --all --objects` names it zero times) and `tinybendygrad/codegen/late.bend`
-# was `D` in this tree's history. The oracle that replaced it is
-# `gates/linearizer_census-oracle.py`, which is 71 rows, RUNS (rc=0), and READS THIS FILE.
-# `oracles/tinybendygrad_codegen_late.bend.rows` is ALSO in HEAD at 128 rows and is NOT in
-# `differ.declared()` and has NO CODE READER -- a snapshot with neither a generator nor a
-# consumer, reported rather than deleted, because deleting it is not this unit's call.
-#
-# THE PRINTERS, LEAF FIRST, and there are two because two row classes need two
-# alphabets: a `U32` list (`ix`, `lin_nkey`) and a `String` list (`lin_srcs`). A
-# shared printer is a shared FORMAT CONTRACT (the notes' rule 22) -- a mutation in
-# one invalidates a quarter of the suite, which is the right trade, and it is why
-# `lt_u32s` is written once and not three times.
+# THE TABLE IS IN `.agents/slop/tables/codegen-late-linearizer-977.md` -- the gate, part one: the linearizer. Every row is derived from python by
 
 def row(nm: String, v: U32) -> IO(Unit):
   IO.print(String.concat([nm, "=", U32.show(v)]))

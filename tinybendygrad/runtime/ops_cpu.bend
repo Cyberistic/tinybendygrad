@@ -1079,37 +1079,7 @@ def subnames(+xs: List<&2, Sub>) -> List<&2, String>:
 
 def urow(nm: String, v: U32) -> IO(Unit): IO.print(String.concat([nm, "=", U32.show(v)]))
 
-# THE PORT's OWN ENTRY POINT, AND WHY IT IS HERE AND WHY IT DOES NOTHING.
-#
-# IT IS HERE BECAUSE THE COMPILER SAYS SO, NOT BECAUSE A TASTE SAYS SO.
-# `references/bend/bend2/main.ts:1099` (`book_run`) TAKES ONE OF TWO PATHS: A
-# FILE WITH A `main` IS RUN (`Comp.io_run`), AND A FILE WITHOUT ONE IS A
-# "BOOK" AND IS JUDGED BY `cli_verdict` -- WHICH REFUSES A FILE WHOSE DEFS
-# REACH A FOREIGN EFFECT. THIS FILE OWNS TWO (`Cpu.compile` AND
-# `Cpu.exec`, `import "./ops_cpu.c"` AND `import "./ops_cpu.js"`), SO A PORT
-# FILE WITH NO `main` IS REFUSED WITH
-# `Error: 2 defs rely on unsafe or foreign code: Cpu.compile, Cpu.exec`.
-#
-# AND IT DOES NOTHING, AND THAT IS THE HONEST SHAPE. UPSTREAM's
-# `tinygrad/runtime/ops_cpu.py` IS A MODULE -- IT HAS NO `main` AND NO
-# PROGRAM, AND THE PORT IS THE SAME SHAPE. AND THE PORT's PROGRAM, IF
-# IT IS EVER WRITTEN, IS `runtime/device.bend`'s -- WHOSE OWN HEADER SAYS
-# *"THE port's `Device` LANE is a set of STAGES WITH NO LANE"* AND *"whoever
-# produces it is the next UNIT"* -- SO WRITING ONE HERE WOULD BE INVENTING
-# THE NEXT UNIT's WORK.
-#
-# AND IT MUST NOT CALL THE FOREIGN EFFECTS. `book_promises`
-# (`main.ts:961`) MARKS EVERY DEF THAT REFERENCES A FOREIGN ONE, AND
-# `runtime/device.bend` IMPORTS THIS FILE AS `CPU` AND CALLS
-# `CPU.Cpu.compile(...)` AND `CPU.Cpu.exec(...)`, SO A `main` THAT CALLED
-# THEM WOULD PUT THREE MORE NAMES INTO `device.bend`'s OWN VERDICT --
-# MEASURED: `device.bend`'s FAILURE GOES FROM 4 DEFS TO 7. AND
-# THAT FAILURE IS PRE-EXISTING (`device.bend` ALREADY FAILS WITH THOSE 4
-# ON THE UNMOVED TREE), AND THIS MOVE MUST NOT MAKE IT WORSE.
-#
-# AND IT PRINTS NOTHING, BECAUSE EVERY ROW IS PART OF THE CLAIM THE
-# DIFFER MAKES: A ROW THE PORT PRINTS THAT IT DID NOT PRINT BEFORE IS A ROW
-# THE DIFF NEVER SAW. THE PORT's ROWS ARE THE DRIVER's ROWS NOW.
+# THE TABLE IS IN `.agents/slop/tables/runtime-ops_cpu-1082.md` -- THE PORT's OWN ENTRY POINT, AND WHY IT IS HERE AND WHY IT DOES NOTHING.
 
 def main() -> IO(Unit):
   do IO<Unit>:

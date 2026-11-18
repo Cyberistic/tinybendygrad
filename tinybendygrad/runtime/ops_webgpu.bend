@@ -1056,19 +1056,7 @@ def slots.bufs(n: Nat, bs: List<&2, Buf>, acc: List<&2, Slot>) -> List<&2, Slot>
 def slots(+bs: List<&2, Buf>, nvals: Nat) -> List<&2, Slot>:
   slots.vals(nvals, slots.bufs(List.length(&2, Buf, bs), bs, [Slot{False{}, UNIFORM_SIZE()}]))
 
-# ops_webgpu.py:69-147 -- one program call, as the step list it is. Every step is
-# one line range of the Python and takes the `Pass` it is handed, so the order is
-# the whole of `prog.call` and nothing else.
-#
-# the `raise` is in the trace (see the raise): once a pop has reported an error
-# no later step records anything, so these steps need no guard of their own and a
-# refusal shows up as a truncated trace -- which is exactly what the four
-# `wg_refuse_*` rows read.
-# :71, and the dispatch geometry :123 reads. `local_size` is recorded and never
-# dispatched on: ops_webgpu.py never reads it (see wgsl.bend owes, item 3).
-# the parameter is `local`, not `ls`: a pattern binder of the same name shadows it
-# and the Pass then keeps the 0 it was born with. measured: `wg_call_ls_recorded`
-# printed 0 until this was renamed.
+# THE TABLE IS IN `.agents/slop/tables/runtime-ops_webgpu-1059.md` -- ops_webgpu.py:69-147 -- one program call, as the step list it is. Every step is
 def pass.geometry(p: Pass, gx: U32, gy: U32, gz: U32, local: U32, want: Bool) -> Pass:
   match p:
     case Pass{module, entry, +feats, ls, nentries, sizes, g0, h0, i0, wait, +t2}:

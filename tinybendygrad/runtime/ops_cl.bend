@@ -1363,18 +1363,7 @@ def prog.del.go(have_k: Bool, have_p: Bool, +t: Tr) -> Tr:
     case True{}: prog.del.prg(have_p, Tr.emit(OP_RELEASE_KERNEL(), "0", t))
     case False{}: prog.del.prg(have_p, t)
 
-# cl:55-76 -- ONE PROGRAM CALL, as the step list it is. Every step is one line
-# range of the Python and takes the `Prog` it is handed, so the order IS the
-# whole of `__call__`: the arg loop (:57-65), then the geometry (:66, no call),
-# then the launch (:68), then the `if wait:` block (:70-75).
-#
-# THE `raise` IS IN THE TRACE (see THE RAISE): `check` after every call, so once
-# a refusal lands nothing further records and a refusal shows up as a TRUNCATED
-# trace. `cl_refuse_*` reads that.
-# `Arg.kind`: 0 is a `cl_mem`, 1 is a `clCreateImage` result, 2 is the boxed
-# `c_int{bitsize}` scalar. The three are not decoration -- they select three
-# DIFFERENT `clSetKernelArg` argument types and the image one adds a
-# `clCreateImage` BEFORE the set.
+# THE TABLE IS IN `.agents/slop/tables/runtime-ops_cl-1366.md` -- cl:55-76 -- ONE PROGRAM CALL, as the step list it is. Every step is one line
 def KIND_MEM() -> U32: 0
 def KIND_IMAGE() -> U32: 1
 def KIND_SCALAR() -> U32: 2

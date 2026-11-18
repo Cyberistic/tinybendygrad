@@ -890,24 +890,7 @@ def Prog.us(p: Prog) -> List<&2, N>:
 # PACKET.in is `Prog.src` and nothing else.
 def Prog.src(p: Prog) -> String: Res.s(encode(Prog.us(p)))
 
-# THE CHAIN WALK AT :208 IS NOT A LOOP HERE, and the reason is measured: Bend
-# descends only on a structurally MATCHED column
-# (references/bend/tests/halt/threaded_state_after.bend writes
-# `case 1n+p: go(p, acc+1)`), so `ls_src0(ls, p)` -- a call -- shrinks no column
-# and cannot be the fuel. Re-deriving the walk upward answers the same question
-# without a descent:
-#
-#   base[j] = the largest k <= j whose op is NOT in the chain set
-#
-# which is what `while uops[b].op in {…}: b = uops[b].srcs[0]-1` converges to,
-# because the chain only ever moves DOWN the post-order list. `bases.go` is a
-# fold over the list tail, so it needs no descent at all.
-#
-# The one difference is a list whose EVERY prefix is a chain op. Python's `b`
-# would go to -1 and read `uops[-1]`, i.e. the LAST line; `base[j]` is 0 there,
-# and `ls_at` answers the bottom line, whose arg is "-" and which `is_buf`
-# rejects. So a packet whose first line is a chain op gets no write-back instead
-# of a wrong one. `bend_prog_base_zero` is the row that records it.
+# THE TABLE IS IN `.agents/slop/tables/runtime-ops_bend-893.md` -- THE CHAIN WALK AT :208 IS NOT A LOOP HERE, and the reason is measured: Bend
 def ls_at(+ls: List<&2, Line>, i: Nat) -> Line:
   Maybe.default(&2, Line, List.get(&2, Line, ls, i), Line.of("-", "-", "-", Nil{}))
 
@@ -969,33 +952,7 @@ def bases(+ls: List<&2, Line>) -> List<&2, U32>: bases.of(ls)
 def base_at(+bs: List<&2, U32>, j: U32) -> U32:
   Maybe.default(&2, U32, List.get(&2, U32, bs, U32.to_nat(j)), 0)
 
-# :208, answered from the table: the walk from a STORE's `u.srcs[0]` lands on
-# `base[u.srcs[0]]`.
-# THE real :208 WALK, AND the `bases` TABLE is a FALSE EQUIVALENCE. The file's own
-# header claims "which is what `while uops[b].op in {...}: b = uops[b].srcs[0]-1`
-# converges to, because the chain only ever moves DOWN the post-order list" and
-# tabulates `base[j]` as the largest k <= j that is not a chain op. THAT IS FALSE.
-# MEASURED on `packet-tiny.txt`: the STORE is line 11 (0-based) with srcs (10, 11),
-# so `b = 9`; line 9 is `INDEX f32 - 1 5`, and following its POINTER gives
-# `b = 1 - 1 = 0` -- line 0, a PARAM. The table's rule gives `base[9] = 8` (the
-# LOAD above it), which is a different line entirely. CPython's own answer is
-# `out_bufs = [0]`, and only the pointer chase produces it.
-#
-# SO THE CHASE IS THE CHASE: `chase.at` is `u.srcs[0]-1` and `chase.go` is the
-# `while`. It is ONE self-recursive def -- Bend refuses mutual recursion -- with the
-# flag carried, exactly the shape `ops_python.bend` `bytes.go` uses.
-# `ls` LEADS THE CALL, and that is forced: arguments are read left to right and the
-# call must be DECREASING on a structurally matched column. `ls` is the same list
-# every step, so the `Nat` fuel is what shrinks -- and it must not sit behind `ls`
-# in the signature of the def that recurses.
-# THE step is taken while the op is a chain op -- :208's
-# `while self.uops[b].op in {...}: b = self.uops[b].srcs[0]-1`. The first version
-# had the test INVERTED (`Bool.not(is_chain(...))` for the stop), so the chase never
-# moved. MEASURED: `store_base.of` answered 11 where CPython answers 0.
-# THE step is taken while the op is a chain op -- :208's
-# `while self.uops[b].op in {...}: b = self.uops[b].srcs[0]-1` keeps MOVING while the
-# test holds and STOPS when it fails. So the pick is "not a chain op -> STOP at b",
-# and `chase.go` recurses with `go_` UNCHANGED, re-testing at the new b.
+# THE TABLE IS IN `.agents/slop/tables/runtime-ops_bend-972.md` -- :208, answered from the table: the walk from a STORE's `u.srcs[0]` lands on
 def chase.at(+ls: List<&2, Line>, +b: Nat) -> Nat:
   Bool.pick(Nat, Bool.not(is_chain(Line.op(ls_at(ls, b)))), b,
     Nat.sub(ls_src0(ls, b), 1n))
@@ -1056,20 +1013,7 @@ def bufs_before(n: Nat, +p: U32, +ls: List<&2, Line>, +acc: U32) -> U32:
 def bufs_before.of(ls: List<&2, Line>, +b: U32) -> U32:
   bufs_before(U32.to_nat(b), b, ls, 0)
 
-# :200 `[buf_extent(u.arg) for u in self.uops if is_buf(u.arg)]`
-# `Bool.pick` CHOOSES an arm, so `hit` carries the PREDICATE for the line about to
-# be read. THE seed is wrong once and it was hidden: `in_bufs.of` seeded `hit` from
-# `ls_at(ls, 0n)` -- the FIRST line -- and then the first arm re-tested it, so the
-# first line was counted twice and the LAST line never counted. MEASURED, after
-# WALL 4 was cleared: `bend_prog_tiny_in_bufs` read `4 4 4 0` where CPython's
-# `[buf_extent(u.arg) for u in self.uops if is_buf(u.arg)]` is `[4, 4, 4]`.
-#
-# The fix is the shape `ops_python.bend` uses everywhere: TEST THE HEAD INSIDE THE
-# ARM, so every line is tested exactly once and the seed is `False{}`.
-# `Bool.pick` EVALUATES BOTH ARMS, so a `pick` whose arms both RECUR diverges the
-# walk into an infinite regress -- MEASURED: the run never terminated. So the pick
-# is over a VALUE, not over the recursion, which is the shape the rest of this file
-# uses (`hexout.go`, `raw_free`).
+# THE TABLE IS IN `.agents/slop/tables/runtime-ops_bend-1059.md` -- :200 `[buf_extent(u.arg) for u in self.uops if is_buf(u.arg)]`
 def in_bufs.put(+ls: List<&2, Line>, +acc: List<&2, U32>) -> List<&2, U32>:
   Bool.pick(List<&2, U32>, is_buf(Line.arg(ls_at(ls, 0n))),
     List.append(&2, U32, acc, [buf_extent(Line.arg(ls_at(ls, 0n)))]), acc)

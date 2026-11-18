@@ -1101,35 +1101,7 @@ def l2i_cdiv.abs(+ar: O.Arena, +xdt: S.Dt, +zero: U32, +a0: U32, +a1: U32, +b0: 
   +na = l2i_cdiv.neg(O.Found.ar(z), zi, O.Found.i(ua0), O.Found.i(ua1))
   l2i_cdiv.abs.b(W2.ar(na), O.Found.i(an), zi, O.Found.i(ua0), O.Found.i(ua1), W2.lo(na), W2.hi(na), zero, b1, zi, O.Found.i(ub0), O.Found.i(ub1), na)
 
-# ONE `.where` PAIR PER STEP, with every record and index passed as a `U32`, so
-# nothing is read twice: `W2.ar`/`W2.lo`/`W2.hi` are three CALLS on one record and
-# a `Found`'s `.ar`/`.i` are two, so every intermediate is destructured once.
-#
-# THE SHIFT AMOUNT IS `i % 32`, NOT `i`. dtype.py:68 writes
-# `shl(cond.cast(dtypes.uint), i % 32)` and `shl` is transcendental.py:20,
-# `x * 2y` -- so for `i = 63` the constant is `2**31` = `C(2147483648)` and NOT
-# `2**63`, which `tx_powi(63)` builds as the 64-bit `C(2147483648:0)`. `U32.mod` is
-# a machine word, so the reduction is exact and needs no special case.
-#
-# stale measurement in a comment is a measurement that gets cited. It claimed: "CPython's
-# cone constants after the fixed six are `C(63), C(62), ..., C(2)` ... while the port
-# printed `C(64)` and `C(2147483648)` there and NEVER PRODUCED A `2**31` AT ALL."
-# Re-measured on the live tree, the port DOES print `2**31`. The port's `lgqk` is
-#
-#     C(0),C(1),C(32),C(1),C(31),C(-1),C(64),C(2147483648),C(1073741824),...
-#
-# and CPython's is
-#
-#     C(0),C(1),C(32),C(1),C(31),C(-1),C(63),C(62),C(61),C(60),...,C(33),
-#     C(2147483648),C(30),C(1073741824),C(29),...
-#
-# So the real difference is not a missing power of two. It is that the port emits ONE
-# leading word `C(64)` and then a RUN of powers of two, while CPython interleaves
-# `C(i)` with `2(i-32)` for i = 63..33 -- the port never emits the 31 `UOp.const(i,
-# dtypes.uint)` shift words of dtype.py:65 at all. Whether that is the TRUNCDIV loop or the
-# `q` accumulator is not yet established; `lgtk` is still 3 constants against CPython's
-# 66 and `lgtsig` 57 cone nodes against 2184, so the family is OPEN. `.agents/slop/
-# dd-truth.py` is what prints both sequences side by side.
+# THE TABLE IS IN `.agents/slop/tables/codegen-decomp-dtype-1104.md` -- ONE `.where` PAIR PER STEP, with every record and index passed as a `U32`, so
 def l2i_cdiv.q.lo(+ar: O.Arena, +cond: U32, +c: Cd, +i: U32) -> Cd:
   +ci = P.dc_cast(ar, cond, S.uint32())
   +b = T.tx_shl(O.Found.ar(ci), O.Found.i(ci), U32.mod(i, 32))
@@ -2156,23 +2128,7 @@ def f2f_store(st: U32, idx: U32, val: U32, fr: S.Dt, to: S.Dt) -> Maybe<&2, U32>
 def f2f_rewrite(ctx: U32, x: U32) -> Maybe<&2, U32>:
   graph_rewrite(x, pm_float_decomp(), 0, True{})
 
-# `do_dtype_decomps` -- dtype.py:208-216. The one thing here that is NOT the
-# wall is the TABLE CHOICE: `pm = pm_float_decomp if fr in dtypes.floats else
-# pm_long_decomp`, which is the difference between decomposing a long and
-# decomposing a float, so it is a `Bool` the gate reads.
-#
-# UPSTREAM'S TWO RULE COMMENTS NAME THE TWO PHASES OF THE TABLE:
-#
-#   "detect dtypes to decompose" (209)
-#       so the FIRST rule does not decompose -- it DETECTS. It walks every
-#       node and records the dtype that has to be emulated, and the SECOND
-#       rule does the actual work. That is why the detection is a `set` in
-#       the context and why the decomposition loop runs once per dtype.
-#   "do the rewrites" (212)
-#       and the decomposition is per-dtype and BOTTOM-UP: `fr in dtypes.floats`
-#       picks the float table and everything else picks the long one, and the
-#       dtype is decomposed into `int` for a long and into `float` for a
-#       float.
+# THE TABLE IS IN `.agents/slop/tables/codegen-decomp-dtype-2159.md` -- `do_dtype_decomps` -- dtype.py:208-216. The one thing here that is NOT the
 
 def do_dtype_decomps.pmf(isfl: Bool, fr: S.Dt, c: U32) -> O.PMEntrys:
   match isfl:

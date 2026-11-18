@@ -450,51 +450,7 @@ def tn_where(+cond: Tensor, +x: Tensor, +y: Tensor) -> Tensor:
   tn_alu.of(O.Merge.ar(my), Tensor.u(cond), O.OpsWHERE{},
     [O.Merge.at(mx, Tensor.u(x)), O.Merge.at(my, Tensor.u(y))])
 
-# `logical_not` -- elementwise.py:57 AT `f5ac54685074`. `return
-# self.cast(dtypes.bool).eq(False)`, and
-# `.cast` is `self if self.dtype == (dt:=to_dtype(dtype)) else self._uop.alu(Ops.CAST,
-# arg=dt)` (mixin/dtype.py:38) -- IT FOLDS ON AN IDENTITY CAST. So the graph is
-# CAST(self, bool) -> CMPEQ(cast, CONST(False)) when self is NOT bool and NO CAST AT ALL when
-# it is, and that is not a carve-out: it is the whole of `cast`.
-#
-# `O.UOp.cast` (ops.bend:2774) MINTS THE NODE UNCONDITIONALLY -- `UOp.new(ar, OpsCAST{}, ...)`.
-# That was the one extra `CAST` on `tn_eq`, `tn_dunder_ge`, `tn_dunder_le`,
-# `tn_dunder_invert` and `tn_isfinite`, every one of which is a `logical_not` over a node the
-# fold already knows is `bool` (a CMPNE, a CMPLT or an OR -- uop/fold.bend:2644 symbol=dt_shape answers
-# `bool` for the first two and `promo_dtype` for the third). The fold-aware cast is
-# `D.cast_at` (dtype.bend:341), the same `cast_at.of` two-arm match `mixin/elementwise.bend`'s
-# `ew_cast` reaches through `W.wk_cast_at`, and it is `D` rather than `W` because
-# `wk_eq_dt` is stale (see the header). `F.folded(Tensor.ar(t))` is `ew_fx`'s exact call:
-# the fold is taken from the tensor's OWN arena at the point of use, never handed down.
-#
-# It is declared BEFORE `tn_bitwise_not` because that def's BOOL arm calls it, and a Bend
-# def may only call defs DECLARED ABOVE IT (rule 1 in the header). `bitwise_not`'s bool arm
-# IS this graph, so the two graphs ARE equal for a bool self; they are held apart only
-# because `logical_not` (:49) and `bitwise_not` (:145) are sibling methods with different
-# bodies around the shared one.
-# `Arena` is an IMMUTABLE `Data` VALUE (`ops.bend:1255`: `type Arena is Data: Arena{nodes,
-# shp}`), so a `Found` SNAPSHOTS the arena at its own construction and every index is
-# only meaningful in the arena value that index was minted in. `false_c.ar` has the
-# CAST AND the CONST (3 slots); `cast.ar` has the CAST only (2 slots). Building the
-# CMPEQ in `cast.ar` therefore APPENDS it at the slot `O.Found.i(false_c)` already names
-# -- the node becomes its own `src[1]`. MEASURED, `./bin/bend` on a `CInt` input, with
-# `O.Rng.sig` (uop/ops.bend:5978 symbol=Rng.sig) as the instrument: `CMPEQ/2 Ops.CAST
-# Ops.CMPEQ` (src[1] IS the top node) where CPython answers `CMPEQ(CAST(CONST()),
-# CONST(False))` (`/tmp/cp_shape.py`, `tinygrad`). So the CMPEQ is built in `false_c.ar`,
-# the newest.
-#
-# `logical_not` -- elementwise.py:57 AT `f5ac54685074` -- is
-# `self.cast(dtypes.bool).eq(False)`, so it is a CAST and a CMPEQ against the CONST
-# `False`. THE NAME DID NOT CHANGE AND THE NODE DID: the pre-pin spelling was
-# `self.cast(dtypes.bool).eq(False)`, which builds `CMPEQ(x, CONST(False))`.
-# MEASURED 2026-11-10 ON CPYTHON AT THE PIN: `a.logical_not()` emits
-# `CMPEQ(CAST(a), CONST(False))`.
-#
-# AND THIS IS NOT A STYLISTIC CHOICE: UPSTREAM's OWN `symbolic.py:349` KEYS ON IT --
-# `neg = v.op is Ops.CMPEQ and v.src[1].op is Ops.CONST and v.src[1].val == 0` -- so a
-# graph that says `CMPNE` is NOT upstream's graph. AND THE PORT's OWN
-# `uop/symbolic.bend`'s `mint_not` ALREADY BUILDS THE `CMPEQ` SPELLING -- so THIS file was
-# the only half on the pre-pin spelling.
+# THE TABLE IS IN `.agents/slop/tables/tensor-453.md` -- `logical_not` -- elementwise.py:57 AT `f5ac54685074`. `return
 def tn_logical_not.cmpeq(+cast: O.Found, +false_c: O.Found) -> Tensor:
   tn_alu.of(O.Found.ar(false_c), O.Found.i(cast), O.OpsCMPEQ{}, [O.Found.i(false_c)])
 
@@ -1612,35 +1568,7 @@ def tn_shape_arg.of(+ys: List<&2, U32>, +ar: O.Arena) -> O.Found:
 def tn_shape_arg(+a: SArg) -> O.Found:
   tn_shape_arg.of(SArg.ys(a), SArg.ar(a))
 
-# THE MOVEMENT DISPATCH. `_mop` (tensor.py:499) is
-# `self._apply_uop(UOp._mop, op=op, arg=arg)` and `_rop` (tensor.py:500) is
-# `self._apply_uop(UOp._rop, op=op, axis=axis)`: ONE LINE each, and the node
-# construction they forward to is `UOp._mop` (ops.py:799) and `UOp._rop` (ops.py:633).
-#
-# HOISTED, WITH A NOTICE, and the notice is fold.bend's: ops.bend is READ-ONLY to
-# this file and carries both as `TODO(p3) ops.py:799  symbol=_mop` and `:633  symbol=_rop`. A
-# one-line def whose callee does not exist cannot be gated at all, and the movement
-# dispatch is the largest share of this file that builds a graph, so the body is
-# written here. When ops.bend lands it, `tn_mop` and `tn_rop` become the one-liners
-# Python has and nothing else in this file changes.
-#
-# PORTED: the two early NOOPs (ops.py:823-826), the `src_args` split (:827-830),
-# `shape_to_shape_arg` (ops.py:106), and the final
-# `UOp(op, src=(self,)+UOp.sink(*usrcs).simplify().src)` (:835).
-#
-# THE `.simplify()` IS A WALL: it is `graph_rewrite` (P3). MEASURED for the six
-# movement args this file gates, it is the IDENTITY -- `UOp.sink(x).simplify().src` is
-# `(x,)`, `UOp.sink(x, y).simplify().src` is `(x, y)`, and `UOp.sink(c).simplify()` is
-# still a SINK -- so the port builds the SINK and reads its srcs. `tn_sink1` and
-# `tn_sink2` are the rows that would move if a rewrite ever did reach a shape arg.
-#
-# THE `Ops.STACK` ARM (ops.py:831-834) needs `dtype_from_uop` and `ccast`, both P3, so
-# `MopArg` has no `Ops.STACK` case and a STACK arg is a `TODO(p3)`.
-# `arg` is one of three shapes and `op` says which, which is exactly what
-# ops.py:827-830 decides after Python has already made `arg` a heterogeneous tuple.
-# `APairs` is the TRANSPOSE Python computes with `list(zip(*arg))`: `arg` is a tuple
-# of (lo, hi) pairs, one per dim, and the transpose is the list of los and the list of
-# his.
+# THE TABLE IS IN `.agents/slop/tables/tensor-1615.md` -- THE MOVEMENT DISPATCH. `_mop` (tensor.py:499) is
 type MopArg is Data:
   ADims{ds: List<&2, O.Const>}                 # RESHAPE / EXPAND: `src_args = [arg]`
   APairs{lo: List<&2, O.Const>, hi: List<&2, O.Const>}  # PAD / SHRINK: `list(zip(*arg))`
@@ -2484,35 +2412,7 @@ def tn_meta_carries(tm: U32, c: MetaCell, +name: String) -> Maybe<&2, O.Metadata
     None{},
     MetaScope.eff(tn_meta_enter(tm, c, name)))
 
-# THE GATE.
-#
-# EVERY ROW IS A GRAPH SHAPE, and the shape is the SIGNATURE of the toposort:
-# `n=<count> OP/<nsrc> OP/<nsrc> ...` in DFS-postorder, with the BARE enum name
-# (`O.Ops.name.of`, which is `Enum.name`, not `str(enum)`). The oracle is CPython:
-# `.agents/slop/tensor-oracle.py` prints the same string for the same expression, and
-# the two files' outputs are diffed. NOTHING is executed, because the point is that
-# tensor.py's oracle runs without hardware.
-#
-# The `n=` COUNT is in every signature row on purpose. A boolean row that says "the ADD
-# is there" cannot see a missing CONST, and `tn_alu3` exists because `tn_alu2` would
-# pass against a `tn_alu` that dropped the third src.
-#
-# A COUNT row of its own, `tn_arena`, is the arena size after `tn_mop_pad` -- the
-# BEND-only number, since Python's ucache is global and shared and its length depends on
-# every fixture that ran before it. It pins the orphan SINK that `tn_mop.node` builds, so
-# a `tn_mop` that stopped building the SINK would still pass all seven movement rows and
-# move this one.
-#
-# The `tn_alu*` rows call `tn_alu` and not `O.UOp.alu`, and the `tn_mop*`/`tn_rop*` rows
-# call `tn_mop`/`tn_rop`, because a gate row that calls the SUBSTRATE is a row about
-# ops.bend and not about this file.
-# the fixture BUFFER. `UOp.new_buffer(device, size, dtype, num)` is ops.py:853 and is
-# WALL 2, but the NODE it builds is not device state -- it is `UOp(Ops.BUFFER,
-# src=UOp.device_range_src(device), arg=ParamArg(slot, dtype, size=size,
-# device=device, buffer=buf))`, and for a single device `device_range_src` is `()`
-# (ops.py:851). So the node is buildable and the `buffer=buf` field is left `None`,
-# which is the ONE field of `ParamArg` that needs a device. These are the gate's
-# fixtures, not the port's, and the header says so.
+# THE TABLE IS IN `.agents/slop/tables/tensor-2487.md` -- THE GATE.
 def g_buf.arg(slot: U32, dt: S.Dt) -> O.ParamArg:
   # slot, dtype, size, vmin_vmax, multiple_of, name, addrspace, device, volatile, image,
   # buffer, bind_on_realize, val -- ops.bend's `ParamArg`, in its order.
@@ -3153,90 +3053,4 @@ def main() -> IO(Unit):
     t_meta_excl2()
     t_meta_isolated()
 
-# THE MUTATION TABLE, MEASURED, and re-runnable:
-#
-#     .venv/bin/python .agents/slop/tensor-mutate.py
-# RESTORED 2026-10-16 from `.agents/slop/tensor-mutate.py`, blob e853efc4b, 5821 B, byte for
-# byte, together with `.agents/slop/zero-classify.py` (18662 B), the dependency its
-# `import patch_not_apply` chain needed and had lost. it stays at its old path and that is
-# THE POINT: `patch_not_apply.py` has 10 other tracked consumers under `.agents/slop/`
-# (`usb-mutate.py`, `ga_mutate.py`, `state-mutate.py`, `dd-mutate.py`, `ansi_gate.py`,
-# `nn-init-mutate.py`, `anchor-audit.py`, `rf2-mutate.py`, ...) that import it as a SIBLING, so
-# moving the library into `gates/` would break ten files this unit does not own. The library
-# wins the path argument; the sweep's real defect was that the files were gone, not where they
-# were. MEASURED from the restored path: rc=0, 21 rows, 21.3 s, and it reproduces this table
-# including its three `NOTHING` rows (M4, M14, and M17, which is a declared control).
-#
-# M18-M20 ARE NOT IN `tensor-mutate.py`: they are measured by
-#     sh .agents/slop/backward/bwd-mutate.sh <arm>
-# and that harness is not in this tree and is not restored. It exists on exactly one ref,
-# `5444ea42e`, which is not an ancestor of HEAD, so `git log HEAD -- <path>` returns nothing
-# and `git rev-list --all --objects` names it once. It is 11620 B and its three inputs
-# (`./bin/bend`, `tinybendygrad/tensor.bend`, `tinybendygrad/uop/ops.bend`) all still exist, so
-# it is RECOVERABLE -- but it is a SHELL harness and `gates/README.md` retires the shell form
-# with four measured failures recorded against it, so porting it is a decision, not a restore.
-# M18-M20 therefore have no instrument today. Named, not hidden.
-#
-# Seventeen one-token edits, each applied, run, and reverted. 15 of the 17 move at
-# least one row; the two that move NOTHING are reported below rather than quietly
-# dropped, because a mutation that moves nothing is a measurement of what the gate does
-# NOT see and it is the most useful line in the table. (MEASURED 2026-10-16 from the
-# restored path: "17 mutations, 3 moved nothing" -- M4, M14, and M17, which is itself a
-# declared control, so 15 of 17 is what the harness reports.)
-#
-# M18-M20 ARE NOT IN `tensor-mutate.py`: they are measured by
-#     sh .agents/slop/backward/bwd-mutate.sh <arm>
-# because that harness is the one with the CLOSURE HASH LEDGER and the BYTE ASSERTION, and
-# `backward`'s zip spans two files (`tensor.bend` and `mixin/gradient.bend`), so a plant
-# there needs a substrate check that `tensor-mutate.py` does not have.
-#
-# THE GATE ITSELF, and the 42 SHARED ROWS:
-#     sh .agents/slop/tensor-gate.sh
-# `--check-only` is `ALL PROOFS CHECK`, the interpreted and native lanes are byte
-# identical, and the 42 rows both lanes can print are byte identical to CPython. The one
-# DESIGNED disagreement is `tn_rop_gap` (WALL 5) and the four BEND-ONLY rows are
-# `tn_arena`, `tn_param_old`, `tn_holds` and `tn_meta_isolated`; the script lists all
-# five rather than filtering them silently.
-#
-# three rows the CPYTHON lane never gained, and they are the gate's remaining red:
-# `tn_asparam`, `tn_bwd_row` and `tn_bwd_grad`. They are the `as_param` and the
-# `backward` spine's rows and they belong to those slices, not to this one.
-# measured 2026-10-22, and the lane was red at rest for a different reason: it died
-# at `tn_mop_flip` with `AttributeError: type object 'Ops' has no attribute 'FLIP'`
-# (`Ops.FLIP` does not exist at the pin `5c2bf39d6c4b`), so it printed ELEVEN rows
-# and stopped. Deleting that one line made the lane run to the end; the 42 rows that
-# now match are 42 that were not measured at all before.
-#
-# | mutation | the edit | rows that MOVED | what it is testing |
-# | --- | --- | --- | --- |
-# | M1 | `tn_mop.node2`: `[self] ++ srcs` -> `srcs ++ [self]` | `tn_mop_resh` `tn_mop_exp` `tn_mop_pad` `tn_mop_shr` | `(self,)+srcs` is self first (ops.py:835). the row this file was built on: the buggy version had the same four nodes and the same arities and the wrong graph, and no count could see it. Only the order of the signature does, which is why the gate prints a toposort and not a set of op names. |
-# | M2 | `tn_shape_arg.n`: `Nat.is_eq(n, 1n)` -> `False{}` | `tn_mop_exp` `tn_mop_shr` | `shape_to_shape_arg`'s middle arm: ONE element is the CONST ITSELF and not a STACK (ops.py:110). Also the `1n+p` prefix-match trap, which is why the test is a `Bool` parameter. |
-# | M3 | `tn_mop.noop.of`: drop `OpsEXPAND{}` from the op set | `tn_mop_exp0` | the early NOOP `if op is Ops.EXPAND and len(arg) == 0` (ops.py:823). LOCALISED: every other movement row has a non-empty `arg` and does not move, so this row is the only thing that can see a NOOP that was not taken. |
-# | M4 | `tn_rop.ins`: `U32.is_lt` -> `U32.is_le` | NOTHING | a NEGATIVE, and the gate's limit. Every `_rop` fixture has a ONE-element axis, and one element never compares, so `sorted`'s strictness is unobservable here. It is a real hole and it is not closed: the fix is a two-element `axis` fixture, which needs a two-dimensional source, which needs a RESHAPE, which is WALL 5. |
-# | M5 | `tn_rop.red2.of`: `AReduce{op,..}` -> `AReduce{OpsMAX{},..}` | `tn_rop_arg` | the `op` `_rop` forwards into the REDUCE arg (tensor.py:500). This row was ADDED because M5 originally moved NOTHING: a signature prints the op and the arity and NEVER THE ARG, so a wrong reduce-op is invisible to all thirteen signature rows. The hole was real and the row closes it. |
-# | M6 | `tn_assign_store`: drop the `AFTER` | `tn_assign` | the `self.uop.after(store := ...)` half of the assign spine (tensor.py:259). |
-# | M7 | `tn_is_param_`: read `Tensor.flag(t)` instead of the parameter | `tn_param` | `is_param_(self, is_param)` (tensor.py:125). |
-# | M8 | the SHRINK FIXTURE: `APairs{[0],[2]}` -> `APairs{[0,0],[0,2]}` | `tn_mop_shr` | the `zip(*arg)` transpose, which means two DIFFERENT things at ndim 1 and ndim 2. The COUNT catches it; the arity alone would not, because both fixtures give `SHRINK/3`. |
-# | M9 | `tn_repr.grad.of`: swap the two arms | `tn_repr5` `tn_reprT` | `__repr__`'s grad column and the reserved-index-0 `None` (tensor.py:131). Two rows because the repr is a STRING and both fixtures print it. |
-# | M10 | `tn_len.first`: the `Nil{}` arm returns `Some{0}` | `tn_len0` | `__len__`'s `if not self.shape: raise TypeError` (tensor.py:139). LOCALISED: `tn_len3` has a non-empty shape and does not move. |
-# | M11 | `tn_replace.same.go`: always `True{}` | `tn_replace_bad` | `replace`'s `assert self.shape == x.shape` (tensor.py:232). The PAIR is the point: `tn_replace` does not move, so a `replace` that ignored the assert entirely would pass one row and fail the other. |
-# | M12 | `tn_need_grad.is_float.go`: always `True{}` | `tn_needgrad` | `backward`'s `is_floating_point` term (tensor.py:487). This row was REWRITTEN because M12 originally moved NOTHING: the first fixture put the `weakint` CONST outside the graph, so `t.uop in all_uops` was already False for it and the second term was unfalsifiable. A scope filter needs a member that fails the SECOND term. |
-# | M13 | `tn_mop.node`: build the sink in a fresh arena | `tn_mop_resh` `tn_mop_exp` `tn_mop_pad` `tn_mop_shr` `tn_arena` | the orphan sink of `UOp.sink(*usrcs).simplify().src` (ops.py:835), and a correction to a claim this file made earlier. `tn_arena` was written to be the localised row that sees the sink; measured, it does not: a fresh arena also breaks the indices, so all five move together. `tn_arena` is an arena count and not a toposort count, and what it actually pins is that the arena does not grow where Python's ucache does not either. |
-# | M14 | `tn_rop.reduce.of`: reduce anyway when the fold cannot answer | `tn_rop_gap` | the `_rop` GAP arm (WALL 5). A one-sided row on purpose: it PRINTS FALSE and M14 is the only mutation that makes it print True. |
-# | M15 | `tn_alu.of`: `[uop] ++ srcs` -> `srcs ++ [uop]` | `tn_alu_ord` | `UOp.alu`'s `src=(self, *src)` (ops.py:630). `tn_alu_ord` was ADDED for this: its srcs are a BUFFER and a CONST, so the two orders print DIFFERENT signatures, while `tn_alu2`'s two CONSTs print the same one either way round. |
-# | M16 | `tn_rop.of`: drop the `case 0n` arm | `tn_rop_none` | `if not len(reduce_axis): return self.reshape(kept)` (ops.py:659). LOCALISED: `tn_rop0` and `tn_ropmax` have a non-empty axis. |
-# | M17 | a no-op edit | NOTHING | a control. A mutation table with no row that CANNOT move is a table of coincidences. |
-# | M18 | `tn_bwd_gs.go`: `[slot] ++ tail` -> `tail ++ [slot]` | `tn_bwd_row` `tn_bwd_grad` | the answer list's order, `mixin/op.py:471`'s `for x in target_uops`. `writes` is unchanged and the signature permutes, so this is the arm that proves `tn_bwd_row`'s count half is blind. |
-# | M19 | `tn_bwd_write.go`: drop the `grad_set` answer | `tn_bwd_row` `tn_bwd_grad` | the `.grad` WRITER. `writes` goes 3 -> 0 and the signature is UNCHANGED (the answer is built before the zip), so this is the arm that proves `tn_bwd_row`'s SIGNATURE half is blind. This is the state the file shipped in all session: a `grad_set` with no caller and nothing to read it. |
-# | M18/M19 are the SEPARATION, and it is measured per half by
-# `.agents/slop/backward/bwd-mutate.sh`, which prints each half's verdict separately. A
-# one-part row would have called one of them green. |
-#
-# three of these found real bugs in this file, and all three are the same bug wearing
-# different clothes: AN ARENA IS THE ONE A BUILD RETURNED, not the one that went in.
-# `tn_alu.of`, `tn_mop.dims` and three gate fixtures each built a node in the arena as it
-# was BEFORE the node was interned, and every symptom was a plausible-looking number --
-# `NOOP/0`, an empty toposort, a five-src PAD, and `tn_replace`'s two rows BACKWARDS. The
-# reason the gate caught all of them is that every row is DERIVED FROM PYTHON rather than
-# restated from this file, and the reason two of them survived a first pass is that the
-# COUNT was the only thing that saw them.
+# THE TABLE IS IN `.agents/slop/tables/tensor-3156.rows` -- THE MUTATION TABLE, MEASURED, and re-runnable:

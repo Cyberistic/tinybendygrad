@@ -630,19 +630,7 @@ type Nest is Data:
   Ns{v: U32}
   Nl{ss: List<&2, Nest>}
 
-# `ShapeRes.of` is Python's `if not all_same(subs): raise; (len(subs),) +
-# subs[0]`, so a sequence of scalars has shape (n,), not (), and an empty
-# sequence has shape (0,). The all_same walk is ONE def carrying the state
-# Python's generator carries: `ref` is the first non-() child's dims and `bad`
-# is "a () met a non()". The child list is the FIRST argument so the recursion
-# decreases structurally and the rest of the state is free.
-#
-# The three rules are Python's `all_same`:
-#   all ()        -> (n,)            every child is a scalar
-#   all equal d   -> (n,) + d        the homogeneous case
-#   anything else -> SBad            Python's ValueError
-#
-# the first child sets the reference: a scalar leaves it None, a shape sets it
+# THE TABLE IS IN `.agents/slop/tables/helpers-633.md` -- `ShapeRes.of` is Python's `if not all_same(subs): raise; (len(subs),) +
 def ShapeRes.dims.head(s0: ShapeRes) -> Maybe<&2, List<&2, U32>>:
   match s0:
     case SShape{d}: Some{d}
@@ -2118,32 +2106,7 @@ def i64_dec.text(+cs: List<&2, U32>, +acc: String) -> String:
 def i64_dec.put(neg: Bool, +body: String) -> String:
   Bool.pick(String, neg, String.append("-", body), body)
 
-# `i64_dec` DIVIDES THE MAGNITUDE UNSIGNED, through `u64_divmod` rather than
-# `i64_divmod`, and that is what lets it print int64.min. It used to answer the
-# `hi:lo` bit pattern for that one value and call it a fallback: |int64.min| = 2**63
-# has no positive i64 image, and the fold divided a NEGATIVE magnitude and read
-# its digits off a two's complement word. The magnitude 2**63 IS representable as
-# an UNSIGNED pair -- `i64_abs` already answers the pair `2147483648:0` -- and
-# `u64_divmod` divides that pair without reading bit 63 as a sign, so the fold
-# emits 9223372036854775808 and `i64_dec.put` supplies the "-". MEASURED: the
-# `hi:lo` fallback answered `2147483648:0` where CPython's `str` says
-# `-9223372036854775808`. So the fallback and its `wide` test are DELETED rather
-# than widened: the one value they existed for is now the one value that works.
-# the fuel is the actual digit count, and that is a measured change. Every fold step is one
-# `u64_divmod` and every division is `div_loop(64n, ...)`, i.e. SIXTY-FOUR bit steps whatever the values
-# are -- so the fixed fuel of 20 paid 21 divisions for a constant like `392`, which needs three. The count is
-# found by COMPARISON, never by division: multiply a power of ten up and add one for each that fits, which is
-# `u64_mul` (four `U32` multiplies) and `u64_lt` (two compares) per step and no division at all.
-# MEASURED on the 405-uop kernel: this took the render from 94.0 ms to the number in `PARITY.md` §28.
-#
-# THE TEST IS `p <= x`, WRITTEN AS `not (x < p)`. The first spelling compared `p` on the left and counted
-# every power of ten ABOVE the value -- MEASURED: `2147483647` printed `147483647`, one digit short, and the
-# truncation was invisible on nine-digit-and-under rows.
-#
-# `* 10` IS `(x << 3) + (x << 1)`, and that is not a micro-optimisation: `u64_mul` is defined LATER in this
-# file and a Bend def cannot be referenced before it, while `i64_shl`/`i64_add` are above. Two shifts and an
-# add on a pair are also cheaper than a full 64-bit multiply, so the spelling that satisfies the ordering is
-# the faster one as well.
+# THE TABLE IS IN `.agents/slop/tables/helpers-2121.md` -- `i64_dec` DIVIDES THE MAGNITUDE UNSIGNED, through `u64_divmod` rather than
 def i64_dec.times10(+p: I64) -> I64: i64_add(i64_shl(p, 3n), i64_shl(p, 1n))
 
 def i64_dec.dig(+x: I64, f: Nat, +p: I64, +c: U32) -> U32:
@@ -2541,42 +2504,7 @@ def get_single(xs: List<&2, U32>) -> Maybe<&1, U32>:
         case Nil{}: Some{h}
         case _: None{}
 
-# GlobalCounters -- `class GlobalCounters`, helpers.py:302
-#
-# SIX ClassVars (helpers.py:303-308) and one `@staticmethod reset` (:309-310). The
-# class has no methods beyond `reset` and no instances anywhere: every write is
-# `GlobalCounters.<name> = ...` or `GlobalCounters.<name> += ...` on the CLASS.
-#
-# THE MUTABLE-STATE ANSWER, since it is the question this block exists to settle.
-# Upstream's state lives in the class object and every reader sees the last write.
-# Bend has no mutable globals, no `Ref`, no store and no closures, so the state is a
-# `Data` VALUE that is threaded: `Counters` in, `Counters` out, and each `bump_*` is
-# the one-line rebuild that upstream's `+=` is. That is not a weaker counter, it is
-# the same counter:
-#   - it COUNTS. `bump_ops` adds `d` to the value that came IN, so a sequence of five
-#     bumps accumulates, and the gate runs exactly that sequence and prints the total
-#     after each step (`gc_init_ops`, `gc_bumped_ops`) against live CPython.
-#   - it CANNOT GO STALE, which is the property a mutable global does not have. There
-#     is no second copy to read, so a reader that forgets to thread the newest record
-#     gets the OLD value -- a wrong answer the gate can see, not a silently shared
-#     cell that is right until someone forgets to update it.
-# What threading costs is the caller: `GlobalCounters.reset()` upstream is a statement
-# and `GlobalCounters.reset(GlobalCounters.reset())` here is a value the caller must
-# use. That is the whole price and it is paid at the one place that owns the record.
-#
-# `mem_used` and `mem_used_per_device` are the interesting half and `reset` is why:
-# the tuple at :310 names FOUR fields, and the source says on :324-325 that the other
-# two are "NOT reset". A `reset` that zeroed all six would be a plausible-looking bug
-# that no test of the four would catch, so the gate reads `mem_used` and the per-device
-# counts AFTER a reset (`gc_after_used`, `gc_after_dev0`, `gc_after_dev3`).
-#
-# `time_sum_s` is a CPython `float`, i.e. an F64, and it is the one field that cannot
-# be incremented here: `base.bend` has no F32 addition. `F32.add` is a `law`
-# (references/bend/bend2/base.bend:1681 symbol=F32.add) -- an axiom with no body -- and live code may not call a law, so a
-# float accumulator has no expression. The field is carried, typed `F32`, and is
-# never written here; `.agents/slop/helpers-oracle.py` measures what CPython does with
-# it and prints those rows to STDERR so they are recorded without being diffed.
-# TODO(p4) helpers.py:306  `time_sum_s` needs the engine's clock, which is a C effect.
+# THE TABLE IS IN `.agents/slop/tables/helpers-2544.md` -- GlobalCounters -- `class GlobalCounters`, helpers.py:302
 
 type Counters is Data:
   Counters{global_ops: U32, global_mem: U32, time_sum_s: F32, kernel_count: U32,

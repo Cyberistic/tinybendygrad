@@ -459,24 +459,7 @@ def mxm_nth_u(+srcs: List<&2, U32>, ix: U32) -> U32:
 def mxm_not_const(+ar: O.Arena, +srcs: List<&2, U32>, ix: U32) -> Bool:
   Bool.not(mxm_is_const(ar, mxm_nth_u(srcs, ix)))
 
-# EVERY ELEMENT IS A CONST, and it is ONE walk rather than two, which is the whole
-# of `as_shape`'s concrete arm. Python writes it as a generator with a conditional
-# (`s.val if s.op is Ops.CONST else ssimplify(s)`), and the `else` is the symbolic
-# wall; here the walk carries a `Bool` and the element contributes nothing when the
-# `Bool` is false, so one pass answers BOTH "are they all concrete" and "what are
-# their values" -- and the `Bool` is the accumulator because an early exit from the
-# middle of a walk needs a def that calls back into the walk, which is mutual
-# recursion and is refused.
-#
-# THE `Bool` IS FOLDED WITH `Bool.or` AND NOT `Bool.and`, and that is deliberate
-# and is the row `mxm_sym_NONE` pins: `sofar` is "have we SEEN a non-CONST", so the
-# walk's answer is `not sofar` at the end and the element contributes
-# `not is_const`. Reading it as "all concrete so far" and conjoining would be the
-# same computation, and it is the one that made the FALSE arm fire for a STACK of
-# all CONSTs in an earlier revision of this file.
-# THE ELEMENT, as a list, and it contributes NOTHING once `bad` is set: a STACK with
-# one symbolic element has no concrete shape, and a partial answer would be a lie
-# the fold cannot see.
+# THE TABLE IS IN `.agents/slop/tables/mixin-movement-462.md` -- EVERY ELEMENT IS A CONST, and it is ONE walk rather than two, which is the whole
 def mxm_as_shape.at(bad: Bool, +ar: O.Arena, +srcs: List<&2, U32>, ix: U32) -> List<&2, U32>:
   match bad:
     case True{}: Nil{}
@@ -507,22 +490,7 @@ def mxm_as_shape.sel(isconst: Bool, +ar: O.Arena, i: U32) -> List<&2, U32>:
 def mxm_as_shape(+ar: O.Arena, +i: U32) -> List<&2, U32>:
   mxm_as_shape.sel(mxm_is_const(ar, i), ar, i)
 
-# SECTION D -- `marg` (ops.py:814-819) and `_shape`'s movement arms (ops.py:409-431).
-# THIS IS W1/W2 ANSWERED.
-#
-# `marg` in full:
-#     case Ops.RESHAPE | Ops.EXPAND: return self.src[1].as_shape
-#     case Ops.PAD | Ops.SHRINK:    return tuple(zip(self.src[1].as_shape, self.src[2].as_shape))
-#     case Ops.PERMUTE | Ops.FLIP:  return self.arg
-#
-# So `marg` is a THREE-WAY dispatch on the op and each arm is a reader over the
-# arena -- and every reader is `as_shape` over a STACK of CONSTs except the
-# PERMUTE/FLIP arm, which is the node's own `arg` (`ATuple{ys}`), already a list of
-# U32s. That is the whole reason the wall is closable, and it is why this section is
-# short: there is no arithmetic here at all, only three reads.
-# IS A MOVEMENT OP WHOSE `marg` IS AN `ATuple` -- PERMUTE and FLIP. `op_in` is
-# `ops.bend`'s membership test and an empty set is a subset of everything, so the
-# set is written out rather than left empty.
+# THE TABLE IS IN `.agents/slop/tables/mixin-movement-510.md` -- SECTION D -- `marg` (ops.py:814-819) and `_shape`'s movement arms (ops.py:409-431).
 def mxm_arg_op(op: O.Op) -> Bool:
   O.op_in([O.OpsPERMUTE{}], op)
 
@@ -760,18 +728,7 @@ def mxm_perm_ok(lt: Bool, dup: Bool) -> Bool:
 
 def mxm_len_u32(xs: List<&2, U32>) -> U32: U32.from_nat(List.length(&2, U32, xs))
 
-# THE WHOLE OF `_shape` FOR A MOVEMENT OP (ops.py:409-431), as a DISPATCH on the
-# marg's tag. Every arm is arithmetic over values already read, which is the whole
-# point: `fold.bend`'s `None{}` for these five ops (uop/fold.bend:1670 symbol=sym_dim.end) is replaced
-# by calls that need no rewrite engine, and `fold.bend` is READ-ONLY here so the arms
-# are supplied for a consumer to call rather than installed in the fold.
-#
-# `UNSHARD` and `REDUCE` are NOT here: UNSHARD needs `vmax` (ops.py:432) and REDUCE
-# needs `self.arg[1]`, and `fold.bend` defers UNSHARD for the same reason
-# (uop/fold.bend:1670 symbol=sym_dim.end). `SPLIT_REDUCE` is the same arm as REDUCE.
-#
-# the sels are declared in call-chain order, bottom first, because Bend has no
-# forward references and the `match`-on-a-parameter shape needs the leaf to exist.
+# THE TABLE IS IN `.agents/slop/tables/mixin-movement-763.md` -- THE WHOLE OF `_shape` FOR A MOVEMENT OP (ops.py:409-431), as a DISPATCH on the
 def mxm_shape.sel4(exp: Bool, +m: MxMarg, ps: List<&2, U32>) -> List<&2, U32>:
   match exp:
     case True{}: mxm_shape.expand(m, ps)
@@ -1116,24 +1073,7 @@ def marg_tag(+m: MxMarg) -> U32: marg_tag.of(MxMarg.is_ord(m), MxMarg.is_dim(m),
 def G.padfix.of(+b: O.Found, +lo: O.Found, +hi: O.Found) -> O.Found:
   O.UOp.new(O.Found.ar(hi), O.OpsPAD{}, [O.Found.i(b), O.Found.i(lo), O.Found.i(hi)], O.ANone{}, O.TNone{})
 
-# the pad fixture, and it is fully straight-line on purpose. Eight CONSTs and two STACKs are
-# interned one after another with `+f = ...` bindings and no fold at all. THE FOLDED VERSION
-# WAS WRITTEN AND REFUSED: building four CONSTs from a `List<&2, U32>` of values wants a
-# `Nat` countdown that doubles as the value index, which wants a `1n+p` / `2n+p` / catch-all
-# ladder; that ladder is a CALL, and the call has to be an argument of the self-call that
-# consumes the element, which makes the arm read `p` twice; and splitting the step out to
-# avoid that makes `.go` and `.at` MUTUAL RECURSION, which Bend refuses in either declaration
-# order. Twelve lines of fixture beat forty of fold for a graph with eight nodes, and a
-# fixture is exactly where the transliteration argument does not apply: the reader under test
-# is `mxm_marg`, not this.
-#
-# every CONST is built in the arena the previous one left -- the whole of the aliasing rule
-# the notes record ("an index is only meaningful in the arena that produced it"), because a
-# literal list of CONST indices would be interned in whatever arena happened to be current and
-# read back as a different node. the two shape args of a pad: the offsets `((0,1),(0,0),(1,1))`
-# and the SIZES `((1,4),(8,8),(10,10))` -- which is CPython's `marg=((0,1),(0,4),(1,10),
-# (1,10))` zipped apart, and the row `pad_n` is what says the zip happened rather than the
-# two lists having been concatenated.
+# THE TABLE IS IN `.agents/slop/tables/mixin-movement-1119.md` -- the pad fixture, and it is fully straight-line on purpose. Eight CONSTs and two STACKs are
 def G.padfix() -> O.Found:
   +lo = G.stk4(O.Arena.empty(), 0, 1, 0, 1)
   G.padfix.of(G.base(O.Arena.empty()), lo, G.stk4(O.Found.ar(lo), 1, 4, 10, 10))
@@ -1252,33 +1192,7 @@ def marg_other_row() -> IO(Unit):
 def pool_wide_row() -> IO(Unit):
   IO.print(String.concat(["pool_wide=", mx_show(mx_pool_shape([1, 4], [3, 3, 3], [1, 1, 1], [1, 1, 1]))]))
 
-# SECTION I -- THE WRITE HALF. `mixin/movement.py`'s WRAPPERS, in Python's order.
-#
-# Sections A-H are the READ half: `_pool`'s shape arithmetic and the `ssimplify`-on-
-# CONCRETE arm (`mxm_marg`, `mxm_shape`) that close W1/W2. This section is the twenty-
-# four wrappers that call `_mop`, and the reason it is a separate section is the
-# IDENTITY TEST: every one of them ends `return self if ret.shape == self.shape else
-# ret` (movement.py:185, :190, :194, :231, :254), so the wrapper needs the shape of the
-# node it JUST BUILT -- and `uop/fold.bend:1670 symbol=sym_dim.end` does not answer that for PAD, SHRINK,
-# EXPAND, FLIP or PERMUTE.
-#
-# THE MERGE POINT, and it is the reason this section is buildable at all. The
-# wrappers use `MX.mxm_shape(MX.mxm_marg(ar, made), src_shape)` for that test rather
-# than `mixin/op.bend`'s `mo_reshape`/`mo_permute`, whose `mo_sints` comparison is the
-# one that has to work around the gap. `op.bend` is READ-ONLY here, so the gap is
-# ROUTED AROUND rather than fixed, and the routing is one function: `mxw_same`.
-#
-# EVERY WRAPPER IS GATED ON FOUR NUMBERS, not one: node count, root op, src count, and
-# the SRC OP SEQUENCE. The sequence is the one that matters and it is the one this
-# project has been bitten by -- a movement that swaps two srcs has the right count and
-# the wrong graph. `mxw_sig` prints all four as one string so no row can quietly drop
-# one of them.
-# --- THE GRAPH INSPECTOR -----------------------------------------------------
-# THE PARAM ARG, in `ops.bend`'s field order. It is a COPY and not a call into
-# `op.bend` because `mo_buf4` hard-codes `size = 4` and the fixtures here need several
-# sizes; `mn_buf1` in `examples/beautiful_mnist.bend` is the same copy and the reason
-# is the same, which is a duplication three files now carry and which a shared
-# `ops.bend` builder would delete.
+# THE TABLE IS IN `.agents/slop/tables/mixin-movement-1255.md` -- SECTION I -- THE WRITE HALF. `mixin/movement.py`'s WRAPPERS, in Python's order.
 def mxw_pbuf(slot: U32) -> O.ParamArg:
   O.ParamArg{slot, S.single(), None{}, None{}, None{}, S.AGlobal{}, Some{S.D1{0}},
              False{}, None{}, None{}, False{}, None{}}
@@ -1444,24 +1358,7 @@ def mxw_sig(+ar: O.Arena, +u: U32) -> String:
                   " nsrc=", U32.show(O.Arena.nsrc(ar, u)),
                   " srcops=", String.join(mxw_srcops(ar, O.Arena.srcs(ar, u)), "|")])
 
-# SECTION I1 -- THE SIX CORE WRAPPERS. Python's order is `_broadcast_to`, `expand`,
-# `reshape`, `pad`, `shrink`, `permute`, `flip` (movement.py:128-254) and this file
-# follows it.
-#
-# the shape of every one is the same four steps, and that is worth saying once:
-#   1. build the arg as a `List<&2, U32>` of python ints (the `List` algebra);
-#   2. intern it as a STACK of CONSTs (`mxw_stk`), in the arena it grows;
-#   3. build the movement node in THAT arena (never the caller's);
-#   4. the identity test against the SOURCE's shape (`mxw_same`).
-# Steps 2 and 3 are the arena rule and step 4 is the merge point with Section A-H.
-#
-# `+made = ...` IS A SHARED `let` AND IT IS LOAD-BEARING. The node is needed by the
-# identity test AND by the `pick`, and a `let` is affine, so an unshared one is a
-# compile error and a re-CALL is a second node with a second arena. The rule is
-# `+x = ...` for a shared local, which is the notes' `+q = p` shape.
-# THE PICK, and `Bool.pick` is not used here because both arms are Tensors and the
-# `+` on two of them is noisier than a `match`. movement.py:185 is
-# `return self if ret.shape == self.shape else ret`, so `True` answers `t`.
+# THE TABLE IS IN `.agents/slop/tables/mixin-movement-1447.md` -- SECTION I1 -- THE SIX CORE WRAPPERS. Python's order is `_broadcast_to`, `expand`,
 def mxw_pick(same: Bool, +t: T.Tensor, +made: T.Tensor) -> T.Tensor:
   match same:
     case True{}: t
@@ -1916,81 +1813,7 @@ def main() -> IO(Unit):
     pool_wide_row()
     mxw_resh_row(mxw_base())
 
-# THE MEASURED MUTATION TABLE. Twenty-seven mutations: sixteen on the READ half
-# (Sections A-H) and eleven on the WRITE half (Section I). Driver:
-# `.agents/slop/notes/mxm-mutate.py`. the COPY it mutates must live beside this file
-# because the imports are relative -- a copy in /tmp cannot resolve `./../helpers.bend`
-# and every mutation reads REFUSED, which is itself a measured fact. The full 27-row table
-# with row sets is appended to `.agents/slop/notes/bend2-constraints.md`.
-#
-# no mutation moves nothing, and four blind spots were found and closed (M5, M8, M12,
-# and W7, whose `case _ False{}` arm -- the one that answers a NON-movement op from the
-# fold -- had no fixture at all, because every node in the rows was a movement op and the
-# one non-movement node they reached is a node `fold.bend` does not answer, so the arm's
-# answer was the empty list EITHER WAY). The four rows that closed them are `f_neg`,
-# `add_tag`, `pool_wide` and `add_shape`. A rule no mutation can reach is not gated.
-#
-# M11 and W10 are the gate's two LOAD-bearing weaknesses, and they are the same kind of
-# WEAKNESS. M11 is the printer's own append direction and it moves 25 of 70 rows; W10
-# replaces the toposort count with `1` and it moves all 15 `n=` rows. Together they say
-# that a 70-row gate here is NOT seventy independent witnesses: the printer is one shared
-# component and the `n=` field is one shared component. A mutation in EITHER invalidates a
-# quarter of the suite, and neither is a rule under test.
-#
-# W2 is the row this project needed and did not have. Swapping a pad's two shape args --
-# `self|a|b` to `self|b|a` -- leaves the ROOT OP, the SRC COUNT and (mostly) the NODE COUNT
-# alone, and it moves only `pad_noop` and `shrink_noop`, the two rows where the identity
-# test fires. A gate carrying `op` and `nsrc` but not the src OP SEQUENCE would be
-# completely blind to it. That is the "right count, wrong graph" hole the brief names,
-# MEASURED in this file, and `mxw_sig` prints all four facts in one string precisely so a
-# fixture cannot drop one of them.
-#
-# W11 IS THE ALIASING RULE'S THIRD SYMPTOM, and it is the quietest one. The identity
-# test reading the BASE's arena with the MADE node's index returned False for a no-op
-# reshape, so `resh_noop` built a RESHAPE where CPython returns `self`. The usual symptom of
-# the rule is a WRONG node; this one is a MISSING node, because `Arena.node` answers the
-# BOTTOM for an index past the end. One row (`resh_noop`) sees it and nothing else would.
-#
-# W4 and M16 are compile errors and that is the finding -- inverting `mxw_permute`'s
-# order test and reading src[0]'s arg in `mxm_ys` are both refused before they run, so the
-# two are the only rules in this file the type checker defends rather than the gate.
-#
-# what the table still does not cover, and it is most of the write half. Every row is a
-# node signature or a shape. Nothing here builds `_pool`'s CHAIN, so nothing sees the seven
-# `shrink_to`/`reshape` calls, the `repeat`, or the permute that closes it. Nor does
-# anything here build a whole conv2d: `examples/beautiful_mnist.bend` is the consumer and its
-# W1/W2 rows are the ones that would catch it.
-# `_broadcast_to` (movement.py:128-146) -- THE CONCRETE HALF.
-#
-# The file's own header lists this as NOT PORTED: "`_broadcast_to` (:128) /
-# `expand` (:149) -- WALL: `broadcast_axes` (ops.py:89) needs `resolve` on a
-# `Sint` ...; portable for a concrete shape and not done." this is that half.
-#
-# CPython's rule, quoted (movement.py:134-146):
-#
-#   # EXPAND only adds dims on the left. squeeze 1s that need expanding, EXPAND
-#   # on left, permute back.
-#   n_left = len(new_shape) - len(self.shape)
-#   expand_at = tuple(i-n_left for i in broadcast_axes(self.shape, new_shape) if i >= n_left)
-#   kept = tuple(i for i in range(len(self.shape)) if i not in expand_at)
-#   squeezed = self.reshape(tuple(self.shape[i] for i in kept))
-#   expanded = squeezed._mop(Ops.EXPAND, arg=new_shape[:n_left] + tuple(new_shape[n_left+i] for i in expand_at))
-#   perm = tuple(range(n_left)) + tuple(
-#     n_left + (expand_at.index(i) if i in expand_at else len(expand_at) + kept.index(i)) for i in range(len(self.shape)))
-#   return expanded.permute(perm)
-#
-# the marg is not the target. It is the left-added dims (`new_shape[:n_left]`)
-# and THEN the dims of the SOURCE axes that were 1 and became BIGGER
-# (`new_shape[n_left+i] for i in expand_at`). THE SQUEEZE AND THE PERMUTE are what
-# make the result's shape the target's, and a marg that is the whole target is
-# the shape `tuple(self.marg) + ps` (ops.py:397) reads as -- THE WHOLE TARGET
-# CONCATENATED WITH THE SOURCE.
-#
-# `broadcast_axes` (ops.py:93-97) is `resolve`d, so the SYMBOLIC shape is the wall;
-# a CONCRETE one is not, and every caller of `mxw_bcast` has one.
-# THE PREDICATE -- `self.shape[i] == 1 and new_shape[n_left+i] != 1`. This is
-# `broadcast_axes` (ops.py:93-97) with the `resolve` dropped, which is the whole
-# of the difference between the symbolic shape and a concrete one.
+# THE TABLE IS IN `.agents/slop/tables/mixin-movement-1919.md` -- THE MEASURED MUTATION TABLE. Twenty-seven mutations: sixteen on the READ half
 def mxw_bc_exp(s: U32, d: U32) -> Bool: Bool.and(U32.is_eq(s, 1), Bool.not(U32.is_eq(d, 1)))
 
 # THE MARG'S TAIL -- `tuple(new_shape[n_left+i] for i in expand_at)`. The walk is

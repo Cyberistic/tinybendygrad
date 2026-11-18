@@ -169,21 +169,7 @@ def dt_is_float(d: S.Dt) -> Bool: dt_is_float.cls(S.Dt.cls(d))
 # resolves to inside `commit_int` (tinygrad/dtype.py:173).
 def md_default_int() -> S.Dt: S.int32()
 
-# THE INTEGER LIMITS, and `commit_int` / `strong_dtype` with them. See the header:
-# these three defs are hoisted out of `tinybendygrad/dtype.bend` under the notice
-# that names them, because that file's fp16/bf16/fp8/i64 conversions are C effects
-# and so ANY importer fails `--check-only` with "14 defs rely on unsafe or foreign
-# code". Two of the constants are CORRECTED against CPython; the header names both.
-#
-# The bounds are I64 because dtype.py takes Python ints and the ladder's top rung is
-# uint64, whose max has no U32 image. Two consequences, both facts rather than
-# simplifications:
-#
-#   * every I64 is inside int64's range, so the ladder's int64 rung always fits and its
-#     uint64 rung can never be reached. dtype.py returns `long` off the end anyway, so
-#     the answers agree -- dtype.bend:471-474 records this and it is unchanged.
-#   * the ladder starts at default_int, which may already be int32, so the int32 test
-#     runs twice in that case. That is dtype.py's behaviour, kept.
+# THE TABLE IS IN `.agents/slop/tables/mixin-dtype-172.md` -- THE INTEGER LIMITS, and `commit_int` / `strong_dtype` with them. See the header:
 
 def md_i64_max_u(bits: U32) -> H.I64:
   match bits:
@@ -287,29 +273,7 @@ def strong_dtype.cls(cls: S.Cls, di: S.Dt, df: S.Dt, d: S.Dt) -> S.Dt:
 def strong_dtype(+d: S.Dt, di: S.Dt, df: S.Dt) -> S.Dt:
   strong_dtype.cls(S.Dt.cls(d), di, df, d)
 
-# commit_dtype -- tinygrad/dtype.py:16-17.
-#
-#   return commit_int(self._uop.vmin, self._uop.vmax, default_int) \
-#     if self.dtype is dtypes.weakint else strong_dtype(self.dtype)
-#
-# BOTH BRANCHES ARE PORTED. The weakint branch is dtype.py's own `commit_int`, hoisted
-# above, which walks the ladder `(default_int, int, long, ulong)` and falls off the end
-# at `long` -- the ladder's uint64 rung is unreachable because every I64 is inside
-# int64's range, and dtype.py returns `long` off the end anyway, so the answers agree.
-#
-# `lo`/`hi` are the parameters `commit_dtype` cannot compute for itself. That is the
-# whole wall and it is ONE def: `UOp._min_max` (ops.py:1104-1163). The refusal is a
-# `Maybe` rather than a sentinel dtype because a wrong dtype here is not a crash, it is
-# a silently wrong `commit_int` answer three rules downstream in weak.py.
-# A PARAM WITH NO `vmin_vmax` -- the `cd_none` row of `gates/wk-cd-gate.py`. The bound
-# reads as `Bnd{NInf}` / `Bnd{PInf}` (a saturation, since `weakint`'s bits == 800 has no
-# 64-bit magnitude), and `wk_bnd_i64` cannot convert infinity to an I64, so `m`/`m2` are
-# `None`. CPython's `commit_int` would answer `long` for this case: the no-bounds PARAM's
-# interval is `[NInf, PInf]`, which is wider than int32 (and wider than the ladder's
-# `default_int` rung), so the ladder falls off the end at `long`. THE PORT'S HONEST ANSWER
-# IS THE SAME -- supply the WIDEST int range we can represent, which `commit_int` sees as
-# "does not fit int32" and answers `int64`. The earlier version returned `None`, which is
-# what `wk-cd-gate.py`'s `cd_none` row was pinned as a divergence on; the fix closes it.
+# THE TABLE IS IN `.agents/slop/tables/mixin-dtype-290.md` -- commit_dtype -- tinygrad/dtype.py:16-17.
 def commit_dtype.weak(m: Maybe<&1, H.I64>, m2: Maybe<&1, H.I64>, di: S.Dt) -> Maybe<&1, S.Dt>:
   commit_int(
     Maybe.default(&1, H.I64, m, md_i64_min_s(64)),
