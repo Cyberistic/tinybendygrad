@@ -68,7 +68,14 @@ def rows_of(text):
 def run_lane(plant=None):
     """The lane, under `checks/bounded.py`, because 2.4 GB of peak RSS is a bound worth reading
     a token for. The TOKEN is the verdict on the run; the exit status is not (three different
-    things exit 1 here)."""
+    things exit 1 here).
+
+    THE OUTPUT DIRECTORY IS CREATED HERE AND NOT BY THE LANE, and that is a measured requirement:
+    `Base`'s `File.open` does NOT create parent directories, so on a fresh clone -- where
+    `out/` is not committed, because its contents are build artefacts -- the lane died with
+    `No such file or directory` and the gate correctly said DEAD. The harness owns its own
+    directory; the lane writes only the two files inside it."""
+    os.makedirs(os.path.join(ROOT, ".agents", "slop", "execgap", "out"), exist_ok=True)
     argv = [sys.executable, "checks/bounded.py", "--seconds", "900", "--mb", "4000", "--",
             "./bin/bend", LANE]
     if plant:

@@ -188,7 +188,7 @@ are the same**, so the two kernels agree bit for bit on this data — but the re
 byte identity, because there is none, and `linrender`'s own report had already named this as the
 one remaining difference.
 
-### 3.4 What the gate says when the lane cannot run — the `DEAD` row, measured by accident
+### 3.4 What the gate says when the lane cannot run — the `DEAD` row, measured twice
 
 At 22:20 another unit had `tinybendygrad/codegen/kernel.bend` mid-edit (a forward reference:
 `lr_dt.go` calling `lr_dt.in` before its def), and the lane printed **nothing**. The gate said:
@@ -202,6 +202,14 @@ DEAD -- the lane produced 0 row(s) and none of: mode, sig, c_len, ...
 and exited **5**. **A run that produced no rows is not a pass**, and that property is now measured
 rather than asserted. (It also means this lane is downstream of `codegen/kernel.bend` through
 `linearizer.bend`; a break there is this lane's refusal, not its `FAIL`.)
+
+**AND IT FIRED AGAIN ON THE FIRST RUN FROM A CLEAN STATE, WHICH FOUND A REAL DEFECT IN THE
+HARNESS:** `rm -rf .agents/slop/execgap/out` and the lane died with `No such file or directory`,
+because **`Base`'s `File.open` does not create parent directories** — and `out/` is not committed,
+since its contents are build artefacts, so a fresh clone has no `out/` at all. The gate read 5
+rows, saw `cc_status` missing, and said `DEAD` (5) instead of `PASS`. The fix is the harness's own
+(`os.makedirs` in `run_gate`'s `run_lane`): **the harness owns its output directory; the lane writes
+only the two files inside it.** Re-measured from a clean state afterwards: `PASS`, 10 rows.
 
 ---
 
