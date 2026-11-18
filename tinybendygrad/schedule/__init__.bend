@@ -1282,6 +1282,13 @@ def lin(+ar: O.Arena, +c: Ctx) -> Lin:
 # `create_schedule` -- __init__.py:32-80, and `linear` is the `return UOp(Ops.
 # LINEAR, src=tuple(linearized))`.
 
+# THE KERNELS OF A `LINEAR`, as a DEF. `Lin.out` is a qualified accessor and
+# `SCH.Lin` does not resolve through a module alias from another file (`expected :
+# SCH.Lin`), so a caller that holds a `Lin` from `schedule()` reaches the list here.
+def lin_kernels(+x: Lin) -> List<&2, U32>: Lin.out(x)
+
+def lin_ar(+x: Lin) -> O.Arena: Lin.ar(x)
+
 def linear(+x: Lin) -> O.Found:
   O.UOp.new(Lin.ar(x), O.OpsLINEAR{}, Lin.out(x), O.ANone{}, O.TNone{})
 

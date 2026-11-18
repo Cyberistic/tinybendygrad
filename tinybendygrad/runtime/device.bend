@@ -208,6 +208,43 @@ def program.of(p: (O.Arena & List<&2, C.KU>), name: String) -> Prog:
   (ar, kus) = p
   program(name, kus)
 
+# WHICH KERNEL TO RENDER -- TRIED AND REVERTED. Selecting the first kernel whose body is a
+# SINK (kern_pick below) made the conv/pool render `void test(params) { }` -- EMPTY, with
+# no loops at all -- i.e. it picked a DIFFERENT, trivial kernel, and `compile_sink` is
+# shared with the fc probe, so the revert is for correctness of the known-good lane. The
+# selection needs the LINEAR's real kernel list first (`lin_kernels` is here for that).
+# `SC_SRC0(linear)` is a body only when the first entry IS a
+# kernel; MEASURED, the pool/conv programs' LINEAR leads with an entry whose `src[0]` is an
+# INDEX, and linearizing that renders `void test() { for(..) { } }` with no params while
+# rangeify and the scheduler keep the PARAM and the body intact. So the SINK-rooted kernel
+# is selected, and the first entry is only a fallback.
+def body_is_sink(+ar: O.Arena, +k: U32) -> Bool:
+  O.eq_op(O.Arena.op(ar, SCH.sc_src0(ar, k)), O.OpsSINK{})
+
+def kern_fb(zero: Bool, k: U32, fallback: U32) -> U32:
+  match zero:
+    case True{} : fallback
+    case False{}: k
+
+def kern_pick.zero(hit: Bool, k: U32, acc: U32) -> U32:
+  match hit:
+    case True{} : k
+    case False{}: acc
+
+def kern_pick.one(hit: Bool, k: U32, acc: U32) -> U32:
+  match acc:
+    case 0: kern_pick.zero(hit, k, acc)
+    case _: acc
+
+def kern_pick.go(+ar: O.Arena, +xs: List<&2, U32>, acc: U32) -> U32:
+  match xs:
+    case Nil{}: acc
+    case k <> t: kern_pick.go(ar, t, kern_pick.one(body_is_sink(ar, k), k, acc))
+
+def kern_pick(+ar: O.Arena, +ks: List<&2, U32>, fallback: U32) -> U32:
+  +k = kern_pick.go(ar, ks, 0)
+  kern_fb(U32.is_zero(k), k, fallback)
+
 def compile_sink(+ar: O.Arena, sink: U32) -> Prog:
   +lin = schedule(ar, sink)
   +ar2 = O.Found.ar(lin)
