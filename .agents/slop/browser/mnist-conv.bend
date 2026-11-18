@@ -19,9 +19,10 @@ import ./../../../tinybendygrad/uop/ops.bend as O
 import ./../../../tinybendygrad/tensor.bend as T
 import ./../../../tinybendygrad/mixin/movement.bend as MX
 
+# A VALID 3x3 CONV (no padding): PAD needs `valid` + `pm_simplify_valid`, which is the
+# other half of W3, and SHRINK alone lands first. Output is (1,1,26,26).
 def cn_tap(+x: T.Tensor, +w: T.Tensor, +ky: U32, +kx: U32) -> T.Tensor:
-  +p = MX.mxw_pad(x, [0, 0, 1, 1], [0, 0, 1, 1])
-  T.tn_mul(MX.mxw_shrink(p, [0, 0, ky, kx], [1, 1, 28, 28]),
+  T.tn_mul(MX.mxw_shrink(x, [0, 0, ky, kx], [1, 1, 26, 26]),
            MX.mxw_shrink(w, [0, 0, ky, kx], [1, 1, 1, 1]))
 
 def cn_conv(+x: T.Tensor, +w: T.Tensor) -> T.Tensor:
@@ -45,7 +46,7 @@ def pool_prog() -> RZ.RZProg:
   RZ.RZProg{O.Found.ar(snk), O.Found.i(snk)}
 
 def conv_prog() -> RZ.RZProg:
-  +dst = RZ.rz_input(O.Arena.empty(), 0, 784, [1, 1, 28, 28])
+  +dst = RZ.rz_input(O.Arena.empty(), 0, 676, [1, 1, 26, 26])
   +x = RZ.rz_input(T.Tensor.ar(dst), 1, 784, [1, 1, 28, 28])
   +w = RZ.rz_input(T.Tensor.ar(x), 2, 9, [1, 1, 3, 3])
   +aft = RZ.rz_after(dst, cn_conv(x, w))

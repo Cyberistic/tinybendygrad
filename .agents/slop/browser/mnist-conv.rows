@@ -4,6 +4,7 @@ void test(float* restrict data0_196) {
     for (int Lidx0 = 0; Lidx0 < 14; Lidx0++) {
 }
 conv_c=
-void test() {
-
+void test(float* restrict data0_676) {
+  for (int Lidx1 = 0; Lidx1 < 26; Lidx1++) {
+    for (int Lidx0 = 0; Lidx0 < 26; Lidx0++) {
 }

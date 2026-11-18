@@ -731,38 +731,6 @@ def rr_reshape.same(ok: Bool, +ar: O.Arena, +ins: List<&2, U32>, +outs: List<&2,
 def rr_reshape(+ar: O.Arena, +ins: List<&2, U32>, +outs: List<&2, U32>, +pos: List<&2, U32>, +tbl: List<&2, IX.IxRange>) -> (O.Arena & List<&2, IX.IxRange>):
   rr_reshape.same(rr_reshape.ok(ins, outs, pos), ar, ins, outs, pos, tbl)
 
-# `apply_movement_op`'s FOUR arms, with the arena they grow and the ENTRIES they answer.
-def rr_mvx(op: O.Op, +ar: O.Arena, +tb: F.Table, +x: U32, +arg: List<&2, U32>, +out: List<&2, U32>, +tbl: List<&2, IX.IxRange>) -> (O.Arena & List<&2, IX.IxRange>):
-  match op:
-    case O.OpsPERMUTE{}: (ar, rr_ents.go(IX.ix_mv_permute(arg, out), tbl, Nil{}))
-    case O.OpsEXPAND{} : (ar, rr_ents.go(IX.ix_mv_expand(arg, out), tbl, Nil{}))
-    case O.OpsRESHAPE{}: rr_reshape(ar, rr_dims(ar, tb, O.Arena.src0(ar, x)), arg, out, tbl)
-    case _: (ar, rr_ents.go(out, tbl, Nil{}))
-
-# append each entry to the table, answering its POSITION. The table is the map, so the
-# positions are the ranges' names for the rest of the apply.
-def rr_put_entries.go(+es: List<&2, IX.IxRange>, +tbl: List<&2, IX.IxRange>, +acc: List<&2, U32>) -> (List<&2, IX.IxRange> & List<&2, U32>):
-  match es:
-    case Nil{}: (tbl, acc)
-    case e <> t:
-      +i = U32.from_nat(List.length(&2, IX.IxRange, tbl))
-      rr_put_entries.go(t, List.append(&2, IX.IxRange, tbl, [e]), List.append(&2, U32, acc, [i]))
-
-# `apply_movement_op` -- `indexing.py:165-180`. PERMUTE AND EXPAND ARE FULLY
-# PORTED -- `indexing.bend`'s OWN `ix_mv_permute` AND `ix_mv_expand`, REUSED AND
-# NOT COPIED. RESHAPE IS W-A (`_apply_reshape`: `UOp.sink`, `usum`, `%`, `//`
-# and a `symbolic` rewriter) and the port's answer is the identity, which
-# is what `rangify.bend`'s own header says. shrink, flip and pad have their
-# arithmetic named and not built (W3), so they answer the identity too.
-def rr_mv.of(perm: Bool, exp: Bool, +arg: List<&2, U32>, +rngs: List<&2, U32>) -> List<&2, U32>:
-  match perm:
-    case True{}: IX.ix_mv_permute(arg, rngs)
-    case False{}:
-      match exp:
-        case True{}: IX.ix_mv_expand(arg, rngs)
-        case False{}: rngs
-
-# the marg: `x.marg` is the permute's and the expand's tuple.
 def rr_marg.of(a: O.Arg) -> Maybe<&2, List<&2, U32>>:
   match a:
     case O.ATuple{ys}: Some{ys}
@@ -803,7 +771,82 @@ def rr_marg.fb(m: Maybe<&2, List<&2, U32>>, +ar: O.Arena, +x: U32) -> List<&2, U
 def rr_marg(+ar: O.Arena, +x: U32) -> List<&2, U32>:
   rr_marg.fb(rr_marg.of(O.Arena.arg(ar, x)), ar, x)
 
-# the reduce's reduced axes: `x.arg[1]` is the number of reduced axes.
+# W3, THE SHRINK HALF: `case Ops.SHRINK: rngs = tuple(a if off == 0 else a+off for
+# a,(off,_) in zip(rngs, arg))` (indexing.py:166). ONE ADD, and it needs no `valid` --
+# which is why SHRINK lands and PAD does not yet (`PAD`'s arm is `(r-off).valid(gate)` and
+# `valid` + `pm_simplify_valid` are the other half of W3).
+def rr_shr.one.zero(z: Bool, +off: U32, +r: U32, +ar: O.Arena) -> O.Found:
+  match z:
+    case True{} : O.Found{ar, r}
+    case False{}:
+      +c = O.UOp.cconst(ar, O.CInt{H.i64_of_i32(off)}, S.int32())
+      O.UOp.alu(O.Found.ar(c), O.OpsADD{}, [r, O.Found.i(c)])
+
+def rr_shr.one(+off: U32, +r: U32, +ar: O.Arena) -> O.Found:
+  rr_shr.one.zero(U32.is_zero(off), off, r, ar)
+
+def rr_shr.go(+rs: List<&2, U32>, +offs: List<&2, U32>, +ar: O.Arena, acc: (O.Arena & List<&2, U32>)) -> (O.Arena & List<&2, U32>):
+  match rs:
+    case Nil{}: acc
+    case r <> rt:
+      match offs:
+        case Nil{}: acc
+        case o <> ot:
+          (+a0, +xs) = acc
+          +f = rr_shr.one(o, r, a0)
+          rr_shr.go(rt, ot, O.Found.ar(f), (O.Found.ar(f), List.append(&2, U32, xs, [O.Found.i(f)])))
+
+def rr_shr.fin(p: (O.Arena & List<&2, U32>)) -> (O.Arena & List<&2, IX.IxRange>):
+  (ar, ns) = p
+  (ar, rr_wrap.go(ns, Nil{}))
+
+def rr_shrink(+ar: O.Arena, +x: U32, +out: List<&2, U32>) -> (O.Arena & List<&2, IX.IxRange>):
+  rr_shr.fin(rr_shr.go(out, rr_marg(ar, x), ar, (ar, Nil{})))
+
+
+# `apply_movement_op`'s FOUR arms, with the arena they grow and the ENTRIES they answer.
+def rr_mvx(op: O.Op, +ar: O.Arena, +tb: F.Table, +x: U32, +arg: List<&2, U32>, +out: List<&2, U32>, +tbl: List<&2, IX.IxRange>) -> (O.Arena & List<&2, IX.IxRange>):
+  match op:
+    case O.OpsPERMUTE{}: (ar, rr_ents.go(IX.ix_mv_permute(arg, out), tbl, Nil{}))
+    case O.OpsEXPAND{} : (ar, rr_ents.go(IX.ix_mv_expand(arg, out), tbl, Nil{}))
+    case O.OpsRESHAPE{}: rr_reshape(ar, rr_dims(ar, tb, O.Arena.src0(ar, x)), arg, out, tbl)
+    case O.OpsSHRINK{} : rr_shrink(ar, x, out)
+    case _: (ar, rr_ents.go(out, tbl, Nil{}))
+
+# append each entry to the table, answering its POSITION. The table is the map, so the
+# positions are the ranges' names for the rest of the apply.
+def rr_put_entries.go(+es: List<&2, IX.IxRange>, +tbl: List<&2, IX.IxRange>, +acc: List<&2, U32>) -> (List<&2, IX.IxRange> & List<&2, U32>):
+  match es:
+    case Nil{}: (tbl, acc)
+    case e <> t:
+      +i = U32.from_nat(List.length(&2, IX.IxRange, tbl))
+      rr_put_entries.go(t, List.append(&2, IX.IxRange, tbl, [e]), List.append(&2, U32, acc, [i]))
+
+# `apply_movement_op` -- `indexing.py:165-180`. PERMUTE AND EXPAND ARE FULLY
+# PORTED -- `indexing.bend`'s OWN `ix_mv_permute` AND `ix_mv_expand`, REUSED AND
+# NOT COPIED. RESHAPE IS W-A (`_apply_reshape`: `UOp.sink`, `usum`, `%`, `//`
+# and a `symbolic` rewriter) and the port's answer is the identity, which
+# is what `rangify.bend`'s own header says. shrink, flip and pad have their
+# arithmetic named and not built (W3), so they answer the identity too.
+def rr_mv.of(perm: Bool, exp: Bool, +arg: List<&2, U32>, +rngs: List<&2, U32>) -> List<&2, U32>:
+  match perm:
+    case True{}: IX.ix_mv_permute(arg, rngs)
+    case False{}:
+      match exp:
+        case True{}: IX.ix_mv_expand(arg, rngs)
+        case False{}: rngs
+
+# the marg: `x.marg` is the permute's and the expand's tuple.
+
+# `apply_movement_op`'s FOUR arms, with the arena they grow and the ENTRIES they answer.
+# append each entry to the table, answering its POSITION. The table is the map, so the
+# positions are the ranges' names for the rest of the apply.
+# `apply_movement_op` -- `indexing.py:165-180`. PERMUTE AND EXPAND ARE FULLY
+# PORTED -- `indexing.bend`'s OWN `ix_mv_permute` AND `ix_mv_expand`, REUSED AND
+# NOT COPIED. RESHAPE IS W-A (`_apply_reshape`: `UOp.sink`, `usum`, `%`, `//`
+# and a `symbolic` rewriter) and the port's answer is the identity, which
+# is what `rangify.bend`'s own header says. shrink, flip and pad have their
+# arithmetic named and not built (W3), so they answer the identity too.
 def rr_reduce_n.of(a: O.Arg) -> U32:
   match a:
     case O.AReduce{rop, num_axes}: num_axes
