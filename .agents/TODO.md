@@ -1290,7 +1290,7 @@ comment-decay-restored [######...] 3/3  **A SWEEP THAT DELETES A FILE MAKES A LA
                                        editing it would make the guard lie about itself, which is
                                        the same defect one line up.
 
-comment-cut        [######...] 6/8      **THE **PORT's **COMMENT **MASS **IS **CUT **BY **THE
+comment-cut        [#######.] 7/8      **THE **PORT's **COMMENT **MASS **IS **CUT **BY **THE
                                          **RULE **AND **THE **RULE **HAS **FOUR **DEFECTS **THAT
                                          **THE **CUT **FOUND**, **AND **EVERY **ONE **OF **THEM
                                          **IS **A **CLASS **ANOTHER **UNIT **ALSO **FOUND** **AND
@@ -1502,6 +1502,67 @@ comment-cut        [######...] 6/8      **THE **PORT's **COMMENT **MASS **IS **C
                                          **`conflations=4 of 4`**, **AND **`selfcheck=# SELFCHECK: OK`**
                                          **AND **`oracle-selfcheck=# ORACLE SELFCHECK: OK`**, **AND
                                          **`census-rc=rc=0`**.
+                                         **BATCHES **7, **8 **AND **9 **LANDED** (**`140611398`**, **`f06ee4cc8`**,
+                                         **`012448a8d`**, **`82d886a2c`**, **`5f19f9a75`**, **`dd1835935`**, **`fa0a92a8f`**,
+                                         **67 **FILES**, **+45/-302**, **COMMENTS **ONLY**): **THE **FILE-PREAMBLE
+                                         **NARRATION**, **⇒⇒† AND **THE **CLASS **THE **APPLIER **CANNOT **CUT**.
+                                         **⇒⇒† AND **THE **REASON **THE **APPLIER **CANNOT **CUT **IT **IS **THE
+                                         **APPLIER's **OWN **RULE**: **IT **KEEPS **A **SECTION **THAT **CARRIES **A
+                                         **MARKER **WHOLE**, **⇒⇒† AND **A **FILE-HEADER **PREAMBLE **IS **ONE **LINE
+                                         **THAT **NAMES **ITS **OWN **PATH**, **⇒⇒† AND **WHICH **IS **NOT **A **MARKER
+                                         **BUT **SURVIVES **ANYWAY**. **⇒⇒† AND **MEASURED**: **THE **APPLIER **OVER **THE
+                                         **WHOLE **TREE **CUTS **0 **LINES **AT **`lim=4`** **AND **102 **AT **`lim=1`**,
+                                         **⇒⇒† AND **EVERY **ONE **OF **THE **102 **IS **IN **A **FILE **ANOTHER **UNIT
+                                         **HELD**, **⇒⇒† AND **SO **THE **CUT **IS **BY **HAND**, **⇒⇒† AND **AND **THE
+                                         **HAND **CUTS **THE **HEADER**, **NOT **THE **EVIDENCE**.
+                                         **⇒⇒† AND **THE **THREE **CLASSES **CUT**: **"WHAT **THIS **FILE **IS"**, **THE
+                                         **PORTING **PROCESS** ("one **BEND **file **per **upstream **.py", **"the **1:1
+                                         **ruling")**, **AND **THE **STUB **LINE** ("stub **-- **1:1 **path **mirror **of
+                                         **X.py **(N **loc). **not **yet **ported."**, **⇒⇒† AND **THE **"1:1 **PATH
+                                         **MIRROR **OF **X.py **(N **loc)"** **PART **IS **NARRATION **-- **THE **READER
+                                         **SEES **THE **PATH** -- **⇒⇒† AND **THE **"not **yet **ported"** **PART **IS **A
+                                         **STATUS **CLAIM**, **⇒⇒† AND **A **STATUS **CLAIM **IS **NOT **NARRATION**, **⇒⇒†
+                                         **AND **SO **THE **STATUS **SURVIVES **AND **THE **PATH **DOES **NOT**, **⇒⇒† AND
+                                         **28 **FILES**, **⇒⇒† AND **AND **THE **WRAPPED **FORM** ("not **yet" **ON **ONE
+                                         **LINE **AND **"PORTED." **ON **THE **NEXT") **READS **"not **yet **PORTED"** **AND
+                                         **COLLAPSES **INTO **ONE **LINE**.
+                                         **⇒⇒† AND **THE **FOUR **CHECKS**, **PER **FILE**, **AND **ALL **FOUR **ARE
+                                         **ZERO**: **THE **VERDICT **TOKEN **FROM **`bin/bend <file> --check-only`**
+                                         **COMPARED **WITH **THE **TOKEN **AT **HEAD** (THE **TREE's **OWN **CLASSIFIER
+                                         **READS **"N **defs **rely **on **unsafe **or **foreign **code:"** **AS **A
+                                         **STANDING **CONDITION**, **NOT **A **COMPILE **ERROR**, **AND
+                                         **`runtime/ops_cpu.bend`**, **`runtime/ops_null.bend`** **AND
+                                         **`runtime/device.bend`** **ARE **`FOREIGN` **AT **HEAD **TOO**), **THE **DIFF's
+                                         **NON-COMMENT **LINES**, **THE **NEW **COMMENT **RUNS **THAT **END
+                                         **MID-SENTENCE** (**A **DIFFERENCE **AGAINST **HEAD**, **NOT **AN **ABSOLUTE**),
+                                         **AND **THE **JOINED **COMMENT **LINES** (**A **JOINED **LINE **IS **A **SILENT
+                                         **BYTE **LOSS** **AND **NO **OTHER **CHECK **SEES **IT**).
+                                         **⇒⇒† AND **THE **CORPUS **ON **THE **FINAL **COMMIT **(`fa0a92a8f`)**, **RUN
+                                         **ONCE **ON **A **CLEAN **WORKTREE **OF **IT**: **`graphs=38`
+                                         **`graphs-answered=38`** **`graphs-agree=38`** **`graphs-disagree=0`**
+                                         **`byte-identical=38`** **`graphs-refused=0`** **AND
+                                         **`substrate-start == substrate-end == live == d15102bddb200d3b`** (⇒⇒† **THE
+                                         **TREE **DID **NOT **MOVE **UNDER **THE **RUN**), **AND
+                                         **`substrate-head=fa0a92a8f12684516c6e7bf0d66a82beb375a6e0`**, **AND
+                                         **`stable-pairs=5 of 5 stable-failed=0 of 5 stable-differ=0 of 5`**, **AND
+                                         **`plants-disagree=8 of 8`**, **AND **`controls=5 of 5`**, **AND
+                                         **`conflations=4 of 4`**, **AND **`cross=1 of 1`**, **AND
+                                         **`selfcheck=# SELFCHECK: OK`** **AND **`oracle-selfcheck=# ORACLE SELFCHECK: OK`**,
+                                         **AND **`census-rc=rc=0`**, **AND **`repro`: **339 **OF **339 **FILES **IDENTICAL
+                                         **ACROSS **TWO **CLEAN **RUNS**, **AND **`gates/corpuswitness-gate.py`** **ANSWERS
+                                         **`PASS -- **THE **CLAIM **IS **ESTABLISHED`** **WITH **ALL **SEVEN **READINGS
+                                         **OK**, **AND **`gates/corpusverdict-gate.py`** **ANSWERS **`PASS`** **AND **ITS
+                                         **`run.readiness` **ROW **IS **GREEN** (WHICH **`AGENTS.md` **RECORDS **AS
+                                         **RED**).
+                                         **⇒⇒† AND **ONE **CLASS **THE **CUT **HIT **AND **THE **TREE's **OWN **RULE
+                                         **NAMES**: **A **COMMIT **BY **ANOTHER **UNIT **CAN **REVERT **A **CUT**, **⇒⇒†
+                                         **AND **IT **DID **TWICE**, **⇒⇒† AND **AND **THE **CURE **IS **THE **ONE
+                                         **AGENTS.md **NAMES**: **AFTER **EVERY **COMMIT **BY **ANY **UNIT**, **CHECK **THE
+                                         **FILES **YOU **CARE **ABOUT**, **⇒⇒† AND **AND **IF **YOUR **BYTES **ARE
+                                         **GONE**, **RE-LAND **ON **TOP**, **⇒⇒† AND **AND **THE **`git commit --only`**
+                                         **FORM **NEEDS **THE **STAGE** (**`git add -- <path>`** **FIRST**), **⇒⇒† AND
+                                         **BECAUSE **`--only` **ALONE **TAKES **THE **INDEX's **VERSION **AND **NOT **THE
+                                         **WORKING **TREE's**.
 
 substrate-head [##########] 3/3  **A DIGEST WITH NO COMMIT IN IT CANNOT BE COMPARED TO A TREE.**
                                        MEASURED 2026-10-18 by a dispatched unit over **18 readings / 3
