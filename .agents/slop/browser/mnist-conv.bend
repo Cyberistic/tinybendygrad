@@ -14,6 +14,7 @@ import Base
 import ./../../../tinybendygrad/runtime/device.bend as DEV
 import ./../../../tinybendygrad/schedule/rangify.bend as RR
 import ./../../../tinybendygrad/schedule/realize.bend as RZ
+import ./../../../tinybendygrad/schedule/rangeify.bend as RF
 import ./../../../tinybendygrad/schedule/__init__.bend as SCH
 import ./../../../tinybendygrad/uop/ops.bend as O
 import ./../../../tinybendygrad/tensor.bend as T
@@ -58,7 +59,33 @@ def cn_src(+p: RZ.RZProg) -> String:
   +kg = RR.rr_kernel_graph(RZ.RZProg.ar(q), RZ.RZProg.sink(q))
   DEV.Prog.src(DEV.compile_sink(O.Found.ar(kg), O.Found.i(kg)))
 
+# THE RANGEIFIED GRAPH, before the schedule: does the SHRINK consumer carry an
+# INDEX(PARAM, ...) at all?
+def pool_rr() -> String:
+  +q = RZ.rz_rebuild(pool_prog(), False{}, False{})
+  +r = RR.rr_run_rangeify(RZ.RZProg.ar(q), RZ.RZProg.sink(q))
+  RR.rr_dump(O.Found.ar(r), O.Found.i(r))
+
+def pool_kg() -> String:
+  +q = RZ.rz_rebuild(pool_prog(), False{}, False{})
+  +kg = RR.rr_kernel_graph(RZ.RZProg.ar(q), RZ.RZProg.sink(q))
+  RR.rr_dump(O.Found.ar(kg), O.Found.i(kg))
+
+# AFTER THE LOWERING PASSES (weak, reduce, alloc->buf): is the input still there?
+def pool_low() -> String:
+  +q = RZ.rz_rebuild(pool_prog(), False{}, False{})
+  +kg = RR.rr_kernel_graph(RZ.RZProg.ar(q), RZ.RZProg.sink(q))
+  +lin = DEV.schedule(O.Found.ar(kg), O.Found.i(kg))
+  +ar2 = O.Found.ar(lin)
+  +k = SCH.sc_src0(ar2, O.Found.i(lin))
+  +b = SCH.sc_src0(ar2, k)
+  +l = DEV.body_low(ar2, b)
+  RR.rr_dump(O.Found.ar(l), O.Found.i(l))
+
 def main() -> IO(Unit):
   do IO<Unit>:
+    _ : Unit <- IO.print(String.concat(["pool_rr=", pool_rr()]))
+    _ : Unit <- IO.print(String.concat(["pool_kg=", pool_kg()]))
+    _ : Unit <- IO.print(String.concat(["pool_low=", pool_low()]))
     _ : Unit <- IO.print(String.concat(["pool_c=", cn_src(pool_prog())]))
     IO.print(String.concat(["conv_c=", cn_src(conv_prog())]))
