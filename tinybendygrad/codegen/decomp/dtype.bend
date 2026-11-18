@@ -71,12 +71,11 @@
 # DOES own what they need -- the `PMEntrys` table, the `UPat` compiler and `pm_rewrite`'s
 # first-wins scan -- so WHAT THE RULES MATCH is gated even though WHAT THEY REWRITE is not.
 #
-# CONTROL, dd-fix rounds 1 and 2 (2026-10-04): this comment block is a comment and nothing
-# else, and the gate is required to read the SAME rows byte for byte (172 in round 1, 182 in
-# round 2). Recorded because the NINE arena-aliasing defects those rounds fixed are the kind
-# a green gate cannot tell from a fixed one: each read as a plausible string, and
-# `--check-only` said `ALL PROOFS CHECK` on every one of them. THE SIX IN ROUND 2 ARE IN
-# `.agents/slop/tables/codegen-decomp-dtype-16.md`.
+# CONTROL, dd-fix rounds 1 and 2 (2026-10-04): the gate is required to read the SAME rows byte
+# for byte (172 in round 1, 182 in round 2). Recorded because the NINE arena-aliasing defects
+# those rounds fixed are the kind a green gate cannot tell from a fixed one: each read as a
+# plausible string, and `--check-only` said `ALL PROOFS CHECK` on every one of them. THE SIX IN
+# ROUND 2 ARE IN `.agents/slop/tables/codegen-decomp-dtype-16.md`.
 #
 # WHAT IS STILL RED AND WHY, so the next reader does not re-derive it: `c7`, `lgu` and `lgun`
 # are DECLARED refusals (`refused:unported`), and `lg1n`/`lg6n`/`lg9n`/`lgqn` are not port
