@@ -1180,7 +1180,7 @@ comment-decay-restored [######...] 3/3  **A SWEEP THAT DELETES A FILE MAKES A LA
                                        editing it would make the guard lie about itself, which is
                                        the same defect one line up.
 
-comment-cut        [#####....] 5/8      **THE **PORT's **COMMENT **MASS **IS **CUT **BY **THE
+comment-cut        [######...] 6/8      **THE **PORT's **COMMENT **MASS **IS **CUT **BY **THE
                                          **RULE **AND **THE **RULE **HAS **FOUR **DEFECTS **THAT
                                          **THE **CUT **FOUND**, **AND **EVERY **ONE **OF **THEM
                                          **IS **A **CLASS **ANOTHER **UNIT **ALSO **FOUND** **AND
@@ -1253,6 +1253,47 @@ comment-cut        [#####....] 5/8      **THE **PORT's **COMMENT **MASS **IS **C
                                          **BUDGET **THAT **CANNOT **BE **RAISED **WITHOUT **A
                                          **REASON**, **AND **(C)** **THE **CORPUS**, **ONCE**, **ON
                                          **A **CLEAN **WORKTREE **OF **THE **FINAL **COMMIT**.
+                                         **BATCH **6 **LANDED** (**`1e5c95e60`**, **46 **FILES**,
+                                         **+628/-1552**, **COMMENTS **ONLY**, **AND **THE
+                                         **PER-FILE **NON-COMMENT **CHECK **IS **EMPTY **FOR
+                                         **ALL **46**): **THE **RENDERER **AND **RUNTIME **LANES**.
+                                         **THE **COMPILE **GATE **OVER **THE **WHOLE **TREE**
+                                         (**`checks/port-compile-gate.py`**, **198 **FILES**,
+                                         **336.5 s**) **ANSWERS **`COMPILES=189`
+                                         **`COMPILES-AS-C=3` **`COLD-BY-DESIGN=5`**
+                                         **`FINDING=1`** **AND **`unmeasured=0`** -- **THE
+                                         **LAST **ROW **IS **THE **ONE **THAT **SAYS **THE
+                                         **CENSUS **SAW **EVERY **FILE**.
+                                         **THE **ONE **FINDING **IS **`renderer/kuconv.bend`**
+                                         **(`expected : cstyle.KU with 8 fields`) **AND **IT **IS
+                                         **MEASURED **PRE-EXISTING**: **PUTTING **HEAD's **BYTES
+                                         **BACK **INTO **THE **FILE **AND **RUNNING
+                                         **`bin/bend --check-only`** **GIVES **THE **IDENTICAL
+                                         **ERROR**. **THE **CAUSE **IS **NAMED**:
+                                         **`cstyle.KU` **HAS **EIGHT **FIELDS**
+                                         (**`cstyle.bend:53`**) **AND **`kuconv.bend:275`**
+                                         **CONSTRUCTS **SEVEN**; **THE **`cc` **FIELD **ARRIVED
+                                         **WITH **`2cd82bd15` **PARITY **96** **AND
+                                         **`kuconv.bend` **WAS **NEVER **UPDATED**. **IT **IS
+                                         **A **REAL **PORT **DEFECT**, **AND **A **COMMENT
+                                         **CUT **MUST **NOT **MASK **IT **NOR **BE **BLAMED
+                                         **FOR **IT**.
+                                         **THE **CORPUS **IS **GREEN **AND **IT **IS **NOT **A
+                                         **CERTIFICATE**, **AND **THE **RUN **SAYS **SO
+                                         **ITSELF**: **`substrate-start=f179c412`**
+                                         **!= **`substrate-end=436a84da`** -- **THE **RUN
+                                         **STRADDLED **A **`.bend` **EDIT**, **AND
+                                         **`D0-repro.txt` **IS **ABSENT**, **SO
+                                         **`gates/corpuswitness-gate.py` **ANSWERS
+                                         **`witness.fresh=REFUSED`**,
+                                         **`witness.substrate=REFUSED`**, **`claim=FAIL`**.
+                                         **THE **LIVE **SUBSTRATE **IS **YET **A **THIRD
+                                         **DIGEST** (**`80748102`**), **SO **THE **TREE **IS
+                                         **STILL **MOVING**. **THE **VERDICT **`38/38
+                                         **agree` **IS **A **REAL **MEASUREMENT **OF **38
+                                         **GRAPHS**; **IT **IS **NOT **A **MEASUREMENT **OF
+                                         **THIS **TREE**, **BECAUSE **THE **TREE **MOVED
+                                         **UNDER **IT**.
 
 substrate-head [##########] 3/3  **A DIGEST WITH NO COMMIT IN IT CANNOT BE COMPARED TO A TREE.**
                                        MEASURED 2026-10-18 by a dispatched unit over **18 readings / 3
