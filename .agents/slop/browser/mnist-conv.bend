@@ -838,7 +838,9 @@ def fwd_ids() -> String:
                  " | w_u=", U32.show(T.Tensor.u(w)), " w=", RR.rr_node_str(ar, T.Tensor.u(w)),
                  " | st=", RR.rr_node_str(ar, st),
                  " st.src0_u=", U32.show(O.Arena.src0(ar, st)),
-                 " st.src0=", RR.rr_node_str(ar, O.Arena.src0(ar, st))])
+                 " st.src0=", RR.rr_node_str(ar, O.Arena.src0(ar, st)),
+                 " | w_sub=", RR.rr_dump(ar, T.Tensor.u(w)),
+                 " | o_sub=", RR.rr_dump(ar, T.Tensor.u(o))])
 
 def main() -> IO(Unit):
   do IO<Unit>:
