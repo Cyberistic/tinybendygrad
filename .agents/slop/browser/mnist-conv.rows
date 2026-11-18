@@ -1,5 +1,6 @@
 pool_rr=SINK:none:AFTER;AFTER:none:PARAM,END;PARAM:other:CONST;END:none:STORE,RANGE,RANGE;CONST:cother:;STORE:none:INDEX,REDUCE;RANGE:other:CONST;RANGE:other:CONST;INDEX:none:PARAM,OTHER;REDUCE:other:INDEX;CONST:cother:;OTHER:none:ADD,OTHER;INDEX:none:PARAM,CONST,CONST,RANGE,RANGE;ADD:none:RANGE,ADD;OTHER:other:CONST;PARAM:other:CONST;CONST:cother:;ADD:none:MUL,ADD;CONST:cother:;MUL:none:OTHER,RANGE;ADD:none:MUL,MUL;OTHER:other:CONST;MUL:none:OTHER,CONST
 pool_kg=SINK:none:AFTER;AFTER:none:PARAM,CALL;PARAM:other:CONST;CALL:none:SINK,PARAM,PARAM;CONST:cother:;SINK:other:END;PARAM:other:CONST;END:none:STORE,RANGE,RANGE;CONST:cother:;STORE:none:INDEX,REDUCE;RANGE:other:CONST;RANGE:other:CONST;INDEX:none:PARAM,OTHER;REDUCE:other:INDEX;CONST:cother:;PARAM:other:CONST;OTHER:none:ADD,OTHER;INDEX:none:PARAM,CONST,CONST,RANGE,RANGE;ADD:none:RANGE,ADD;OTHER:other:CONST;PARAM:other:CONST;CONST:cother:;ADD:none:MUL,ADD;MUL:none:OTHER,RANGE;ADD:none:MUL,MUL;OTHER:other:CONST;MUL:none:OTHER,CONST
+pool_cons=num=0 cons=30 rdop=REDUCE:other:SHRINK
 pool_war=aft=AFTER:none:PARAM,STORE st=PARAM:other:CONST isstore=False war=False dst=1 val=0
 realize=STORE:none:RESHAPE,REDUCE:none
 pool_side=dst=33,34 val=
@@ -8,13 +9,15 @@ pool_id=end=80 srcs=[79,55,63] ended=[55,63] open=[]
 pool_rn=True/0/
 pool_sk=open=True bufs=0 rngs=0 bad=True
 pool_lk=1/CALL>SINK
-pool_low=SINK:other:END;END:none:STORE,RANGE,RANGE;STORE:none:INDEX,REDUCE;RANGE:other:OTHER;RANGE:other:OTHER;INDEX:none:PARAM,OTHER;REDUCE:other:INDEX;OTHER:other:CONST;PARAM:other:OTHER;OTHER:none:ADD,CONST;INDEX:none:PARAM,OTHER,OTHER,RANGE,RANGE;CONST:cother:;OTHER:other:CONST;ADD:none:OTHER,ADD;CONST:cother:;PARAM:other:OTHER;OTHER:other:CONST;OTHER:other:RANGE;ADD:none:MUL,ADD;OTHER:other:CONST;CONST:cother:;MUL:none:CONST,OTHER;ADD:none:MUL,MUL;CONST:cother:;OTHER:other:RANGE;MUL:none:OTHER,OTHER
+pool_low=SINK:other:END;END:none:STORE,RANGE,RANGE;STORE:none:INDEX,AFTER;RANGE:other:OTHER;RANGE:other:OTHER;INDEX:none:PARAM,OTHER;AFTER:none:BUFFER,STORE;OTHER:other:CONST;PARAM:other:OTHER;OTHER:none:ADD,CONST;BUFFER:other:CONST;STORE:none:AFTER,OTHER;CONST:cother:;OTHER:other:CONST;ADD:none:OTHER,ADD;CONST:cother:;CONST:cother:;AFTER:none:BUFFER,STORE;OTHER:none:AFTER,INDEX;OTHER:other:RANGE;ADD:none:MUL,ADD;STORE:none:AFTER,BUFFER;INDEX:none:PARAM,OTHER,OTHER,RANGE,RANGE;MUL:none:CONST,OTHER;ADD:none:MUL,MUL;AFTER:none:BUFFER,RANGE,RANGE;PARAM:other:OTHER;OTHER:other:CONST;OTHER:other:RANGE;MUL:none:OTHER,OTHER;OTHER:other:CONST;CONST:cother:;CONST:cother:
 pool_c=
 void test(float* restrict data0_196, float* restrict data1_784) {
+  float buf0[1];
   for (int Lidx0 = 0; Lidx0 < 14; Lidx0++) {
     for (int Lidx1 = 0; Lidx1 < 14; Lidx1++) {
-      float* alu0 = UNHANDLED(Ops.REDUCE);
-      *(data0_196+((((int)(Lidx0))+(14*((int)(Lidx1)))+(196*0)+(196*0))%196)) = alu0;
+      *buf0 = buf0;
+      *buf0 = UNHANDLED(Ops.MAX);
+      *(data0_196+((((int)(Lidx0))+(14*((int)(Lidx1)))+(196*0)+(196*0))%196)) = buf0;
     }
 }
 conv_c=

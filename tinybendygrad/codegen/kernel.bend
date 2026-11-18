@@ -113,6 +113,7 @@
 
 import Base
 import ./../helpers.bend as H
+import ./../base.bend as B
 import ./../LAWS/spec.bend as S
 import ./../uop/ops.bend as O
 import ./../uop/fold.bend as F
@@ -1260,11 +1261,30 @@ def lr_srcs.go(ss: List<&2, U32>, +rep: List<&2, LRep>, +acc: List<&2, U32>) -> 
     case Nil{}: acc
     case s <> t: lr_srcs.go(t, rep, List.append(&2, U32, acc, [lr_get(rep, s)]))
 
-# identity_element -- ops.py:57. ADD -> 0, MUL -> 1.
+# identity_element -- ops.py:57: `dt.const({ADD: 0, MUL: 1, MAX: dt.min}[op])`.
+#
+# THE MAX ARM WAS THE WALL, AND IT IS THE ONE THAT KEPT THE POOL KERNEL FROM RENDERING
+# (`UNHANDLED(Ops.REDUCE)` -- `lr_go` never ran because `lr_ident` answered None).
+# `dt.min` for a FLOAT is `-inf`, and `S.Dt.min` answers None for every float BY
+# CONSTRUCTION ("the bound is -inf or +inf"), so the float arm spells the bit pattern
+# (`0xFF800000`) and the integer arm reads `S.Dt.min`. An integer wider than 32 bits
+# answers None there and stays a wall rather than being guessed.
+def lr_ident.max(isf: Bool, m: Maybe<&2, U32>, +ar: O.Arena) -> Maybe<&2, O.Found>:
+  match isf:
+    case True{}: Some{O.UOp.const(ar, O.CFloat{B.F32.from_bits(4286578688)})}
+    case False{}:
+      match m:
+        case Some{bits}: Some{O.UOp.const(ar, O.CInt{H.i64_of_i32(bits)})}
+        case None{}: None{}
+
+def lr_ident.mx(+dt: S.Dt, +ar: O.Arena) -> Maybe<&2, O.Found>:
+  lr_ident.max(S.Cls.is_float(S.Dt.cls(dt)), S.Dt.min(dt), ar)
+
 def lr_ident.of(op: O.Op, +ar: O.Arena, +dt: S.Dt) -> Maybe<&2, O.Found>:
   match op:
     case O.OpsADD{}: Some{O.UOp.cconst(ar, O.CInt{H.i64_of_i32(0)}, S.int32())}
     case O.OpsMUL{}: Some{O.UOp.cconst(ar, O.CInt{H.i64_of_i32(1)}, S.int32())}
+    case O.OpsMAX{}: lr_ident.mx(dt, ar)
     case _: None{}
 
 def lr_ident(op: O.Op, +ar: O.Arena, +dt: S.Dt) -> Maybe<&2, O.Found>: lr_ident.of(op, ar, dt)
