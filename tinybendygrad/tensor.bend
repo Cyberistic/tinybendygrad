@@ -294,7 +294,6 @@ def tn_binop(+base: Tensor, +other: Tensor, +op: O.Op) -> Tensor:
 # driver cannot compare `r.srcs` to `[c.u, d.u]` any more: `d.u` is an index in `d`'s OWN
 # arena and the node was built in the MERGED one, so `d` has been RE-MINTED. Comparing the
 # raw indices is exactly the coincidence `gates/tn_binop_arena-gate.py` exists to expose.
-# One def, so the six binop gates do not each re-derive the remap.
 def tn_srcs_are(+r: Tensor, +c: Tensor, +d: Tensor) -> Bool:
   +m = O.Arena.merge(Tensor.ar(c), Tensor.ar(d))
   O.eq_u32(O.Arena.srcs(Tensor.ar(r), Tensor.u(r)), [Tensor.u(c), O.Merge.at(m, Tensor.u(d))])
@@ -530,8 +529,6 @@ def tn_bitwise_not.of(is_bool: Bool, unsigned: Bool, umax: Maybe<&2, U32>, +t: T
 # THE `None{}` ARM IS `signed`, and it is `tn_neg`'s CONSERVATIVE FALL-THROUGH under the
 # same reasoning: the fold cannot answer, so the dtype is not bool and not unsigned BY
 # ELIMINATION, and `self ^ -1` is what `tn_neg`'s `None{}` arm builds for the same reason.
-# `.go` exists because `match` cannot scrutinise a LOCAL BINDER, which is why `tn_neg.go`
-# and `tn_mul.go` are split the same way.
 def tn_bitwise_not.go(dt: Maybe<&2, S.Dt>, +t: Tensor) -> Maybe<&2, Tensor>:
   match dt:
     case None{}: Some{tn_bitwise_not.signed(t)}
@@ -1656,8 +1653,6 @@ def tn_mop.pairs(+ar: O.Arena, +self: U32, +op: O.Op, lo: List<&2, O.Const>, hi:
 #
 #   case Ops.PERMUTE: src_args = [arg]
 #   ...
-#   usrcs = [shape_to_shape_arg(arg) for arg in src_args]
-#   return UOp(op, src=(self,)+UOp.sink(*usrcs).simplify().src)
 #
 # AND UPSTREAM's `marg` (`ops.py:772`) READS IT BACK FROM `src[1]`:
 # `case Ops.PERMUTE: return self.src[1].as_shape`.
@@ -1725,10 +1720,6 @@ def tn_rop.ins(+x: U32, +acc: List<&2, U32>) -> List<&2, U32>:
 
 # `axis = tuple(sorted(axis))`, an insertion pass, which is `sorted` for a U32 key. Not
 # a general sort: the caller is `_rop` and the axis is `range(ndim)`.
-# ONE def and not a three-way split, because `ins.go` and `ins` call each other and
-# Bend refuses mutual recursion. `Bool.pick` is the short-circuit: it takes BOTH
-# branches as arguments, so the recursive call is an argument and the descent is the
-# list TAIL `t`, which is what makes this terminate.
 
 def tn_rop.sorted.go(+axis: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
   match axis:
@@ -2867,9 +2858,6 @@ def tn_bwd_grad.of(b: Bwd) -> String:
 
 # THE FIXTURE, and ONE def because `compute_gradient` GROWS the arena and every row below
 # must read the GROWN one -- this file's rule 5, and the reason `Bwd` carries an arena.
-# It is `(x*3).sum()`, and the SCOPE holds the f32 BUFFER, the REDUCE and the weakint
-# CONST, so the filter's second term is falsifiable here too (the CONST is in the
-# toposort as the MUL's operand and is still dropped).
 def tn_bwd_fix() -> Bwd:
   +a = g_sbuf(O.Arena.empty(), 0)
   +b = g_sbuf(O.Found.ar(a), 1)

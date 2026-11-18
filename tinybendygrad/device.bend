@@ -226,9 +226,6 @@ def canon(+s: String) -> String:
 # `tuple(Device.canonicalize(d) for d in device)`, hand-folded: `List.map`'s
 # third argument is a FUNCTION and a named def cannot be passed as one without
 # a `~` binder, which is a closure and closures are not worth one line here.
-# A REBUILD, so it CONS: `List.append([h], t)` is `[h] ++ t`. Appending `[canon(h)]`
-# to the recursion instead gives `xs ++ ys` and REVERSES the tuple, which is
-# `multi` -- and Python's is `tuple(... for d in device)`, in order.
 def canon_device.multi(ixs: List<&2, String>) -> List<&2, String>:
   match ixs:
     case Nil{}: Nil{}
@@ -935,9 +932,6 @@ def isig.step(s: Sig, acc: List<&2, U32>) -> List<&2, U32>:
 
 # `go_slot(off, k)` is computed ONCE and both halves of the answer are read off
 # the record, so the entry's itemsize and the running offset never disagree.
-# `+` on the PARAMETER and on the PATTERN BINDER, both for "two reads in one
-# expression": the running offset is read by both halves of `go_slot`, and the
-# entry's itemsize is read by both the yielded slot and the next offset.
 def isig.go(sig: List<&2, U32>, +off: U32, acc: List<&2, U32>) -> List<&2, U32>:
   match sig:
     case Nil{}: acc

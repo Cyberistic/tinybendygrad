@@ -2,8 +2,7 @@
 # BEND device. `bend-executor PACKET gx gy gz vals...` reads a packet, walks its
 # toposorted uops once per global work item, and writes PACKET.out.
 #
-# BUGS THIS FILE FIXED, each reduced to the one sentence and the number that
-# proves it. The 153-fixture census
+# BUGS THIS FILE FIXED. The 153-fixture census
 # (`gates/ops_python_exec-fixtures.rows`, run through this file's own compiled
 # executor) reads 0 of 365 rows disagreeing with upstream's own interpreter.
 #
@@ -26,9 +25,6 @@
 # `run` is a real interpreter: an arena threaded through a fuel recursion, with a
 # DIE on fuel exhaustion, which is also the "stay turing-incomplete" answer since
 # a RANGE-driven kernel has no static step bound.
-#
-#
-# ops_python.py's own header calls itself "the living definition of uops", and
 #
 #   ops_python.py:15-31   _load/_store/_step        PORTED (the v1 lanes)
 #   ops_python.py:33-44   wmma                      WALL  (tensor cores)
@@ -62,12 +58,9 @@
 #   :150 WMMA           WALL  ops_python.py:150, as briefed
 #   :151 GroupOp.ALU    PORTED, by REUSING symbolic.bend's two lanes
 #
-# MEASURED FACTS. Every claim below was read out of a real render, not inferred
-# from the source. The harness is .agents/slop/exec_probe*.py: it hooks
-# `PythonRenderer.render`, dumps the uop list ops_python's `__call__` receives,
-# and spies on the `global_size`/`local_size` kwargs. Eighteen kernels: elementwise
-# add, sum, matmul, an int-to-float cast, a 64-wide grid, div, cmp, and, 2-d sum,
-# rowsum, max, prod, slice, reshape, contiguous, permute, log, sqrt.
+# MEASURED FACTS. Eighteen kernels: elementwise add, sum, matmul, an int-to-float
+# cast, a 64-wide grid, div, cmp, and, 2-d sum, rowsum, max, prod, slice, reshape,
+# contiguous, permute, log, sqrt.
 #
 # 1. `Ops.REDUCE` IS NEVER EMITTED, and ops_python has no REDUCE arm. rangeify
 #    lowers a reduce into a RANGE plus a tree of ADD/MULACC before the renderer
@@ -133,13 +126,10 @@
 #
 # THE WIRE FORMAT, v1.1
 #
-# The v1 shape from the brief is kept:
-#
 #   line 1:  bendexec1 <nuops> <nbuffers>
 #
 # `<op>` is the bare `Ops.name` (what `Ops.name.of` answers) and `<srcN>` is a
-# 1-based uop index. FOUR AMENDMENTS, each forced by a line of ops_python that
-# this file ports.
+# 1-based uop index. FOUR AMENDMENTS, each forced by a line of ops_python.
 #
 # A1. There are no `DEFINE_*` ops (MEASURED FACT 3); the arms are `PARAM` and
 #     `BUFFER` plus an AddrSpace (tinygrad/runtime/ops_python.py:98-107). So the brief's
@@ -193,8 +183,6 @@
 # BEND device with local_size (1,1,1), and tinygrad will then emit `gidx` instead
 # of `lidx`, which is what the `g` arm of tinygrad/runtime/ops_python.py:111 (`__call__`) answers -- it reads `idxs`.
 #
-# The consequence for the data model is large and it is why this file is shaped
-#
 # BEND SUBSTRATE NOTES -- six rules every def below is written against, each
 # measured against bend 2.0.34 with ./bin/bend rather than read off a doc.
 #
@@ -222,7 +210,7 @@
 #    prefix, so every `<arg>` is split by hand. A `Nat` literal is `3n`, a `U32`
 #    index is `3`.
 #
-# THE SHAPE OF THE MACHINE, and the two parts that were not obvious.
+# THE SHAPE OF THE MACHINE.
 #
 # `run` carries the mutable state ops_python.py:52-157 (`__call__`) keeps in four locals: the
 # `values` dict, the buffer bytearrays, `exec_masks`, and `pbufs`/`pvals`. Under

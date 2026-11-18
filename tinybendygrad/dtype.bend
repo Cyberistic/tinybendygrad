@@ -19,8 +19,6 @@
 #
 # VARIADIC. dtype.py's least_upper_dtype takes *ds. Bend has no variadics, so
 # `least_upper` is binary and `least_upper_dtypes` folds a list left to right.
-# Python's `min` over an intersection is associative, so the fold and the n-ary
-# call agree exactly -- checked over all 361 pairs and 5000 random 4-ary cases.
 #
 # NOT PORTED, one line each. The bottom of this file says why.
 
@@ -34,11 +32,6 @@ import ./base.bend as F
 # The attribute names are the rust names (tinygrad 793abbb renamed them, keeping
 # the old ones only in a block it labels `# legacy dtype aliases`), so this list
 # spells `i8`..`u64`, `f16`, `bf16`, `f32`, `f64` and carries NO legacy accessor:
-# a def nothing calls is invisible to every check. `spec.bend`'s own heads are
-# tinyspec's IR words and stay -- `index`, `boolean`, `int8`..`uint64`, `half`,
-# `bfloat16`, `single`, `double`. `index` is `S.index()` in spec.bend and NOT a
-# `dtypes.*` accessor here: upstream's `dtypes` has no such name to spell.
-# The groupings below answer a LIST of dtypes; upstream spells them as tuples.
 #
 # THE OMISSION DECLARATION, read BY PATH by `gates/dtypeeven-gate.py`. Each class
 # is a RULE over a block of upstream's own `tinygrad/dtype.py` and not a list of
@@ -52,15 +45,6 @@ import ./base.bend as F
 #   canonical     upstream's `Final[DType]` names; the port spells EVERY one,
 #                 because a canonical name the port cannot spell is a dtype the
 #                 port cannot name.
-#   legacy-alias  upstream's `# legacy dtype aliases` block; the port spells
-#                 NONE -- a def nothing calls is invisible to every check.
-#                 `to_dtype_of` below still ACCEPTS them, because upstream's
-#                 `to_dtype` does.
-#   helper        upstream's REMAINING attributes: the predicates, the properties
-#                 and the helper tuples. The port spells NONE, because the port's
-#                 `dtypes.*` namespace holds DTYPES and the groupings of dtypes.
-#   grouping      upstream's tuple-valued attributes; the port spells the ones
-#                 below, which are the ones `dtypes.all` is built from.
 
 def dtypes.void() -> S.Dt: S.void()
 def dtypes.weakint() -> S.Dt: S.weakint()
@@ -940,12 +924,6 @@ def fp8_enc.norm(+cfg: Fp8, +xb: U32, +exp: U32, +mant: U32) -> U32:
 # `1 - exp` where `exp` is `exp_field - 127 + bias` in WRAPPING U32 arithmetic, so
 # the subnormal rungs are 1, 2, 3, 4 and the negative exps are 4294967295,
 # 4294967294 and 4294967293. THE WINDOW IS FOUR EXPONENTS WIDE, not three:
-# `absx > denorm` compares the whole magnitude, so the denorm threshold's OWN
-# exponent field is in the branch whenever its mantissa is above zero. exp = -3 is
-# reached on e4m3 and on fnuz-e4m3 -- and a three-rung ladder answers 1 there, which
-# is the second gate finding of this unit. The catch-all is the exp == 0 rung, and
-# it is exhaustive: the branch is entered with absx strictly below min_norm and
-# strictly above denorm, so exp is one of exactly these four.
 def fp8_enc.sh(exp: U32) -> U32:
   match exp:
     case 4294967293: 4

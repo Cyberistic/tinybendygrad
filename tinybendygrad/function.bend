@@ -366,8 +366,6 @@ def fn_add.make.of(+hit: Bool, +us: List<&2, U32>, +inv: List<&2, U32>, start: U
 # consumed by the destructuring `match`, `start` is a `U32` the second read would
 # duplicate, and `ar`/`x` are read once each -- the affinity half of
 # `divandmod.bend` rule 1.
-# the node travels as an `O.Found` because `x` is a `U32` read twice -- once to
-# test `x.buf_uop in ctx[1]` and once to append -- and `+` is refused on a `U32`.
 def fn_add.of(+ar: O.Arena, +us: List<&2, U32>, +inv: List<&2, U32>, start: U32, +g: O.Found) -> FnCtx:
   fn_add.make.of(List.contains(U32, U32.is_eq, inv, fn_buf(g)), us, inv, start, fn_u(g))
 
@@ -549,10 +547,6 @@ def fn_renum.slot(+hit: Bool, n: U32, +acc: List<&2, U32>) -> List<&2, U32>:
 # -- the FILTER IS INSIDE `enumerate`, so `i` counts the INVALID nodes and not
 # the toposort positions. The first version of this def incremented on every
 # node, which is the reading a transliteration produces, and the gate caught it:
-# on `SINK(STORE, ADD(a1,a1), STORE)` CPython's two slots are `0|1` and the
-# buggy counter answered `0|3`. Row `renum_gap` is the ONLY row that sees it --
-# `renum_two` answers `0|1` under BOTH counters, because on that fixture the two
-# invalid nodes sit at toposort positions 0 and 1 and the counters coincide.
 def fn_renum.hit(+inv: List<&2, U32>, u: U32) -> Bool:
   List.contains(U32, U32.is_eq, inv, u)
 
@@ -589,11 +583,6 @@ def fn_renum(+f: O.Found, inv: List<&2, U32>) -> List<&2, U32>:
 #
 #     pm_ctx = PatternMatcher([
 #       # Capture caller-owned storage, not allocations created while tracing this function.
-#       (UPat((Ops.BUFFER, Ops.ALLOC, Ops.PARAM), name="x"), lambda ctx,x: add_to_ctx(ctx,x) if is_implicit_storage(ctx, x) else None),
-#       (UPat((Ops.AFTER, Ops.STAGE), name="x"), lambda ctx,x: add_to_ctx(ctx,x) if
-#        not any(p.op is Ops.PARAM and p.arg.slot >= 0 for p in x.backward_slice) and
-#        any(is_implicit_storage(ctx, b) for b in x.toposort(enter_calls=False)) else None),
-#     ])
 #
 # BOTH PATTERNS ARE `UPat((...))`, which is `is_any` over the op TUPLE, so the
 # table's `ops` IS the tuple and `rej` is empty (neither pattern has a src
@@ -620,9 +609,6 @@ def fn_r1.noparam(xs: List<&2, U32>, +ar: O.Arena) -> Bool:
 
 # rule 1's second conjunct, `any(is_implicit_storage(ctx, b) for b in
 # x.toposort(enter_calls=False))`. A fold over the toposort WITH self.
-# `start` is a `U32` and the arm reads it twice, so the flag rides in a `Data`
-# record with the arena -- the `Flags{glru, lru}` shape from
-# `renderer/cstyle.bend` rule 6, and the same reason.
 type FnSt is Data:
   FnSt{ar: O.Arena, start: U32}
 
@@ -751,7 +737,6 @@ def fn_pm_ctx(+f: O.Found, +c: FnCtx) -> FnCtx:
 # `_function` is a CLASS with five instance fields and one CLASS field:
 #     depth = 0
 #     def __init__(self, fxn, *, precompile, precompile_backward, allow_implicit, grad_fxn):
-#     def __get__(self, obj, objtype=None): return functools.partial(self.__call__, obj) if obj is not None else self
 #
 # function.py:100 -- "overload signatures support both @function and
 # @function(precompile=True) syntax". The decorator has TWO SPELLINGS and the
@@ -1378,9 +1363,6 @@ def inv_real() -> String:
 # A NON-STORE node whose `src[1]` IS `CONST(Invalid)` and whose `src[0]` IS a fresh
 # buffer: CPython answers 0, and so must the port -- the `op is Ops.STORE` conjunct
 # is doing the work. Without this fixture M12 (dropping the conjunct) moved NOTHING:
-# every other node in the `inv_*` graphs either has `nsrc < 2` or a `src[1]` that is
-# not a CONST, so the dropped term was vacuously true everywhere. A conjunct needs a
-# fixture on which it is the ONLY thing standing between the answer and the wrong one.
 def inv_notstore() -> String:
   +b = fx_alloc(1, True{})
   +v = fx_inval(O.Found.ar(b))
@@ -1422,13 +1404,6 @@ def renum_gap() -> String:
 
 # `slots@positions`, so each row carries BOTH numbers and the difference between
 # them is in the output rather than in a comment.
-# and the wrapper takes the last built node's arena, not the first's: `b` is
-# interned before `v`, so `O.Found.ar(b)` does not CONTAIN `v` and the next node
-# lands at the index `v` already holds. Two builds from the same base are SIBLING
-# arenas of equal length, and "the ar of the first argument" picks the wrong one
-# (`mixin/elementwise.bend`, the second half of rule 6). The symptom here was a
-# STORE whose `src[1]` read back as ITSELF -- the graph `SINK(STORE(b, STORE))` --
-# and every `inv_*` row read 0.
 #
 # ---- E: `pm_ctx`, both rules, and the ORDER that decides between them -------
 # The table's own shape: two entries, the op TUPLES as written, `rej` empty.
@@ -1576,8 +1551,6 @@ def ret_none() -> String:
 # The `allow_implicit=False` refusal. `ctx[0]` holds ONE caller-owned BUFFER (the
 # argument) at index 0 and the rewrite APPENDED a second at index 1, so
 # `num_explicit=1` and the TAIL is the appended node. CPython:
-#     function f5 has 1 implicit buffer(s), but allow_implicit=False
-#       0: dtype=dtypes.f32, size=4, device=None
 def imp_one.of(+g: O.Found) -> String:
   String.concat(["imp_one=|", fn_implicit_msg.of([fn_u(g)], "f5", O.Found.ar(g))])
 

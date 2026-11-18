@@ -12,8 +12,6 @@
 # GATE. This file has no `main` -- it is imported by 88 others -- so its rows live in
 # `.agents/slop/helpers-tc.bend` and are compared against `.agents/slop/helpers-oracle.py`
 # by `sh .agents/slop/helpers-tc-gate.sh`, which runs CPython and both Bend lanes.
-# That gate covers `trange`, `GlobalCounters`, `Context` and the 64-bit pair block
-# (`i64_or`, `i64_and`, `i64_shl`, `i64_div`, `i64_mod`, `gcd`): 199 shared rows.
 #
 # `truncate` is not one of helpers.py's: it is dtype.py:289, it needs `dtypes`,
 # and it lives in ./dtype.bend. See dtype.bend `def truncate_float` -- THE FLOAT ARM,
@@ -184,10 +182,6 @@ type Gi is Data:
 
 # a `match` may only scrutinee a parameter or a field binder, and both of these are
 # refused with "a match cannot scrutinize a computed value: give it its own def":
-#   `match gi_dead(st)`        and        `match U32.is_eq(st, 3)`
-# So the whole state transition is ONE indexed read, `gi_tab()[st*3 + kind]`, rather
-# than three one-comparison arms. A 12-entry table is shorter than the four defs it
-# replaces and it cannot drift out of step with them, because there is only one.
 #
 #      kind:  DIG 0   UND 1   OTHER 2
 #   PRE 0  ->  [   1,      3,       3  ]   a LEADING `_` is a refusal
@@ -257,8 +251,6 @@ def gi_neg(+t: String) -> Bool:
 #
 #   MID is reachable from a prefix that is a legal `int` literal AND ends on a digit.
 #   PRE means no digit yet -- only `""` can end here, and `int("")` raises.
-#   PEND means a trailing `_` -- `int("1_")` raises.
-#   DEAD means a refused prefix -- `int("1__0")`, `int("abc")`, `int("2.0")` raise.
 #
 # So `st == 1` and "CPython would have accepted it" are the same predicate over every
 # reachable state. A `U32` is single-use, so a `gi_ok(st)` that needed both `DEAD` and
@@ -509,13 +501,6 @@ def dedup_str(xs: List<&2, String>) -> List<&2, String>:
 
 # argfix -- `def argfix(*x)`. Bend has no variadics and no tuple type, so the
 # Python shapes become three defs:
-#   argfix([a,b])         -> argfix_seq([a,b])   (x[0] is a tuple or list)
-#   argfix(a)             -> argfix1(a)          (one non-sequence argument)
-#   argfix(a, b)          -> argfix2(a, b)
-# Python raises ValueError when a sequence arrives alongside other arguments;
-# `argfix_bad` is that ValueError, answered as a Maybe so a caller can branch.
-# The two-argument `argfix` that tinygrad actually calls everywhere is
-# argfix2/argfix_seq, so no third arm is missing in practice.
 
 def argfix_bad(sequence_with_others: Bool) -> Maybe<&1, U32>:
   match sequence_with_others:
@@ -759,9 +744,6 @@ type GIn is Data:
 #
 # The three outcomes are Python's all_same over the children, computed in
 # ShapeRes.of when a GC pops a frame:
-#   all ()        -> (n,)
-#   all equal d   -> (n,) + d
-#   anything else -> SBad (Python's ValueError)
 def get_shape.go(k: Nat, ws: List<&2, GIn>, st: Stk) -> ShapeRes:
   match k:
     case 0n: SBad{"shape nested too deeply"}
@@ -833,10 +815,6 @@ def all_int_nest(n: Nest) -> Bool:
 
 # fully_flatten -- `[x for li in l for x in fully_flatten(li)]` over the same
 # Nest tree, with Python's guard that a non-sequence (and a string) is `[l]`.
-# ONE def over a work list with a `Nat` fuel in the first slot, because splicing
-# children in front of the pending work GROWS the list. Leaves accumulate in
-# `acc` and are reversed at the end, so the document order is the tree's
-# preorder.
 def fully_flatten.go(k: Nat, ws: List<&2, Nest>, acc: List<&2, Nest>) -> List<&2, Nest>:
   match k:
     case 0n: List.reverse(&2, Nest, acc)
@@ -862,8 +840,6 @@ def flatten_u32(l: List<&2, List<&2, U32>>) -> List<&2, U32>:
 # size_to_str, colorize_float) has no base equivalent either. `f32_fixed` walks
 # the decimal expansion of the f32 two digits at a time, which is printf's
 # `%.2f` on a value that came out of an f32.
-# 0x7F800000 is the f32 exponent field; all ones means inf or nan, and the
-# mantissa being non-zero distinguishes nan from inf
 def f32_exp_all_ones(+x: F32) -> Bool:
   U32.is_eq(U32.and(F32.bits(x), 2139095040), 2139095040)
 
@@ -1150,16 +1126,6 @@ def size_to_str(+s: U32) -> String:
 # The three ways a run ends:
 #   * 'm'  -- `.*?` of length ZERO, so `ESC[m` is a whole run. Reachable from 2n
 #             and 3n.
-#   * 'K'  -- and ONLY with an empty body, because `(K|.*?m)` tries `K` first and
-#             alternation is ordered. Reachable only from 2n. Rows `ansi_10`
-#             ("ESC[Km" -> "m") and `ansi_11` ("ESC[K31m" -> "31m") pin that;
-#             `ansi_19` ("ESC[31mK" -> "K") pins the other side, that a 'K' after
-#             a body is ordinary text.
-#   * '\n' -- `.` does not cross a newline, so a newline before any 'm' fails the
-#             whole `.*?m` alternative and NOTHING matches. Every character of the
-#             run is then left in the output, which is `re.sub`'s "no match at i:
-#             emit s[i], retry at i+1" carried out one character at a time. Rows
-#             `ansi_24`, `ansi_25` and `ansi_26` pin that.
 #
 # MEASURED against CPython on a 43-fixture corpus (`.agents/slop/ansi_oracle.py`
 # vs `.agents/slop/ansi_probe.bend`, gate `.agents/slop/ansi_gate.py`): 28 of 43
@@ -1171,13 +1137,6 @@ def size_to_str(+s: U32) -> String:
 # which that re-read strips. This walk cannot re-read: the body has already been
 # emitted and would have to be read a second time, and a list tail is linear. So
 # the body is emitted verbatim. Row `ansi_29` ("\x1b[\x1b[K\n") is the witness:
-# CPython answers "\x1b[\n", this port answers "\x1b[\x1b[K\n". The differ NAMES
-# the row rather than hiding it. Closing it needs a nested three-state tracker for
-# `ESC` `[` `K` inside a body, which is 13 more table arms; that is a scoping
-# decision, not a proof that Bend cannot do it.
-# prepending emits LAST, so this puts the pending ESC immediately before whatever
-# follows it, and `List.drop` on the FRONT of `acc` removes the run's most recent
-# characters.
 def ansistrip.esc(acc: List<&2, Char>) -> List<&2, Char>:
   List.append(&2, Char, [Char.from_u32(27)], acc)
 
@@ -1270,10 +1229,6 @@ def to_tuple_seq(xs: List<&2, U32>) -> List<&2, U32>:
 # flat_to_grouped
 # `(padding_left, padding_right, padding_top, padding_bottom, ...)` ->
 # `(..., (padding_top, padding_bottom), (padding_left, padding_right))`, i.e.
-# `tuple(zip(padding[-2::-2], padding[::-2]))`: pair the elements up from the END,
-# so [a,b,c,d] -> [(c,d),(a,b)] and [a,b,c] -> [(b,c)] and [a,b] -> [(a,b)] and
-# [a] -> []. The pairs, read FORWARD, are the consecutive pairs starting at index
-# (n mod 2), and the answer is that list reversed.
 
 def fg_pairs(p: List<&2, U32>) -> List<&2, List<&2, U32>>:
   match p:
@@ -1678,9 +1633,6 @@ def i64_sub(+a: I64, +b: I64) -> I64:
 # kept in step. `mixin/dtype.bend` records the same wall from the other side: its
 # `Dt.i64_floor_div` / `Dt.i64_cdiv` are `IO(..)` EFFECT SEAMS, so `_min_max`
 # cannot call them, and a pure pair operation is the only shape a fold has.
-# `a | b` and `a & b`, WORD-WISE, and that is exact rather than approximate: the
-# infinite-precision and the 64-bit two's complement readings of `&` and `|` agree
-# bit for bit, and `U32`'s wrap IS the 64-bit one. No sign fixup, ever.
 def i64_or(+a: I64, +b: I64) -> I64:
   i64_of_hi_lo(U32.or(hi32(a), hi32(b)), U32.or(lo32(a), lo32(b)))
 
@@ -2441,9 +2393,6 @@ def merge_dicts(ds: List<&2, List<&2, KV>>) -> Maybe<&1, List<&2, KV>>:
 # partition -- `for s in itr: (ret[0] if fxn(s) else ret[1]).append(s)`.
 # `fxn` is a Python callback and a Bend closure cannot be stored, so the predicate
 # is a `Sel` tag and each tag is a top-level def. part_test's tags:
-# 0 = x > 0, 1 = x < 0, 2 = x == 0, 3 = x is even, anything else = keep all.
-# The accumulator is a record so the recursion never needs a `+` on a list;
-# `partition` still answers Python's (kept, dropped) pair.
 
 type Parted is Data:
   Parted{yes: List<&2, U32>, no: List<&2, U32>}
@@ -2657,8 +2606,6 @@ def trange(+n: U32) -> Tqdm:
 #
 # `lines(fn)` opens a file and readlines()s it, answering [] on FileNotFound or
 # OSError; Bend's File.read answers a Result and [] is the Fail arm.
-# `printable(loc)` is lines(loc[0])[loc[1]-1].strip() with IndexError ->
-# "<missing>".
 
 def lines.done(f: File, value: String) -> IO(List<&2, String>):
   IO.bind(Unit, List<&2, String>, File.close(f),
@@ -2770,15 +2717,6 @@ def Target.indices(+t: Target) -> String:
 #
 #     @staticmethod
 #     def parse(s:str) -> Target:
-#       if len(split:=s.split('+')) == 2:
-#         (iface, indices), s = ((iface_split[0], iface_split[1]) if len(iface_split:=split[0].rsplit(":", 1)) == 2 else (split[0], ""), split[1])
-#       elif len(split) > 2: raise RuntimeError(f"too many '+' in target string: {s!r}")
-#       else: iface, indices = "", ""
-#       match [x.upper() if i < 2 else x for i,x in enumerate(s.split(':'))]:
-#         case [dev, ren, arch]: return Target(dev, ren, arch, iface, indices)
-#         case [dev, ren]: return Target(dev, ren, interface=iface, indices=indices)
-#         case [dev]: return Target(dev, interface=iface, indices=indices)
-#         case _: raise RuntimeError(f"too many ':' in target string: {s!r}")
 #
 # SIX FACTS, and a port that misses any one of them is wrong in a way a
 # "looks about right" reading will not catch.
@@ -2985,12 +2923,6 @@ def Target.parse_split(parts: List<&2, String>, too_many: Bool, two: Bool) -> Ma
 #      value, never a local binder (bend.ts:2663) -- so every decision here is
 #      a `Bool` that is HANDED to a def of its own and matched THERE, or a
 #      `Bool.pick`, which is the same decision without the def.
-#   2. A def must be FILLED before it is CALLED, so every def here is BELOW
-#      the ones it calls.
-#   3. Bend refuses MUTUAL recursion, so the list fold is ONE def and it
-#      carries its two results as a PAIR.
-#   4. A value used more than once is marked `+` (a parameter, a binding, or
-#      a pattern field), or the compiler says "consumed more than once".
 def Target.parse(s: String) -> Maybe<&2, Target>:
   +parts : List<&2, String> = String.split(s, Target.PLUS())
   +n : Nat = List.length(&2, String, parts)
