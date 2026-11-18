@@ -708,6 +708,43 @@ def fbd_row() -> String:
                  " vdims=", U32.show(U32.from_nat(List.length(&2, U32, RF.fb_vdims(ar, tb, st)))),
                  " guard=", Bool.show(RF.fb_ok.guard(ar, tb, st))])
 
+# A SHAPE WALK: every node reachable from the staged value, with the dims the fold answers.
+# The FIRST node with none is where the chain breaks.
+def sw_rows.go(+ar: O.Arena, +tb: F.Table, +ns: List<&2, U32>, +acc: List<&2, String>) -> List<&2, String>:
+  match ns:
+    case Nil{}: acc
+    case x <> t:
+      sw_rows.go(ar, tb, t, List.append(&2, String, acc,
+        [String.concat([RR.rr_node_str(ar, x), " dims=", RR.rr_dims_str(IX.rr_dims(ar, tb, x))])]))
+
+def sw_row() -> List<&2, String>:
+  +q = RZ.rz_rebuild(fwd_prog(), False{}, False{})
+  +kb = RR.rr_run_rangeify(RZ.RZProg.ar(q), RZ.RZProg.sink(q))
+  +ar = O.Found.ar(kb)
+  +tb = F.Folded.t(F.folded(ar))
+  +st = fbd_find.go(ar, O.UOp.toposort(O.Arena.budget(ar), ar, O.Found.i(kb)), 0)
+  +v = O.Arena.src0(ar, st)
+  sw_rows.go(ar, tb, O.UOp.toposort(O.Arena.budget(ar), ar, v), Nil{})
+
+# UNKNOWN vs EMPTY: `rr_dims` answers `[]` for BOTH, so the shape's OWN Maybe is printed.
+def sh_kind.m(m: Maybe<&2, Maybe<&2, List<&2, O.Sint>>>) -> String:
+  match m:
+    case Some{Some{ds}}: String.concat(["dims=", U32.show(U32.from_nat(List.length(&2, O.Sint, ds)))])
+    case Some{None{}}: "SHAPE-NONE"
+    case None{}: "UNKNOWN"
+
+def sh_row() -> String:
+  +q = RZ.rz_rebuild(fwd_prog(), False{}, False{})
+  +kb = RR.rr_run_rangeify(RZ.RZProg.ar(q), RZ.RZProg.sink(q))
+  +ar = O.Found.ar(kb)
+  +tb = F.Folded.t(F.folded(ar))
+  +st = fbd_find.go(ar, O.UOp.toposort(O.Arena.budget(ar), ar, O.Found.i(kb)), 0)
+  +v = O.Arena.src0(ar, st)
+  +rd = O.Arena.src0(ar, v)
+  String.concat(["v=", RR.rr_node_str(ar, v), " ", sh_kind.m(F.fold.shape(ar, tb, v)),
+                 " | RED=", RR.rr_node_str(ar, rd), " ", sh_kind.m(F.fold.shape(ar, tb, rd)),
+                 " | RD.src0=", RR.rr_node_str(ar, O.Arena.src0(ar, rd)), " ", sh_kind.m(F.fold.shape(ar, tb, O.Arena.src0(ar, rd)))])
+
 def main() -> IO(Unit):
   do IO<Unit>:
     _ : Unit <- IO.print(String.concat(["pool_rr=", pool_rr()]))
@@ -735,6 +772,8 @@ def main() -> IO(Unit):
     _ : Unit <- IO.print(String.concat(["pool_rl=", rl_row(RZ.rz_rebuild(pool_prog(), False{}, False{}))]))
     _ : Unit <- IO.print(String.concat(["fw_rl=", rl_row(RZ.rz_rebuild(fw_prog(), False{}, False{}))]))
     _ : Unit <- IO.print(String.concat(["xp_rm=", rm_row(RZ.rz_rebuild(xp_prog(), False{}, False{}))]))
+    _ : Unit <- IO.print(String.concat(["sh_row=", sh_row()]))
+    _ : Unit <- IO.print(String.concat(["sw_row=", String.join(sw_row(), " | ")]))
     _ : Unit <- IO.print(String.concat(["fbd_row=", fbd_row()]))
     _ : Unit <- IO.print(String.concat(["fwd_lk=", fwd_lk()]))
     _ : Unit <- IO.print(String.concat(["fwd_kg=", fwd_kg()]))
