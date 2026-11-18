@@ -35,14 +35,29 @@
 # field order is gated as a string, never as a count.
 #
 # `struct_libusb_transfer` shipped with transposed fields and a count-based gate
+# passed it, because a count cannot see a transposition. So `F_EHDR`, `F_SHDR`,
+# `F_SYM64`, `F_SYM32`, `F_RELA`, `F_REL` are the FIELD-NAME STRINGS out of
+# `autogen/libc.py`'s `register_fields`, and every per-section row spells
+# `name@byteoffset:value` for all ten Shdr fields and all six Sym fields. TWO REAL
+# port bugs were caught by exactly that string and by nothing ELSE -- see the
+# `Shdr.o_*` / `W64.at` notes, where a 64-bit word's high half was read four bytes
+# past the field and `sh_link` was filled with the OFFSET instead of the VALUE.
+# A count saw neither.
 #
 # THE `type ... is Data:` FIELD LIST IS DOCUMENTATION in bend 2.0.34 and the
+# `case` BINDINGS are load-bearing. Both are written out, so the declaration and
+# the reader cannot drift: `Shdr{sh_name, sh_type, ...}` is the documentation,
+# `case Shdr{sh_name, sh_type, ...}:` in every reader is what a mutation moves
+# rows through.
 #
 # EVERY FIELD IS TYPED. Measured: an untyped `type X is Data: X{nm, hdr, cont}`
 # declares all three as `Quant` and then
 #   Error: - expected : Quant / - observed : String
 #
 # the two upstream defects. `tinygrad/` is read-only to this unit; both are
+# REPRODUCED against real files (`.agents/slop/elf/REPORT.md`) and the PORT
+# MATCHES THE CODE AS WRITTEN, because a 1:1 port that silently fixed them
+# would diverge from the SUT on every linked image.
 #
 # 1. `elf.py:47` resolves `sym.st_name` against `sh_strtab`, the SECTION HEADER
 #    string table, instead of the table named by the SYMTAB's `sh_link`. The two
@@ -87,6 +102,9 @@
 #      order is the answer; the row helpers are BUILT appended and never reversed.
 #
 # WHAT IS PORTED, DEF BY DEF. `libc` is `tinygrad/runtime/autogen/libc.py`,
+# generated and NOT in this unit's scope; its STRUCT LAYOUTS and its constants
+# are named here as the port's own tables and are gated against the oracle
+# reading those same constants out of the real module.
 #
 #   :7   ElfSection                PORTED  `type ElfSection` + name/header/content
 #   :9   link_sym                  PORTED  `link_sym`, `type Link`, `Link.pick`
@@ -269,6 +287,11 @@ def W64.text(+w: W64) -> String: String.concat([U32.show(W64.hi(w)), ":", U32.sh
 # 2^32, and `elf_w64_is_addr` pins that against the oracle.
 def W64.as_idx(+w: W64) -> U32: W64.lo(w)
 # `le32(k)` and `le32(k+4)`. Writing the pair as `(k, k+8)` -- the start of the
+# NEXT field -- reads FOUR BYTES PAST the field and returns the next section
+# header's bytes as this field's high half. `sh_entsize` is at 56, so its high
+# half is at 60; reading at 64 returned byte 8 of the NEXT Shdr. A COUNT SAW
+# NOTHING. The ten-field `elf_sec_*_hdrtxt` STRING saw it, and it saw it only
+# because the row spells `name@byteoffset:value`.
 def W64.at32(+h: String, +k: U32, +hi: U32) -> W64:
   W64.of(Blob.le32(h, k), Blob.le32(h, hi))
 def W64.at64(+h: String, +k: U32) -> W64: W64.at32(h, k, U32.add(k, 4))
@@ -414,6 +437,11 @@ def Reloc.r_addend(+r: Reloc) -> W64:
 # offset is a changed def rather than a constant buried in an expression.
 #
 # Elf64_Ehdr registers: e_type@16 e_machine@18 e_version@20 e_entry@24
+#   e_phoff@32 e_shoff@40 e_flags@48 e_ehsize@52 e_phentsize@54 e_phnum@56
+#   e_shentsize@58 e_shnum@60 e_shstrndx@62
+# Elf32_Ehdr registers: 16 18 20 24 28 32 36 40 42 44 46 48 50
+#   -- the SAME offsets up to e_entry and then 4 lower for every 64-bit field,
+#   which is the whole difference between the two layouts.
 
 def Ehdr.v_phoff(+h: String, +x: Bool) -> W64:
   Bool.pick(W64, x, W64.of(Blob.le32(h, 32), 0), W64.of(Blob.le32(h, 28), 0))
@@ -554,8 +582,17 @@ def Ehdr.text(+e: Ehdr) -> String:
      String.concat(["e_shstrndx@62:", U32.show(Ehdr.e_shstrndx(e))])], ",")
 
 # the field-OFFSET table for Shdr, one entry per field, each spelling both
+# LAYOUTS.
+# Elf64_Shdr: sh_name@0 u32 sh_type@4 u32 sh_flags@8 u64 sh_addr@16 u64
+#              sh_offset@24 u64 sh_size@32 u64 sh_link@40 u32 sh_info@44 u32
+#              sh_addralign@48 u64 sh_entsize@56 u64
+# Elf32_Shdr:  0 4 8 12 16 20 24 28 32 36, ALL u32.
 #
 # the second real port bug was here. `sh_link` and `sh_info` are u32 fields read
+# AT `off+40` / `off+44`. Passing the OFFSET ITSELF as the value put 936 (which is
+# 896+40) into `sh_link` where the file holds 0. `Shdr.v_link` / `Shdr.v_info`
+# read the value; `Shdr.o_link` / `Shdr.o_info` name where. A COUNT SAW NOTHING.
+# `+off` on every entry because each adds two constants to the same `off`.
 def Shdr.o64(x: Bool, k64: U32, k32: U32) -> U32: Bool.pick(U32, x, k64, k32)
 def Shdr.o_flags(x: Bool, +off: U32) -> U32: Shdr.o64(x, U32.add(off, 8), U32.add(off, 8))
 def Shdr.o_addr(x: Bool, +off: U32) -> U32: Shdr.o64(x, U32.add(off, 16), U32.add(off, 12))
@@ -582,6 +619,12 @@ def Shdr.zero() -> Shdr:
 # record built in ONE literal needs every value in that literal, and computing
 # ten of them there needs the blob ten times -- so the chain carries them as
 # parameters. That is the whole reason `Shdr.at8` exists.
+#
+# Elf64's 64 is not just Elf32's 40 plus a wider field: it is the STRIDE. Ten
+# fields, and 64/10 does not divide, so `Shdr.nfields` is documentation and
+# `Shdr.size` is the load-bearing one; the row `*_shdr_stride` pins both and the
+# DECLARED `e_shentsize` is a third row beside them, so a port that trusts the
+# header instead of the struct disagrees visibly.
 def Shdr.at8(+h: String, +off: U32, flags: W64, addr: W64, offset: W64,
              size: W64, link: U32, info: U32, align: W64, entsize: W64) -> Shdr:
   Shdr{Blob.le32(h, off), Blob.le32(h, U32.add(off, 4)), flags, addr, offset, size,
@@ -656,6 +699,10 @@ def Shdr.entsize(+s: Shdr) -> W64:
 # `Shdr.o_label` picks the table, and `elf_sec_*_hdrtxt` gates BOTH layouts: the
 # Elf64 offsets 0/4/8/16/24/32/40/44/48/56 and the Elf32 offsets
 # 0/4/8/12/16/20/24/28/32/36.
+# The ORDER is the order the reader walks them. A transposed pair changes this STRING and
+# changes NO count. Both real bugs in this file were visible HERE and nowhere else:
+# a 64-bit word's high half read at `k+8` instead of `k+4`, and `sh_link` filled
+# with the OFFSET instead of the VALUE.
 def Shdr.at_text64(+s: Shdr) -> String:
   String.join(
     [String.concat(["sh_name@0:", U32.show(Shdr.name(s))]),
@@ -688,6 +735,10 @@ def Shdr.at_text(+s: Shdr, +x: Bool) -> String:
   Bool.pick(String, x, Shdr.at_text64(s), Shdr.at_text32(s))
 
 # THE Sym READERS, BOTH LAYOUTS.
+# Elf64: st_name@0 st_info@4 st_other@5 st_shndx@6 st_value@8 st_size@16
+# Elf32: st_name@0 st_value@4 st_size@8 st_info@12 st_other@13 st_shndx@14
+# The ORDER is the same six names and the OFFSETS are not, so the field-order
+# STRING is two rows and the offset strings are two more.
 
 def Sym.size(x: Bool) -> U32: Bool.pick(U32, x, 24, 16)
 def Sym.o_info(x: Bool, +off: U32) -> U32: Bool.pick(U32, x, U32.add(off, 4), U32.add(off, 12))
@@ -894,10 +945,24 @@ def Sections.build(+h: String, +e: Ehdr, +x: Bool) -> List<&2, ElfSection>:
 # link_sym, elf.py:9-13. THE LIVE BUG.
 #
 # `for lib in libs: try: return unwrap(ctypes.cast(getattr(lib, sym),
+# ctypes.c_void_p).value) except (OSError, AttributeError): pass` then
+# `raise RuntimeError(f'Attempting to relocate against an undefined symbol
+# {sym}')`.
 #
 # `Link` is a LIBRARY and `l_syms` is the set it REALLY EXPORTS -- a table
+# `.agents/slop/elf_oracle.py` measures by `getattr(ctypes.CDLL(path), name)` on
+# the four real dylibs, so `elf_ls_*` says what this machine answers rather than
+# what this port believes. A MISS is the total form of `AttributeError`.
 #
 # the scan is a FOLD, not the short-circuit. python.py's `for lib in libs: try:
+# return ... except: pass` returns the FIRST hit, and in bend a `Bool.pick` of
+# two self-calls on the SAME list is mutual recursion (refused) while one on a
+# SHORTER list is the descent -- so the short-circuit shape cannot be written.
+# `Link.pick` is a FOLD THAT KEEPS THE FIRST hit (`Link.pos` returns `acc`
+# unless `acc` is still 1) and it returns the 1-BASED position of the winner, so
+# 0 means "nobody exported it" -- which is the refusal. It is a position and not
+# an address because bend cannot ask a dynamic linker for an address, and the
+# position names the library the address would have come from.
 
 type Link is Data:
   Link{l_name: String, l_syms: List<&2, String>}
@@ -1041,6 +1106,9 @@ def Rel.names(+xs: List<&2, ElfSection>, +rela: Bool) -> String:
 # THE IMAGE. elf.py:32-38.
 #
 # `image = bytearray(max([sh_addr + sh_size for sh in progbits if sh_addr != 0]
+# + [0]))` -- the PREALLOC, which is a maximum over a LIST, and the rows carry
+# both the prealloc and the per-section addresses so a port that forgot the
+# `+ [0]` (the empty-file answer is 0, not a crash) disagrees visibly.
 #
 # elf.py:37's `((align := max(sh_addralign, force_section_align)) - len(image) %
 # align) % align` -- the ALIGNMENT. `force_section_align` is the default 1 and
@@ -1244,6 +1312,12 @@ def Built.of_blob(+h: String, +e: Ehdr, +x: Bool, force: U32) -> Built:
 # THE SYMTAB. elf.py:29.
 #
 # `next((_to_carray(sh, Sym) for sh in sections if sh_type == SHT_SYMTAB), None)`
+# -- THE FIRST ONE. `next` on an exhausted generator raises `StopIteration`, so a
+# file with no `.symtab` has no answer here; the port answers a SENTINEL INDEX
+# and reads an empty symbol list, which is the total form. `Sections.at_sec`
+# turns the sentinel into the zero ElfSection, whose type is SHT_NULL and whose
+# entsize is 0, so `Rel.count`'s zero-entsize arm answers 0 and no division by
+# zero happens. The row `*_symtab_idx` is the sentinel on such a file.
 
 def Sec.is_symtab(+s: ElfSection) -> Bool: U32.is_eq(Sec.typ(s), SHT_SYMTAB())
 def Symtab.NONE() -> U32: 4294967295
@@ -1281,6 +1355,9 @@ def Symtab.last(+xs: List<&2, ElfSection>, +h: String, +x: Bool) -> Sym:
 # lookup answers a sentinel and the refusal becomes a ROW.
 #
 # `next` STOPS AT THE FIRST MATCH and a fold would keep the LAST, so the fold
+# carries a sentinel and a second match is discarded: that is the difference
+# between `next(...)` and a fold, and section names are unique in a real file so
+# nothing distinguishes them until it does not.
 
 def Trg.NONE() -> U32: 4294967295
 def Trg.hit(+nm: String, +s: ElfSection) -> Bool: String.eq(ElfSection.name(s), nm)
@@ -1310,6 +1387,10 @@ def Trg.found(v: U32) -> Bool: Bool.not(U32.is_eq(v, Trg.NONE()))
 # own `sh_link`. For a relocatable object the two tables are the same section and
 # the bug is invisible; for a LINKED image they differ and 8 of 15 symbols
 # misresolve (REPORT.md). `Rc.str` is `sh_strtab`, as written.
+# `elf_relocs` prints, for each reloc, where it goes, what it points AT, the type,
+# and the addend. All four are printed by `elf_relocs` as `at:tgt:type:addend`
+# because a COUNT cannot see a transposed pair, and the four come from four
+# different readers.
 
 type Rctx is Data:
   Rctx{rx_secs: List<&2, ElfSection>, rx_str: String, rx_libs: List<&2, Link>}
@@ -1453,8 +1534,15 @@ def elf_image_relocs(+e: ElfImage) -> List<&2, Reloc>:
     case ElfImage{img_bytes, img_body, img_sections, img_relocs}: img_relocs
 
 # THE SIGNED DIFFERENCE. `tgt - ploc` is a signed value in Python and a U32 in
+# bend, so it is carried as a `neg` flag and a MAGNITUDE, and the two range tests
+# and the one encoder all read that pair. ONE representation, because two of them
+# -- a `(neg, mag)` pair here and a raw U32 there -- is how a port ends up with an
+# encoder that disagrees with its own range test.
 #
 # `i2u(32, v)` is `v if v >= 0 else (1 << 32) + v`, so a negative value encodes as
+# its MAGNITUDE plus 2**32. Writing the encoding as the magnitude alone is the
+# single most common way to get a reloc wrong and it looks right for every
+# non-negative delta, so `elf_i2u32_*` carries BOTH signs at the boundary.
 type Sdiff is Data:
   Sdiff{sd_neg: Bool, sd_mag: U32}
 def Sdiff.of(+x: U32, +y: U32) -> Sdiff:
@@ -1504,6 +1592,9 @@ def Reloc.lo12(+tgt: U32, start: Nat, end: Nat) -> U32:
 # `Rloc.pad` == "". The fold at the bottom IS `jit_loader`'s loop (elf.py:84-85).
 #
 # ONE DEF PER `case`. A mutation to one arm moves only the rows that arm reaches,
+# and `.agents/slop/elf_reloc_probe.py` reaches all ten through the real
+# `jit_loader` by patching `r_type` in a real object file, so `elf_reloc_*` is one
+# DISTINCT word per arm rather than one shared zero.
 
 type Rloc is Data:
   Rloc{rl_word: U32, rl_pad: String}
@@ -1572,6 +1663,10 @@ def Reloc.a_call26_tramp(tgt: U32) -> String: Tramp.arm(tgt)
 #    image[ploc:ploc+4]), base, ploc, tgt+r_addend, r_type, r_addend))`
 #
 # the FOLD is over the reloc list, not over a count, and `Bool.pick` picks the arm
+# so the image is threaded once. The 4-byte patch is a PLACED WRITE at `ploc`
+# (`Img.write_at`) and the word is packed little-endian (`Hex.pair`), which is
+# little-endian order -- `Hex.of` is big-endian and swapping them writes the
+# instruction BACKWARDS, which is a plausible-looking word and a wrong one.
 
 def Jit.ploc(+r: Reloc) -> U32: W64.as_idx(Reloc.r_at(r))
 def Jit.tgt(+r: Reloc) -> U32: U32.add(W64.as_idx(Reloc.r_tgt(r)), W64.as_idx(Reloc.r_addend(r)))
