@@ -1,0 +1,859 @@
+
+:10    AMDReg.encode      PORTED `AMDReg.encode` -- the `int.__or__` fold
+:10  the x86_64 arm            PORTED `ClangCompiler.x86_feat` `ClangCompiler.args`
+:100  normalize             PORTED   over Python's 35 keywords
+:100 DSPCompiler.args       PORTED  `COMPILER_ARGS`, `compiler_args_first`
+:100 the `ctx_init_value` sweep   PORTED  the port's own bs.init_npos / bs.init_stride
+:1001-1014 aql_scratch                     PARTIAL the rsrc dicts
+:101   disable_cache=True      PORTED  `ir3.disable_cache`
+:1016-1030 the four prof buffers           PORTED  their sizes and specs
+:103-104 argv 1               PORTED  `C.argv1`  (element COUNT pinned)
+:103-106 wait_reg_mem                      PORTED  the wrm_info_dw words
+:1032-1038 program_buffer                  PORTED  the memo and the spec
+:104   the IR3 cache key       PORTED  `ir3.key`
+:104-105 the fifteen sections PORTED `link_section`, `link_sections` -- upstream lists the sections in `__init__`
+:1040-1048 sqtt_trace                      PORTED  the offset, the wptr, the
+:105 NVQueue.nvm                         NOT PORTED  `NVQueue.nvm` is the
+:105-106 argv 2               PORTED  `C.argv2`  (element COUNT pinned)
+:1055-1069 collect_prof                    PARTIAL the window and the kinds
+:106 the ALIGN(4096) lines  PORTED  `link_line`, `link_line.go`
+:107  typehint              PORTED   both directions, incl. the falsy arm
+:107 the ALL_DONE `flags`         PORTED  the port's own bs.flags_of
+:107-115 sem/wait/signal/timestamp/      PORTED  `q.sem`, `q.wait`,
+:1071    on_device_hang                    WALL 5
+:108 the whole script       PORTED  `link_script` -- upstream writes the SECTIONS script in `__init__`
+:108-121 acquire_mem                       PARTIAL the flag words, both arms
+:11    AMDReg.decode      PORTED `getbits` `AMDReg.decode` -- the join
+:11  `BNXT_BACKING_STORE`      PORTED  nine (type, extra) pairs, in order
+:11-14 _get_bytes           PORTED `_get_bytes.calls` `.calls_name` `.pick`
+:110 `_open_rcfw`              PORTED  `dev.open_rcfw`, the ordered trace
+:111 the -T flag            PORTED  `compiler_args_has_T` -- upstream adds the link script flag in `self.args`
+:112  tname, its DISPATCH   WALL 4   the ten-arm `match t.kind` and its
+:112  tname, its TEMPLATES  PORTED   emit_record_pass/head/field/cell,
+:112 `ring_alloc` NQ           PORTED  `dev.ring_alloc`
+:115 the NQ_ARM doorbell       PORTED  `dev.doorbell`
+:116 `cmdq_size_cmdq_lvl`      PORTED  `dev.cmdq_lvl`
+:117-128 NVQueue.submit                  PARTIAL the five placeholders and
+:118 compile                WALL 1  the clang spawn + the .so read-back
+:119   the uav count           PORTED  `ir3.num_uavs` -- `num_ssbos + num_images`
+:119-196 exec                         PORTED  the port's own exec.of and its 27-call trace
+:12  the a630 assert         PORTED  `q.arch_ok` -- upstream's `arch` IS the
+:121-123 `stat_ctx_alloc`      PORTED  `dev.open_rcfw`'s trace
+:122  the resources refusal          PORTED  the port's own rf.resources + `Tr.refuse`
+:123  the dims refusal                PORTED  the port's own rf.dims + `Tr.refuse`
+:123-140 release_mem                       PARTIAL the flag words, both arms
+:125 disassemble            WALL 1  cpu_objdump / llvm-objdump
+:127 the notification NQ       PORTED  `dev.nq`, logical_id 1
+:127-131 unpack_lib            PORTED  `ul.*` -- THE HEADLINE. Two successive
+:128-136 list_devices/probe   PORTED  `pci.probe.*`
+:13  `db_value`                PORTED  `db.hi` / `db.lo`, and the whole
+:13  chip_id = 0x6030001     PORTED  `q.chip_id` (0x6030001 = 100859905,
+:13  the arm64 arm             PORTED `ClangCompiler.arm64_feat` `ClangCompiler.args`
+:13  the platform gate       PORTED  `q.is_aarch64` -- upstream's `platform`
+:13-14 AMDReg.fields_mask PORTED `AMDReg.width` `AMDReg.fields_mask`
+:130 `rcfw`                    PORTED  `rcfw`, in the trace
+:131-138 NVComputeQueue.__init__         PORTED  `cq.qmd_sz`, `cq.stride`,
+:132 the ion_fd open        PORTED  `dev.open_ion`
+:133 `ceildiv(sizeof(req_t),16)` PORTED `rcfw.slots_of`
+:136-137 the producer index    PORTED  `rcfw.write_idx` / `rcfw.prod`
+:138-186 pci_setup_usb_bars   PORTED  `bars.*` -- THE HEADLINE. 7 ordered writes,
+:14-15 the five inits      PORTED `LLVMCompiler.prefix` `.components`
+:14-17 deserialize             PORTED  `de.*` -- base64 length + the
+:141 open_lib               PORTED  `dev.open_lib`, `dev.open_lib_sc`
+:141-148 wait/release (prev_qmd)         NOT PORTED  the prev-qmd reset arm
+:142-143 the prod/trig dwords  PORTED  `rcfw.prod_at` / `rcfw.trig_at`
+:142-146 memory_barrier                    PARTIAL the pf ladder
+:143 the tinylib URL        PORTED  `OPEN_LIB_FP`, `open_lib_len` -- upstream builds the `tinylib` URL there
+:145 the two outs           PORTED  `open_lib_out0`, `open_lib_out1` -- upstream allocates the two out views in `open_lib`
+:146 the CREQ valid test       PORTED  `creq.ready`
+:147 the raise              PORTED  `open_lib_bad`, `open_lib_err` -- upstream raises RuntimeError in `open_lib`
+:148-150 spi_config                       PORTED  the six fields
+:15  elf_loader                PORTED  `elf_loader`
+:15  the refusal               PORTED `ClangCompiler.supported` `ClangCompiler.unsupported`
+:15-18 check()                PORTED  `c.msg`  (the refusal truncates `gd`)
+:150 close_lib              PORTED  `dev.close_lib`, `dev.close_lib_sc`
+:150-154 submit (patch the qmd blob)     WALL    `patch()` writes bytes
+:154-164 exec_lib           PORTED  `dev.exec_lib` -- open/invoke/close, retry
+:155 `assert ret.status == 0`  PORTED  the REFUSAL
+:156-159 memory_barrier                  PORTED  `cq.memory_barrier`
+:157-165 prof_start                        PARTIAL the slot, the log index
+:16  the cache key             PORTED `ClangCompiler.key`
+:16  the cache key           PORTED  `q.key`
+:16  the ELFMAG assert         PORTED  `magic_ok` -- upstream asserts `ELFMAG` in `elf_loader`
+:16-19 nvrtc_check          PORTED `nvrtc_check.msg` `.kind`
+:160 `fini`                    PORTED  `dev.fini`
+:161-186 exec                            PORTED  `cq.exec` + its TWO raises
+:161-186 the launch path's graph-upload/launch trace and two refusals
+:166-176 init_dsp           PORTED  `dev.init_dsp` -- seven ordered calls
+:167 `_open_l2`                PORTED  `dev.open_l2`, the enable masks
+:167-170 the stale-fd close PORTED  the `have_fd` arm -- upstream closes a stale fastrpc fd in `init_dsp`
+:17  the ecls dict             PORTED  `ecls.name`, `is64`
+:17  the rootfs fetch        PARTIAL `q.root` -- the URL and the repo root;
+:17  the triple map        PORTED `LLVMCompiler.triple` `.triple_ok`
+:17-21 AMDIP              PORTED `import_asic_regs.n` `AMDReg.fields`
+:17-47 FileIOInterface        FFI     open/close/ioctl/mmap/read/write.
+:172-175 prof_bump                         PORTED  the index arithmetic
+:178 RPCListener.__init__   PORTED  the three initial values
+:18  `send_wqe`                PORTED  the 8 words, the pack format and
+:18  the qemu command        PORTED  `q.cmd_qemu` -- upstream's `qemu` IS
+:183 `register_mem`            PORTED  `dev.register_mem` -- the
+:184-209 pmc_start                         PARTIAL the block-count table
+:186-188 the request block  PORTED  `rpc.lens`, `RPC_MSG_BYTES`
+:188-200 flock_acquire        WALL   the `fcntl.flock` call itself is the
+:189 `unregister_mem`          PORTED  `dev.unregister_mem`
+:189-195 NVCopyQueue.copy                PORTED  `cq.copy`, `copy.nsteps`
+:19   `BUFTYPE_BUF`                  PORTED  the port's own buftype_names, both directions
+:19  _strtab                   PORTED  `Str.tab`, `Str.at`
+:19  `recv_wqe`                PORTED  the 7 words -- and the `I size` at
+:19-20 the docker command    PORTED  `q.cmd_docker` -- upstream's `docker` IS
+:191 `BNXTQP.__init__`         PORTED  `qp.new`, the four queues
+:192 msg_send               PORTED  `rpc.msg_*_index` -- upstream writes the request header in `run`
+:194  parse_objc_spec       WALL 4   same two-descents shape, over methods
+:194 `sizeof(struct_cq_base)`  PORTED  `SIZEOF_CQ_BASE` -- so the CQ
+:194 the greeting literal   PORTED  `RPC_GREET` -- upstream invokes `FASTRPC_IOCTL_INVOKE` with the greeting `sc` in `run` -- the literal is 0x04020200
+:197 the sc field split     PORTED  `sc_ins`, `sc_outs` -- upstream splits the sc word in `run`
+:197-201 semaphore/timestamp/signal      PORTED  `cq.semaphore`, `cq.ts`,
+:198 `create_qp`               PORTED  `qp.create`
+:199-210 the object walk    PARTIAL `rpc.obj_pad`, `rpc.obj_count` (WALL 3) -- upstream walks the object list in `run`
+:20    LVPCompiler.__init__    PORTED  `lvp.archs` -- `arch.split(",")`
+:20  `msn_entry`               PORTED  `msn.of` / `msn.hi` / `msn.lo`
+:20-21 the target machine  PORTED `LLVMCompiler.tm_processor` `.tm_feats`
+:20-25 _get_comgr_data        PORTED  `gd.*` -- the FOUR-call order and the two
+:201 `modify_qp(1, INIT_MASK)` PORTED  `qp.modify`
+:203 `modify_qp`               PORTED  `qp.newstate` -- `state | ntype`
+:204-225 NVEncDecQueue.encdec            PARTIAL the arithmetic (`dev.vid_h`,
+:206 `connect`                 PORTED  `qp.connect`, both transitions
+:206-268 PCIDevice            PORTED  `pci.*` -- the sysfs path table, the open
+:208 `struct.unpack` dgid/dmac PORTED  `qp.dgid` / `qp.dmac`
+:209  proto                 WALL 4   same
+:21  the Ehdr struct           PORTED  `type Ehdr`, `Ehdr.at`, 13 readers
+:21-22 the spawn               PORTED `ClangCompiler.compile_argv` `.argv_n`
+:21-24 jitlink_check        PORTED `jitlink_check.msg` `.kind` `.result`
+:21) IS where upstream tests it
+:211-231 pmc_read                          PARTIAL the copy and the stride
+:213-238 the seven arms     PORTIAL `rpc.arm` + each arm's in/out counts
+:219 `poll`                    PORTED  `qp.poll`, and its CQ doorbell
+:22  `ceildiv(size, MTU)`      PORTED  `msn.pkts`
+:22  the assert                 PORTED  `dev_fits`, `dev_reopen_msg` -- upstream's `size`
+:22  the Shdr array            PORTED  `Shdr.at`, `Sections.of`, 10 readers
+:221 the SEEK_SET assert    PORTED  `rpc.seek_ok`, `rpc.seek_err` -- upstream asserts `APPS_STD_SEEK_SET` in `run`
+:224 `assert raw[25] == 0`     PORTED  the REFUSAL
+:225/:272 the two offset rules       PORTED  the port's own pd.nir_*/pd.cl_*
+:227 `post_send`               PORTED  `qp.post_send`, the ordered trace
+:23  the fast path              PORTED  `dev_is_open`, `dev_warm` -- upstream's `size`
+:23  the shstrtab slice        PORTED  `shstrtab`, `shstrtab_at` -- upstream slices `sh_strtab` in `elf_loader`
+:23-26 AMDIP.__getattr__  PORTED `AMDIP.name10` `AMDIP.ga` -- the
+:23-31 the pass options    PORTED `LLVMCompiler.passes` `.pbosets`
+:230 the aux msn write         PORTED  in the same trace
+:230-305 NVProgramData.__init__          PORTED  the derivations:
+:232 the SQ doorbell           PORTED  in the same trace
+:232-237 the six derived sizes        PORTED  the port's own pd.*
+:234 `post_recv`               PORTED  `qp.post_recv`
+:235-238 sqtt_userdata                     PARTIAL the pair loop
+:239 the unknown-op raise   PORTED  `rpc.unknown_err`, `ARM_NONE` -- upstream raises `RuntimeError` on an unknown op in `run`
+:239-283 `_parse_lib`                 PORTED  the two binary walks
+:24  the 48/24/24 msn word     PORTED  the same shift amount is MEASURED
+:24  the ElfSection list       PORTED  `Sections.build`
+:240-243 sqtt_config                       PARTIAL the rt_freq arm
+:243 mockdsp_boilerplate    PORTED  `mockdsp_boilerplate`
+:245-261 sqtt_setup_exec                   PARTIAL the cu/se masks
+:25  `cqe_ready`               PORTED  `cqe.ready`, off `cqe_type_toggle`
+:253 MockDSPRenderer        PORTED  `mrender.*` -- upstream defines the mock renderer class `MockDSPRenderer`
+:255 its defines            PORTED  by the omission (clang only)
+:26  _to_carray                PORTED  `Rel.entsize`, `Rel.count`,
+:26  `filename`                 PORTED  `dsk_filename`
+:26  nv_gpu = nv_570                     PORTED  the constant table below
+:26-36 pretty_ptx           PARTIAL `colored.*` `pretty_ptx.pat0..5`
+:261-265 the reloc table                 PORTED  `pd.reloc.off`,
+:261-265 the reloc table both ways                  :230-305 image padding
+:262 max_numel*itemsize     PORTED  `mrender.nbytes`
+:263-325 sqtt_start                        PARTIAL the per-target register
+:264 the mmap2/read loop    PORTED  `mrender.mmap`
+:266 the val read           PORTED  `mrender.val`
+:268 the (void*) cast       PORTED  `mrender.arg_name` -- upstream casts the buffer argument in `_render_entry`
+:27  `build_pbl`               PORTED  `pbl.level_of` / `pbl.entry` /
+:27  rel                       PORTED  `Rel.sects(xs, False{})`, `Rel.trgt`
+:27-32 checked()             PORTED  `q.msg` `q.msg_with` `q.picks_exe` --
+:270 the inscount write     PORTED  `mrender.finish`
+:270-290 USBPCIDevice         PORTED  `usb.*` -- the constants and the DMA window
+:272 the output write       PORTED  `mrender.emit`
+:273  the main prologue     PORTED   prolog_head, prolog_objc, emit_dll_line
+:276-292 MockDSPProgram     PORTED  `mprog.stdin_bytes`, `mprog.stdout_len`, -- upstream runs the mock program `MockDSPProgram`
+:279  the exec/prune loop   WALL 3   needs CPython line numbers
+:28  PMA                                 WALL    ContextVar + VIZ.value
+:28  rela                      PORTED  `Rel.sects(xs, True{})`, `Rel.trgt`
+:28  the shm predicate          PORTED  `dev_is_shm`, `dsk_shm_name` -- upstream's `filename`
+:28  X86Compiler.__init__      PORTED `X86Compiler.key`
+:28-32 set_options()          PORTED  `sp.n` -- the option COUNT comgr is given
+:285-288 `qcom_build_program`         PORTED  the port's own qcom.get/ce.find/ce.put
+:289-297 `QCOMAllocator`              WALL 3  `:296 _offset` is device.bend's own
+:29  symtab                    PORTED  `Symtab.idx/n/at`, `type Sym`, 6 readers
+:29  X86Compiler.compile       PORTED `X86Compiler.nibble` `X86Compiler.hex_ok`
+:29-31 the shm branch            PORTED  `dev_shm.on`
+:30  progbits                  PORTED  `Sec.is_progbits` -- upstream collects the PROGBITS sections in `progbits`
+:30  X86Compiler.disassemble   PORTED `X86Compiler.dis_row`
+:307-311 _parse_elf_info                 WALL    `struct.unpack_from`
+:31-34   SQTT / PMC ContextVars            PORTED  the two default pairs
+:31-37 import_module      PORTED `import_module.override` `import_module.vers`
+:310-345 `QCOMDevice.__init__`        PARTIAL the flags and the gpu_id refusal
+:310-345 the init SEQUENCE            WALL 4  the ioctls and mmap are seams
+:313-320 _nv_program_cache/nv_build_prog PORTED  `pc.find`, `pc.put`,
+:313-320 the program cache (the lookup is `pc.find`/`pc.same`, NOT a key reader)
+:322-331 NVAllocator                     PORTED  `alloc.alloc_size`,
+:328-357 sqtt_stop                         PARTIAL the status masks
+:33  hilo                                PORTED  `hilo.pair`
+:33  the image prealloc        PORTED  `Sec.prealloc_of` -- upstream allocates the `image` in `elf_loader`
+:33-34 the try/except open       PORTED  `dev_file.open.at` -- and :34's
+:337 GPFifo                              NOT PORTED  the record is `dev.gpfifo_n`
+:339-342 `dummy`/`border_color`       PARTIAL the SIZES only, in the port's own FLUSH_*
+:34  `assert len <= 512`       PORTED  the REFUSAL, a truncated trace
+:34-35 the context         PORTED `LLVMCompiler.diags` `.append`
+:34-38 the aligned append      PORTED  `Built.of_secs`, `Img.pad`, `Img.place`,
+:344-370 _gpu_alloc/_gpu_free        WALL 4  ioctls, mmap, memset, munmap
+:347-352 the VA bump allocators          PORTED  as CONSTANTS + a row
+:35    LP_JIT_RES_CONSTANTS    PORTED  `lpt.res` (autogen value, declared)
+:35  get_error_str                       PORTED  `iface.err_str_of`
+:35  the block-device guard     PORTED  `dev_file.trunc.at`, `dev_trunc`
+:35-38 the ISA name           PORTED  `h.isa`
+:35-40 `_qreg_exec`                  PORTED  the port's own qregs/qfields/qreg.of
+:35-40 `_qreg_exec`/`qreg`           PORTED  the port's own mesa_of/qreg_of/is_reg_name
+:35, :37-38 the error-string tables                  :664-665 the GPA-info fallback
+:354-362 `_gpu_map`                   WALL 4  the ioctl, the EFAULT arm
+:36  the mapping                PORTED  `dev_file.mmap.at`
+:36  the nine-argument call -- upstream's `cl_compiler_compile_source` IS the
+:36-41   the constants                     PORTED  all of them
+:36-43 the handler         PORTED `LLVMCompiler.append_diag`
+:36's `-1` mmap sentinel and :42-47's
+:361-364 kernargs                          PORTED  THE ARGUMENT TRACE
+:366-400 exec                              PARTIAL the register ORDER, the
+:37-38 NV_PFAULT_FAULT/ACCESS_TYPE       PORTED  `pfault.n`, `pfault.status_n`
+:371-376 `_wait_signal`               WALL 4  the timestamp ioctls
+:38-44 cuda_disassemble     PORTED `cuda_disassemble.fname` `.ptxas` `.nvdisasm`
+:384-386 `_at_profile_finalize`       WALL 4  sysfs
+:385-452 RemotePCIDevice      PORTED  `rpc.*` -- the pad-to-3 rule, the REMOTE
+:39    import_soc         PORTED `import_soc.name`
+:39    the logging flag       PORTED  `h.logging` (autogen value, declared)
+:39  the link call -- upstream's `cl_compiler_link_program` IS the call --
+:4-10  the comgr3 switch      PORTED  `Ad.version` `Ad.hip_lang` `Ad.hyp3`
+:40-41 nv_flags                          PORTED  `flags.term`, `flags.or`,
+:402     wait                              PORTED  one pkt3
+:403-415 setup_usermode                  PARTIAL `iface.ladder`,
+:404-407 timestamp                         PORTED  one pkt3
+:409-412 signal                            PORTED  one pkt3, cache_flush
+:41-44 import_pmc         PORTED `import_pmc.key` `import_pmc.hex2`
+:414-418 submit                            PORTIAL the 4-dword ib blob
+:42  `BNXTQueue.read`          PORTED  `q.read_off`, `q.read_len`
+:42-48 the reloc loop          PORTED  `type Rctx`, `Rc.walk`, `Rc.mk`,
+:420-428 push                              PORTIAL the ring/doorbell store
+:43-45 nv_iowr                           PORTED  `iowr.cmd`; the `fd.ioctl`
+:437-443 close_run                         PORTED  the vendor ib packet
+:44  `BNXTQueue.write`         PORTED  `q.write_off` -- and the `aux`
+:44  the cache key         PORTED `LLVMCompiler.key`
+:44-46 parity                        PORTED  `parity`
+:445-447 AQLQueue.signal                   PORTED  the close_run then the
+:449-458 AQLQueue.exec                     PORTED  the dispatch packet append
+:45 `nvm` word encoding  :31 `hilo`              :38 `nv_flags`
+:454   the MOCK swap          FFI     DEV.interface, a module rebind
+:46  the disassemble slice -- upstream's `disas_adreno` IS the callee --
+:46-47 import_asic_regs   PORTED `import_asic_regs.n` `import_asic_regs.first`
+:46-48 __del__             PORTED `LLVMCompiler.del_calls` `.del_order`
+:46-54 NVRTCCompiler        PORTED `NVRTCCompiler.opts` `.opts_n` `.minimal`
+:460-465 AQLQueue.submit                   PARTIAL the unit=64 doorbell_lag
+:47-48 nvm                               PORTED  `nvm.word`, `nvm.emit`
+:477-480 SDMAQueue.copy                    PORTIAL the per-chunk header
+:48  `entries or 0x1000//stride` PORTED `aq.entries_of`
+:48  rpc_sc                 PORTED  `rpc_sc` + `sc_method/ins/outs/fds`
+:482-486 SDMAQueue.wait                    PORTED  the func/op ladder
+:484-528 alloc/free/unmap/_alloc_vaddr   PARTIAL `alloc.page_size` + the
+:488-490 SDMAQueue.timestamp               PORTED
+:49  `(size:=entries*stride) + aux*entries*8` PORTED `aq.size_of`
+:49  rpc_prep_args          PORTED  `pra_len`, `pra_of` -- upstream builds the packed array in `rpc_prep_args`
+:49-55 the `asm` branch       PORTED  `h.dataname` `h.asm_actions`
+:492-494 SDMAQueue.write                   PORTED
+:496-498 SDMAQueue.signal                  PORTED  the gfx9 arm
+:5-8   AMDReg             PORTED `AMDReg.addr` `AMDReg.addr_ok` (the shadow)
+:5-80 the libclang FFI      WALL 1   46 functions MEASURED, 0 bound
+:50-62 QMD.fields (the two tables)       NOT PORTED  the 45 ver-3 and 25
+:50-63 compile()           PORTED `LLVMCompiler.compile_calls` `.compile_order`
+:50-94 the QMD version/slot/grid layer              :43-45 the ioctl encoding
+:500-520 SDMAQueue.submit                  PARTIAL the wrap/zero tail
+:51    cpu_objdump             PORTED  `dso.cmd` -- the argv `objdump -d <p>`
+:52   `_read_lib`                    PORTED  the port's own read_lib/read_words
+:52  jit_loader                PORTED  `jit_loader`, `Jit.go`, `Jit.step`
+:52  the fds array          PORTED  `fds_of` -- upstream builds the fd vector in `fds`
+:522-523 amd_compute_queue                 PORTED  the is_aql dispatch
+:525-530 AMDProgramData                    PORTED  the record
+:53  `BNXTDev.__init__`        PORTED  `dev.init`, the ordered trace
+:53  the attrs array        PORTED  `attrs_of` -- upstream builds the attribute vector in `attrs`
+:533-540 amd_build_program                 PORTED  the cache key, both ways
+:537 PCIIface root/instance              PARTIAL `iface.pc_ok` (the predicate);
+:542-561 _amd_program_image                PARTIAL the eleven fields, the
+:55      _queue_args                       PORTED  the four ring tags
+:55-62 NVRTCCompiler.compile PORTED `NVRTCCompiler.calls` `.calls_n` `.first`
+:552 `MOCKIface`  :473 the selection rule  :357 the driver's version table
+:559-561 NVDevice class attrs            PORTED  `dev.iface_count`,
+:559-611 (NVDevice)      :322-331 (NVAllocator)  :613-662 (fifos)
+:56    the pv/len fill      PORTED  `pra.put` -- the ZERO-LENGTH rule
+:56    warps_per_sm            PORTED  `w.*` -- THE TABLE. Five arch strings
+:56  relocate                  PORTED  `Jit.relocate`..`Jit.relocate8`, the ten
+:56  the PCI_COMMAND write     PORTED  `pci.master_enable`
+:56-59 write_sysfs            PORTED  `sysfs.*` + `sysfs.wrote` -- the `sudo`
+:56-70 the compile branch     PORTED  `h.options` `h.opt_n` `h.opt_codegen`
+:563-572 AMDAllocator                      PORTED  the five methods
+:569 is_nvd                              PORTED  `dev.is_nvd`
+:57  `map_bar(0,'I')/(2,'Q')`  PORTED  `BAR0` / `BAR2`
+:571-611 NVDevice.__init__               PORTED  `dev.init` (the ORDER)
+:574-577 AMDQueueDesc                      PORTED  the seven fields
+:579-735 KFDIface                          WALL 1  /dev/kfd
+:58-81 the two trampolines     PORTED  `Tramp.x86`, `Tramp.arm`, `Tramp.x86_len`,
+:59      _dw                               PORTED  the 8-vs-4 width
+:59  DSPProgram.__init__    PORTED  `prog.call`'s inputs (no state to keep)
+:6   cerr()                PORTED `cerr_depth` -- the pointer-to-pointer shape -- upstream builds the error pointer in `cerr`
+:60  `hwrm("ver_get")`         PORTED  a WAIT, in `hwrm`
+:601-607 arch/sass/windows/slm          PORTED  `arch_of`, `sass_of`,
+:61    the NAK cache key       PORTED  `nak.key`
+:61-67   dispatch_packet                   PORTED  the SHAPE and the header
+:613-629 fifos                           PORTED  `dev.fifos_root`,
+:62  `hwrm("func_reset")`      PORTED  the sequence counter, `hwrm.seq_of`
+:62  DSPProgram.__call__    PORTED  `prog.call`
+:62/:64 `cmd`/`reg` the word count   PORTED  the port's own qwords
+:63    the buffer refusal   PORTED  `prog.too_many` + `Tr.refuse_now` -- upstream raises RuntimeError in `__call__`
+:63-94 QMD version/slot/grid             PORTED  `qmd.ver.of`, `qmd.sz.of`,
+:631-662 _new_gpu_fifo                   PARTIAL `dev.gpput_off`,
+:64  `int.from_bytes(mac)`     PORTED  `dev.mac_of`, `dev.port_of`
+:65-66  the three ins/outs  PORTED  `prog.nins`, `prog.nouts`, `prog.pra_lens`
+:65-76 NVCCCompiler         PORTED `NVCCCompiler.mode` `.suffix` `.cmd`
+:66  `db_off = kb * 1024`      PORTED  `dev.db_off_of` -- and it is a
+:66-73 `_cache_flush`                PORTED  the port's own flush.of + `Tr`
+:66-74 CPULLVMCompiler     PORTED `CPULLVMCompiler.featstr` `.feat_native`
+:67-70 pagemap                PORTED  `sys.pagemap`
+:68  the size writes        PORTED  `vt_size_at`, `vt_size_byte` -- upstream packs each scalar with `struct.pack_into`
+:68  the val writes         PORTED  `vt_val_offset`, `vt_hi_written` -- upstream packs each scalar with `struct.pack_into`
+:688-697 _ensure_has_local_memory        PARTIAL `dev.windows` +
+:688-697 (_ensure_has_local_memory)                :449-451 (alloc's page size)
+:69  the off_mv writes      PORTED  `off_nbytes` -- upstream fills the offset vector with `off_mv.cast`
+:699-715 _ensure_has_vid_hw              PORTED  `dev.vid_top`, `dev.vid_ok`,
+:699-715 the video-HW sizing                         :264-265 `to_name`
+:7   CUDA_PATH              PORTED `CUDA_PATH.default` (the parameter)
+:7   ElfSection                PORTED  `type ElfSection` + name/header/content
+:7   the assert                PORTED `ClangCompiler.ge2` `ClangCompiler.msg`
+:70  the exec_lib call      PORTED  `prog.exec_sc` -- upstream invokes the fastrpc ioctl in `__call__`
+:71  `local_gid`               PORTED  `dev.local_gid`
+:71  the timer divide       PORTED  `prog.scale_micros` (the u64 read is WALL) -- upstream scales the timer in `__call__`
+:72  `>4I` reversed, `>3H`     PORTED  `dev.gid_words` / `dev.src_mac`
+:72-82 vfio                   PORTED  `pci.probe.vfio` -- its `except OSError:
+:73   readext               WALL 1   file IO at a source offset
+:73  DSPBuffer              PORTED  `DspBuf`, `buf.of`
+:737-804 PCIIface                          WALL 2  PCI BAR + amdev
+:75   `memory_barrier`               PORTED  the port's own FLUSH_BARRIER
+:75-80 NAKCompiler.disassemble PORTED  `nv.*` -- the temp path and the
+:76  `hwrm`                    PORTED  `hwrm`, in the trace
+:77   attrs                 PORTED   kind in [400,500), both bounds
+:78  _alloc                 PORTED  `alloc.alloc` (MOCKDSP and real arms)
+:78  `(seq+1) & 0xffff`        PORTED  `hwrm.seq_of`, with the wrap
+:78-84 PTXCompiler          PORTED `PTXCompiler.key` `PTXCompiler.ver`
+:79   the `gpu_id` signal guard      PORTED  the port's own rf.gpu_lt73 / RF_EVENT7
+:79  `cmpl_ring`/`target_id`   PORTED  `hwrm.header`
+:79-82 AMDLLVMCompiler     PORTED `AMDLLVMCompiler.reduce` `.tm_feats`
+:8   _read_lib               PORTED  `q.read` `q.read_le` `q.read_be`
+:8-10 expect()             PORTED `expect.fails` `expect.ret_str` `expect.msg`
+:8-12 the five constant lines   PORTED  every value, both directions
+:8-9 root, osx_docker_cmd   PORTED `root` `osx_docker_cmd`
+:806-833 USBAllocator / USBIface           WALL 3  USB3
+:81    the ION arm          PORTED  `ION_ALIGN`, `ion.aligned`
+:81  the 0x1000-byte clear     PORTED  a WRITE, in the trace
+:811 `reg_ops`'s chunking   :793-816 the profiler register addresses
+:818-824 reg_ops (the 124-row chunking)   PORTED  `dev.reg_clen`,
+:82   base_rules            PORTED as TABLE  (WALL 2 for the matcher)
+:82-94 disas_adreno            PORTED  `da.*` -- `data64`, the `%04d [%08x_
+:83    the mmap + BufferStorage PORTED `alloc.alloc.real.go`
+:83-87 the RuntimeError    PORTED `AMDLLVMCompiler.remap` `.remap_msg`
+:835     _mock                             PORTED  the name ladder
+:838-840 the three class attributes        PORTED
+:84-85 the 4-byte write-back   PORTED  `Jit.instr` (unpack), `Jit.pack`, and
+:84-87 reserve_va             PORTED  `sys.reserve_va` -- the CACHE negative case
+:841-844 pm_encode                         WALL 4  the UOp matcher
+:846     ifaces                            PORTED  the seven, in order
+:848-850 device_props/is_am                PORTED
+:85-87 HIPCompiler.compile    PORTED  `C.is_asm` -- `split('\n',1)[0].strip()
+:852-920 __init__                          PORTED  the order, the derivations,
+:86  `resp_len` / `seq_id`     PORTED  `hwrm.gate_ok`
+:86-99 NVPTXCompiler        PORTED `NVPTXCompiler.key` `.calls` `.calls_n`
+:87   uints/ints/fps/specs  PORTED   both directions
+:88    disassemble            PORTED  `C.dis_row` (the `amdgpu_disassemble` call)
+:88  `assert error_code == 0`  PORTED  the REFUSAL
+:9   link_sym                  PORTED  `link_sym`, `type Link`, `Link.pick`
+:9-12  rzalloc                 PARTIAL `ra.*` -- `sizeof` is autogen and the
+:91   tmap                  PORTED   both directions
+:91  `setup_backing_store`     PORTED  `bs.fold` and its three derivations
+:91-92 lock_memory            PORTED  `sys.lock_memory` -- the refusal
+:922-941 create_queue                      PORTED  the specs, the sizes
+:943-946 queue_buffer                      PORTED  the grammar, both ways
+:948-959 compute_queue                     PORTED  the six sizes, the vgpr
+:96  _offset                PORTED  `alloc.offset` -- offsets ACCUMULATE
+:96  `counts[typ] = ...`       PORTED  `bs.count_of`, incl. the type-15
+:961-971 has_copy_queue/sdma_queue         PARTIAL the disable, the memo
+:97-98 the temp suffixes      PORTED  `C.suffixes`
+:973-987 tmpring_size                      PORTED  THE WHOLE LADDER
+:98   arc_families          PORTED
+:98  the instance bitmap walk  PORTED  `bs.instances`
+:98-102 alloc_sysmem          PORTED  `sys.alloc_sysmem` -- the flag arithmetic
+:989-999 scratch_buffer                    PORTED  the monotone max
+:99  `ceildiv(n*size, 0x1000)*0x1000` PORTED `bs.alloc_bytes`
+:99-101  set_grbm                          PORTED  the instance_val fold
+:99-225 the four queues' command vocabularies
+..................................................................... :15-47
+..................................................................... :17 :21 :22 :25 :56 :58 :103 :260 :359 :389 :477 :506 :646
+..................................................................... :354 :366 :373 :570-572 :592
+(Python line, name) because sixteen of the names are f-strings that
+* `AMDProgramData`'s ELEVEN derived fields -- the bit positions in
+* every REFUSAL, as a TRUNCATION of the trace.
+* the `import_module` LADDER and the four MODULE NAMES that `target[0]`
+* the KERNEL ARGUMENT TRACE -- `kernargs` (tinygrad/runtime/ops_amd.py:374 symbol=kernargs) is `layout_args` then
+* the PROGRAM/PROGRAM-BUFFER CACHE KEYS and the one eviction policy
+* the QUEUE TAG grammar (`to_name` + `rsplit('_', 2)` + the four-prefix
+* the WAVEFONT / OCCUPANCY tables: `se_cnt`, `cu_cnt`, `waves_per_cu`,
+%08x] ` line format, the decode-option
+`_new_gpu_fifo` class CHOICE
+`.arch_opt` `.input_kind`
+`.diag_join` `.obj_hex`
+`.feats`
+`.join` `.keystr` `.key`
+`.key` `nvrtc_ge_12_4`
+`.last` `NVRTCCompiler.getter`
+`.remap_kind`
+`.reserve_x18` `.feat_final`
+`.rstrip` `.keep` `.fail` `.fail2`
+`.write(...)` / `.update(...)` names its bitfields, and the ORDER of those
+`"SM_86"`, which is why the membership
+`(0,)` in every fixture, so ranges[0] is WRITTEN and ranges[1] is READ. That is
+`alloc.page_size`
+`AMD_COMGR_ACTION_LINK_RELOCATABLE_TO_EXECUTABLE`
+`AMDLLVMCompiler.dis_row`
+`bend_parse_short_header` is the row that records it.
+`blob_reader_init` is handed
+`cap.barrier_lib`'s `osx`
+`CDTYPE` (`dtypes.uints` at tinygrad/runtime/support/hcq2.py:130), `cfield` (`7d2420e64`;
+`ClangCompiler.args`
+`count * 4`
+`cq.qmd_off`, `cq.qmd_buf_len`
+`cq.sig`, `cq.sem2`
+`cstruct` at tinygrad/runtime/support/hcq2.py:129 reads the fields),
+`dev_file.at`, `dev_finish.at`
+`dev_finish.at`
+`dev_warm`, `dev_shm.on`,
+`dev.encode_rules`
+`dev.fifos_of`,
+`dev.fifos_pair` (the ORDER)
+`dev.fifos_ring`,
+`dev.gpfifo_n`; the
+`dev.iface_names`,
+`dev.reg_clen.at`,
+`dev.reg_nchunks`
+`dev.sleep_timeout_ms`,
+`dev.vid_*` prefix
+`dev.vid_coloc`, `dev.vid_filter`
+`dev.vid_h`, `dev.vid_chroma`,
+`dev.windows`, `dev.slm`
+`fetch(..., extract=True)` is WALL 1
+`flags.go` + `FLD_*`
+`graph_rewrite` over the UOp ARENA, which `uop/ops.bend` owns and this file
+`h.compile_actions`
+`iface.mid` (the ladder);
+`iface.want`, `iface.alt`,
+`Img.write_at` as the placed write
+`Img.write_at`, `Shdr.put_addr`
+`import_module.pick_last` `import_module.err`
+`import_module.vle` `import_module.kids`
+`level << LVL_SFT | lps <<
+`LOCAL_MAX_X/Y/Z`; the
+`mprog.scale_ins`
+`nvdisasm -b SM<n> <path>` command
+`pack_args` over a list whose widths are `8` per global and `v.dtype.itemsize` per var.
+`pbl.decode`, encode AND decode
+`pc.same`, `pc.new_id`, and
+`pd.image_len`, `pd.var_isize`,
+`pd.kernargs`, `pd.max_threads`,
+`pd.reloc.isize` BOTH ways
+`pd.reloc.shift`,
+`pd.relocs`
+`pd.smem_cfg`, `pd.cbuf0_len`,
+`pretty_ptx.cls0..5` -- the SCAN is the wall
+`PTXCompiler.ge120` `.ge89` `.replace`
+`q.signal`, `q.nsi.at`
+`qmd.grid`, `qmd.rel_size`
+`qmd.prog_sfx` / `qmd.cbuf_sfx`;
+`qmd.slot`, `qmd.slot.ok`,
+`reg` -> `mm` rewrite, which replaces
+`Reloc.a_*` arms, `type Sdiff` (the one
+`rsrc1`/`rsrc2`/`rsrc3`/`wave32` and the two `kernel_code_properties` bits.
+`select_lane` (folded into upstream's `unwrap_lane`, tinygrad/runtime/support/hcq2.py:45 symbol=unwrap_lane),
+`self.q(*nvm(...))` CALL and
+`shard_real` -- upstream 4e4f6b9fb DELETED it
+`sizeof` offsets and then a split at
+`STAGING_SIZE`/`STAGING_SLOTS` (`6816873ad`), `epilogue_queue` (`dc9af790e`,
+`Symtab.base`, `Symtab.ent`
+`Tramp.arm_len`, `Tramp.x86_ret`,
+`Tramp.arm_ret`
+`Trg.off`, `Rc.defined`, `Rc.undefined`
+`type Rloc` (word + appended bytes)
+`union_psp_gfx_commands` members :728-751), the SMU MESSAGE PROTOCOL (:264-273),
+`UOp`-list equality `pc.same`
+`wave_cnt`, `vgpr_size_per_cu`, `lds_size_per_cu`, `max_copy_size`, the
+`X86Compiler.hex_n` `X86Compiler.bad_pos`
++ `dev.gpfifo_fields`; there
++ the `else: raise` arm
++ the raise, all under the
+== '.text'`, and the RuntimeError remap
+29-byte pad runs OVER
+64-bit word as two halves
+a `BufferSpec`. `BufferSpec(nolru=True)` on a program buffer and NOT on a
+a `pc_root` reader was named
+a generic read/write over
+A wrong entry here is a silently wrong kernel, which is the whole reason
+alloc size ladder, map()'s refusals
+allow-list), both directions.
+am.{page_ok,pages_ok2,pages_ok4,plen}      :527 the page assert
+and `nvm.emit` carry its
+and lds tables
+and the `/dev/nvidiaN` fd are
+answer 48 and EVERY other string
+answers 64, including `sm_86x` and
+arch allow-list, and `tmpring_size`'s five-step ladder with its THREE
+arch refusal
+are named here as the port's own tables and are gated against the oracle
+arithmetic. No per-queue
+arm, which is a DIFFERENT base
+arms of the build log
+arms, as TABLES
+bdf.{lo,mid,fn,as_int}                      :605 :608
+blob-reader length, which is what
+branch is NOT a parameter; see
+bump-or-raise arm itself is
+bump,door,bumped,bumped2,cont_n,cont_more,
+by count), the STRUCT FIELD LISTS (`struct_psp_gfx_rb_frame` :707, the four
+byte 8 that the receive pack's
+BYTE offset divided by 8 for
+call: PORTED  `q.compile_args` -- chip,
+calls and the segment arithmetic
+cannot express at all.
+ce_rows / ce_min / ce_max                 the two dispatch tables
+CHECKSUM    rp.{word,word2,which,w_*,fold,acc4,       :32-36 the 64-bit XOR, folded
+claim that failed was never a near-miss.
+claimed five QMD accessors by
+class-list reader of its own is
+CLASSES     cls.{one,gpfifo,compute,dma,viddec,gp2,    :538-569
+compiler does not read prose. Where a name in the previous draft has NO
+compute-queue init, ...) and every check in the repo passed, because the
+const_of / const_name / const_name_n       both directions
+constants
+CONSTANTS + `qmd.slot` /
+consulted
+cont_func,rx_up,rx_elems,rx_after,rx_tag}
+contract `ops_webgpu.bend`, `ops_cl.bend` and `ops_nv.bend` port. Getting it consistent across six files
+count directly.
+count_local,early,early2,join,join1,local_n}
+counterpart here it is marked NOT PORTED and the reason is given, because the
+counts instead, so a malformed header is a WRONG ANSWER and not a refusal. That
+cp2,dm2,vd2,join4,row}
+CPU SEQ     seq.{n,words,name,ops,count,walk,prog_n,   :629-661 the opcode table,
+decides.
+different `union_COMPUTE_TMPRING_SIZE*` bitfield records.
+DOORBELL    door.{bit30,rl_shift,gb2_bit,token}        :590-591 the token
+DOORBELL ARITHMETIC (:354, :367, :570-571, :592), the VERSION LADDERS, and every
+earlier version of THIS TABLE
+earlier version of this table named twenty-eight defs that were never
+either table is NOT here. An
+ememd,do_tail,do_head,nvmd_cot}
+emit_dll_bind, emit_def_line,
+emit_enum_cell/dict, emit_typealias,
+emit_macro/_fn, emit_cfunctype,
+emit_pointer, emit_array
+emit_returns_retained, emit_in_dll,
+entry names another file. Every `def` named here EXISTS in this file -- an
+ever written.
+EVERY occurrence, and the refusal
+f-string, with the `-v` mounts and the
+FALCON      fl.{frts_offset,desc_sig,order,falcon,    :186-283 the register order
+field ORDER and its four values
+flags, bar_info, read/write_config,
+from `SQ_MSN_SEARCH_START_IDX_SFT`
+frts,mailbox,pages_ok,pages_go,bad_op,       :332, :453, :527, :660,
+FSP         fsp.{w0,w1,pad,tot,words,tail,head,        :328-344 the framing and
+GATE        t_tables / t_arith / t_trace / t_refuse / t_misc / main
+GENERATED   cn_table / cn_rows / cn_names             the 64 U32 constants
+generated and NOT in this unit's scope; its STRUCT LAYOUTS and its constants
+gfx11 correction, the assert
+GONE  the io_uring guard         PORTED  `dev_ioring_setup`, `Dev.tried` -- upstream DELETED it
+GONE  the NON-uring shard    PORTED  `shard_at`, `shard.go`, `shard_read`,
+GONE upstream at this pin, each named with the construct that SURVIVED it:
+GRCTX       grctx.{keylist,keys,walk,row,size,virt,    :468-508 the map, the
+half is `q.wait`.
+hcq2.py:100 `patch`                    PORTED  `pkey` (the group key) symbol=patch
+hcq2.py:114 `layout_args`              PORTED  `layout` -- THE CITED ONE symbol=layout_args
+hcq2.py:118 `pack_args`                PORTED  `pack` symbol=pack_args
+hcq2.py:129 `cstruct`                  PORTED  `cstruct` FIELD ORDER symbol=cstruct
+hcq2.py:16 `HCQ_CACHE_THRESH`         PORTED  symbol=HCQ_CACHE_THRESH
+hcq2.py:234 `slot`                     PORTED  `slot` symbol=slot
+hcq2.py:235 `queue_signal`             PORTED  `qsig` symbol=queue_signal
+hcq2.py:236 `stamps`                   PORTED  `stamps` -- the `n -> n*2` symbol=stamps
+hcq2.py:238 `_wait_ins`                PORTED  `waits` + `Tr` WAIT symbol=_wait_ins
+hcq2.py:241 `_start_ins`               PORTED  `start` + `Tr` BARRIER/WAIT symbol=_start_ins
+hcq2.py:244 `_build_queues`            PORTED  `build_queues` -- THE ORDER symbol=_build_queues
+hcq2.py:288 `_finalize_batch`          PORTED  `finalize` + `Tr` FENCE/SUBMIT symbol=_finalize_batch
+hcq2.py:29 `all_devices_in`           PORTED  `all_in` symbol=all_devices_in
+hcq2.py:31 `get_enqueue_devs`          PORTED  `enq_*` (the table + refusals) symbol=get_enqueue_devs
+hcq2.py:311 `sched_batches`            PORTED  `copyq`, `qname_of`, `nqueues` symbol=sched_batches
+hcq2.py:357 `__init__`                 PORTED  `hwq` symbol=__init__
+hcq2.py:364 `q`                        PORTED  symbol=q -- THE WORD SEQUENCE
+hcq2.py:377 `loop`                     PORTED  `loop_*` symbol=loop
+hcq2.py:385 `memory_barrier`           PORTED  a no-op (records nothing) symbol=memory_barrier
+hcq2.py:386 `submit`                   PORTED  `Tr.raise` -- THE REFUSAL symbol=submit
+hcq2.py:39 `unwrap_view`               PORTED  `view_*` (the offset arithmetic) symbol=unwrap_view
+hcq2.py:45 `unwrap_lane`               PORTED  `lane_of` symbol=unwrap_lane
+hcq2.py:52 `timeline`                  PORTED  `tl*` symbol=timeline
+hcq2.py:53 `timeline_value`            PORTED  symbol=timeline_value
+hcq2.py:60 `make_submit`               PORTED  `submit_of` + `Tr` SUBMIT symbol=make_submit
+hcq2.py:93 `_is_link_patch`            PORTED  `is_link` (the ladder) symbol=_is_link_patch
+HEADLINE
+here and never written
+here EXISTS in this file:
+hgen.{first,next,n,nxt7,go}                :348 the handle generator
+host/device branch
+IN ORDER
+in the WALLS section below, and each naming the lines it covers:
+INIT ORDER  gsp.{init_order,init_n,priv_root}           :444-455, :519
+init_order}                               :212-234
+into tname, so it inherits WALL 4
+is no `GPFifo` type.
+is not written; the `wait`
+is stated because it is the one place `parse` is weaker than the Python, and
+IS the already-open test
+IS the gate's subject, and :13 (NOT
+IS the same predicate's subject
+IS the same refusal
+is the seam
+itself is the port's job and the Python line is the whole of it.
+itself; the three mmap LENGTHS are
+kwargs are a ctypes `setattr` by name;
+last argument is the compile handle,
+LDS refusal, the md5 slice
+LIBOS       radix.{npages,offs}                        :401-423
+LOG2_SFT` composition
+matters more here than anywhere.
+max_payload,length,elem,total,off,first,   `max_payload`, the record
+MMIOInterface is the seam. No
+mode, and the source-kind constant,
+must not re-derive. What survives as PURE ARITHMETIC is the queue model, and
+name and none of the five was
+names is the register write -- so this gate is BY NAME and IN ORDER rather than
+no key reader: the key IS the
+None`
+not a separate def
+not NULL as in :36
+nvdec_add,nvdec0,runlist_miss}              :557 the runlist addend
+nvm sequence is PORTED
+on a header that is not exactly three fields. `parse` here answers 0 for both
+ops_amd.py has, which is `device.py:280`'s four conjuncts reached through
+ORDER is the field order
+over `value << fields[name][0]`
+own logic is the size arithmetic
+parser, the socket-option table
+phys,local,n,sep,tag,reuse,reuses_10,        GRBufDesc table
+picks, both directions.
+PMA         pma.{is_one,phys,nomap,ro,flags,all_ones}  :345 the flag shifts
+PORTED  `a3.*` -- the digits after `sm_`
+PORTED  `lpt.*` -- floating/sign/width/length
+PORTED  `q.link_args` -- and note the
+PORTED  `q.slice_off` `q.slice_end` -- THE
+prog_ops,wordlist,join,joinu,at,next_skip,  the walk, the five ops
+put,opslist,join5} / seq_walk.go
+QUEUE       Q / q.of / rp.{msg_size,msg_count,        :19-31 the header, the ring
+raise,raise2,ra_plen,rc_plen,runlist_key,  :535 wait, :84 the raise,
+reading those same constants out of the real module.
+record arm -- see WALL 4 above
+REFUSAL as a TRUNCATION of the trace (:588 is the only `raise`).
+REFUSALS    ref.{bit_sig,wpr2,mbx,active,fsp_len,      :123, :194, :207, :210,
+REGISTRY    ctx.{go,idxlist,keys3,rows,cfg_rows}       :616-627 the whole layout
+release
+release                                   `q.release`, `q.timestamp`,
+REMOTE_REQ/REMOTE_RESP field order
+reset_engines,dma_chunk,chunks,alias,
+resize_bar, map_bar
+REUSE of `counts[0]`
+ring is the positive/negative pair, and it is real Python.
+ring_len,entry_off,hdr_len,phdr_len,      length `msgSize*msgCount`,
+rp.{record..trace,wp2,wp3,put_wp,barrier,
+RPC         rpc.{func_alloc,am2,am3,minted,wait,       :526-536 alloc, :534 send,
+rpc_label / overlap / hex8                the row printers
+SEAM lines are what it names and does not do; the WALL lines are what Bend
+seam; the two open-flag sets are
+sec2,ctx_dma,imem,sec,dmactl,allow_phys,
+signed-difference representation),
+sizes; the calls themselves are the trace
+st_<struct> / st_rows / st_sum_*          the 54 layouts, 413 fields
+startcpu,riscv_core1,riscv_core0,init_n,
+stride is 32 and not 64
+STRING
+subject of the split
+survive, which is why this file is worth the gate:
+tagname,one,sep,at,put_seq,fail}           refusals, the render
+tail_off,aincw,aincr,trace,tr2,tr3,put,     the four calls in order
+tail's last word --   PORTED  `dev_sized`, `dev_bumped`,
+test cannot be a prefix test
+That is upstream's `layout_args`/`pack_args` (tinygrad/runtime/support/hcq2.py:114-118 symbol=layout_args) -- the SAME
+that is what is here.
+the `setup_ring` trace, in order, and its ONE raise                  :584-606
+the 64-bit doorbell bar
+the call is the seam; `nvm.word`
+the command's head
+the command's head; the whole four-line
+the doorbell arithmetic: KIQ xcc, sDMA engine, ring size, s2a ladder
+THE EXCEPT IS NOT A BRANCH
+the field list by name
+the fifo lookups
+the four numbers Python spells
+the four-generation PTE flag tables and `is_pte_huge_page`          :177-195
+the fourth is `info.size`
+the handle-type test and the two
+the IH entry decode: eleven extractors, bit positions, ACA           :502-513
+the KIQ `flush_tlb` PM4 PACKET (:108-110), the PTE FLAG TABLES (:178-195), the
+the KIQ `flush_tlb` PM4 packet, SEVENTEEN words, built in order       :99-113
+the module ladders, the
+the NO-EVICTION claim. There is
+the ONE thing here that is this file's
+the per-arch SMU message table, 3 rows x 20 columns, both ways       :199-215
+the picture offsets); the
+the PSP ring frame and the four union command field lists            :707-751
+the queues are built by `_build_queues` at :244), and `sched_tl`/`staging_chunk`,
+the REBAR control, the BAR sizing
+the register field lists: 115 rows, by NAME and IN ORDER, keyed on
+the seam
+the three-register C2PMSG protocol and its DEBUG arm                :264-273
+the version substrate `V`: three-part and `[:2]` compares, every ladder
+the whole of `DepsTracker.access_resources` (:182-207) for these shapes.
+this file exists.
+three statics are the trace
+timeout}                                     :661, :91
+tinygrad/device.py:19 `HCQ_DEVS`        PORTED  `HCQ_DEV_*` BOTH directions symbol=HCQ_DEVS
+tinygrad/helpers.py:21 `to_name`       PORTED  symbol=to_name -- hcq2.py CALLS it in `make_submit`
+tinygrad/runtime/ops_disk.py:14  `synchronize`              PORTED  `dev_sync` -- it is `pass`
+tinygrad/runtime/ops_disk.py:16-20 `__init__`                PORTED  `dev_init`
+tinygrad/runtime/ops_disk.py:160-164 `uring`                PARTIAL `dev_ioring.*` -- the call ORDER and
+tinygrad/runtime/ops_disk.py:21-41 `_might_open`             PORTED  `dev_might_open` and its steps
+tinygrad/runtime/ops_disk.py:37-41 the tail -- upstream's `refcount` IS the
+tinygrad/runtime/ops_disk.py:39-40 `madvise`                 PORTED  `dev_finish.at` (the condition)
+tinygrad/runtime/ops_disk.py:42-49 `_might_close`            PORTED  `dev_might_close`
+tinygrad/runtime/ops_disk.py:51-57 `DiskBuffer`             PORTED  `Db.of`, `db_repr`, `db_buf`
+tinygrad/runtime/ops_disk.py:59  `MAP_LOCKED`/`MAP_POPULATE` PORTED  `map_locked`, `map_populate`
+tinygrad/runtime/ops_disk.py:61  `lru` = False               PORTED  `ALLOC_LRU`
+tinygrad/runtime/ops_disk.py:62-64 `_alloc`                  PORTED  `alloc_of` (`mv_address` is WALL 1)
+tinygrad/runtime/ops_disk.py:66  `_free`                     PORTED  `alloc_free`
+tinygrad/runtime/ops_disk.py:67  `_as_buffer`                PORTED  `alloc_as_buffer`
+tinygrad/runtime/ops_disk.py:68  `_copyin`                   PORTED  `alloc_copyin`
+tinygrad/runtime/ops_disk.py:69-77 `_copyout`                PORTED  `alloc_copyout`
+tinygrad/runtime/ops_disk.py:79 `_offset`                   PORTED  `alloc_offset`
+tinygrad/runtime/ops_disk.py:88-111 `disk_read`              PARTIAL `shard_ioring` -- the two submission
+tinygrad/runtime/ops_dsp.py:113 the cachekey    PORTED  `compiler.cachekey_of` -- upstream's `compile_dsp` key symbol=__init__
+tinygrad/runtime/ops_dsp.py:115 `__del__`        PORTED  `compiler.del_unlinks` symbol=__del__
+tinygrad/runtime/ops_dsp.py:129 `DSPDevice.__init__` PORTED  `dev.is_mock` (the ONE branch, tinygrad/runtime/ops_dsp.py:129-139) symbol=__init__
+tinygrad/runtime/ops_dsp.py:134-136 the shell buffer PORTED  `dev.shell_size`, `dev.shell_copy` -- upstream's `shell_buf` symbol=__init__
+tinygrad/runtime/ops_dsp.py:135 `BufferSpec(nolru=True)` PORTED  `dev.shell_spec` -- the eviction NEGATIVE symbol=__init__
+tinygrad/runtime/ops_dsp.py:141-148 `open_lib`   PORTED  `dev.open_lib_handle` -- the handle answer symbol=open_lib
+tinygrad/runtime/ops_dsp.py:79 the MOCKDSP arm    PORTED  `alloc.mock_flags` -- upstream's `MOCKDSP` arm symbol=_alloc
+tinygrad/runtime/ops_dsp.py:87-91 `_free`       PORTED  `alloc.free_calls` symbol=_free
+tinygrad/runtime/ops_dsp.py:93 `_as_buffer`     PORTED  `alloc.as_buffer_bytes` symbol=_as_buffer
+tinygrad/runtime/ops_dsp.py:94 `_copyin`        PORTED  `alloc.copyin_bytes` symbol=_copyin
+tinygrad/runtime/ops_dsp.py:95 `_copyout`       PORTED  `alloc.copyout_bytes` symbol=_copyout
+tinygrad/runtime/ops_qcom.py:206 `QCOMProgramData`    PORTED  `pd.parse_full`, `desc.*`, `const.*` symbol=QCOMProgramData
+tinygrad/runtime/ops_qcom.py:298 `flag`              PORTED  `kgsl_flags`, both directions symbol=flag
+tinygrad/runtime/ops_qcom.py:378 _ensure_stack_size  WALL 3  it is `Buffer` and device.bend's
+tinygrad/runtime/ops_qcom.py:42   ctz                PORTED  `ctz` (see THE ctz PRECONDITION) symbol=ctz
+tinygrad/runtime/ops_qcom.py:48   pkt7_hdr          PORTED  `pkt7_hdr` symbol=pkt7_hdr
+tinygrad/runtime/ops_qcom.py:50   pkt4_hdr          PORTED  `pkt4_hdr` symbol=pkt4_hdr
+tinygrad/runtime/ops_qcom.py:57 the ioctl command word  PORTED  `ioctl_cmd` symbol=qcom_submit
+tinygrad/runtime/support/autogen.py:107 `typehint`      PORTED   `Gt{nm, tnm, defd, ln}` and its readers symbol=typehint
+tinygrad/runtime/support/autogen.py:30 `all_fields`      WALL 4   it is a loop over `fields(t)` calling
+tinygrad/runtime/support/compiler_amd.py:102 the ROCM default PORTED  `C.rocm_include` -- upstream's `ROCM_PATH`
+tinygrad/runtime/support/compiler_amd.py:102 upstream's `ROCM_PATH`
+tinygrad/runtime/support/compiler_amd.py:52-68 the two refusals PORTED  `c.asm_fail` `c.compile_fail` -- upstream's `RuntimeError`
+tinygrad/runtime/support/compiler_amd.py:55 upstream's `RuntimeError` (the assemble refusal)
+tinygrad/runtime/support/compiler_amd.py:68 upstream's `RuntimeError` (the compile refusal)
+tinygrad/runtime/support/compiler_amd.py:72 upstream's `set_options` (the empty option string)
+tinygrad/runtime/support/compiler_amd.py:72-73 link PORTED  `h.opt_empty` `h.link_action` -- upstream's `set_options`
+tinygrad/runtime/support/compiler_amd.py:73 upstream's
+tinygrad/runtime/support/compiler_amd.py:80-84 `HIPCompiler` PORTED  `C.hip_key`
+tinygrad/runtime/support/compiler_amd.py:90-94 `HIPCCCompiler` PORTED  `C.hipcc_key` `C.join_extra`
+tinygrad/runtime/support/compiler_amd.py:95-96 the NO_HIPCC short-cut PORTED  `C.short_circuit` -- upstream's `self.no_hipcc`
+tinygrad/runtime/support/compiler_amd.py:96 upstream's `self.no_hipcc`
+tinygrad/runtime/support/compiler_cpu.py:14 the riscv64 arm PORTED `ClangCompiler.riscv64_cpu` -- upstream's `riscv64` symbol=__init__
+tinygrad/runtime/support/compiler_cpu.py:24 `disassemble`  PORTED `ClangCompiler.dis_row` symbol=disassemble
+tinygrad/runtime/support/compiler_cpu.py:8 the unpack    PORTED `ClangCompiler.arch_of` `.cpu_of` -- upstream's `arch` symbol=__init__
+tinygrad/runtime/support/compiler_cuda.py:63 `disassemble` PORTED `NVRTCCompiler.dis_row` symbol=disassemble
+tinygrad/runtime/support/compiler_llvm.py:18 `expect`   PORTED `LLVMCompiler.triple_ok` symbol=__init__
+tinygrad/runtime/support/compiler_llvm.py:76-88 `disassemble` PORTED `CPULLVMCompiler.dis_row` symbol=disassemble
+tinygrad/runtime/support/compiler_mesa.py:118 the three-field store PORTED  `ir3.variant_fields` -- upstream's `const_state` symbol=compile
+tinygrad/runtime/support/compiler_mesa.py:123 the four-way concat PORTED  `ir3.ret_parts` -- upstream's `info.size` symbol=compile
+tinygrad/runtime/support/compiler_mesa.py:133 `disassemble` PORTED  `ir3.dis_row` symbol=disassemble
+tinygrad/runtime/support/compiler_mesa.py:27-28 `struct_lp_type`'s four flags
+tinygrad/runtime/support/compiler_mesa.py:59 `struct_nv_device_info`'s `sm`
+tinygrad/runtime/support/compiler_mesa.py:98 the a630 assert PORTED  `ir3.arch_ok` -- upstream's `a630` symbol=__init__
+tinygrad/runtime/support/compiler_mesa.py:99 the dev id    PORTED  `ir3.gpu_id` `ir3.chip_id` -- upstream's `dev_id` symbol=__init__
+tinygrad/runtime/support/elf.py:50 symbol=elf_loader  the return  PORTED  `type ElfImage` + its four readers -- upstream's `relocs`
+tinygrad/runtime/support/rdma/bnxtdev.py:138 the FIRMWARE_FIRST flag   PORTED  `rcfw.first_flag` -- upstream's `FIRMWARE_FIRST_FLAG` symbol=rcfw
+tinygrad/runtime/support/rdma/bnxtdev.py:153 the NQ_ARM consumer db    PORTED  `rcfw.nq_arm` -- upstream's `DBC_DBC_TYPE_NQ_ARM` symbol=rcfw
+tinygrad/runtime/support/rdma/bnxtdev.py:154 the QP_EVENT filter       PORTED  `rcfw.is_final`, and its threshold -- upstream's `CREQ_BASE_TYPE_QP_EVENT` symbol=rcfw
+tinygrad/runtime/support/rdma/bnxtdev.py:28 the one-paddr shortcut    PORTED  `pbl.level_of(1) == 0` -- upstream's `paddrs` symbol=build_pbl
+tinygrad/runtime/support/rdma/bnxtdev.py:83 the word loop into bar0  PORTED  `hwrm.bar0_at` -- upstream's `bar0` symbol=hwrm
+tinygrad/runtime/support/rdma/bnxtdev.py:84 the trigger dword         PORTED  `hwrm.trig_at` -- upstream's `bar0` symbol=hwrm
+tinygrad/runtime/support/system.py:10-15 `filter_visible_devices` PORTED  `vis.*` -- the index-string parser
+tinygrad/runtime/support/system.py:103 `pci_scan_bus`  PORTED  `scan.*` -- the mask filter + both id formats
+tinygrad/runtime/support/system.py:290 `PCIAllocationMeta` PORTED  `Meta.*` -- field order and names
+tinygrad/runtime/support/system.py:292-352 `PCIIfaceBase` PORTED  `face.*` -- peer_group, is_bar_small, the
+tinygrad/runtime/support/system.py:356-360 `RemoteCmd` PORTED  `Rcmd.*` -- 16 names, both directions,
+tinygrad/runtime/support/system.py:362-380 `RemoteMMIOInterface` PORTED  `rmm.*` -- the element-size table
+tinygrad/runtime/support/system.py:49-50 `MAP_FIXED` `MAP_LOCKED` PORTED  `MAP_*` -- both directions, per PLATFORM
+tinygrad/runtime/support/system.py:52 `ipv4_to_gid` PORTED  `gid.*` -- 16 bytes of multicast group
+tinygrad/runtime/support/system.py:61-65 `atomic_lib` / libsys PORTED  `cap.*` -- the PLATFORM gate, which is
+tinygrad/runtime/support/system.py:88 `memory_barrier`  PORTED  `cap.barrier_lib` -- which library is
+tinygrad/runtime/support/system.py:93 `system_paddrs`   PARTIAL `paddr.*` -- the mask; the u64 read is FFI
+TRACE       Cx / Tr / tr.{hit,put,put2,emit,go,show,   :38-55 the five calls, the
+triples and a call touches TWO buffers -- `get_call_outs_ins(call)[0]` is
+two `-e` variables
+two lines legitimately share                        every `.write`/`.update`
+UPSTREAM names where upstream HAS one.
+UPSTREAM names: `AMDReg.encode`, `import_module.override`, `import_pmc.key`.
+user_regs, dispatch_init
+ver-5 FIELDS are carried as
+WALL 1  register ACCESS and `AMDReg.encode`'s bit POSITIONS           :367 :411
+WALL 2
+WALL 2  `hasattr` / `getattr` NAME probing
+WALL 3  `functools.cache` memoisation                                :177 :230
+WALL 4  firmware BLOBS, `from_buffer`, `int(round(watts))`           :228 :250
+WALL 5  thirteen `wait_cond` polls and six `time.sleep`s             :113 :117 :121 :219 :222 :271 :284 :346 :393 :417 :450 :584 :640 :656 :692 :695 :702 :704 :717
+WALL 6  the memory manager: `mm.palloc`, `mm.map_range`, `paddrs`    :278 :331
+WHAT IS NOT PORTED -- the six walls, each with its own `TODO(p3)` markers
+WHAT IS NOT PORTED: `_, nuops, nbufs = head.split()` at :185 raises ValueError
+WHAT IS PORTED, DEF BY DEF, with the CPython line it covers.
+WHAT IS PORTED, DEF BY DEF, with the CPython line it covers. Def names are
+WHAT IS PORTED, DEF BY DEF.
+WHAT IS PORTED, DEF BY DEF. "FFI" means there is nothing to check: the call
+WHAT IS PORTED, DEF BY DEF. `amd:NN` is ops_amd.py.
+WHAT IS PORTED, DEF BY DEF. `hcq2.py` is 646 lines and most of it is a
+WHAT IS PORTED, DEF BY DEF. `libc` is `tinygrad/runtime/autogen/libc.py`,
+WHAT IS PORTED, DEF BY DEF. Every def named here EXISTS; the first draft of this
+WHAT IS PORTED, DEF BY DEF. Line numbers are bnxtdev.py.
+WHAT IS PORTED, DEF BY DEF. Python line numbers are ops_nv.py unless the
+WHAT IS PORTED, DEF BY DEF. The PORTED lines are what this file decides; the
+WHAT IS PORTED, in upstream's own line numbers, and every `def` named
+WHAT IS PORTED, section by section, with the CPython lines it covers:
+WHAT SURVIVES THE ARENA WALK: a batch is a list of (call, devices, queue)
+WHAT SURVIVES THE CROSSING IS DATA: the REGISTER FIELD LISTS (every
+WHAT SURVIVES THE CROSSING is exactly what the other five backends also
+which fits a `U32` exactly)
+wordof,pickw,finish,cksum.xor,nu64,nwords} into two U32 folds
+WPR META    wpr.{leg..leg9,fmc} / over.fixtures_fit   :434-455 both branches
+wrapper over it was written.
+wraps,wp_after}                            arithmetic :38-55
+written (a QMD accessor family, a `pc.` key, a video-HW sizing entry, a
+written; `iface.pick` takes the

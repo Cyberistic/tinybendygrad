@@ -1,0 +1,1594 @@
+runtime/__init__.bend:3  `tinygrad/runtime/__init__.py` is ZERO BYTES. Same finding as
+runtime/device.bend:9  `create_schedule` (`tinygrad/schedule/__init__.py:32-80`), and
+runtime/device.bend:23  `schedule()` outside its own gate rows. the port's `Device` lane is a set of
+runtime/device.bend:26  `.agents/slop/cpuseam/launch.bend:113-131` IS that lane, and it is IN A
+runtime/device.bend:32  `program`  THE PROGRAM. Upstream's `Compiled.runtime(obj)` takes a
+runtime/device.bend:33  `TinyELF` (`tinygrad/device.py:402`) and the renderer's C is
+runtime/device.bend:38  `schedule` THE SCHEDULER. Upstream's `create_schedule(sched_sink)` takes the
+runtime/device.bend:50  `exec`     THE EXECUTION. Upstream's `CPUProgram.__init__` steps 3-7 are
+runtime/device.bend:52  -> `CFUNCTYPE` -> call (`tinygrad/runtime/ops_cpu.py:29-46`), and
+runtime/device.bend:58  (`tinygrad/runtime/ops_cpu.py:34`) and it is the port's own
+runtime/device.bend:63  `program` takes a `List<KU>` and the port has no DEF that builds one from the
+runtime/device.bend:72  `renderer/cstyle.bend:49-54` records that "`Ops.SHRINK` HAS NO DTYPE IN THE
+runtime/device.bend:104  `ClangRenderer.render(self, uops)` (`tinygrad/renderer/cstyle.py:268-278`) and
+runtime/device.bend:108  back: the port's `List` is a persistent structure and `render` CONSUMES it.
+runtime/device.bend:124  the answer is the linear node and its arena: `schedule` consumes the arena and
+runtime/device.bend:130  THE COMPILE. Upstream's `CPUProgram.__init__` step 1 (`ops_cpu.py:29-34`) is
+runtime/device.bend:135  (`runtime/support/compiler_cpu.bend:260 symbol=ClangCompiler.compile_argv`), and it is
+runtime/device.bend:150  THE RELOCATION. Upstream's step 2 (`ops_cpu.py:34`) is
+runtime/device.bend:151  `jit_loader(lib, base=mv_address(self.mem))` and it is the port's own
+runtime/device.bend:166  - the buffers cross as hex, and that is upstream's shape and not a
+runtime/device.bend:168  (`references/bend/bend2/effs/process_run.c:277` builds it with `io_str`, and
+runtime/ops_amd.bend:4  almost all of it is one of three things: an `ioctl` on `/dev/kfd` or a
+runtime/ops_amd.bend:12  * the KERNEL ARGUMENT TRACE -- `kernargs` (tinygrad/runtime/ops_amd.py:374 symbol=kernargs) is `layout_args` then
+runtime/ops_amd.bend:21  * `AMDProgramData`'s ELEVEN derived fields -- the bit positions in
+runtime/ops_amd.bend:41  520 IDENTICAL rows. All 520 are diffed against CPython by
+runtime/ops_amd.bend:48  is hand-typed. That matters more here than anywhere else: the
+runtime/ops_amd.bend:49  `renderer/cstyle.bend` unit shipped 215 hand-typed expectations of which
+runtime/ops_amd.bend:50  SEVENTEEN were wrong, twelve of them real port bugs. The oracle found four in
+runtime/ops_amd.bend:54  * `pd.lds` used `ceildiv` where `tinygrad/runtime/ops_amd.py:522 symbol=_amd_program_image` uses `//`, i.e. FLOOR, so
+runtime/ops_amd.bend:55  * `dev_max_copy` compared a three-part version COMPONENTWISE where
+runtime/ops_amd.bend:107  :542-561 _amd_program_image                PARTIAL the eleven fields, the
+runtime/ops_amd.bend:140  devices/virtual/kfd/kfd/topology/nodes`, `/dev/dri/renderD<n>`, and the
+runtime/ops_amd.bend:141  `ctypes` in/out structures. Every ioctl is in the trace as an `OPEN`, a
+runtime/ops_amd.bend:153  `AMDReg.encode`/`fields_mask`. The bit positions of `regCOMPUTE_*` and
+runtime/ops_amd.bend:171  surviving construct is `Compiled.link_bufs` (`tinygrad/device.py:377 symbol=link_bufs`), which upstream fills at
+runtime/ops_amd.bend:183  (tinygrad/runtime/ops_amd.py:774-777 symbol=on_device_hang) and AMDDevice's `on_device_hang` (tinygrad/runtime/ops_amd.p
+runtime/ops_amd.bend:212  1. `D.iter_sig` IS `layout_args`' ENGINE, and THIS file uses its form and
+runtime/ops_amd.bend:213  NOT ITS ARITHMETIC. `device.py:364-366` is
+runtime/ops_amd.bend:218  CPython's `iter_sig` of `[uint8, uint32, uint8]` is `[0, 4, 8]`, and
+runtime/ops_amd.bend:222  rather than a stale comment. `sig.slot` below is the CPython form and
+runtime/ops_amd.bend:229  4. `D.alloc_take` is `c.pop()` -- the MOST RECENTLY freed -- and
+runtime/ops_amd.bend:254  `hsa.HSA_PACKET_HEADER_TYPE` is ZERO, so `<< TYPE` is the identity and both
+runtime/ops_amd.bend:410  the refusal ordinal the seam should fail on, 0 = never. `nth` is NOT reset by
+runtime/ops_amd.bend:495  carried as a second list. THE FUEL IS THE TRACE LENGTH and the answer is
+runtime/ops_amd.bend:499  caught it there is the `wg_has_rejects_*` pair, which is duplicated here as
+runtime/ops_amd.bend:533  1. the WIDTHS. `prg.arg.globals` names positions in
+runtime/ops_amd.bend:534  `get_call_arg_uops(call)`, and `:362` takes `.getaddr(self.devs)` of each
+runtime/ops_amd.bend:543  exactly the gap; then it appends one trailing blob of
+runtime/ops_amd.bend:544  `kernargs_segment_size - end`, which is ZERO when the args fill it.
+runtime/ops_amd.bend:554  `(2)`: `sig.slot` is `iter_sig`'s yield pair. The advance is
+runtime/ops_amd.bend:605  would be a second transcription of `iter_sig`, so it is its own fold over the
+runtime/ops_amd.bend:630  `UOp`s in the middle are 8 bytes each by default, and the three grid words are
+runtime/ops_amd.bend:654  8-byte blob, TWO 8-byte words (`kernel_object` and `kernarg_address`, both
+runtime/ops_amd.bend:667  that :544-554 feeds them. `desc_off` is the `.rodata` section address and
+runtime/ops_amd.bend:744  THE CACHE, both directions. `_amd_program_cache` (:531) is keyed by
+runtime/ops_amd.bend:766  THE EVICTION, and the negative case. `ops_amd.py` has NO eviction of its own:
+runtime/ops_amd.bend:778  the two flags `Allocator.free` reads, as `D.Bspec.go` hands them over. A
+runtime/ops_amd.bend:797  three-part target is its decimal decomposition, and `arch` is
+runtime/ops_amd.bend:848  three times and a `Data` parameter is affine across a body, so each takes a
+runtime/ops_amd.bend:871  OCCUPANCY. `tmpring_size` (:973-987) is FIVE steps and the last of them is a
+runtime/ops_amd.bend:882  lanes_per_wave)`. The division is 16 for gfx9 and 4 otherwise, and
+runtime/ops_amd.bend:892  :982, `max_scratch_waves = cu_cnt * max_slots * xccs`. It is a CEILING on
+runtime/ops_amd.bend:917  THE QUEUE SIZES, :948-959. Five numbers, each a different table, and
+runtime/ops_amd.bend:929  versions take the heavy arm and the two fallbacks are on the MAJOR alone, so
+runtime/ops_amd.bend:958  must name the empty case and cannot (MEASURED: "expected : a constructor of
+runtime/ops_amd.bend:972  and the queue with ":" folded to "_" and lowercased. The fold is why the
+runtime/ops_amd.bend:978  index -- and the queue is what the arm reads. The port keeps the COUNT, and
+runtime/ops_amd.bend:992  5, so the product is up to 2^34 and a `U32` multiply WRAPS. `amd_sq_wptr_*` in
+runtime/ops_amd.bend:1009  :256-260, `sa_mask = (1 << (cu_per_simd_array // 2)) - 1` and
+runtime/ops_amd.bend:1010  `cu_mask = (1 << (cu_per_se + (1 if i == 0 else 0))) - 1` and
+runtime/ops_amd.bend:1011  `lo32((cu_mask & sa_mask) | (cu_mask & (sa_mask << 16)) << 16)`. The
+runtime/ops_bend.bend:3  THE BEND TARGET ITSELF. Every other port in this repo hands its IR to a
+runtime/ops_bend.bend:17  <idx> walks the renderer's own uop list in the order it arrives. That list is
+runtime/ops_bend.bend:72  (and the gate checks the ORDER). There is no third kind. That is what puts the
+runtime/ops_bend.bend:86  silently wrong packet. The six ops with an arg are named by
+runtime/ops_bend.bend:95  node. The row `bend_arg_const_float_is_f` pins the prefix and
+runtime/ops_bend.bend:99  3. THE FFI SEAMS, named with their Python lines. None of these is an
+runtime/ops_bend.bend:168  arg    u.arg as TEXT, EXCEPT a CONST where it is the payload digits the
+runtime/ops_bend.bend:173  shape  s._shape rendered, ONLY because `is_image_shape` (:126) reads it.
+runtime/ops_bend.bend:174  It is `""` for a shape that is not an image shape, so the reader is
+runtime/ops_bend.bend:255  by the seam is a decision the gate cannot check. What the seam supplies is
+runtime/ops_bend.bend:363  `buf_extent(arg)` :178 -- `int(arg.split(":")[2])`, the SECOND colon field of
+runtime/ops_bend.bend:380  appear in this file: `encode` returns a `Res`, and `ok=False` carries the
+runtime/ops_bend.bend:408  is the WHOLE list and `rest` is the tail being walked. Threading the tail AS
+runtime/ops_bend.bend:427  version emitted `6: INDEX f32 - 5 2` where CPython's packet line is
+runtime/ops_bend.bend:437  :139's text. The src position is 0 or past the end, so the node read is
+runtime/ops_bend.bend:502  to marshal buffers, which is why it stops at op names and index lists." So
+runtime/ops_bend.bend:513  is stated because it is the one place `parse` is weaker than the Python, and
+runtime/ops_bend.bend:574  THE off-BY-ONE, AND it is the real wall. `take1` is `take_nat(xs, 1n)` and it
+runtime/ops_bend.bend:609  spelling. The original dropped the HEAD (`case _ <> t: t`), which for
+runtime/ops_bend.bend:616  THE HEAD IS removed and then the list is rebuilt, because there is no
+runtime/ops_bend.bend:643  AND the entry hands over the tail, so the last field of `xs` never becomes a
+runtime/ops_bend.bend:672  hand-written fold over `String.to_list(s)` comparing every char with
+runtime/ops_bend.bend:676  What that costs, exactly: `parse` (:180) cannot recover the uop lines, so
+runtime/ops_bend.bend:678  rows that read them -- `bend_prog_*`, `bend_call_*`, `bend_parse_nbufs` -- are
+runtime/ops_bend.bend:697  PREPEND, AND that is the fix. The original APPENDED with
+runtime/ops_bend.bend:701  answered `0 0 0 0 10 11` printed, i.e. the underlying list was
+runtime/ops_bend.bend:705  `drop4` of that list returned `0 0` where CPython reads `10 11`, so
+runtime/ops_bend.bend:732  destructured four cells and then appended `[h]` from the WRONG cell, so
+runtime/ops_bend.bend:806  `head, *body = packet.splitlines()` (:184) -- the HEADER IS DROPPED and then
+runtime/ops_bend.bend:813  per-buffer rows required -- turned `bend_parse_l1` from
+runtime/ops_bend.bend:836  ("pass-through: the source IS the packet"), so `prog.of` is
+runtime/ops_bend.bend:892  `self.uops[b].srcs[0]` (:208) -- THE HEAD, and `List.get` is not reading it.
+runtime/ops_bend.bend:893  MEASURED: `Line.srcs` of the STORE at 0-based 11 is `10 11` (correct, and the
+runtime/ops_bend.bend:937  `nbufs=3, in_bufs=[4,4,4], out_bufs=[0]`. The STORE at line 12 reads src 10, so
+runtime/ops_bend.bend:939  -> 6 -> ... down to line 1, whose arg is `k:param:4:g`, and :209's count over
+runtime/ops_bend.bend:957  the first. `chase.at` is the BODY and therefore does not; the entry does.
+runtime/ops_bend.bend:968  This is the same rule `take_nat` and `lines.go` obey above.
+runtime/ops_bend.bend:982  FUEL. The chase is at most one step per line, so `nlines` bounds it, and the
+runtime/ops_bend.bend:1017  APPENDED and then reversed, so the two composed into a reversed answer -- and the
+runtime/ops_bend.bend:1019  MEASURED: `bend_prog_cmp_in_bufs` read `16 4` where CPython reads `[4, 16]` for
+runtime/ops_bend.bend:1039  its position decides WHICH.
+runtime/ops_bend.bend:1041  equivalence above. The chase is `ls` plus a fuel, and :209's count needs only
+runtime/ops_bend.bend:1065  separates the two, and it is why `bend_chase_store` is worth having next to
+runtime/ops_bend.bend:1080  THE arms were swapped, and that is THE wall -- not the line split, not
+runtime/ops_bend.bend:1081  `take_nat`. `Bool.pick(-A, cond, THEN, ELSE)` takes the FIRST arm when `cond` is
+runtime/ops_bend.bend:1084  was building `Prog.of(False{}, ...)` for every GOOD packet and
+runtime/ops_bend.bend:1124  every step's guard is a pure function of the launch facts, so they are all
+runtime/ops_bend.bend:1268  Bend has no `malloc` and no pointer. Its mutable memory is `Array`, and an
+runtime/ops_bend.bend:1271  be a field either. So the port cannot port `HostAllocator._alloc`, which is
+runtime/ops_bend.bend:1275  an extent. `Buf` in `ops_python.bend:835` is exactly `Buf{base, w, e}` and
+runtime/ops_bend.bend:1284  THE ALLOCATOR'S HONEST LIMITS, named before the rows rather than after
+runtime/ops_bend.bend:1286  `HostAllocator._free` (device.py:307) IS: it touches storage only under
+runtime/ops_bend.bend:1287  `if (remote:=getattr(self.dev, "remote", None)) is not None`, and BEND has no
+runtime/ops_bend.bend:1296  FIELDS MUST BE `Data`... So a program table is NOT a field of a record: it is a
+runtime/ops_bend.bend:1328  and a `REG` PARAM get. It PREPENDS and REVERSES, because `List.append` is
+runtime/ops_bend.bend:1343  (see THE ALLOCATOR'S HONEST LIMITS). `Maybe.default` with 0 is
+runtime/ops_bend.bend:1379  THE hex codec, and WHY it is spelled here rather than imported from
+runtime/ops_bend.bend:1394  tests tell a digit from a lower-case letter from an upper-case one, and
+runtime/ops_bend.bend:1411  and a parameter read in both arms is "consumed more than once" (MEASURED). The
+runtime/ops_bend.bend:1436  came back out of the executor byte for byte. 0x3f is written "3f", never "f3", so
+runtime/ops_bend.bend:1488  MEASURED: "expected a decreasing self-call", because a pick over an `i` that
+runtime/ops_bend.bend:1499  carries its own byte, which is why this is ONE self-recursive fold and not
+runtime/ops_bend.bend:1500  `take` + `get`. `+n` is the REBIND marker for the same reason as
+runtime/ops_bend.bend:1504  which MEASURED wrong: `_` ignores the second column, so the walk ran until the
+runtime/ops_bend.bend:1506  a spent countdown became a permanent 0 instead of a stop. The result was that
+runtime/ops_bend.bend:1563  says a call "shrinks no column and cannot be the fuel", which is why the
+runtime/ops_cl.bend:10  SO the cross-CUTTING rationale stays here and the three vendor tables do not.
+runtime/ops_cl.bend:12  is the leaf; the tables are DATA about one file each, and a `vend.cu` in
+runtime/ops_cl.bend:18  ONE device, THREE vendor spellings. `ops_cl.py` is the BASE class for CUDA and
+runtime/ops_cl.bend:22  has a CL spelling, a CUDA spelling and a HIP spelling, and most of which are
+runtime/ops_cl.bend:36  this is the leaf of the DAG. `vend.cu`, `cu_err_*`, `Spec` and `cu.*` are in
+runtime/ops_cl.bend:37  `ops_cuda.bend`; `vend.hp`, `hp_err_of`, `timing.scale_hp` and `hp.*` are in
+runtime/ops_cl.bend:41  ONE device, THREE vendor spellings. `ops_cl.py` is the BASE class for CUDA and
+runtime/ops_cl.bend:45  has a CL spelling, a CUDA spelling and a HIP spelling, and most of which are
+runtime/ops_cl.bend:54  gate checks it) OR records that call in the trace (and the gate checks the
+runtime/ops_cl.bend:59  NO @extern SEAMS, and that is a DELIBERATE departure from `dtype.bend`. A
+runtime/ops_cl.bend:138  1. `cl_mem`, `cl_program`, `cl_kernel`, `cl_context`, `CUdeviceptr` and
+runtime/ops_cl.bend:152  `clGetEventProfilingInfo` answers two `ctypes.c_uint64` timestamps in
+runtime/ops_cl.bend:153  NANOSECONDS and the delta is u64. `base.bend` exports `Word`, not
+runtime/ops_cl.bend:157  TODO(p3) runtime/ops_cl.py:139  symbol=_wait_signal -- the u64 nanosecond delta -- upstream's old `OSX_TIMING_RATIO` for
+runtime/ops_cl.bend:160  3. `ctypes.create_string_buffer` / `ctypes.string_at` (:29-32, :105-116) are a
+runtime/ops_cl.bend:162  the decoded String, because the decoded String IS what tinygrad/runtime/ops_cl.py:108 stores in
+runtime/ops_cl.bend:167  4. `CC_CB` / `BP_CB` (`tinygrad/runtime/ops_cl.py:13-14 symbol=CC_CB`) are `CFUNCTYPE` signatures handed as the
+runtime/ops_cl.bend:184  7. `ctypes.string_at(hip.hipGetErrorString(status)).decode()` (hp:10). The
+runtime/ops_cl.bend:185  FUNCTION is a symbol and the port names it (`vend.hp.of(OP_ERRSTR)`); the
+runtime/ops_cl.bend:195  CALL fails, and a real call needs a device. The oracle is
+runtime/ops_cl.bend:202  with NO GPU present -- MEASURED, and the subtlety is that it is keyed by the
+runtime/ops_cl.bend:228  stored as `U32` two's complement because Bend has no signed integer, so `-1` is
+runtime/ops_cl.bend:241  1. `Buffer` is a SLOT in an arena and `nbytes` is NOT a field -- it is
+runtime/ops_cl.bend:242  `size * itemsize`, so the two cannot disagree. `Buf.size` here is the
+runtime/ops_cl.bend:248  `self.dev.synchronize()` and `_copyin` does NOT -- that asymmetry is
+runtime/ops_cl.bend:250  3. `TinyELF.signature` is `tuple[(name, slot, DType, shape)]` and
+runtime/ops_cl.bend:260  and `vals` = `ProgramInfo.vals`. THIS file needs the BUFFER LIST and the
+runtime/ops_cl.bend:268  INDEX is what binds `data0_4` -- NOT the slot. `Arg` carries both `i` and
+runtime/ops_cl.bend:273  is a two-entry table, which is what makes it gateable at all.
+runtime/ops_cl.bend:276  `img.is_image` is that and the gate has a fixture whose image is 4 in the
+runtime/ops_cl.bend:279  NO OpenCL, CUDA OR HIP IN THIS ENV. `Device['OPENCL']` needs a loader and no
+runtime/ops_cl.bend:296  bend REFUSES an import cycle -- MEASURED, `a.bend` importing `b.bend` with
+runtime/ops_cl.bend:300  `vend.checked`/`chk_count`, `vend.trace`/`vend.line` -- had to become PER
+runtime/ops_cl.bend:306  What it ADDED: `cu.sync` in `ops_cuda.bend` -- cu:82 is CUDA's own
+runtime/ops_cl.bend:327  M13  0 lines  `Sig`: swap `h` and `w` in the TYPE DECLARATION. THEOREM, and
+runtime/ops_cl.bend:334  `Sig` inversion actually was.
+runtime/ops_cl.bend:337  THE ROW COUNT STAYS 445 and the byte diff catches it:
+runtime/ops_cl.bend:446  -- all three tables were in this one file. The 1:1 split puts `vend.cu` in
+runtime/ops_cl.bend:470  CUDA : every call in CUDAQueue goes through `hcq2.ccall`, whose answer is
+runtime/ops_cl.bend:613  table index above, so `vend.name(vendor, Call.op(c))` reads the trace BACK as
+runtime/ops_cl.bend:625  the machine state of the seam. `next` mints the handle ids, `bad_at` is the
+runtime/ops_cl.bend:639  of the packed argument blob. `kind` is 0 for a `cl_mem`, 1 for a
+runtime/ops_cl.bend:682  is what makes `cl.pitch` look wrong when it is right -- MEASURED, and see the
+runtime/ops_cl.bend:933  cl:95-102 -- THE PLATFORM AND DEVICE-TYPE PROBE. It is the only loop in
+runtime/ops_cl.bend:967  which let the GPU candidate claim the index with no devices behind it, and
+runtime/ops_cl.bend:1059  byref(exts_len)))` -- the LENGTH query, and it IS checked: cl:113 wraps it in
+runtime/ops_cl.bend:1060  `check` while cl:114 does not. Two calls, one op, one info param, and only the
+runtime/ops_cl.bend:1126  trace minted (`Tr.here` read BEFORE the emit, so the id an emit mints IS the
+runtime/ops_cl.bend:1194  cl.CL_PROGRAM_BUILD_LOG, 0, None, log_size)` then the same with the buffer. The
+runtime/ops_cl.bend:1216  created from a BINARY must still be BUILT before `clCreateKernel`. Drop it and
+runtime/ops_cl.bend:1396  desc, None, status), status)` -- the flags argument is CL_MEM_READ_WRITE, the
+runtime/ops_cl.bend:1400  cl:59-64 -- `if is_image_shape(shape):` then pitch, fmt, desc, create, set. The
+runtime/ops_cl.bend:1408  cl:57-65 -- the arg loop. It RECORDS one `Arg` per signature row and emits the
+runtime/ops_cl.bend:1451  len(global_size), None, gs, ls, 0, None, event))` -- `work_dim` is
+runtime/ops_cl.bend:1478  content: `_copyout` calls `self.dev.synchronize()` and `_copyin` does not, and
+runtime/ops_cl.bend:1491  actually executes this command". So `_copyin` grows `pending_copyin` and the
+runtime/ops_cl.bend:1495  cl:128-130 -- `synchronize` is `check(cl.clFinish(self.queue))` followed by
+runtime/ops_cl.bend:1515  five Bool columns and no structural row cannot see a swapped pair, and
+runtime/ops_cpu.bend:7  device computes NOTHING. Eleven of the thirteen ops answer all-zero and TWO DO NOT
+runtime/ops_cpu.bend:11  THE SPLIT, restated because it is the whole discipline here: a def EITHER BUILDS THE
+runtime/ops_cpu.bend:28  twenty-row relative of.
+runtime/ops_cpu.bend:31  None of the substrate has an upstream counterpart of its own, so it lives in the
+runtime/ops_cpu.bend:39  one is possible when `1 << 40` is not.
+runtime/ops_cpu.bend:47  at a dtype-dependent offset. The OFFSETS are portable -- they are
+runtime/ops_cpu.bend:66  (tinygrad/device.py:391 symbol=has_copy_queue) and
+runtime/ops_cpu.bend:68  upstream's `NullDevice` (tinygrad/runtime/ops_null.py:63 symbol=NullDevice) does NOT, so
+runtime/ops_cpu.bend:96  `cmdbuf_*`, so `streams == [(3,160),(5,224)]` -- 384 bytes, 48 Q words, 12 quads. The
+runtime/ops_cpu.bend:99  queued BEFORE the EXEC, which is why event 0 is the copy's: `setdefault`'s value is
+runtime/ops_cpu.bend:100  `len(null_events)` AT THE CALL, so the id IS the first-appearance index. And
+runtime/ops_cpu.bend:119  4294967295n, so `nalloc.va`'s base is `Nat.mul(1024n, 1073741824n)` and the step is
+runtime/ops_cpu.bend:140  THE WALRUS ASSIGNS THE ROUNDED VALUE. So Python's running `offset` becomes the
+runtime/ops_cpu.bend:153  NEGATIVE. `pk_offsets_484` and `pk_tail_484` are the rows and they are the
+runtime/ops_cpu.bend:195  `layout_args`' offsets and `ops_cpu.py:70`'s val slots are the SAME walk, and
+runtime/ops_cpu.bend:227  THE BUG, MEASURED. ops_cpu.py:21 builds the loader's search set as
+runtime/ops_cpu.bend:236  emits `extern void sel_registerName();` into a generated host kernel and
+runtime/ops_cpu.bend:249  `/System/Library/Frameworks/objc.framework` is not a directory on this host, so
+runtime/ops_cpu.bend:277  THE LINK SET, IN ORDER, and the order is the policy: `link_sym` returns the
+runtime/ops_cpu.bend:345  ops_cpu.py:89, `f"remote:{device[4:]}:0"` -- the peer group handed to
+runtime/ops_cpu.bend:346  `RemotePCIDevice`. `device[4:]` drops the literal `remot` prefix, so for
+runtime/ops_cpu.bend:347  `remote:host:1234` the rest is `e:host:1234` and the answer is
+runtime/ops_cpu.bend:403  makes. THE RAISE: once `refused` is set nothing else is recorded, which is
+runtime/ops_cpu.bend:501  asked to reject answers False for every fuel. `cpu_has_accepts_plain` and
+runtime/ops_cpu.bend:553  statement -- `self.dev, self.name, self.signature, self.profile_key` -- and
+runtime/ops_cpu.bend:554  `:25-26` add `lvp` and `fxn`. `signature` is a tuple of
+runtime/ops_cpu.bend:556  (`TinyELF.iter_sig`), so `Prog.sig` is that list alone, exactly as
+runtime/ops_cpu.bend:557  `device.bend`'s `iter_sig` wants it. `osx` and `rt` are `OSX` and
+runtime/ops_cpu.bend:560  `elf` is the WALL 2 answer (`lib[:4] == ELFMAG`) and `liblen` is
+runtime/ops_cpu.bend:645  ops_cpu.py:41 -- `self.addr = mv_address(self.mem)`. `mv_address` is
+runtime/ops_cpu.bend:658  ops_cpu.py:43 `pthread_jit_write_protect_np(False)` and :45 the same with
+runtime/ops_cpu.bend:699  clear_cache's RANGE END is `addr + len(loaded)` and msync's FLAGS are
+runtime/ops_cpu.bend:716  ops_cpu.py:27-36, `elif sys.platform == "win32":`. Its five seam calls are
+runtime/ops_cpu.bend:717  VirtualAlloc, memmove, GetCurrentProcess, FlushInstructionCache and then
+runtime/ops_cpu.bend:749  ops_cpu.py:67-71 -- the LVP argument buffer, which is the one piece of
+runtime/ops_cpu.bend:759  So the header is THREE u32s -- the address+12 as a (lo, hi) pair from
+runtime/ops_cpu.bend:792  seam. One entry for the enter is the whole of what the trace can see, and the
+runtime/ops_cpu.bend:800  argument bytearray. The entry's arg is the buffer LENGTH, which is
+runtime/ops_cpu.bend:902  :95, `if self.remote is not None: self.remote.rpc(RemoteCmd.PING)` and then
+runtime/ops_cpu.bend:904  device.bend's timeline wait and is a seam. `cpu_sync_ping` and
+runtime/ops_cpu.bend:987  THE SEAM -- LANDED 2026-10-27. THE TRACE TAGS ABOVE ARE STILL THERE AND
+runtime/ops_cpu.bend:993  2. `jit_loader` RELOCATES IT (support/elf.py:52-86) -- THE PORT's OWN
+runtime/ops_cpu.bend:995  3. `mmap` AN ANONYMOUS RWX REGION (ops_cpu.py:30) AND COPY THE IMAGE IN
+runtime/ops_cpu.bend:1002  RELOCATES. STEPS 1 AND 3-7 ARE THE EFFECT (`runtime/ops_cpu.c`), AND THEY ARE
+runtime/ops_cpu.bend:1010  IT, BECAUSE THE ARGV IS THE PORT's OWN SPELLING AND THE C SIDE MUST NOT HAVE
+runtime/ops_cpu.bend:1014  AND THE ARCH IS THE PORT's OWN TOO: `cpu.arch_of` (ops_cpu.py:91) IS
+runtime/ops_cpu.bend:1015  UPSTREAM's `{'amd64':'x86_64', 'aarch64':'arm64'}.get(m, m) + ",native"`, AND
+runtime/ops_cpu.bend:1023  THE C EFFECT's RETURN VALUE IS THE VALUE THE CONTINUATION RECEIVES, SO A
+runtime/ops_cpu.bend:1028  OWN) TURNS A `Fail` INTO A `Halt` WITH ITS MESSAGE ON STDERR. THIS IS
+runtime/ops_cpu.bend:1032  `Cpu.compile` IS UPSTREAM's STEP 1: THE C SOURCE AND THE ARGV GO IN, THE
+runtime/ops_cuda.bend:7  one `.bend` per upstream `.py`, at the same path. This file was 707 lines of
+runtime/ops_cuda.bend:16  tree `ops_cuda.py` is 126 lines: `count` is at tinygrad/runtime/ops_cuda.py:122 symbol=count and
+runtime/ops_cuda.bend:44  cu:17-18 -- every call in `CUDAQueue` goes through `hcq2.ccall`, whose answer is
+runtime/ops_cuda.bend:59  cu:18 `cuda.enum_cudaError_enum`, MEASURED: 92 entries, keyed int -> str, and
+runtime/ops_cuda.bend:62  MEASURED: 92 entries, keyed int -> str, and NOT ONE of them is negative. So
+runtime/ops_cuda.bend:149  cu:90's `cuda.CUDA_ERROR_HOST_MEMORY_ALREADY_REGISTERED` -- entry 712, and the
+runtime/ops_cuda.bend:164  allocators": only `CUDADevice._alloc` and `._map` read it. `CLAllocator` and
+runtime/ops_cuda.bend:225  and remembers its offset, so the five constants of cu:46 are FIVE WORDS and the
+runtime/ops_cuda.bend:248  cu:104 `device_id = int(device.split(":")[1]) if ":" in device else 0` -- the
+runtime/ops_cuda.bend:265  build `CUDAQueue(s).encode()`. So the dispatch is a two-entry table and
+runtime/ops_cuda.bend:266  `cu_encode_tags` is the row that prints it.
+runtime/ops_cuda.bend:273  TODO(p3) runtime/ops_cuda.py:57  symbol=cuda_submit  -- the rule's PATTERN also moved, from
+runtime/ops_cuda.bend:274  `UPat(Ops.CUSTOM_FUNCTION, arg="<name>", name="submit")` to
+runtime/ops_cuda.bend:317  PTXRenderer, NVCCRenderer], None, arch=f"sm_{major.value}{minor.value}")` -- the
+runtime/ops_cuda.bend:375  the kernel-arg descriptor's COUNT and FLAG and the last 0 is the FLAG, so
+runtime/ops_cuda.bend:409  self.h.cast(dtypes.u64)).substitute({self.kernargs: ka})`. The `arg` is the
+runtime/ops_cuda.bend:446  cu:80-82 `_free` -- `self.dev.synchronize()` FIRST, then
+runtime/ops_cuda.bend:494  cu:92 `return BufferStorage(host.addr, status == cuda.CUDA_SUCCESS)` -- the
+runtime/ops_cuda.bend:507  -- FOUR uint64 words: the context, the TWO streams, and a trailing 0. The pack is
+runtime/ops_cuda.bend:522  cu:134-136 `_wait_signal` -- `check(cuCtxSetCurrent(self.context))` then
+runtime/ops_cuda.bend:524  and the SECOND is the one that raises, which is why the trace's truncation at
+runtime/ops_cuda.bend:718  consequence is a LOC observation, not a bug: upstream cu:75 is
+runtime/ops_disk.bend:10  THE place a result can be checked rather than a trace, and it is
+runtime/ops_disk.bend:32  host's `mmap.PAGESIZE`, `os.O_CREAT`, `getattr(os,"O_DIRECT",0)` and
+runtime/ops_disk.bend:66  itself; the three mmap LENGTHS are
+runtime/ops_disk.bend:107  4. `readinto`'s byte count (:97) and `mem.close()`'s BufferError (:48) are the
+runtime/ops_disk.bend:127  well as the RETRY, in that order -- so :34's two arms produce the SAME trace and
+runtime/ops_disk.bend:152  file says why rather than carrying a `hasattr` no fixture can falsify. The
+runtime/ops_disk.bend:154  the attribute and macOS does not, so `open_direct` keeps its parameter and
+runtime/ops_disk.bend:157  D. THE open fallback changes the flags, NOT the path, AND both flags are
+runtime/ops_disk.bend:158  RECORDED. :33 asks for `O_RDWR|O_CREAT|O_DIRECT` and :34 retries with
+runtime/ops_disk.bend:187  MADV_HUGEPAGE 0 -- `getattr(mmap,"MADV_HUGEPAGE",None)` is None, so :39 IS NOT
+runtime/ops_disk.bend:188  REACHED there. `madv_hp` answers 0 and `Dev.madv` is the
+runtime/ops_disk.bend:191  MAP_LOCKED / MAP_POPULATE 0 -- `OSX` is True, so :81's first cell is 0 and
+runtime/ops_disk.bend:228  :39's `getattr(mmap, "MADV_HUGEPAGE", None)` -- the VALUE, with `Dev.madv` as the
+runtime/ops_disk.bend:240  io_uring, read out of `tinygrad/runtime/autogen/io_uring.py`: the
+runtime/ops_disk.bend:314  ops_disk.py:73 DiskBuffer. `d` is Python's `self.device` -- the OBJECT -- so
+runtime/ops_disk.bend:315  `_buf`'s `assert hasattr(self.device,"mem")` at :78 reaches it through here.
+runtime/ops_disk.bend:323  `memoryview(mem)[offset : offset+size]` -- :79. `hi` is the SUM and it is a
+runtime/ops_disk.bend:345  the loop variable and `rd` is `read_size`; all five are what `dk_shard_a` and
+runtime/ops_disk.bend:481  is the WHOLE trace this exact sequence? Stronger than `seq` and it is what the
+runtime/ops_disk.bend:668  `IORING_OFF_SQES`). The offsets are what the trace carries. THREE STEPS AND NOT
+runtime/ops_disk.bend:714  not the same test: `size` is set at :37 and `mem` at :30/:36, and :49 clears ONLY
+runtime/ops_disk.bend:734  :29-31 -- the shm branch. `shm_open(name, O_RDWR, 0o600)`, then the mapping, then
+runtime/ops_disk.bend:735  `os.close(fd)` -- THREE calls, and the close is of the SHM descriptor, which is
+runtime/ops_disk.bend:736  NOT `self.fd`: :17 left `self.fd` None and nothing in this branch sets it.
+runtime/ops_disk.bend:752  :33-34 -- the try/except, with NO branch parameter (see THE EXCEPT IS NOT A
+runtime/ops_disk.bend:789  unlike the shm branch's :30. `dk_open_file_mmap_plain` is the row, and the tag is
+runtime/ops_disk.bend:794  SEPARATELY, because :36 runs after :35 has already advanced the trace: `d`'s own
+runtime/ops_disk.bend:811  :37 -- `self.size = size`. One field and one flag, and no call. THE FIELD IS
+runtime/ops_disk.bend:813  assignment would become a no-op: Bend lets a binder shadow an in-scope name, so
+runtime/ops_disk.bend:831  self.mem.madvise(hp)`. The guard is the seam's and rides on `Dev.madv`; the
+runtime/ops_disk.bend:871  `U32` WRAPS and that is invisible HERE on purpose: 0 - 1 is 4294967295 and
+runtime/ops_disk.bend:910  :42-43 -- `self.refcount -= 1` and THEN `if self.refcount == 0`. THE ORDER IS THE
+runtime/ops_disk.bend:995  :94-97 -- the OSX arm. `io.FileIO(self.dev.fd, "a+b", closefd=False)` then
+runtime/ops_disk.bend:1061  it is where the first read starts; every segment's file offset is
+runtime/ops_disk.bend:1075  :110's THIRD TERM ON ITS OWN -- `src.device.size - fd_offset - off` -- with no
+runtime/ops_disk.bend:1145  :104-116 -- the entry point to the non-uring arm. `shard_n` counts SEGMENTS in
+runtime/ops_disk.bend:1155  :132, `real_copy_size := min(sqe.len - minor_offset, size - copied_in)`, which is
+runtime/ops_disk.bend:1156  `shard_real` with `sqe.len` where the non-uring arm has `read_size` -- and
+runtime/ops_disk.bend:1157  `sqe.len` is `min(seg_len, total_copy_size - next_read_offset)` (:125), so the
+runtime/ops_disk.bend:1172  size - copied_in)` IS `shard_real` and :125's `sqe.len` is
+runtime/ops_disk.bend:1175  least as long as the shard, which is the invariant `ops_disk.py` relies on, and
+runtime/ops_disk.bend:1177  checks that it should do more.
+runtime/ops_disk.bend:1183  `dk_open_file_fd` names one such row and says so.
+runtime/ops_disk.bend:1184  3. `_posixshmem` MAY NOT BE IMPORTED. :6 wraps it in
+runtime/ops_disk.bend:1194  not.
+runtime/ops_disk.bend:1198  rather than as an exception value. `dk_grow_trace_unchanged` and
+runtime/ops_disk.bend:1211  both makes it a DISJUNCTION OF TWO NEGATIONS, so the non-uring arm is taken when
+runtime/ops_dsp.bend:6  invocation, and a `threading.Thread` that emulates fastrpc's file system on the
+runtime/ops_dsp.bend:7  HOST side so the shell image can be paged in. What survives the crossing is the
+runtime/ops_dsp.bend:18  -ffreestanding -nostdlib - -o {f.name}", input=src.encode())` and the
+runtime/ops_dsp.bend:20  string function of `mock` -- and so is the whole command line, as
+runtime/ops_dsp.bend:21  `compile_cmd`. The spawn and the byte buffer are not.
+runtime/ops_dsp.bend:27  one is an ioctl on a Qualcomm node that does not exist off-device, and
+runtime/ops_dsp.bend:41  pointer walk are not.
+runtime/ops_dsp.bend:77  out of the signature. That is the whole reason :46 is there.
+runtime/ops_dsp.bend:84  entries ops_dsp.py:15 ADDS to ClangRenderer's map, and
+runtime/ops_dsp.bend:102  `fds` is `[-1]*(ins+outs) ++ in_fds` (tinygrad/runtime/ops_dsp.py:52 symbol=rpc_prep_args) and `attrs` is
+runtime/ops_dsp.bend:107  INCLUDING (2,1,16) -- one past upstream's `bufs` refusal (tinygrad/runtime/ops_dsp.py:63 symbol=__call__) -- so a `pra` 
+runtime/ops_dsp.bend:110  var_vals_mv (:67,:68) is eight bytes per ARGUMENT: words 0..len(bufs)-1 are
+runtime/ops_dsp.bend:111  `b.size` written with fmt `'i'` at `i*8`, and the rest are the vals written with
+runtime/ops_dsp.bend:120  two disagree. So `DspBuf` carries `size`, and word `i` of var_vals is
+runtime/ops_dsp.bend:122  * offsets ACCUMULATE across views: `_offset` (:96) is
+runtime/ops_dsp.bend:127  entry shim reads (:35) is then wrong by the whole view, SILENTLY, because the
+runtime/ops_dsp.bend:129  rows (a view OF a view) are the only ones that can see it.
+runtime/ops_dsp.bend:130  * a view's base is the ROOT: `_offset` copies `share_info` from the parent, so
+runtime/ops_dsp.bend:150  NO dsp and no ion in this env. `Device['DSP']` needs /dev/ion and
+runtime/ops_dsp.bend:164  They differ by exactly the method byte. The greeting literal is SPELLED AS A
+runtime/ops_dsp.bend:165  LITERAL in Python (:194) and a port that "helpfully" rewrote it as an
+runtime/ops_dsp.bend:189  the fastrpc selector's four one-byte fields (:48). MEASURED: `U32.shl` is a
+runtime/ops_dsp.bend:190  ONE-bit shift and `U32.shln(a, n)` is the n-bit one, so the field POSITIONS are
+runtime/ops_dsp.bend:233  `enum_ion_heap_ids` -- `(ION_SYSTEM_HEAP_ID:=25)`.  It was 0 HERE, and 0 is
+runtime/ops_dsp.bend:234  `INVALID_HEAP_ID`, so the port asked ION for the INVALID heap and its
+runtime/ops_dsp.bend:329  ladders keyed on that name. So a dtype rename made eleven `dt_fmt` rows print the
+runtime/ops_dsp.bend:470  not overlap, which is the fact that lets `fds = len(bufs)` (up to 15) and
+runtime/ops_dsp.bend:485  `pri` is load-bearing for the ONE pair `bits` cannot separate: `f16` is `bits 16` and
+runtime/ops_dsp.bend:486  `fmt` `e`, `bf16` is `bits 16` and `fmt` None. Same split as
+runtime/ops_dsp.bend:541  It HAD a `case _: nm`, and that is wrong twice over: `cstyle.py:30` is
+runtime/ops_dsp.bend:542  `self.type_map[dtype]` -- a KEY LOOKUP that RAISES, not `.get(dt, dt.name)` -- and the
+runtime/ops_dsp.bend:544  THE GLOBAL ARM of :32, and the load-bearing asymmetry of the whole file: a
+runtime/ops_dsp.bend:546  holds the byte SIZE (:67 packs `b.size`) and not the value. A port that keyed the
+runtime/ops_dsp.bend:559  and a NO-OP on hexagon. `dsp_sdtype_n` plus `dsp_sdtype_x86_drop` pins that.
+runtime/ops_dsp.bend:560  BOTH drops are structural, `(cls, bits, pri)` AND nothing ELSE. They were
+runtime/ops_dsp.bend:561  `dt_is_fp8("fp8e4m3")` and `String.eq(nm, "__bf16")` -- NAME TESTS on strings that
+runtime/ops_dsp.bend:562  `LAWS/spec.bend` had already renamed, so BOTH ANSWERED FALSE for a real dtype and
+runtime/ops_dsp.bend:563  `dsp_sd_drop_fp8` printed False where CPython drops. Measured: `dtypes.bf16 in
+runtime/ops_dsp.bend:681  `memoryview(bytearray((len(bufs)+len(vals))*8))` (:65) and
+runtime/ops_dsp.bend:754  FIRST, then `os.close(share_info.fd)`, then `ION_IOC_FREE` -- and the last two are
+runtime/ops_dsp.bend:844  `acc + "\n" + line` keeps the ORDER, at the price of a LEADING separator, and
+runtime/ops_dsp.bend:879  MEASURED (dsp_oracle.py, `init_dsp`): `INVOKE(33554432)` comes BEFORE
+runtime/ops_dsp.bend:880  `CLOSE(98)`, not after. Bend evaluates an argument before the call, so
+runtime/ops_dsp.bend:881  `Tr.emit(RPC_INVOKE, SC_STALE, stale(t))` would record the CLOSE FIRST; the
+runtime/ops_dsp.bend:892  :141-148 `open_lib`. `fp` is the 44-character URL INCLUDING its NUL (:143), and
+runtime/ops_dsp.bend:905  :154-164 `exec_lib`. THE TRIPLE IS open -> invoke-with-attrs -> close, and on
+runtime/ops_dsp.bend:911  recorded (it succeeded), the INVOKE is not (it is the ioctl that raised), and
+runtime/ops_dsp.bend:949  is the same order as a list. The scrutinees are the LITERAL values because a
+runtime/ops_dsp.bend:1062  so the count is the bufs' bytes plus EIGHT per val.  `nbufs` was IGNORED here
+runtime/ops_hip.bend:8  one `.bend` per upstream `.py`, at the same path. This file was 290 lines of
+runtime/ops_hip.bend:26  builds `c_args` ONCE from `init_c_struct_t` and then assigns `c_args.f{i}` and
+runtime/ops_hip.bend:66  hp:10 -- the FUNCTION name is a symbol and is ported; the TEXT it returns is
+runtime/ops_hip.bend:100  two vendors agree on the alignment rule and differ only in what they do with it.
+runtime/ops_hip.bend:153  hp:42 -- the size is the LAST field's offset plus its size over `f{i}` fields THEN
+runtime/ops_hip.bend:188  the THIRD spelling of that line, and it is the same one: `cu_didx` and
+runtime/ops_hip.bend:223  `HIPProgram`, hp:26-57. `__init__` is THREE calls and the FIRST is
+runtime/ops_hip.bend:229  check(hip.hipModuleLoadData(ctypes.byref(x), obj.lib)))` then
+runtime/ops_hip.bend:237  check(hip.hipModuleUnload(self.module))` -- ONE call and ONE attribute, where
+runtime/ops_hip.bend:261  hp:55-56 `check(hip.hipEventSynchronize(self.dev.time_event_en))` then
+runtime/ops_hip.bend:287  struct build (no call), then the `if wait:` record, then the launch, then the
+runtime/ops_hip.bend:297  hp:61-62 `_alloc` -- `check(hip.hipSetDevice(self.dev.device_id))` then
+runtime/ops_hip.bend:298  `check(hip.hipMalloc(ctypes.byref(x), size))`. TWO calls, where CL's is ONE and
+runtime/ops_hip.bend:302  hp:64 `_free` -- `check(hip.hipFree(storage.buf))`. ONE call and NO
+runtime/ops_hip.bend:307  hipMemcpyKind. MEASURED out of `autogen/hip.py`'s enum: HostToDevice is 1 and
+runtime/ops_hip.bend:308  DeviceToHost is 2, and the two are the ONLY argument HIP's `_copyin` and
+runtime/ops_hip.bend:313  hp:65-67 `_copyin` -- `check(hip.hipSetDevice(self.dev.device_id))` then
+runtime/ops_hip.bend:320  hp:68-70 `_copyout` -- `self.dev.synchronize()` FIRST, then
+runtime/ops_hip.bend:480  THE THREE ARCH STRINGS, which are three different derivations of the same
+runtime/ops_hip.bend:511  byte-identical to the pre-split snapshot: the HIP column of
+runtime/ops_hip.bend:515  MUTATIONS, over what moved into THIS file. Reproduce with
+runtime/ops_hip.bend:524  IS checked). Moves `vend_nchecked_hp`, `chk_hp_queue`. NOT
+runtime/ops_hip.bend:527  not a witness for it.
+runtime/ops_hip.bend:532  Moves `x_launch` and nothing else, which is what a row that
+runtime/ops_hip.bend:533  JOINS three spellings is supposed to do.
+runtime/ops_hip.bend:536  THE ROW COUNT STAYS 445 and the byte diff catches it:
+runtime/ops_metal.bend:8  ALU scalar packed into that struct. And `ops_metal.py:263` binds it with
+runtime/ops_metal.bend:12  (MTLSize(*dims[0:3]), MTLSize(*dims[3:])), and `dims` is
+runtime/ops_metal.bend:27  `compile` is FFI at EXACTLY TWO points: `MTLCodeGenServiceCreate` (:39) and
+runtime/ops_metal.bend:35  before:
+runtime/ops_metal.bend:41  one is off by 1112298570 and still LOOKS like a magic -- which is
+runtime/ops_metal.bend:44  that cannot happen quietly again.
+runtime/ops_metal.bend:45  * `error` is 0 for a kernel that compiled and 2 for one that did not, so
+runtime/ops_metal.bend:136  2. AN NSString (:23, :247). `to_ns_str` is
+runtime/ops_metal.bend:143  "is a literal" would produce. That was a dead def until this session and
+runtime/ops_metal.bend:151  4. A SUBPROCESS (:72-80). `disassemble` shells out to
+runtime/ops_metal.bend:157  their bodies are UOp graphs, and building one needs `./uop/ops.bend` and the
+runtime/ops_metal.bend:159  `pm_bufferize` WAS a third one and it is GONE from upstream at the pin, so
+runtime/ops_metal.bend:164  NOT A WALL, and named because it looks like one: every `mtl_msg` goes through
+runtime/ops_metal.bend:167  the trace is the argument of the seam: what survives is the ORDER, the
+runtime/ops_metal.bend:177  * `f"{self.device} signal wait timed out"` and
+runtime/ops_metal.bend:186  `buf.get_storage().meta` -- so the arena travels with the answer, in
+runtime/ops_metal.bend:188  and a view's offset ACCUMULATES, so neither is a field here.
+runtime/ops_metal.bend:189  2. `D.iter_sig` IS `layout_args`' engine. `tinygrad/runtime/support/hcq2.py:114-116 symbol=layout_args` is
+runtime/ops_metal.bend:195  (:112) and `at = round_up(self.nbytes, 8)` (:118) are both it.
+runtime/ops_metal.bend:201  NO PROOFS FAIL HERE, and the brief expected some. The Metal FFI calls are
+runtime/ops_metal.bend:205  "who names whom" closure, and `@unsafe` does not shrink it). This file does
+runtime/ops_metal.bend:207  recorded in a `Tr` trace, so there is no foreign effect to declare and
+runtime/ops_metal.bend:224  same name (`ADDR_SIZE` is `Ops.GETADDR`'s dtype, not a header field). Its
+runtime/ops_metal.bend:230  `mtl_sel`, the `sels` Buffer (renamed `handles`) and the `MSGSEND` DICT (now a
+runtime/ops_metal.bend:231  LIST `[objc_msgSend, sel_registerName]`), and replaced `header.index(...)` and
+runtime/ops_metal.bend:243  the `arg` table below but never reach `Tr.emit` and no row names them, so the
+runtime/ops_metal.bend:259  `autogen/metal.py:46`, `MTLResourceStorageModeShared := 0`. It is a bit in
+runtime/ops_metal.bend:318  objc message as `commandBuffer` is, and the trace must be able to say which.
+runtime/ops_metal.bend:381  ops_metal.py:86, `SELECTORS`. Thirteen. `:89 MSGSEND` binds `objc_msgSend` by
+runtime/ops_metal.bend:407  :91 `mtl_sel(dev, name)` -- a 0-based `.index` over one table, and 0 is
+runtime/ops_metal.bend:618  how many calls carried SELECTOR `s` -- the per-step count that `Tr.count` (per
+runtime/ops_metal.bend:626  BOTH `k` and `sel` are compared, and `arg` as well, so a pattern pins the
+runtime/ops_metal.bend:668  THE REFUSAL MESSAGES. Every one of these is USER-VISIBLE -- they land in a
+runtime/ops_metal.bend:670  against CPython's own `f`/`RuntimeError` output. `String.concat` DROPS A
+runtime/ops_metal.bend:690  )).decode())`. The whole message is the seam's -- it is whatever the
+runtime/ops_metal.bend:704  rather than a `U32` ladder is not a style choice: a three-way choice over
+runtime/ops_metal.bend:717  The pad is `round_up(len+1, 4) - len`, NOT `round_up(len, 4) - len`: for
+runtime/ops_metal.bend:733  byte little-endian header of two u64 lengths, and then the two blobs. The
+runtime/ops_metal.bend:746  :50, THE NUMBER NOBODY MEASURED, now measured. `reply[8:16]` is two u32s -- a
+runtime/ops_metal.bend:758  `MTLB_MAGIC` off the wrong one of the two blobs is wrong by 1112298570 and still
+runtime/ops_metal.bend:765  arms by compiling a good and a bad kernel through the real call: `mt_err_ok0` and
+runtime/ops_metal.bend:777  so the gate can diff it against `platform.mac_ver()`, and `mt_ver_host` is the
+runtime/ops_metal.bend:836  `patch(buf, self.rows + ...)` is a list of `(offset, uop)` pairs and the
+runtime/ops_metal.bend:843  is the MTLB's identity as a U32 because bytes are the seam's; `name` is the
+runtime/ops_metal.bend:908  `encodeSignalEvent:value:`, which is inside `run`, so it is a `Run` field and
+runtime/ops_metal.bend:910  has a `self`, and Bend has none. `q.signal` is the queue unchanged and
+runtime/ops_metal.bend:919  `layout_args` is `hcq2.py:74-76` and its engine is `TinyELF.iter_sig`, which
+runtime/ops_metal.bend:931  `UOp.new_buffer("METAL",64,float32,16).getaddr(None).dtype` is
+runtime/ops_metal.bend:941  The two nested matches are `iter_sig`'s output against the itemsizes -- the
+runtime/ops_metal.bend:942  `zip` of `hcq2.py:76` -- and they are nested rather than a helper because a
+runtime/ops_metal.bend:962  accumulator starts at 0 and that is safe because every `o + k` is positive, so
+runtime/ops_metal.bend:979  against tinygrad's own `layout_args` output. This is `bgl.flat`'s job in the
+runtime/ops_metal.bend:989  alignment and it is the ONLY alignment in `exec`; the one at :118 is 8 and
+runtime/ops_metal.bend:994  and a pure call is cheaper to recompute than to name -- and `off` is the
+runtime/ops_metal.bend:1032  out SIX u64s at `at` -- a `d.cast(uint64)` for a symbolic dim and a
+runtime/ops_metal.bend:1048  a `match` may not scrutinise a CALL, so `if any(isinstance(d, UOp) ...)` is an
+runtime/ops_metal.bend:1102  ops_metal.py:213-215 -- `check_family` and the arch string. THE TABLE IS THE
+runtime/ops_metal.bend:1110  of `MTLGPUFamilyMacCatalyst1` and `MTLGPUFamilyMacCatalyst2` as well as of
+runtime/ops_metal.bend:1111  `Mac1` and `Mac2`, so `check_family("Mac")` asks about FOUR families and
+runtime/ops_metal.bend:1127  LAST-wins over the supported members whose name contains `f`, with 0 as
+runtime/ops_metal.bend:1158  The name the port leaves is the SAME string the renderer reads, and
+runtime/ops_metal.bend:1188  `resid` is a `U32` and not a `Maybe`, because a `Data` record may not hold a
+runtime/ops_metal.bend:1328  never reads until the first `mark_resident` grows it. The table's length is
+runtime/ops_metal.bend:1332  :213's `check_family` is called TWICE and the result is stored, so the
+runtime/ops_metal.bend:1359  self.__dict__` is that same fact. One `Bool` stands in for the memo, and
+runtime/ops_metal.bend:1363  :263 reads `buf.get_storage().meta` off the answer of `new_icb` and
+runtime/ops_metal.bend:1364  `device.bend`'s `Buffer` is already an arena slot -- so `nbytes` is
+runtime/ops_metal.bend:1399  `len(d.sels) == 18` and `d.sels.nbytes == 144`, and the buffer is `uint64` on
+runtime/ops_metal.bend:1401  thirteen selectors are the next thirteen. `mt_sels_len` is the count row and
+runtime/ops_metal.bend:1406  3 and 4 -- which are `HANDLES[3]` and `HANDLES[4]`, i.e. `resources` and
+runtime/ops_metal.bend:1458  the two-word rewrite of :237. TWO stores, and the second one's argument is the
+runtime/ops_metal.bend:1508  slots buffer is made and no set is grown. `mt_slots_thresh` is the row and the
+runtime/ops_metal.bend:1513  the event -- the comment at :100 says so and this is the whole of it. The
+runtime/ops_metal.bend:1549  `MTLSize`, the one struct the argument marshalling builds by name, and
+runtime/ops_metal.bend:1568  :264, `MTLSize(*dims[:3])` and `MTLSize(*dims[3:])` -- THREE fields each, and
+runtime/ops_metal.bend:1596  `slots.after(h).index(5 + 4 * first).store(cbuf)`. The `4 * first` is
+runtime/ops_metal.bend:1661  The FENCE handle rides on the call, and :152's `updateFence:` rides on the
+runtime/ops_metal.bend:1732  header.after(h).index(0).load(), first, count)` -- word 0 of the header is the
+runtime/ops_metal.bend:1804  (see `Tr.emit`), so a refusal truncates this list rather than needing a
+runtime/ops_metal.bend:1836  of that command's six u64s, and :136's two arguments are
+runtime/ops_metal.bend:1850  it is the same `zero` :149 dispatches with, so it is EIGHT-aligned and
+runtime/ops_metal.bend:1907  :243-249 -- `pipeline`, `@functools.cache`d on `(lib, name)`. FOUR calls and
+runtime/ops_metal.bend:1909  evaluates `setComputeFunction`'s ARGUMENT first, so
+runtime/ops_metal.bend:1910  `newFunctionWithName(to_ns_str(name))` happens BEFORE
+runtime/ops_metal.bend:1911  `setComputeFunction(library.newFunctionWithName(...))`, not after it.
+runtime/ops_metal.bend:1931  Python evaluates the ARGUMENT before the call, so `to_ns_str` -- and with it the
+runtime/ops_metal.bend:1932  NSString WALL at :23 -- happens BEFORE `newFunctionWithName:`, and
+runtime/ops_metal.bend:1934  the row: dropping the NSString moves nothing else, and a trace that starts at
+runtime/ops_metal.bend:1972  dtypes.uint8, options=BufferSpec(nolru=True), preallocate=True)`. The Buffer is
+runtime/ops_metal.bend:1974  says it is NEVER recycled: `mt_nolru` is the row and the decision is
+runtime/ops_metal.bend:2030  THE BIND. The buffer is the ICB header Buffer, the offset is the command's own
+runtime/ops_metal.bend:2046  :261, `cmd.setComputePipelineState(state := self.pipeline(lib, name))` -- the
+runtime/ops_metal.bend:2048  cheap. So each command costs `pipeline`'s four calls as well, and
+runtime/ops_metal.bend:2053  own offset and `lib_ok`/`pipe_ok`/`local_ok` drive the refusals. THE ORDER IS
+runtime/ops_metal.bend:2073  ops_metal.py:251-268, the whole of `new_icb` as a TRACE, in source order. The
+runtime/ops_metal.bend:2100  MEASURED: `MTLResourceStorageModeShared == 0` -- it is a bit in
+runtime/ops_metal.bend:2147  hwqueue's three more), and four words per entry because an entry is
+runtime/ops_metal.bend:2154  start is empty in Python too.
+runtime/ops_metal.bend:2180  THREE calls -- `waitUntilCompleted`, then the two times -- and the `+ 2` is the
+runtime/ops_metal.bend:2181  END time's slot, so a filled END is what "already collected" means. The
+runtime/ops_metal.bend:2236  NOTHING, `ops_metal.py` has no `new_slots` and no `self.sels`, and
+runtime/ops_metal.bend:2237  `device.py:374-377` carries `pm_encode`, `pm_lower`, `pm_link` and
+runtime/ops_metal.bend:2244  registers is `metal_0_handles`, and that is `device.bend`'s own
+runtime/ops_metal.bend:2250  :219  `Compiled.pm_link += ...` -- M2's ANSWER: the ICB is now built by the
+runtime/ops_metal.bend:2252  The port of the registry and of its consumer lives in `device.bend` (the
+runtime/ops_metal.bend:2260  WHAT IS STILL PORTED OF METAL'S SIDE, and it is the part that survives: the
+runtime/ops_npy.bend:15  THE ARGUMENT NOBODY EXPECTS. `renderers or [Renderer]` at tinygrad/device.py:382 symbol=__init__ is an
+runtime/ops_npy.bend:18  `Compiled` without a renderer gets. MEASURED: `[r.__name__ for r in
+runtime/ops_npy.bend:24  `NpyDevice.__init__` does not. So:
+runtime/ops_npy.bend:26  way through `getattr(getattr(self,'iface',None),'peer_group', …)` to
+runtime/ops_npy.bend:28  * `device_id` comes from `Compiled.__init__` (tinygrad/device.py:383 symbol=__init__) and NOT from
+runtime/ops_npy.bend:31  field and only one of them can run here.
+runtime/ops_npy.bend:53  WHAT IS PORTED, DEF BY DEF. The first block is `ops_npy.py` and the second is
+runtime/ops_npy.bend:63  symbol=Compiled.__init__) makes it
+runtime/ops_npy.bend:83  it -- by NAMING the call in a trace. `mmap`/`munmap`/`memcpy` and
+runtime/ops_npy.bend:101  refusals: `Allocator.alloc`'s `assert size > 0` (tinygrad/device.py:257-258 symbol=alloc) and
+runtime/ops_npy.bend:103  and truncates: `Tr.emit` records NOTHING once `refused` is set, so
+runtime/ops_npy.bend:131  `[]` as it is WRITTEN, and `[Renderer]` as it is USED. device.py:396 is
+runtime/ops_npy.bend:376  device.py:315-316 `self.dev.synchronize()` then
+runtime/ops_npy.bend:377  `self._view(dest, src.nbytes)[:] = src.cast('B')`. The LENGTH IS THE
+runtime/ops_npy.bend:384  device.py:324-318 `_copyout` is the same three calls in the same order with
+runtime/ops_npy.bend:393  {size}"` -- the ONE refusal on the allocation path, and it lives in
+runtime/ops_npy.bend:433  the interesting one: ONE argument, so the mapped storage has NO `meta` and NO
+runtime/ops_npy.bend:436  written as a re-`alloc`. `npy_map_args = 1` is that argument count and
+runtime/ops_npy.bend:457  `host_offset`. So a view on NPY HAS an offset, which is the opposite of
+runtime/ops_npy.bend:465  answers `st.host.nbytes == 12`. `npy_alloc_view_exact` and
+runtime/ops_null.bend:23  port `pack_args`, which is `tinygrad/runtime/support/hcq2.py:118-124 symbol=pack_args` -- a file with its own
+runtime/ops_null.bend:47  the words become bytes and it is a seam. What survives the crossing is the
+runtime/ops_null.bend:90  ops_null.py:36, `self.cmd(WAIT, signal, value, int(eq))` -- `int(eq)` is a
+runtime/ops_null.bend:114  keyed by `(device, name, key)` and `setdefault`'d with `len(null_events)`, so
+runtime/ops_null.bend:139  two-field comparison drops. A profile KEY distinguishes two executions of the
+runtime/ops_null.bend:168  examined is `k` (a walk binder) and the key being SOUGHT is `want`, so
+runtime/ops_null.bend:225  it counts the offsets that are NOT contiguous with the running end. FIVE of the
+runtime/ops_null.bend:397  different devices share a base and two on the same device do not. The
+runtime/ops_null.bend:420  :45 -- the sigs, two per entry: `st + lane(i) + k for k in (0,1)`. They are
+runtime/ops_null.bend:473  :51, `NULL_ALLOW_COPYOUT or panic(RuntimeError, "no copyout on NULL")`. THE
+runtime/ops_null.bend:482  number of bytes it moves is the whole of it -- and it is ZERO, which is how a
+runtime/ops_null.bend:501  the SAME lambda object (`cfop_changed == 0`). So the merge is ADDITIVE, and
+runtime/ops_null.bend:542  REPLACES the table with one, so `ndev_bufferize_n` is 1 where
+runtime/ops_null.bend:565  options=BufferSpec(external_ptr=1))`. The byte size is `n * itemsize` and the
+runtime/ops_null.bend:572  "<arch>")`. The SAME `Ca` table shape as the CPU arch map and the SAME
+runtime/ops_null.bend:593  Renderer)]` then `dedup(renderers)`. MEASURED: the raw list is 27 long and
+runtime/ops_null.bend:613  whatever the buffer already held -- and `link_buffer` hands over
+runtime/ops_null.bend:620  MEASURED with `DEV=NULL` on the real device, one row per op. `eye` and
+runtime/ops_null.bend:622  host-visible buffer rather than out of a kernel, and that is a fact about the
+runtime/ops_null.bend:650  able to masquerade as one. `nr_zero_missing` is the row that says so.
+runtime/ops_null.bend:656  -- so the fold answered 2 for every name and thirteen rows moved at once. THE
+runtime/ops_null.bend:661  forget every hit on the very next row, and all thirteen rows answer 2 at once.
+runtime/ops_null.bend:838  `end = offset + arg.dtype.itemsize` where `offset` is the ALIGNED slot, so for
+runtime/ops_null.bend:1061  the observable: it holds the assert and NOTHING after it, and
+runtime/ops_null.bend:1088  THE MEASURED ENTRIES for the rules above. The other 109 - these and the
+runtime/ops_null.bend:1099  M28     0  Ev.lookup: last-wins instead of first-wins   ZERO -- see below
+runtime/ops_null.bend:1109  M39     7  nprog.is_work: EXEC or COPY -> EXEC only
+runtime/ops_null.bend:1119  M53     0  nr.zero_of.go: last-wins (the hit overwrites)   ZERO -- see below
+runtime/ops_nv.bend:19  THE MOCK IS SOFTWARE -- `test/mockgpu/mockgpu.py` INTERCEPTS `open()` AND
+runtime/ops_nv.bend:27  COMMENT HEADER describing a body deleted by
+runtime/ops_nv.bend:35  "`.agents/slop/nv-diff.py`"  THAT FILE DOES NOT EXIST. `.agents/slop/` has
+runtime/ops_nv.bend:37  TO `nvdev.bend`, a DIFFERENT FILE) and
+runtime/ops_nv.bend:40  "0 disagreements"            FALSE AS IT STOOD. The first real gate run was
+runtime/ops_nv.bend:42  `nv_cpython_args_device_five` and
+runtime/ops_nv.bend:49  so every entry was coerced to u64. THE PORT WAS
+runtime/ops_nv.bend:73  0    ORACLE-ONLY. There WERE four -- `nv_qmd_wide_v3/_v5` and
+runtime/ops_nv.bend:75  tables this port does not carry -- and they are NOW ASSERTED IN THE
+runtime/ops_nv.bend:114  TODO(p3) ops_nv.py:677-686  _submit_cmds -- it builds, LOWERS, COMPILES and
+runtime/ops_nv.bend:124  TODO(p3) ops_nv.py:22 -- BLOCKED. needs `extra.nv_gpu_driver` -- an FFI seam that lives behind the `IOCTL` flag: MEASURE
+runtime/ops_nv.bend:133  other 407 table rows are unreferenced and are not transcribed. The
+runtime/ops_nv.bend:164  ver-5 FIELDS are carried as
+runtime/ops_nv.bend:176  :105 NVQueue.nvm                         NOT PORTED  `NVQueue.nvm` is the
+runtime/ops_nv.bend:214  no key reader: the key IS the
+runtime/ops_nv.bend:248  `dev.gpfifo_n`; the
+runtime/ops_nv.bend:259  + the raise, all under the
+runtime/ops_nv.bend:273  the same contract `ops_webgpu.bend` and `ops_cl.bend` port. MEASURED in
+runtime/ops_nv.bend:283  THE WALRUS IS LOAD-BEARING. `iter_sig` is
+runtime/ops_nv.bend:285  and the `:=` REBINDS `offset`, so the advance is `round_up(off, k) + k` and
+runtime/ops_nv.bend:286  NOT `off + k`. The two agree on every uniform list -- which is every list a
+runtime/ops_nv.bend:293  carries its own `sig.slot` and the `nv_device_args_*` rows beside the
+runtime/ops_nv.bend:298  NO NVIDIA DRIVER IN THIS ENV. `NVKIface.root` is None and there is no
+runtime/ops_nv.bend:319  is the policy, so both directions are ported: `iface.want`/`iface.alt` (the
+runtime/ops_nv.bend:362  THESE ARE NOT THE nv_570 NUMBERS and the distinction is load-bearing. An
+runtime/ops_nv.bend:364  port needs to tell the seven handles apart, so each is a small ORDINAL and the
+runtime/ops_nv.bend:368  NV01_MEMORY_VIRTUAL 112, FERMI_VASPACE_A 37105, KEPLER_CHANNEL_GROUP_A 41068 and
+runtime/ops_nv.bend:436  call and `arg` is the single U32 the trace can carry: the object kind for
+runtime/ops_nv.bend:452  41, 42, 43, 7 and 805306369, 75, 37, 25, 73, 33, 29, 34, 27 respectively. A
+runtime/ops_nv.bend:453  `uvm(cmd, ...)` call passes its code straight through to the ioctl, so the
+runtime/ops_nv.bend:653  THE recursion is a `.go` AND not an `.at`, because `.at` IS BEND'S name for
+runtime/ops_nv.bend:654  THE curried self-CALL and the accumulator is the argument that makes it a
+runtime/ops_nv.bend:656  AND `def f.at(...)` FOR the entry, AND `device.bend`'s `isig.go` IS the
+runtime/ops_nv.bend:668  THE three interfaces are the three entries of `dev.iface_names` AND the
+runtime/ops_nv.bend:674  DRIVER, SO these are the numbers the mock returns and they are readable off
+runtime/ops_nv.bend:680  (`tinygrad/runtime/ops_nv.py:357-359`) READS the major version and picks the
+runtime/ops_nv.bend:683  570 IS not >= 580, SO the mock runs the 570 TABLE -- WHICH is the table the
+runtime/ops_nv.bend:782  consing it on the front would put it FIRST and reverse the pair around it.
+runtime/ops_nv.bend:891  :574-576 the first three rm_allocs: the DEVICE off the root, then the
+runtime/ops_nv.bend:903  The binder is `usrmode`, NOT `usermode`: a pattern binder that SHADOWS the
+runtime/ops_nv.bend:999  the mock's init, right here, because BEND requires definition-before-use and
+runtime/ops_nv.bend:1163  THE four queues' COMMAND vocabularies. Each def is ONE line range of the
+runtime/ops_nv.bend:1260  the fold APPENDS (`List.append` is `xs ++ ys`), so the offsets come out in
+runtime/ops_nv.bend:1575  THE GUARD IS A PARAMETER, because `self.prev_qmd is None` is a CALL and a
+runtime/ops_nv.bend:1606  miss and the hit test `found < len(keys)` read that as a HIT AT INDEX 0, so
+runtime/ops_nv.bend:1622  entry must NOT be evicted" is "all of them", and the honest measurement is a
+runtime/ops_nv.bend:1623  GROWTH COUNT -- insert n distinct keys and the count is n. `nv_pc_grow_3` and
+runtime/ops_nv.bend:1667  no eviction, so the two can only differ by how many HITS happened, and
+runtime/ops_nv.bend:1696  'GPPut').offset` -- the GP-PUT pointer's slot in the host gpfifo buffer, and
+runtime/ops_nv.bend:1781  the LAST chunk's length: the total minus the full chunks before it, and n 0 is
+runtime/ops_nvme.bend:11  FUNCTIONS `nvme_queue`, `loop`, `nvme_copies` PLUS `prp_table` AND
+runtime/ops_nvme.bend:30  are file + rule identity, not line numbers, because a line number rots and
+runtime/ops_nvme.bend:39  completion queue entry is 16 bytes, and the queue's entry count is
+runtime/ops_nvme.bend:51  contiguous even without an iommu". the page SIZE is a constant here and not
+runtime/ops_nvme.bend:57  `NVME_REG_DBS = 4096` AND THE DOORBELL PAIR IS
+runtime/ops_nvme.bend:58  `NVME_REG_DBS + 2 * qid * dev.db_stride` for the submission queue and
+runtime/ops_nvme.bend:81  BYTE of the command WORD and the sqe's first WORD is
+runtime/ops_nvme.bend:151  the doorbells. the stride is `dev.db_stride`, which comes from the
+runtime/ops_nvme.bend:154  own capacity register and not a constant, and the port takes the stride as
+runtime/ops_nvme.bend:177  so the register is two words, not one. the port's own idiom for a
+runtime/ops_nvme.bend:191  forever". the port's formula keeps the multiplier because dropping it
+runtime/ops_nvme.bend:212  and every completion after the wrap would be accepted or rejected on
+runtime/ops_nvme.bend:229  cdw10, cdw11)`: two 32-bit words, four 64-bit words, two 32-bit words and
+runtime/ops_nvme.bend:237  TWO BUGS THE FIRST GATE RUN CAUGHT, and the oracle is upstream's own
+runtime/ops_nvme.bend:255  and the allocation sizes: the list pages are
+runtime/ops_nvme.bend:256  `ceildiv(len(pages) + 1, 256) * 0x1000` AND THE TABLE IS
+runtime/ops_nvme.bend:275  the table's entry count. twice the page count, because each page is
+runtime/ops_nvme.bend:295  the list slot after the end -- and that is why the list page count is
+runtime/ops_nvme.bend:320  `max_xfer`. the `or 8` is the python truthiness of a zero BYTE, and the
+runtime/ops_nvme.bend:334  one BYTE of the identify, as a `U32`. the identify is a BYTE array and the
+runtime/ops_nvme.bend:341  zeroed config space spells" -- and the port's idiom is to give the
+runtime/ops_nvme.bend:403  `max_xfer` for the last command writes a command that reads past the
+runtime/ops_nvme.bend:409  a port that uses `q.entries` fills the ring and the producer and the
+runtime/ops_nvme.bend:412  prp table is addressed per page, at sixteen bytes per page. so the
+runtime/ops_nvme.bend:414  5. THE LBA IS `src.getaddr(drive) >> dev.lba_shift`, AND THE LBA OF
+runtime/ops_nvme.bend:423  q.entries) * cqe + 12` -- the last slot of the wave, and the
+runtime/ops_nvme.bend:424  `+ 12` is the completion's phase-field OFFSET inside the cqe. the
+runtime/ops_nvme.bend:426  8. THE DOORBELL IS WRITTEN WITH `end`, WHICH IS
+runtime/ops_nvme.bend:470  the lba of the first command. `src.getaddr(drive) >> dev.lba_shift` -- the
+runtime/ops_nvme.bend:518  the completion's failure. a non-zero status is a failed command, and the
+runtime/ops_nvme.bend:529  UPSTREAM WRITES `+ (wave(waves, last) if last else [])`: THE `if last` IS
+runtime/ops_nvme.bend:635  the rule and names the two reads that decide it, and the reads are the
+runtime/ops_nvme.bend:643  the in-use assertion. `mounted` is the set of mounted device names and
+runtime/ops_nvme.bend:646  and a port that checked one of them would take a drive out from under the
+runtime/ops_nvme.bend:658  has nothing to synchronize, because the completion wait is inside the
+runtime/ops_nvme.bend:677  call is left alone, and a port that always rewrote would break every other
+runtime/ops_nvme.bend:684  in the order the first call of each drive appeared, and the order is the
+runtime/ops_python.bend:1  ops_python.bend -- port of tinygrad/runtime/ops_python.py: `PythonProgram.__call__`, the
+runtime/ops_python.bend:21  `tinybendygrad/nn/layers.bend`'s five `conv_*` rows use -- agrees with
+runtime/ops_python.bend:25  `run` is a real interpreter: an arena threaded through a fuel recursion, with a
+runtime/ops_python.bend:68  arm at all.
+runtime/ops_python.bend:70  (tinygrad/uop/ops.py:1412-1420 symbol=python_alu) `python_alu`, so tinygrad/uop/ops.py:1427 raises `KeyError` on them. T
+runtime/ops_python.bend:73  an AddrSpace; the emitted stream uses `Ops.PARAM` with
+runtime/ops_python.bend:103  4. THE TUPLE OPERAND BRANCH. `exec_alu`'s body (tinygrad/uop/ops.py:1422 symbol=exec_alu) opens with
+runtime/ops_python.bend:112  wrapping upstream's own `exec_alu` over every fixture of
+runtime/ops_python.bend:118  those is already right (see the program table). the instrument is
+runtime/ops_python.bend:119  `.agents/slop/vslane/tuple_census.py` AND ITS READING IS
+runtime/ops_python.bend:134  A1. There are no `DEFINE_*` ops (MEASURED FACT 3); the arms are `PARAM` and
+runtime/ops_python.bend:145  encoder never has to repeat it.
+runtime/ops_python.bend:151  A2. `LOAD` and `STORE` need `u.max_numel()` (ops_python.py:88,137). Nothing in
+runtime/ops_python.bend:152  `<op>/<dtype>/<arg>/<src>` states it, so:
+runtime/ops_python.bend:154  The measured streams need it: an elementwise add of four floats emits a
+runtime/ops_python.bend:182  wants a real local size must ADD it to the argv; until then it must launch the
+runtime/ops_python.bend:189  1. `Data` FIELDS MUST BE `Data`. A `Data` record cannot hold a `List` or an
+runtime/ops_python.bend:192  2. `match` ONLY SCRUTINEES A PARAMETER OR A FIELD. Both `match f(x):` and
+runtime/ops_python.bend:215  `run` carries the mutable state ops_python.py:52-157 (`__call__`) keeps in four locals: the
+runtime/ops_python.bend:220  with `BACKEDGE`/`END`/`RANGE` writing `i`. Bend has no loop and no
+runtime/ops_python.bend:224  * the arena is strided, not bump-allocated. Python's `values` is keyed by
+runtime/ops_python.bend:250  constructor `F32{..}` WAS already the bitcast -- and its inverse is
+runtime/ops_python.bend:251  `F32.bits` (the `law` at `base.bend:1825`), which is where `bits_of` and
+runtime/ops_python.bend:267  The `(memoryview, offset)` tuple INDEX and SHRINK build. `n` is
+runtime/ops_python.bend:287  zero. ops_python.py:16/28 branch on `i is None` and :121 on
+runtime/ops_python.bend:309  `U32.read` answers `Maybe` and reads "42" but refuses "-42" (rule 6), so
+runtime/ops_python.bend:375  answer is `(ok, bytes)` rather than a `Maybe` because a `Maybe` around a
+runtime/ops_python.bend:497  the lane follows the python TYPE of the operands, which is why `is_f` reads the
+runtime/ops_python.bend:556  the PYTHON TYPE of the operand, so an int32 operand reaches `math.sqrt` as the
+runtime/ops_python.bend:592  inversion is REPORTED, not fixed here.
+runtime/ops_python.bend:630  and `cf_of`, so a value cannot differ; what it skips is the dispatch. => AND A
+runtime/ops_python.bend:662  at warp 1 (see LOCAL SIZE) every inner run is length 1, so the FLAT run is
+runtime/ops_python.bend:669  (both `bytearray` scratch), 6 is addrspace a (a `vals` entry), 8 is an
+runtime/ops_python.bend:718  but `Uop.at` walks `idx` cons cells taking an 11-field `Uop` out of each, and
+runtime/ops_python.bend:829  the BUFFER carries its dtype, and that is the fourth field and it is not
+runtime/ops_python.bend:836  are not: a BOOL stored into an F32 BUFFER is upstream's `m[0] = True`, which
+runtime/ops_python.bend:838  MEASURED 2026-10-26 on `alu.CMPNE.f`: CPython's output buffer 0 is
+runtime/ops_python.bend:880  the width is one number, and it was three. `Val.ci`'s shift, `Val.co`'s mask and
+runtime/ops_python.bend:881  `Prog.echunks`'s two literals all spell it, and `Prog.load.put` builds the INITIAL arena with
+runtime/ops_python.bend:922  `Mem.put` was `List.set(ms, at, v)`, which rebuilds every cons before `at`, and
+runtime/ops_python.bend:925  4x the steps -- and the run 1.6 s -> 18.2 s, because the copy scales with the
+runtime/ops_python.bend:930  AND NOT AN `Array`: `Array<T>` is a `Type`, so it cannot live in `Prog`, which is a
+runtime/ops_python.bend:949  walks. AND `Mem.ld`/`Mem.st` chose between 1 and 4 bytes with `Bool.pick`, which
+runtime/ops_python.bend:1016  wire has: the header, then the uops, then the buffers. The fold carries a
+runtime/ops_python.bend:1020  `ok` rather than a refusal at each step, because a fold cannot carry a
+runtime/ops_python.bend:1036  the accessors Load's remaining fields need; see the note above the
+runtime/ops_python.bend:1068  A `Build` field is readable as `b.x` inside a record literal but not as an
+runtime/ops_python.bend:1104  the accessors Build's remaining fields need; see the note above the
+runtime/ops_python.bend:1144  The shift is visible in the tree's OWN census: `bool.maxpair.0.b1` is
+runtime/ops_python.bend:1154  offset `len(zeros)` while `Prog.bases` says their base is 0, so the shift is
+runtime/ops_python.bend:1231  `slot` is the slot THIS uop owns, and the Build's next-free slot is
+runtime/ops_python.bend:1307  the walk is a cons walk, not a positional read. The old read took byte k with
+runtime/ops_python.bend:1308  `List.get(cs, 2k)`/`List.get(cs, 2k+1)`, each O(k), so the whole wire was
+runtime/ops_python.bend:1346  which is why every dispatch below is a `match` on a parameter rather than a
+runtime/ops_python.bend:1488  is known, and `-` becomes scale 1 -- which makes `U32.is_eq(Uop.a(u), 0)` the
+runtime/ops_python.bend:1739  => and the 17 projections are one match, which is the point. measured: a
+runtime/ops_python.bend:1745  17 record traversals and 17 teardowns instead of 1. => ONE `match` BINDS ALL
+runtime/ops_python.bend:1761  goes. MEASURED: 2,000,000 writes to 64 slots cost 0.17 s through `List.set` and 0.00 s through
+runtime/ops_python.bend:1834  BACKEDGE}}`, so the LAST end of a RANGE wins. Measured: exactly one end per
+runtime/ops_python.bend:1877  (163 MULACC + 4 MUL of 510 uops) and was still paying it. The field-taking form goes straight to
+runtime/ops_python.bend:1897  the counter is deleted when the LOOP exits. ops_python.py:132 does
+runtime/ops_python.bend:1906  runs, and the output keeps only the first outer slab. measured on the
+runtime/ops_python.bend:1918  is 1 here), so an IF pushes the conjunction of the top and the condition and an
+runtime/ops_python.bend:1919  ENDIF pops. ops_python skips VOID srcs when it builds `src_values`, and
+runtime/ops_python.bend:2018  warp 1. Otherwise src[0] is a buffer reference and the wire's scale is the
+runtime/ops_python.bend:2048  spelling, because `Elem.off` of a bare Bf is 0 and `Elem.off_none` of a Bf is
+runtime/ops_python.bend:2187  the value conversion: `float(val)` for a FLOAT, `bool(val)` for a BOOL, and
+runtime/ops_python.bend:2195  `01000000020000000300000004000000...` (the integers 1,2,3,4) and the port's was
+runtime/ops_python.bend:2200  truncates toward zero, which is half of what is wanted, but it clamps a
+runtime/ops_python.bend:2201  NEGATIVE TO ZERO: MEASURED 2026-10-26, `F32.to_u32(-1.0)` IS 0 AND NOT
+runtime/ops_python.bend:2223  `truncate.get(u.dtype)(u.dtype.const(x))` -- `bool(x)`, `c_float(x)` or
+runtime/ops_python.bend:2244  same way here.
+runtime/ops_python.bend:2252  (IF, ENDIF, STACK, LOAD, STORE) build the new state without going through
+runtime/ops_python.bend:2271  the storage element index of lane j, `o + j*_step`. A STORE's `_step` is
+runtime/ops_python.bend:2286  `_load(m, i, dtype)` -- ops_python.py:15-19, first arm. The index is in
+runtime/ops_python.bend:2288  the LOAD's per-lane invariants, looked up once -- the same defect the store had.
+runtime/ops_python.bend:2375  `Prog.ld1` reached the 11-field record about FIFTEEN times per LOAD -- `Prog.step.vs`, then
+runtime/ops_python.bend:2376  `Prog.flush` (four), `Prog.ms`, `Prog.ld.sb` (which re-took `Prog.buf` and `Prog.lane`), and
+runtime/ops_python.bend:2455  are not: a BOOL stored into an F32 BUFFER is upstream's `m[0] = True`, which
+runtime/ops_python.bend:2457  MEASURED 2026-10-26 on `alu.CMPNE.f`: CPython's output buffer 0 IS
+runtime/ops_python.bend:2461  CAST is `truncate.get(u.dtype)(u.dtype.const(x))` AND upstream's STORE is
+runtime/ops_python.bend:2547  lanes' writes: reading the arena afresh per lane makes each write a copy of the
+runtime/ops_python.bend:2680  THE INTERPRETER LOOP. One recursion per instruction: Bend has no loop and no
+runtime/ops_python.bend:2770  `dead` is set here and nowhere else: a work item asked for more steps than
+runtime/ops_python.bend:2782  right and nothing rebuilt may precede the one that shrinks, and
+runtime/ops_python.bend:2788  arm even after the program had finished, and EVERY LAUNCH BURNED THE WHOLE OF
+runtime/ops_python.bend:2862  ONE def, not two. `Prog.write.slash.at` and `.go` were a 2-def cycle, which
+runtime/ops_python.bend:2903  A CONS WALK over the store, not `Mem.byte(ms, at)` per byte: `Mem.byte` is
+runtime/ops_python.bend:2921  buffers in (A1). The walk counts DOWN from `nb`, so the index is `nb - n` and
+runtime/ops_python.bend:3047  whose output is static get the real transform, and the one whose output is a
+runtime/ops_python.bend:3055  is WALL 2 and stays there.
+runtime/ops_python.bend:3060  gated by `.agents/slop/bend_packets.py`, not here.
+runtime/ops_python.bend:3075  specific to a CHECKED type.) The nibble/byte printers below dodge it.
+runtime/ops_python.bend:3083  `U32.shrn` is NOT the culprit -- measured `U32.shrn(4160, 16n) = 0` and
+runtime/ops_python.bend:3089  what they are FOR, and it is the honest limit rather than a gap. `compile` IS
+runtime/ops_python.bend:3142  `tc.py` on every run by `cores_axis_hold()` in
+runtime/ops_python.bend:3249  bare literals in the row list while the SAME numbers sat, unreferenced, in the
+runtime/ops_python.bend:3298  line and the gate when there is not, and it branches on `Args.of` -- the SAME
+runtime/ops_python.bend:3304  puts a gate's `.bend` driver in `gates/`. The driver imports this file as
+runtime/ops_qcom.bend:14  .upper()`, then `getattr(mesa, reg_name)` if the value is a bool and
+runtime/ops_qcom.bend:20  3. The six DERIVED program sizes (:232-237), pure U32 arithmetic over
+runtime/ops_qcom.bend:56  against a live device. Every constant and every table entry was read out of
+runtime/ops_qcom.bend:66  and NFIELDS=55 where the AST walk says 34 and 62. The tables below are the
+runtime/ops_qcom.bend:68  caught it.
+runtime/ops_qcom.bend:69  WHAT IS PORTED, DEF BY DEF. The PORTED lines are what this file decides; the
+runtime/ops_qcom.bend:113  :194-204 `submit`                PARTIAL the ioctl word only; the
+runtime/ops_qcom.bend:134  of them yet -- see WALL 3 above.
+runtime/ops_qcom.bend:139  against a live device. Every constant was read out of
+runtime/ops_qcom.bend:146  .agents/slop/qc_exec_oracle.py    the REAL `QCOMComputeQueue.exec` -- NOT RESTORED, IT IS
+runtime/ops_qcom.bend:484  THE precedence is the whole trap: `|` binds LOOSER than both `&` and `<<` in
+runtime/ops_qcom.bend:549  APPEND and no reverse: `List.append(a, A, xs, ys)` IS `xs ++ ys`, so
+runtime/ops_qcom.bend:731  only the bound reads the zeroed tail of the blob as a descriptor with
+runtime/ops_qcom.bend:804  either a u16 pair or a u32, and the offset is in BYTES. `qc_const_stride` and
+runtime/ops_qcom.bend:806  `bound` is the U32 the constant walk is bounded BY -- `image_offset`, not
+runtime/ops_qcom.bend:900  the fourteen fixed-offset reads, in Python's order. `samp_cnt` is
+runtime/ops_qcom.bend:1012  THE CACHE KEY. `Ck` is the tuple `(prg.src[3].arg, devs)` and the equality is
+runtime/ops_qcom.bend:1040  the ONE cache entry: the key, the DATA and the BUFFER, which is exactly the
+runtime/ops_qcom.bend:1098  the entry point. `Bool.pick` cannot gate a self-call and cannot gate the
+runtime/ops_qcom.bend:1174  `memory_barrier` (:70) is `self._cache_flush(True, True, True, True)` and
+runtime/ops_qcom.bend:1190  the OPERATION each conditional issues, and its word count. write_back is a
+runtime/ops_qcom.bend:1238  The COUNT is not in the trace -- it is in the HEADER, and `q.hdr7` builds it.
+runtime/ops_qcom.bend:1262  TWO LISTS WALKED IN LOCKSTEP, because `zip` is a fold over both and Bend has no
+runtime/ops_qcom.bend:1294  FORKS: the three `if data.samp_cnt / tex_cnt / ibo_cnt > 0` blocks and the
+runtime/ops_qcom.bend:1365  THE sampler block is three calls, NOT two. :165-170 is a LOAD_STATE6_FRAG, then
+runtime/ops_qcom.bend:1367  <the 0x1000 border_color placeholder>)`. The port had two and
+runtime/ops_qcom.bend:1368  `qc_exec_full_n` is the row that said so: it read 26 where CPython's own
+runtime/ops_rdma.bend:3  RDMA IS not a device with a driver on it. IT is a network fabric, AND the
+runtime/ops_rdma.bend:9  address is not usable by the NIC and the key is not usable by the GPU, and
+runtime/ops_rdma.bend:10  `rdma_copies` (tinygrad/runtime/ops_rdma.py:107 symbol=rdma_copies) puts BOTH in every work queue element. So there is a
+runtime/ops_rdma.bend:17  the CALL it replaced. What is being ported is a program generator, and
+runtime/ops_rdma.bend:19  instructions. The address of each one rides on the trace entry and the
+runtime/ops_rdma.bend:30  WHAT IS FFI AND WHAT IS NOT. `rdma` driver calls, the mlx5/bnxt netlink and the
+runtime/ops_rdma.bend:35  seams: they are read out of `tinygrad/runtime/autogen/bnxt.py` and
+runtime/ops_rdma.bend:36  `support/rdma/bnxtdev.py` and every one of them is MEASURED (see THE
+runtime/ops_rdma.bend:37  CONSTANTS). The `struct.pack`/`struct.unpack` calls are pure arithmetic and are
+runtime/ops_rdma.bend:49  `tinygrad/runtime/support/rdma/bnxtdev.py:12` and the enums out of
+runtime/ops_rdma.bend:60  the psn is 24 bits in TWO places (:145) and the doorbell index is 24 bits in
+runtime/ops_rdma.bend:99  has, in ASCENDING order. `log_page` takes the LAST match, which is the
+runtime/ops_rdma.bend:123  ops_rdma.py:35 `& ~0xfff` and :129 `& 0xfff`. The same mask used twice, in
+runtime/ops_rdma.bend:124  OPPOSITE directions, and that is the whole of the doorbell's address: map the
+runtime/ops_rdma.bend:162  ONE registered region: the GPU's virtual address and the NIC's key for it.
+runtime/ops_rdma.bend:247  models `raise` correctly for a device whose refusals are not nested, and
+runtime/ops_rdma.bend:276  they were written around: the fuel is the TRACE's length and the answer is
+runtime/ops_rdma.bend:346  :140 `unwrap_view(buf)[0].getaddr(nic.device)` asks the DEVICE what address the
+runtime/ops_rdma.bend:377  the forward direction. `hit` is the same first-wins shape as
+runtime/ops_rdma.bend:418  entries, which is the comment at :47. TWO things follow and the gate pins both:
+runtime/ops_rdma.bend:449  LAST-wins over an ASCENDING list, which is `max()`. `got` starts at
+runtime/ops_rdma.bend:487  whole content and they are not interchangeable: the SEND ring is
+runtime/ops_rdma.bend:535  separators -- which is unobservable here because `_` is already lower, and
+runtime/ops_rdma.bend:564  two are the virtual-address ALLOCATOR's own base and size, which belong to
+runtime/ops_rdma.bend:605  mapping -- and that `vram_bar` is the bar it comes from.
+runtime/ops_rdma.bend:623  `[]` is `renderers or [Renderer]` at device.py:396 and is falsy, exactly as in
+runtime/ops_rdma.bend:635  device.split(":")[0])` -- and `self.iface` EXISTS here, so the DEVICE HEAD IS
+runtime/ops_rdma.bend:636  NOT THE ANSWER. `PCIIfaceBase.peer_group` (support/system.py:297) is
+runtime/ops_rdma.bend:639  MEASURED: `Fake(PCIDevice()).peer_group` is `"PCIDevice"`. Only a
+runtime/ops_rdma.bend:640  `USBPCIDevice` (which sets `f"USBPCIDevice_{pcibus}"`, :272) or a
+runtime/ops_rdma.bend:691  ops_rdma.py:26-31 -- `BNXTIface.storage` and `BNXTIface.buffer`, and THE
+runtime/ops_rdma.bend:702  buffer says 12 -- and both numbers are right, because `nbytes` is
+runtime/ops_rdma.bend:707  `AddrSpace.SYS` and `uncached=True` are CONSTANTS at every call site, and
+runtime/ops_rdma.bend:714  :27 the VA size: `round_up(mem.nbytes, 0x1000)`. The walrus means `size` is the
+runtime/ops_rdma.bend:724  so the size is rounded TWICE. `round_up(round_up(x, P), P) == round_up(x, P)` and
+runtime/ops_rdma.bend:770  device must have a `PCIIfaceBase` AT ALL, and its peer group must be the
+runtime/ops_rdma.bend:778  per-buffer at all.
+runtime/ops_rdma.bend:798  :50 -- the page expansion. `register_mem` is handed ONE ADDRESS PER PAGE of
+runtime/ops_rdma.bend:801  number the trace can carry for a variable-length list -- and the gate checks the
+runtime/ops_rdma.bend:815  key. A count, because a one-argument BufferStorage would drop `.meta` and then
+runtime/ops_rdma.bend:822  -- the ANCHOR IS `Device[min(pair)]` for BOTH nics, so the pair is
+runtime/ops_rdma.bend:848  ops_rdma.py:98-106 -- `rdma_wire`, `is_rdma` and `queue_of`. The wire is the
+runtime/ops_rdma.bend:853  -- TWO op tests, and both are needed: a non-CALL is not a queue op and a
+runtime/ops_rdma.bend:863  REPORTED, NOT FIXED: the wire tag is `None` on a bufferized PARAM (`UOp.tag` is
+runtime/ops_rdma.bend:878  ops_rdma.py:117-118 -- THE CHUNKING, and it is the only place a size becomes a
+runtime/ops_rdma.bend:889  empty -- so `wqes` is 0 and there is nothing to post. That is the
+runtime/ops_rdma.bend:907  walks the list in order -- so the instruction stream asks for the offsets by
+runtime/ops_rdma.bend:933  the per-buffer chunk lists, concatenated in buffer order and NOT reversed, so
+runtime/ops_rdma.bend:956  appended is that sum BEFORE the current chunk -- so the first element is the
+runtime/ops_rdma.bend:985  Python's precedence is `&` then `^` then `|`, so the value is
+runtime/ops_rdma.bend:1010  which is why the send ring is `RING_ENTRIES * (WQE_SIZE + 8)` at :92 and not
+runtime/ops_rdma.bend:1019  `rdma_msn_hi1`/`rdma_msn_lo1` are the halves of the fixture's second element and
+runtime/ops_rdma.bend:1088  :136-137 `for off in range(0, buf.nbytes(), RDMA_CHUNK)` and
+runtime/ops_rdma.bend:1099  entries the NIC has not consumed, and nothing downstream would notice -- the
+runtime/ops_webgpu.bend:65  1. string views (:13-14). `ctypes.string_at(sv.data, sv.length)` and
+runtime/ops_webgpu.bend:77  The query set answers two timestamps in nanoseconds as u64 and
+runtime/ops_webgpu.bend:82  with a time is print it.
+runtime/ops_webgpu.bend:90  (`dev.uniform_bytes`); the float arm is four bytes the seam must hand over.
+runtime/ops_webgpu.bend:94  ctypes shaping is not a wall and is named once: the
+runtime/ops_webgpu.bend:96  of that type at this pin -- and the `WGPUBindGroupEntry * n` one at tinygrad/runtime/ops_webgpu.py:97 are how Python spe
+runtime/ops_webgpu.bend:128  arch string and the feature list; whoever wires the device records it.
+runtime/ops_webgpu.bend:150  3. `@workgroup_size(...)` (wgsl.py:118). `Program.__call__` takes a
+runtime/ops_webgpu.bend:152  from the wgsl attribute. `prog.call` takes `local_size`, records it in
+runtime/ops_webgpu.bend:174  it (cstyle.py:264 "this relies on bufs dict preserving order"), and
+runtime/ops_webgpu.bend:282  one bind group layout entry (:75) or bind group entry (:96). `visibility` is
+runtime/ops_webgpu.bend:335  the id the next emit mints, i.e. what the seam's call returns. Read before the
+runtime/ops_webgpu.bend:520  webgpu.enum_WGPUBackendType.items()}`, whose one reader is
+runtime/ops_webgpu.bend:555  calls carries its own status enum, and at status 2 all six are
+runtime/ops_webgpu.bend:600  one past the last '_' in `cs`, or 0 if there is none. `pos` is the index and
+runtime/ops_webgpu.bend:623  says which status the call means: the six status-2 names all end in
+runtime/ops_webgpu.bend:627  :40 `raise RuntimeError(f"[{status_enum.get(status)}]{emsg or ''}")`, and the
+runtime/ops_webgpu.bend:707  That is invisible for a wgpu adapter (its feature list is ascending, and
+runtime/ops_webgpu.bend:874  4-byte aligned". That is the whole of the allocator's alignment rule, and
+runtime/ops_webgpu.bend:887  :206-219 -- the staging buffer every host read goes through. Create with
+runtime/ops_webgpu.bend:915  the read is of the staging buffer and the free is of the same buffer, so the
+runtime/ops_webgpu.bend:968  then PushErrorScope(Validation) (:62), CreateShaderModule (:63) and
+runtime/ops_webgpu.bend:977  header: binding 0 Uniform, bindings 1..len(bufs) Storage, the rest Uniform, and
+runtime/ops_webgpu.bend:1009  reverse order while leaving the group order right, which the gate caught as
+runtime/ops_webgpu.bend:1112  what the trace sees is the two creates, and that they do not happen at all when
+runtime/ops_webgpu.bend:1137  :121-122 -- SetPipeline(compute_pass, pipeline_result) then
+runtime/ops_webgpu.bend:1183  :128-129 -- Finish(command_encoder, WGPUCommandBufferDescriptor()) then
+runtime/ops_webgpu.bend:1193  command_encoder, compute_pass, cmd_buf. `wg_call_released` pins it and
+runtime/ops_webgpu.bend:1267  with. `fx_call` resets the trace so the init is not in front of it, and
+runtime/webgpu_call.bend:16  - an FFI effect, `def e(..) -> IO(..): import "./e.c"; import "./e.js"`, the
+runtime/webgpu_call.bend:34  tinygrad/runtime/ops_webgpu.py:94 `bg_entry` calls `dev.create_uniform(x)` (tinygrad/runtime/ops_webgpu.py:202-206 symbo
+runtime/webgpu_call.bend:38  its own and this file cannot match the trace by emitting one. `Op` therefore has
+runtime/webgpu_call.bend:39  `Uniform` (upstream's `WGPUBufferUsage_Uniform`) -- tinygrad/runtime/ops_webgpu.py:202-206 symbol=create_uniform AS ONE 
+runtime/webgpu_call.bend:40  `wgc_uniform_one_step` is the row that pins the collapse. THE TRACE IS NOT
+runtime/webgpu_call.bend:48  `Uniform.is_f32` says "the driver builds this pattern in a Float32Array", and
+runtime/webgpu_call.bend:122  IS the instance -- so this op exists to keep the trace entry accounted for.
+runtime/webgpu_call.bend:158  little-endian bytes are `W.dev.uniform_bytes(val)`, true means it is the
+runtime/webgpu_call.bend:216  operation the driver performs. `Cs.calls` projects the (k, arg) half and
+runtime/webgpu_call.bend:239  hand is one below it. One def, so no step can mint a handle and hand a
+runtime/webgpu_call.bend:263  `wgc_handles_distinct` is the row that would have caught it.
+runtime/webgpu_call.bend:319  answers a `Maybe`, and a `match` may not scrutinise a computed value -- so the
+runtime/webgpu_call.bend:330  `Cs.at` calls and NOT a `Cs.pop(Cs.at(Cs.at(Cs.push(..), ..), ..))` nest -- the
+runtime/webgpu_call.bend:356  NEITHER FOLD REVERSES, and that is not an oversight. `Cs.at` conses onto the
+runtime/webgpu_call.bend:359  undo it. MEASURED: with the reverse in, `wgc_call_trace=False` and
+runtime/webgpu_call.bend:393  how many of MY steps carry this trace tag. `W.Tr.count` counts entries in a
+runtime/webgpu_call.bend:464  queue's, and both are read OFF the counter rather than hard-wired, so
+runtime/webgpu_call.bend:477  takes only the count -- its header says the call "NEEDS THE BUFFER LIST AND THE
+runtime/webgpu_call.bend:514  a `bufs` slot  binds the caller's own buffer and emits NOTHING -- that is
+runtime/webgpu_call.bend:544  not carry. THE INDEX IS `i - 1`, not `i`: `W.slots` puts INFINITY at slot 0 and
+runtime/webgpu_call.bend:549  `pick(true, 111, 222)` prints 111), so the TRUE arm is the buffer id and the
+runtime/webgpu_call.bend:561  :94-97 as a fold over `W.slots`, which is INFINITY then `bufs` then `vals`. The
+runtime/webgpu_call.bend:595  and why the pipeline handle is not minted by a trace entry. `Cs.last(m)` is
+runtime/webgpu_call.bend:596  `Pass.entry` made live: it is the ONLY reader of that field, which
+runtime/webgpu_call.bend:613  :113 creates the QUERY SET and :115 the QUERY BUFFER, and the ORDER IS THE
+runtime/webgpu_call.bend:614  QUERY SET FIRST -- MEASURED against `ops_webgpu.py:113` then `:115`, and
+runtime/webgpu_call.bend:627  a `match` may not scrutinise a CALL, so `if wait:` is a `.at` whose Bool is a
+runtime/webgpu_call.bend:637  THE THREE `if wait:` ARMS share this shape because the trace cannot carry a
+runtime/webgpu_call.bend:657  :123 -- DispatchWorkgroups(compute_pass, *global_size), NOT `local_size`; and
+runtime/webgpu_call.bend:678  :128-129 -- Finish(command_encoder, WGPUCommandBufferDescriptor()) then
+runtime/webgpu_call.bend:707  the seven, in :132-138's order. THE ORDER IS THE CLAIM; the kinds are the
+runtime/webgpu_call.bend:721  :206-219 `_readable_buffer`: create a staging buffer of the SAME size with
+runtime/webgpu_call.bend:731  the copy IS the point of a staging buffer, and my first version omitted it.
+runtime/webgpu_call.bend:746  :17-19 `buf_to_mv`: map async (ONE of the six `synchronous` calls) with
+runtime/webgpu_call.bend:760  This is `dev.free.at`'s own shape, and `wg_free_mapped` / `wg_free_unmapped` in
+runtime/webgpu_call.bend:785  them in REVERSE (:216-217), while :132-138 releases the pass's own seven in
+runtime/webgpu_call.bend:790  query set. `Cs.readable` is the read and `Cs.read` the map; the frees are
+runtime/webgpu_call.bend:796  query set. `Cs.readable` is the read and `Cs.read` the map; the frees are
+runtime/webgpu_call.bend:802  then the encoder, then the command buffer -- so it is `next(c)`, not
+runtime/webgpu_call.bend:855  minted by `Cs.query`, so both handles are read off the counter after it.
+runtime/webgpu_call.bend:901  (4,1,1) -- the shape `WGSLRenderer.render_kernel` was measured with, per
+runtime/webgpu_call.bend:904  is the port -- ops_webgpu.py NEVER READS it (the workgroup size comes from the
+runtime/webgpu_call.bend:919  `Cs.call` does not do the device init; `Cs.init` is a separate def for that, and
+runtime/webgpu_call.bend:927  nothing in front of it. `Tr.reset` empties it and `Cs.init` starts from
+runtime/webgpu_call.bend:1000  THE FOUR BYTES, in order. `Uniform.bytes` IS `dev.uniform_bytes(val)` and is
+runtime/webgpu_call.bend:1026  cons into. `Cs.calls` already builds one of these for `Call`, and this is the
+runtime/webgpu_call.bend:1050  staging buffer's encoder shares its own. MEASURED: the wait slots are
+runtime/support/__init__.bend:4  Empty upstream, marker only. Same shape and finding as
+runtime/support/amd.bend:10  2. `import_module` returns `children[-1]` -- the LAST of `mod.__all__`, in
+runtime/support/amd.bend:15  fixture lists `gc_9_4_2` last -- so the answer is `gc_9_4_2`, NOT
+runtime/support/amd.bend:29  WHAT IS PORTED, DEF BY DEF, with the CPython line it covers. Def names are
+runtime/support/amd.bend:39  :23-26 AMDIP.__getattr__  PORTED `AMDIP.name10` `AMDIP.ga` -- the
+runtime/support/amd.bend:51  WALL 1 -- the autogen tables. `import_module` reads `mod.__all__`, and for
+runtime/support/amd.bend:70  as parameters. The `cls` DEFAULT is separately a refusal: `AMDReg` has a
+runtime/support/amd.bend:76  WALL 4 -- exceptions. bend has none, so every refusal in this file is a
+runtime/support/amd.bend:85  `helpers.getbits(value, start, end)` is
+runtime/support/amd.bend:88  The width is 32 for a whole register (`content:0-31` in mp_11_0_0), and a
+runtime/support/amd.bend:127  `AMDReg.decode(val)`: `{name: getbits(val, start, end) for ...}`, joined in
+runtime/support/amd.bend:191  short aborts the whole comprehension -- which is why the predicate is over the
+runtime/support/amd.bend:306  not. `import_module.vle` is that comparison and `import_module.vers` is
+runtime/support/autogen.bend:10  distinct functions over 204,421 call events, out of the 324 that
+runtime/support/autogen.bend:11  `libclang.py` binds -- 278 of which it NEVER touches.  A naive port of
+runtime/support/autogen.bend:21  libclang, so the AST is a VALUE here -- a `Data` tree, exactly as
+runtime/support/autogen.bend:37  (`/\*.*?\*/`) and two line anchors. bend 2.0.34 has no regex at all:
+runtime/support/autogen.bend:41  matcher is not, and re-adding it would mean a regex engine, which is
+runtime/support/autogen.bend:60  control in `ag-wall4-control.bend`: the one-descent baseline compiles (ALL
+runtime/support/autogen.bend:223  A separate table from `TE` because the two DISAGREE ON PURPOSE: `Char_S` is
+runtime/support/autogen.bend:301  ''` + `int{bits}`. `Char_U` AND `UChar` BOTH answer `c_ubyte`, so the
+runtime/support/autogen.bend:344  `uints` is six explicit kinds. `ints` is `uints + ` the six signed ones, in
+runtime/support/autogen.bend:400  SOFT keywords are deliberately NOT in it: `keyword.iskeyword` is False for
+runtime/support/autogen.bend:419  The filter is on a CHILD's kind. 400 is CXCursor_FirstAttr and 500 is
+runtime/support/autogen.bend:420  CXCursor_FirstPreprocessing, so the window is attributes ONLY. Half-open at
+runtime/support/autogen.bend:441  THE FALSY ARM. `if (v := ....get(ty.kind, None)): return v` -- `Void`(2) is
+runtime/support/autogen.bend:513  autogen.py:113 the suggested name for an ELABORATED type, and :128/:142 the
+runtime/support/autogen.bend:518  replace references/bend/bend2/base.bend` ANSWERS 0 LINES, AND THE ONLY
+runtime/support/autogen.bend:546  what one char contributes, given whether a ':' is held back. Four cases, and
+runtime/support/autogen.bend:549  alone and the other char follows it; an unheld ':' is held back (or, if the
+runtime/support/autogen.bend:600  not merely tolerable: `Bool.pick` discards the arm it does not choose, and
+runtime/support/autogen.bend:675  NOTE what is NOT here: the loop that emits one of these per FIELD. That is
+runtime/support/autogen.bend:686  the point: a swapped pair of these is a silently wrong register write, and
+runtime/support/autogen.bend:708  {value(e)}): '{nm(e)}'")` -- the enum dict. The value comes from
+runtime/support/autogen.bend:709  `clang_getEnumConstantDeclUnsignedValue` when the enum's integer type is in
+runtime/support/autogen.bend:769  array arm's only use of the suggested name: it strips a trailing S so a
+runtime/support/autogen.bend:770  `u32 data[4]` inside `struct_Arr` suggests `struct_Arr_data`, not
+runtime/support/autogen.bend:786  on a non-empty `dll`. Both are `Bool.pick` over a sentinel row, and the
+runtime/support/autogen.bend:802  the `dll` line, :276. `{paths}` appears when paths is non-empty and
+runtime/support/autogen.bend:906  anonymous struct inside `struct Anon` (a FORWARD reference first, so the
+runtime/support/autogen.bend:943  FALSE, AND THE BLOCK WAS DEAD. `gates/autogen-oracle.py` counted kinds with
+runtime/support/autogen.bend:947  -- so that pattern matched 0 of the 256 `CXType_` occurrences in the file and
+runtime/support/autogen.bend:949  libclang, and invariant because NO change to libclang could move it. It is now
+runtime/support/autogen.bend:955  the "6-row floor" is not a floor, and `gates/oracleblind.rows` should not be
+runtime/support/autogen.bend:969  the instrument that audited it was auditing rows of a file that did not
+runtime/support/autogen.bend:980  "expected : 1 patterns (one per scrutinee)"), and the rule is that a
+runtime/support/autogen.bend:982  one scrutinee -- the nested cons pattern `c1 <> c2 <> rest:`, which is
+runtime/support/autogen.bend:1027  are `.agents/slop/notes/bend2-constraints.md` (1,665,622 B) and
+runtime/support/autogen.bend:1030  `ag-scope.txt`, `ag-oracle.py`, `ag-emit-oracle.py`, `ag-emit-oracle.txt`, and
+runtime/support/autogen.bend:1038  of 219 -- and a constant nothing calls is a constant nothing checks. So the
+runtime/support/c.bend:7  pathlib, re, sys, sysconfig`. What it carries is the ALGEBRA A C STRUCT AND
+runtime/support/c.bend:20  1. THE NO-STRUCT ARM THROWS AWAY `__idir`. `_do_ioctl` is
+runtime/support/c.bend:24  who folds the direction into the no-struct arm gets `0xc0004111` where
+runtime/support/c.bend:27  2. `findlib` NEVER PUTS `nm` IN A FILE NAME. The base names are built from
+runtime/support/c.bend:38  `nm.replace('-','_').upper()+"_PATH"`, so `my-lib-x` is overridden by
+runtime/support/c.bend:41  file. `dll_emsg_dash` and `dll_envkey_dash` are the halves and
+runtime/support/c.bend:45  `_fields_` FROM `cls.SIZE`, in the other direction, so a class made by
+runtime/support/c.bend:48  6. `Array`'s KEY IS A TYPING OBJECT, NOT A TUPLE. `get_args(Literal[3])` is
+runtime/support/c.bend:65  * THERE IS NO MASKING ON THE STORE, and that is observable: `b` is 12 bits at
+runtime/support/c.bend:69  * `sys.byteorder` is read INSIDE the closures `_resolve` builds, so it is a
+runtime/support/c.bend:74  affected -- ctypes uses NATIVE order, so `x` reads the same under both.
+runtime/support/c.bend:94  computed value, which convention 4 refuses -- and the SAME error comes out of
+runtime/support/c.bend:96  not a fault in this port). So this file carries a LOCAL READER of
+runtime/support/c.bend:99  THIS IS A WORKAROUND AND NOT A DESIGN. Flip it back to
+runtime/support/c.bend:200  literal and a record pattern both name every field, and the literal is
+runtime/support/c.bend:203  ONE RECORD, NOT TWO. Upstream has both a `Field` descriptor and a
+runtime/support/c.bend:212  `SIZE` and the `_mem_` length are two fields, not one, and the gate found it:
+runtime/support/c.bend:277  `register_fields` passes `idx` from `enumerate`, which RESTARTS at 0 and
+runtime/support/c.bend:278  REPLACES `_real_fields_` -- so a class that already collected entries from
+runtime/support/c.bend:364  truncated for it. `U32.shrn` is a logical shift with no width argument, so
+runtime/support/c.bend:380  said so by printing nothing. `List.append(&2, U32, [byte], rest)` is
+runtime/support/c.bend:392  `memoryview(obj).cast("B")[sl] = merged.to_bytes(sz, byteorder)`. `sz` and
+runtime/support/c.bend:426  OFFSET is just `off` whatever `idx` is. `dummy{i}_ofs_size` is that, and
+runtime/support/c.bend:431  global `type` -- a module global shadows the builtin, so `c.types.type` does
+runtime/support/c.bend:441  not a counter, so there is no `0n` prefix-match arm to get wrong. (`is` is a
+runtime/support/c.bend:467  index and no search: `_mem_` at `SIZE` bytes. `sizeof` is that length and
+runtime/support/c.bend:474  on the floor with no error. `init_pos_4_dropped` is that, and
+runtime/support/c.bend:489  left to right and must shrink by the time it reaches the tail, and `mem` is
+runtime/support/c.bend:491  `Field.store(mem, f, a)` first is "expected : a decreasing self-call", and
+runtime/support/c.bend:548  -- `SIZE` IS NOT IN THAT DICT, so `SIZE` stays the inherited `0` and only
+runtime/support/c.bend:564  needs no Char literal and cannot be fooled by a `--replace` that is really a
+runtime/support/c.bend:580  `self.emsg = emsg or f"try setting {nm.upper()+'_PATH'}?"` -- truthiness, so
+runtime/support/c.bend:607  THE EMPTY STRING IS "NOT FOUND" and the oracle prints `""` for it too. It is
+runtime/support/c.bend:619  rebuilt on every `p` of `paths`. `os.environ['PATH']` is a SUBSCRIPT, so the
+runtime/support/c.bend:668  `re.fullmatch(f"lib{p}\.so[.0-9]*", l.name)`. The prefix is
+runtime/support/c.bend:669  `lib{p}.so` and EVERY remaining character must be `.` or a digit -- so
+runtime/support/c.bend:681  reason -- `libz.so.6` minus four characters is `.so.6`, whose `s` is not in
+runtime/support/c.bend:733  past the sixteen-entry hex table and falls back to "f", and
+runtime/support/c.bend:768  offset 4, over eight bytes of memory -- c.py's own shape, taken from
+runtime/support/c.bend:776  holds TWO `Field`s, and `__set_name__` appends them in source order -- so
+runtime/support/c.bend:789  `List.map` is not usable here and the reason is worth writing down:
+runtime/support/c.bend:875  reads as the prefix plus a placeholder. `findlib.osx_lib_at("libc")` is
+runtime/support/c.bend:876  `/usr/lib/lib@.dylib` and `findlib.osx_lib("libc", True{}, True{})` is
+runtime/support/c.bend:877  `/usr/lib/libc.dylib`; the oracle prints the first and the port computes both.
+runtime/support/c.bend:882  dropping `len(p) - 5` leaves the LAST five characters, which for
+runtime/support/c.bend:1066  row of the file is the one statement with no `_ : Unit <-` in front of it.
+runtime/support/c.bend:1080  M1     1       the no-struct arm IGNORES `__idir` -- fold the direction in
+runtime/support/c.bend:1132  M2 IS A THEOREM AND THE `sname_setname_pairs` / `sname_hasreal_iff_npositive` ROWS ARE
+runtime/support/c.bend:1138  `(False,0),(True,1),(True,2),(True,3)`: never `(False, n>0)`. The fourth is an
+runtime/support/c.bend:1154  which is exactly how `renderer/tc_ptx.bend` shipped `"mov.b32 %r0, %r1;"` corrupted to
+runtime/support/compiler_amd.bend:99  hex characters of a 64-bit digest. `base.bend` exports `Word`, not
+runtime/support/compiler_amd.bend:101  compute. The TEMPLATE is ported and gated with the eight characters as a
+runtime/support/compiler_amd.bend:200  The six elements that contain a space (`-I/opt/rocm/include` has none; the
+runtime/support/compiler_amd.bend:259  `split('\n', 1)[0]` is the FIRST LINE ONLY, `.strip()` removes whitespace from
+runtime/support/compiler_amd.bend:271  `C.is_asm` is three defs because a `match` may not follow a `<-` bind and a
+runtime/support/compiler_amd.bend:337  `rocm_path` is `getenv("ROCM_PATH", "/opt/rocm")`; `getenv` is
+runtime/support/compiler_amd.bend:496  The chain is PURE -- `Tr.put` is not an effect -- so it cannot live inside a
+runtime/support/compiler_amd.bend:497  `do IO<Unit>` block, whose bindings are all effects. `hd.compile` and
+runtime/support/compiler_amd.bend:518  the `asm=True` branch: THREE calls instead of sixteen, and the data name is
+runtime/support/compiler_cpu.bend:44  WHAT IS PORTED, DEF BY DEF, with the CPython line it covers. Def names are
+runtime/support/compiler_cpu.bend:74  WALL 2 -- `cpu_objdump` and `capstone_flatdump` (helpers.py) are a
+runtime/support/compiler_cpu.bend:75  `subprocess` spawn plus a capstone/llvm object. `ClangCompiler.dis_row` and
+runtime/support/compiler_cpu.bend:85  process that would have reported the first configuration for both.
+runtime/support/compiler_cpu.bend:91  WALL 4 -- `CCACHE`. `Compiler.__init__` is
+runtime/support/compiler_cpu.bend:94  is a `ContextVar`, which is the same cached `getenv`. So `cpu.x86key` is
+runtime/support/compiler_cpu.bend:137  The `-mno` arm KEEPS the `-` -- that is upstream, not a typo, and
+runtime/support/compiler_cpu.bend:153  :13  the arm64 feature: `"no" + f[1:] if f.startswith("-") else f`. The `-` is
+runtime/support/compiler_cpu.bend:174  :14  riscv64. `native` becomes `rv64g` and the features are joined RAW -- no
+runtime/support/compiler_cpu.bend:330  `bytes.fromhex(s).hex()` is `s` lowercased with the spaces removed, and the
+runtime/support/compiler_cpu.bend:382  `cpu`, which calls the real `ClangCompiler.__init__`, the real `compile` with
+runtime/support/compiler_cuda.bend:18  `cu.p<i>_<token>`        24 sharp tokens per pattern, one row each
+runtime/support/compiler_cuda.bend:24  `buf0` does; `[_%$]\w+(\.[xyz])?` allows ONE of `.x/.y/.z`, so
+runtime/support/compiler_cuda.bend:29  matches with group 2 = `s64` and `ld.param.u64` with `u64` -- the
+runtime/support/compiler_cuda.bend:33  because the fixture context is `\t<tok>;` with no newline, and
+runtime/support/compiler_cuda.bend:41  pat4  `(\.)(param|reg|global)` -- `ld.param.u64` gives `param` and
+runtime/support/compiler_cuda.bend:65  (oracle rows `cache.module_after` and `cache.env_after`). So
+runtime/support/compiler_cuda.bend:112  so the name depends on md5 of the library. `base.bend` exports `Word`, not
+runtime/support/compiler_cuda.bend:132  with `;` and not with a newline: bend's interpreted lane DIVERGES on a
+runtime/support/compiler_cuda.bend:135  a fixture choice, not a ported decision: `str.replace` never looks at it.
+runtime/support/compiler_cuda.bend:136  `helpers.colored`. `colors.index(color.lower())` is the position in
+runtime/support/compiler_cuda.bend:137  `['black','red','green','yellow','blue','magenta','cyan','white']`, and
+runtime/support/compiler_cuda.bend:138  `60*(color.upper() == color)` adds 60 for an UPPER-case name -- so
+runtime/support/compiler_cuda.bend:174  here as literals and the gate compares them against `ast`-extracted text from
+runtime/support/compiler_cuda.bend:189  root is passed to docker TWICE -- once as the `-v` mount and once as
+runtime/support/compiler_cuda.bend:288  file is written with. The first version subtracted the two lengths, and
+runtime/support/compiler_cuda.bend:293  :46-54  `NVRTCCompiler.__init__`. `--gpu-architecture=<arch>` first, then
+runtime/support/compiler_cuda.bend:294  EITHER one include (when `CUDA_PATH` is set) OR three fixed ones, and then
+runtime/support/compiler_cuda.bend:298  The comparison is a TUPLE comparison, so `(12, 4) >= (12, 4)` is TRUE and
+runtime/support/compiler_cuda.bend:379  ''}_{arch}_{sha256(...)}"`. The digest is WALL 3's shape (a parameter) and the
+runtime/support/compiler_cuda.bend:412  ...)` is TWO replaces IN ORDER, and the version is
+runtime/support/compiler_cuda.bend:414  "7.5")` -- so it reads `self.arch[3:]`, which for `sm_86` is `86` and for
+runtime/support/compiler_cuda.bend:472  :86-99  `NVPTXCompiler`. `cache_key="nv_ptx"`, so the key is
+runtime/support/compiler_cuda.bend:529  `cu`, which calls the real module with only `nvrtc`/`nvjitlink` replaced by
+runtime/support/compiler_llvm.bend:20  `ll.arch_riscv64.kind` is `KeyError: 'riscv64'`, and
+runtime/support/compiler_llvm.bend:42  oracle finds it as the argument the recorder saw in
+runtime/support/compiler_llvm.bend:83  WALL 2 -- `ctypes` itself. `cerr()` is
+runtime/support/compiler_llvm.bend:87  pointer type in bend, so `cerr_depth` records the DEPTH (2) and
+runtime/support/compiler_llvm.bend:115  :8-10  `expect(x, err, ret=None)`: `if x: raise RuntimeError(...)`, then
+runtime/support/compiler_llvm.bend:137  'riscv64': 'riscv64'}.get(arch, "AMDGPU")`. `.get` means an unknown arch is
+runtime/support/compiler_llvm.bend:163  :17  the SECOND map, a SUBSCRIPT: three keys, `arm64`, `x86_64` and the
+runtime/support/compiler_llvm.bend:165  five `LLVMInitializeriscv64*` calls are issued -- raises `KeyError` here.
+runtime/support/compiler_llvm.bend:218  :34-35, :36-43  the per-instance context and the diagnostic list. The list is
+runtime/support/compiler_llvm.bend:247  :46-48  `__del__`: `if hasattr(self, 'pbo')` then dispose pbo, then
+runtime/support/compiler_llvm.bend:282  MEASURED: a feature that ALREADY starts with `-` is left ALONE, so
+runtime/support/compiler_llvm.bend:284  `if cpu == "native": cpu = LLVMGetHostCPUName()` and then
+runtime/support/compiler_llvm.bend:287  `'+reserve-x18,' if self.arch == "arm64" else ''` -- the prefix carries its
+runtime/support/compiler_llvm.bend:545  THE FRESH-PROCESS ROWS. `LLVMOPT` is a `@functools.cache`d `getenv`, so
+runtime/support/compiler_mesa.bend:4  the scope NOTE for this unit said `compiler_mesa.py` "invokes external cc for
+runtime/support/compiler_mesa.bend:9  `system(f"nvdisasm -b SM{self.arch[3:]} {fn}")` (:79). Everything else is
+runtime/support/compiler_mesa.bend:26  `info.num_ssbos`, `v.imm_state.count` and `dev_id.gpu_id` -- names the
+runtime/support/compiler_mesa.bend:47  bend2-constraints.md POSITION 2320). The path is ported with the digest as a
+runtime/support/compiler_mesa.bend:53  exists but has no name to read from here.
+runtime/support/compiler_mesa.bend:62  (`sys.msg`) and the merged stream is not.
+runtime/support/compiler_mesa.bend:113  runs the instruction-number column out of alignment, so `dc.fixed` and
+runtime/support/compiler_mesa.bend:221  :58  `int(arch[3:])`. The arch is `sm_` followed by DECIMAL DIGITS, and
+runtime/support/compiler_mesa.bend:222  `arch[3:]` is taken on faith by Python -- `int("")` would raise, and
+runtime/support/compiler_mesa.bend:228  slice is well defined on a short string (it is the empty string) and so is
+runtime/support/compiler_mesa.bend:240  backwards from the last character and stops at the first non-'='; it needs a
+runtime/support/compiler_mesa.bend:241  `Nat` because a `String` has no structural subterm to recurse on.
+runtime/support/compiler_mesa.bend:327  :51  cpu_objdump's command. helpers.py:533 writes `kernel.o` into a
+runtime/support/compiler_qcom.bend:21  reachable; the library and the tarball are not.
+runtime/support/compiler_qcom.bend:24  TODO(p3) compiler_qcom.py:18 -- `shutil.which("qemu-aarch64-static")` when the
+runtime/support/compiler_qcom.bend:30  `cl_compiler_free_handle` (:41) and
+runtime/support/compiler_qcom.bend:34  WALL 2 -- the two persistent-pipe paths. `self.server(...)` is
+runtime/support/compileserver.bend:19  is `01000000` too... no: the FIRST byte is the LOW byte, so
+runtime/support/compileserver.bend:31  four bytes succeeds, the length is zero, and `compile("")` runs. Only the
+runtime/support/compileserver.bend:32  FOUR-BYTE READ returning empty ends the loop. `cs.read4` and
+runtime/support/compileserver.bend:53  compile -- which is why upstream keeps a server at all.
+runtime/support/compileserver.bend:154  THE REQUEST LOOP HEAD. `while (amt := sys.stdin.buffer.read(4))` ends on an
+runtime/support/elf.bend:6  `runtime/ops_cpu.py:19/21` builds `link_libs=[self.libm, self.rt_lib]` and
+runtime/support/elf.bend:39  `F_SYM64`, `F_SYM32`, `F_RELA`, `F_REL` are the FIELD-NAME STRINGS out of
+runtime/support/elf.bend:42  port bugs were caught by exactly that string and by nothing ELSE -- see the
+runtime/support/elf.bend:47  THE `type ... is Data:` FIELD LIST IS DOCUMENTATION in bend 2.0.34 and the
+runtime/support/elf.bend:54  declares all three as `Quant` and then
+runtime/support/elf.bend:57  the two upstream defects. `tinygrad/` is read-only to this unit; both are
+runtime/support/elf.bend:76  `sh_addr`, `sh_offset`, `sh_size`, `sh_addralign`, `sh_entsize`, the
+runtime/support/elf.bend:83  indexing wall (`bend base` has no `F64`, no `F32.to_bits`, and no `==` on
+runtime/support/elf.bend:91  5. MUTABLE BUFFERS. `bytearray`, `image[a:b] = c` and `image += c` have no
+runtime/support/elf.bend:139  :84-85 the 4-byte write-back   PORTED  `Jit.instr` (unpack), `Jit.pack`, and
+runtime/support/elf.bend:147  CPython rows waiting in `.agents/slop/elf_rows.py` and
+runtime/support/elf.bend:196  because the `is_low` else-arm was 15 rather than the uppercase level, and
+runtime/support/elf.bend:223  `Blob.slice(blob, off, n)` is `blob[off : off+n]` on a hex String: a DROP of
+runtime/support/elf.bend:232  the oracle's `.hex()` prints. Sixteen entries, one per nibble, and
+runtime/support/elf.bend:238  THE LOW NIBBLE MUST BE MASKED. `Hex.digit(i)` indexes a sixteen-entry list, and
+runtime/support/elf.bend:241  MEASURED: `Hex.u8(255)` answered `f0` where the answer is `ff`, and
+runtime/support/elf.bend:267  W64 -- a 64-bit little-endian word as its two halves. Named W64 rather than
+runtime/support/elf.bend:289  `le32(k)` and `le32(k+4)`. Writing the pair as `(k, k+8)` -- the start of the
+runtime/support/elf.bend:305  the four magic bytes as hex, in order. `Hex.of(Blob.le32(h,0))` is
+runtime/support/elf.bend:317  compares FOUR BYTES. As a U32 the bytes spell 0x7F454C46 = 2135247942, and
+runtime/support/elf.bend:318  `Blob.le32(h, 0)` gives 0x464C457F = 1179403647 -- the SAME FOUR BYTES IN
+runtime/support/elf.bend:321  `magic_ok(e32.o)` answered False where the file's first four bytes are
+runtime/support/elf.bend:342  THE FIELD-NAME STRINGS. These are the GATE, not documentation: they are the
+runtime/support/elf.bend:360  field: it is the four magic bytes plus the class byte, and `magic_ok` and
+runtime/support/elf.bend:372  it because that row prints all ten fields as `hi:lo` for the 64-bit ones, and
+runtime/support/elf.bend:435  THE READERS. Each takes the blob and a BYTE OFFSET and reads ONE field at its
+runtime/support/elf.bend:568  THE Ehdr FIELD-ORDER ROW. All fourteen, at their Elf64 register offsets. The
+runtime/support/elf.bend:588  the field-OFFSET table for Shdr, one entry per field, each spelling both
+runtime/support/elf.bend:628  fields, and 64/10 does not divide, so `Shdr.nfields` is documentation and
+runtime/support/elf.bend:629  `Shdr.size` is the load-bearing one; the row `*_shdr_stride` pins both and the
+runtime/support/elf.bend:702  looks like a reader bug and it is a label. So `Shdr.at_text` takes the class and
+runtime/support/elf.bend:703  `Shdr.o_label` picks the table, and `elf_sec_*_hdrtxt` gates BOTH layouts: the
+runtime/support/elf.bend:852  and ops_amd.bend:614 symbol=sig.step both put the accumulator FIRST for this.
+runtime/support/elf.bend:854  the tail `t` and the scrutinee IS the fuel -- no `Nat` countdown, no
+runtime/support/elf.bend:913  elf.py:23's walrus `(shstrst := section_headers[e_shstrndx].sh_offset)`: the
+runtime/support/elf.bend:915  every other section. Its index is `e_shstrndx`, which is the field right after
+runtime/support/elf.bend:952  ctypes.c_void_p).value) except (OSError, AttributeError): pass` then
+runtime/support/elf.bend:963  two self-calls on the SAME list is mutual recursion (refused) while one on a
+runtime/support/elf.bend:994  it builds `link_libs=[libm, rt_lib]` and libobjc is MISSING, so
+runtime/support/elf.bend:1002  elf.py:26's `_to_carray(sh, ctype)`: `(ctype * (sh_size // sh_entsize))`. The
+runtime/support/elf.bend:1019  THE SHIFT AMOUNTS ARE `Nat` LITERALS: `U32.shr(info, 32n)` is right and
+runtime/support/elf.bend:1080  `.rela.dyn` strips to `.dyn` and `.rela.plt` to `.plt`, and
+runtime/support/elf.bend:1109  both the prealloc and the per-section addresses so a port that forgot the
+runtime/support/elf.bend:1175  x86-64 PLT32 out of range: `struct.pack("<HIQ", 0x25FF, 0, tgt-addend)` -- the
+runtime/support/elf.bend:1179  Both LENGTHS are load-bearing (`len(image)-14` and `len(image)-16`) so
+runtime/support/elf.bend:1336  `_to_carray` reads the section's OWN CONTENT, so entry `i` is at
+runtime/support/elf.bend:1382  is a `link_sym` lookup; anything else is DEFINED and the target is
+runtime/support/elf.bend:1387  UPSTREAM DEFECT 1 IS REPRODUCED HERE ON PURPOSE: the name is read from
+runtime/support/elf.bend:1422  elf.py:47, the UNDEFINED arm -- and DEFECT 1, which is that `Rctx.str` is the
+runtime/support/elf.bend:1467  ONE DEF PER `Bool.pick` ARM. A `Bool.pick` whose arm is a multi-line CALL is a
+runtime/support/elf.bend:1470  two outcomes are their own defs and each pick is a single line. Same lesson as
+runtime/support/elf.bend:1482  elf.py:42's `for sh, trgt_sh_name, c_rels in rel + rela` -- REL FIRST, THEN
+runtime/support/elf.bend:1593  patches in and the padding the caller appends, and eight of the ten arms have
+runtime/support/elf.bend:1613  position-relative and the base does not enter, which is why this arm is not
+runtime/support/elf.bend:1636  `rel_pg = (tgt & ~0xFFF) - (ploc & ~0xFFF)` then
+runtime/support/elf.bend:1680  THE TEN-WAY DISPATCH. `Bool.pick` on the TYPE, so the two far arms -- which
+runtime/support/elf.bend:1761  Every `py=` in the table below is a value CALLed out of tinygrad's own
+runtime/support/elf.bend:1762  `elf_loader` / `jit_loader` / `link_sym` on one of the nine fixtures by
+runtime/support/elf.bend:1763  `.agents/slop/elf_oracle.py`, or a constant measured out of
+runtime/support/elf.bend:1779  COUNT does not.
+runtime/support/elf.bend:1781  arithmetic, because a length alone cannot see a byte moved within it.
+runtime/support/elf.bend:1799  (engine/jit.bend:355 symbol=JName.reprs.go) is the template: APPEND the rendered cell onto `acc` with
+runtime/support/elf.bend:1801  because these rows do not carry order; the rows that DO carry order are the
+runtime/support/elf.bend:1823  measured three times over:
+runtime/support/elf.bend:1828  picks -- needs the section FIVE times in one call chain and no shape avoids it.
+runtime/support/elf.bend:1895  THE CONTENT WALKS. `Blob.hexlen` of each slice is the byte count, and the
+runtime/support/elf.bend:1907  shstrtab, in INDEX order. This is the walk that makes the NUL fold gateable on
+runtime/support/elf.bend:1962  of 64 digits and a DROP of all but the last 64, and the second one needs the
+runtime/support/elf.bend:1968  `U32.is_zero` ANSWERS A `Bool`, and a `Bool` is not a `U32`, so the counter is
+runtime/support/hcq2.bend:22  (`uop/ops.bend:3402 symbol=UOp.toposort`), and the port writes rules as `pm_*` defs over
+runtime/support/hcq2.bend:41  WALL(p3) tinygrad/runtime/support/hcq2.py:452   -- BLOCKED: needs the shaped `UOp.param` and
+runtime/support/hcq2.bend:53  became `(s.src[0] if s.op is Ops.END else s).op is
+runtime/support/hcq2.bend:55  pm_renumber -> `pm_lift` (:452). The RANGE rule's `arg` tuple also
+runtime/support/hcq2.bend:56  CHANGED SHAPE, because `UOp.arg` for a RANGE is now
+runtime/support/hcq2.bend:60  (a `BUFFER` slot renumber, a `PARAM` device=None) and a
+runtime/support/hcq2.bend:69  and the `_ioctl` family -- upstream's `_do_ioctl` IS its root -- in
+runtime/support/hcq2.bend:88  3. A `String` IS a linked list of `Char`s WITH one visible constructor, so
+runtime/support/hcq2.bend:89  `to_name` (:61) is `String.split` + `String.join` + `String.to_lower`, and
+runtime/support/hcq2.bend:99  VALUE is not one number here. `HWQueue.q` (:364-376) masks `v` with
+runtime/support/hcq2.bend:115  trace. MEASURED IN CPython (`.agents/slop/hcq2-probe.py`, run with
+runtime/support/hcq2.bend:128  with 540 the trailing var). The `0, 4, 8, 16, 24, 28` is the
+runtime/support/hcq2.bend:132  callee there) and :137, and the
+runtime/support/hcq2.bend:139  that `q` method and it is at :335 (`HWQueue` IS the class), so `NVQueue` has
+runtime/support/hcq2.bend:144  is the claim `q` and `Tr` SUBMIT below carry -- `hwq` is named here but is
+runtime/support/hcq2.bend:154  ring's usable length, and the doorbell. ALL THREE ARE `nv/ip.py`'s AND NOT
+runtime/support/hcq2.bend:161  the MAX_BUFS/fence counts the brief grouped under "per-queue constants" ARE NOT
+runtime/support/hcq2.bend:163  read-only) and in `nv/ip.py` (`nv/ip.bend`). THIS file does not carry them and
+runtime/support/hcq2.bend:166  four at the top: `HCQ_CACHE_THRESH`, `HCQ_DEVS`, `CDTYPE`, and
+runtime/support/hcq2.bend:178  `make_submit(...).after(fence, *submits[-1:])`). Both are ORDER claims about
+runtime/support/hcq2.bend:179  DIFFERENT halves of one submission, and the gate rows for this file's half are
+runtime/support/hcq2.bend:184  lanes print BYTE-IDENTICAL output. The ORACLE is
+runtime/support/hcq2.bend:186  `layout_args`, `pack_args`, the ctypes field tables) and
+runtime/support/hcq2.bend:188  `_build_queues`, `_finalize_batch`), both run with DEV=NULL so NO DEVICE IS
+runtime/support/hcq2.bend:191  THE 120 ROWS CPYTHON HAS and this port does not are not coverage and not
+runtime/support/hcq2.bend:198  arena wall. `hq2_b*_full` is strictly stronger than the per-queue rows for
+runtime/support/hcq2.bend:218  THE ENUMERATION, and `hcq2_dev_n` is the COUNT row: a device appended to
+runtime/support/hcq2.bend:323  entry its own `refused` is still False. Every step goes through
+runtime/support/hcq2.bend:467  THE ORDER IS THE CLAIM: the replace is on the ORIGINAL case and the lower is
+runtime/support/hcq2.bend:471  (tinygrad/helpers.py:21 symbol=to_name) IS that join, and the PORT's own
+runtime/support/hcq2.bend:539  ONE word of the packed stream: `P<n>` is a `BINARY` of `n` zero bytes and
+runtime/support/hcq2.bend:554  and not `gap`, because a Bool from a leaf call may not be `match`ed and
+runtime/support/hcq2.bend:594  pad is therefore OUTSIDE the pick and inside `pack.wrap`, which is the
+runtime/support/hcq2.bend:720  triples and a call touches TWO buffers -- `get_call_outs_ins(call)[0]` is
+runtime/support/hcq2.bend:724  DEVICE IDS: 1 is `NULL:0` (the enqueue device) and 2 is `NULL`, its
+runtime/support/hcq2.bend:726  a SECOND device with no calls appear in the output. QUEUE IDS: 1 is
+runtime/support/hcq2.bend:751  ONE `Ops.INS` in a queue's command stream, or one `Ops.CALL`. An INS is
+runtime/support/hcq2.bend:777  THE STEP NAME, and it is what `hq2-oracle2.py`'s `step()` builds from
+runtime/support/hcq2.bend:778  `u.op is Ops.INS` and `u.arg[0]`. `BUMP` and `STORE` are ONE Python INS each
+runtime/support/hcq2.bend:808  ONE SELF-CALL PER ARM, which is what Bend allows: the arm is a `match` on a
+runtime/support/hcq2.bend:873  touch a host buffer AT ALL, and the touched set is computed against the
+runtime/support/hcq2.bend:894  boolean row sees it. MEASURED: a hand-rolled `pairs` over `Ethree` dropped the
+runtime/support/hcq2.bend:955  hcq2.py:235 -- "not a slice: 10x the cost". `slot` is
+runtime/support/hcq2.bend:984  `prev[tag]` IS `tag` when the tag is the first call on its queue -- that is the
+runtime/support/hcq2.bend:1013  so only the LAST call on a queue can signal. `two` answers `1` (not `0 1`) and
+runtime/support/hcq2.bend:1060  `DepsTracker.access_resources` (:182-207) reduced to WHO OVERLAPS WHOM, and
+runtime/support/hcq2.bend:1092  != self.queue_of[tag]]`. A READ that is superseded by a LATER write on the
+runtime/support/hcq2.bend:1114  is the SAME-QUEUE-IS-FIFO rule, and it is why `two`, `fifo` and `revis` -- all
+runtime/support/hcq2.bend:1115  ONE queue -- have NO dependency waits at all while `three` and `copyq` do.
+runtime/support/hcq2.bend:1144  THE WAIT LIST of call `i`, in :252's dict-insertion order: one WAIT per
+runtime/support/hcq2.bend:1158  `_start_ins` (:254-256) -- `INS(("barrier", void), ())` and then ONE WAIT ON
+runtime/support/hcq2.bend:1170  self-calls in one expression and is refused, so the arm is a `match` on the
+runtime/support/hcq2.bend:1198  THE UPSTREAM WHY-S OF THE STEPS, kept because the STEPS are arithmetic and the
+runtime/support/hcq2.bend:1200  hcq2.py:248 -- "calc deps for each tag". The tracker is built ONCE, over the
+runtime/support/hcq2.bend:1211  hcq2.py:260 -- "keep only latest tags to wait for each queue". WAITING ON A
+runtime/support/hcq2.bend:1223  workaround rather than a model. The port has no NV device, so it has no
+runtime/support/hcq2.bend:1226  which queues touch its memory)". THE DEPENDENCY IS ON MEMORY, NOT ON THE
+runtime/support/hcq2.bend:1241  hcq2.py:286 -- "closers advance device timelines". The closer's job is to
+runtime/support/hcq2.bend:1335  member of), and for `NULL:0` the second set is EMPTY -- its peers hold the
+runtime/support/hcq2.bend:1337  the second is every queue that ran a call. That asymmetry is the whole of
+runtime/support/hcq2.bend:1347  so the countdown is DESTRUCTURED and `m` is the new fuel. Same shape as
+runtime/support/hcq2.bend:1462  `max(b.max_numel(), 1)` -- upstream's `max`, and it is what makes a
+runtime/support/hcq2.bend:1483  THE UNNAMED PATH. `UOp.new_buffer(b.device, b.max_numel(), b.dtype)` -- a
+runtime/support/hcq2.bend:1495  b.dtype.itemsize, options=spec, preallocate=True)` -- a FRESH buffer, on the
+runtime/support/hcq2.bend:1504  A REGISTRY or HOOK hit. The buffer that won is an EXISTING arena slot and
+runtime/support/hcq2.bend:1506  alloc -- the `owned` branch hands the registry's buffer straight to
+runtime/support/hcq2.bend:1527  answers the four-way with the LEVEL, the Buffer-vs-CALLABLE KIND and the
+runtime/support/memory.bend:11  silently wrong memory access and no row about counts can see it.
+runtime/support/memory.bend:14  arguments, so a field swap is a silent remapping. `blocks`' 4-tuple is
+runtime/support/memory.bend:15  `(size, next, prev, is_free)` (:39) and `pt_stack`'s is
+runtime/support/memory.bend:20  `pte_covers = [1 << x for x in va_shifts][::-1]` and
+runtime/support/memory.bend:21  `pte_cnt = [1 << (lvl_msb[i+1] - lvl_msb[i]) for ...][::-1]`. Both are
+runtime/support/memory.bend:24  * `_frag_size` (:195-202), the TLB FRAGMENT SIZE: a lowbit, a max, a
+runtime/support/memory.bend:32  (:8) divides by it, so it decides how many REGISTERS a window is.
+runtime/support/memory.bend:40  lane and the reason this file declares NO foreign effect: the seam is
+runtime/support/memory.bend:61  EIGHT of the fifteen tags are emitted by something in this file and seven are
+runtime/support/memory.bend:64  `MM_PFREE`, `VRAM_ZERO`, `MM_DEBUG_PRINT`. They are real methods on
+runtime/support/memory.bend:69  OUT OF CPYTHON by CALLING it, never typed. The oracle is
+runtime/support/memory.bend:70  `.agents/slop/memory_oracle.py`. The field lists came out of
+runtime/support/memory.bend:71  `dataclasses.fields(VirtMapping)` and the four `__init__` tuples, and the
+runtime/support/memory.bend:79  THE RAISE IS HERE. `Tr.emit` records NOTHING once a refusal has fired and
+runtime/support/memory.bend:81  every refusal site in turn and the failing refusal is not recorded -- in
+runtime/support/memory.bend:151  does the trace CONTAIN this (tag, arg) sequence, IN ORDER? THE FUEL IS THE
+runtime/support/memory.bend:228  constant is an `H.I64` and the arithmetic carries a `U32` stand-in.
+runtime/support/memory.bend:231  take is `2^31`, so `2^31` is never smaller than CPython's `1 << 63` on the
+runtime/support/memory.bend:241  2199023255552, while a `U32` saturates at 4294967295. So the window is an
+runtime/support/memory.bend:258  `self.addr + offset`) and a view's base is the ROOT window's base, exactly as
+runtime/support/memory.bend:274  :7 -- the four-tuple, BY NAME: mv, addr, nbytes, fmt. `mv` is the handle the
+runtime/support/memory.bend:338  `Mv.fmt` holds the table INDEX of the format, so `struct.calcsize` is
+runtime/support/memory.bend:343  'd', '2I' and '8B'. So the reverse answer is the FIRST such row and
+runtime/support/memory.bend:349  and it printed `calcsize_rev_16=22` ('4f', the last 16-byte format) where
+runtime/support/memory.bend:370  THE REVERSE DIRECTION, `size -> fmt index`, FIRST match, and the miss is
+runtime/support/memory.bend:373  it backwards emits a plausible wrong number rather than a type error (rule at
+runtime/support/memory.bend:374  `bend2-constraints.md` position 2106). So this is "if the accumulator is still
+runtime/support/memory.bend:390  THE NAME SEARCH, same shape: FIRST match wins, and the fixtures resolve their
+runtime/support/memory.bend:446  :17 -- `round_up(self.ptr, alignment) + size > self.size`. THE ROUND IS BEFORE
+runtime/support/memory.bend:447  THE ADD, and that is the whole test. `mem_bump_overflow_*` gates it and
+runtime/support/memory.bend:453  file, and the trace is EMPTY at that point because nothing was emitted: the
+runtime/support/memory.bend:479  THE LEAVES, FIRST -- there are no forward references, so `bump_take` and
+runtime/support/memory.bend:489  the WRAP arm of :18-19: `self.ptr = 0` when `wrap` is set, otherwise the
+runtime/support/memory.bend:515  the DIRECTION THAT MATTERS is `space_of` because `VirtMapping.aspace` is an
+runtime/support/memory.bend:520  to 1 and PHYS to 1, which is a silent aliasing -- `mem_aspace_value_*` and
+runtime/support/memory.bend:557  `VirtMapping` -- memory.py:121-122. THE field list, BY name, IN order, AND
+runtime/support/memory.bend:562  `['va_addr', 'size', 'paddrs', 'aspace', 'uncached', 'snooped']` and
+runtime/support/memory.bend:563  `mem_vm_fields_*` is that list; `mem_vm_defaults_*` is that the last TWO are
+runtime/support/memory.bend:566  mutates it.
+runtime/support/memory.bend:575  `mem_vm_map_*` and `mem_vm_gmmu0_*` are the two construction rows and
+runtime/support/memory.bend:583  at :275 (`for paddr, _ in vm.paddrs`). `Pa` keeps that order and
+runtime/support/memory.bend:613  swapped `Pa` breaks it. `vm_psize_sum` is the sum and
+runtime/support/memory.bend:641  and `va_shifts + [va_bits + 1]` is `lvl_msb`), so `pte_covers` is
+runtime/support/memory.bend:650  function again: `1 << (lvl_msb[i+1] - lvl_msb[i])` where `lvl_msb` is
+runtime/support/memory.bend:652  shifts and `pte_covers` is `1 <<` ONE of them, and both are reversed. The
+runtime/support/memory.bend:658  the extra is `va_bits + 1`, NOT `va_bits`. So `lvl_msb` is one longer than
+runtime/support/memory.bend:673  amount is `U32.to_nat(x)`; `shln(1, 0n) = 1`, which is why a level with
+runtime/support/memory.bend:682  head to the accumulator BUILDS THE REVERSED LIST DIRECTLY and there is no
+runtime/support/memory.bend:683  `List.reverse` in this substrate. `covers_of` is `[1 << x ...][::-1]` and
+runtime/support/memory.bend:687  one is needed here.
+runtime/support/memory.bend:691  `rev.u32` as the usual "prepend each head" fold and it was the IDENTITY, so
+runtime/support/memory.bend:758  a `U32` is not available, so this is `va & (~va + 1)` computed as
+runtime/support/memory.bend:766  `0.bit_length() - 1 - 12 == -13`, which is not a fragment at all.
+runtime/support/memory.bend:768  that divides nothing -- it is the biggest power of two `<= sz`. It is
+runtime/support/memory.bend:774  THE FLAG IS THE INTERESTING PART and it is the negative case: for
+runtime/support/memory.bend:775  `(va=0x2000, sz=0x2000)` -- 8KB at 8KB -- `must_cover=True` answers 1 and
+runtime/support/memory.bend:776  `must_cover=False` answers 0, because the biggest power of two `<= sz` is
+runtime/support/memory.bend:777  `0x2000` itself (fragment 0) while the lowbit of `sz` is also `0x2000`... no:
+runtime/support/memory.bend:783  `va & -va`, the LOWEST SET BIT, as `va - 2*va + 1` in wrapping `U32`. For
+runtime/support/memory.bend:786  `va & -va`, the LOWEST set bit. THE spelling is `x & (U32.not(x) + 1)` and NOT
+runtime/support/memory.bend:791  `U32.not` and `U32.and` are the wrapping operations, so `-x` is
+runtime/support/memory.bend:794  :201 -- `va & -va if va > 0 else (1 << 63)`. THE TEST IS `va > 0` and NOT
+runtime/support/memory.bend:816  the one case `log2` alone does not give. `U32.log2` returns a `Nat`, so the
+runtime/support/memory.bend:826  :202 -- `min(a, b)`, and `min(va_div, sz_div)` when `must_cover` and
+runtime/support/memory.bend:837  THE pa field order is the thing being gated, and it is gated by a claim that
+runtime/support/objc.bend:5  ones. `objc.py` binds five symbols out of two shared libraries and then does
+runtime/support/objc.bend:16  trace (the gate checks ORDER and IDENTITY). There is no third kind. No
+runtime/support/objc.bend:20  THE ORACLE. Every `py=` expectation below is a row of
+runtime/support/objc.bend:37  `ops_metal.py:86` binds BOTH `objc_msgSend` AND `sel_registerName` on
+runtime/support/objc.bend:38  `metal.dll` -- the Metal framework. Measured with
+runtime/support/objc.bend:43  The failure is NOT a failed dlsym. `hcq2.py:84` names a DEVICE symbol after
+runtime/support/objc.bend:49  against an undefined symbol sel_registerName`. The fix belongs in
+runtime/support/objc.bend:50  `tinygrad/runtime/ops_cpu.py:18-19 symbol=CPUProgram` (upstream's `rt_lib` -- libobjc is missing from `CPUProgram.link_l
+runtime/support/objc.bend:55  W1  THE LIBRARY LOADS, :25-32. Four `ctypes.CDLL`s and a
+runtime/support/objc.bend:62  does NOT for `support/c.py`'s `DLL`, whose `findlib` gates on
+runtime/support/objc.bend:67  W2  `class id_(ctypes.c_void_p)`, :6-21. The POINTER is a `c_void_p` and
+runtime/support/objc.bend:72  of `__del__`'s guard (:13-14) and makes it testable at all.
+runtime/support/objc.bend:85  W4  THE CALLABLES. `msg` returns a closure over `sender` and `sel`, and
+runtime/support/objc.bend:201  no pointer and an address is not stable across runs. So the numbers are
+runtime/support/objc.bend:252  nothing else -- `sel.registerName` wants no NUL on Darwin -- and
+runtime/support/objc.bend:273  `args` is the DECLARED argument list -- `m[2]`, after `subst_list` -- and
+runtime/support/objc.bend:307  and the consequence is that a message with NO DECLARED ARGUMENTS gets an
+runtime/support/objc.bend:344  class when `clsmeth` and the instance otherwise, and the SECOND argument is
+runtime/support/objc.bend:345  ALWAYS the selector, looked up by name. Measured (`shape_recv_*`, and
+runtime/support/objc.bend:356  that is why `hcq2.py:84` produces a `custom_function` for BOTH symbols and
+runtime/support/objc.bend:423  MEASURED: `own()` sends exactly TWO C calls (`sel_registerName` then
+runtime/support/objc.bend:467  Both conjuncts are PARAMETERS, which is the only reason this is testable: the
+runtime/support/objc.bend:477  the port's `Meth`; the kwargs beyond the first three become `retain` and
+runtime/support/objc.bend:613  Its 123 rows are compared against `gates/objc-oracle.py` by
+runtime/support/system.bend:10  def either BUILDS THE ARGUMENT of one call (pure, and the gate diffs it) or
+runtime/support/system.bend:27  tinygrad/runtime/support/system.py:61-65 `atomic_lib` / libsys PORTED  `cap.*` -- the PLATFORM gate, which is
+runtime/support/system.bend:110  3. THE CTYPES LIBRARY GATE, tinygrad/runtime/support/system.py:61-65 and tinygrad/runtime/support/system.py:88. `atomic_
+runtime/support/system.bend:117  the question twice: which library, and whether it is a real fence at all.
+runtime/support/system.bend:126  that is this file's own logic is the 8-byte little-endian read, which
+runtime/support/system.bend:135  and `libc.munmap` (:36/:42) are two symbols; `libc.mlock` (:92) is one; the
+runtime/support/system.bend:141  ctypes structs (:79/:228/:230/:231/:237-239) are a ctypes packing of
+runtime/support/system.bend:151  which are this file's own arithmetic and are ported and gated; and
+runtime/support/system.bend:152  `BumpAllocator`, `MMIOInterface`, `VirtMapping` and `AddrSpace` are
+runtime/support/system.bend:159  THE constants. EVERY one of these was READ out of a live CPYTHON by
+runtime/support/system.bend:160  `.agents/slop/oracle-system.py`; none is transcribed. Where a value is
+runtime/support/system.bend:161  PLATFORM-DEPENDENT it is a def OF the platform flag, not a constant, and
+runtime/support/system.bend:169  `MAP_FIXED, MAP_FIXED_NOREPLACE = 0x10, 0x100000` -- spelled as LITERALS in
+runtime/support/system.bend:181  MAP_POPULATE is 0 on OSX and 0x008000 elsewhere -- but by a DIFFERENT route, the
+runtime/support/system.bend:200  the two platform answers, in BOTH directions: `osx` is the flag, and
+runtime/support/system.bend:315  The two differ in a way that is easy to get wrong: :321's second field is the
+runtime/support/system.bend:332  `a match` cannot scrutinise a COMPUTED value, so the `List.get` gets its own
+runtime/support/system.bend:532  matched on it and returned `at + 1` for the `0n` arm WITHOUT COMPARING, so
+runtime/support/system.bend:603  THREE distinct predicates and three distinct arms. My first version passed the
+runtime/support/system.bend:604  `v < 16` test to BOTH inner picks, so anything from 256 up answered 4 and
+runtime/support/system.bend:613  `%x`: the four-digit form minus its leading zeros. `String.drop` removes the
+runtime/support/system.bend:621  SIXTEEN BYTES, and the first twelve are the file's own and the last four are
+runtime/support/system.bend:623  the expression as 10 + 2 + 1; MEASURED, it is 16, and the twelve-byte PREFIX is
+runtime/support/system.bend:662  MAP_SHARED and PROT_READ are both 1, MAP_PRIVATE and PROT_WRITE are both 2, and on
+runtime/support/system.bend:664  disagree on three pairs and `mapflag_of(1)` answers 1 (MAP_SHARED) where
+runtime/support/system.bend:713  the id list, and the two answers :16 can give. `Ids2.n` is the length and
+runtime/support/system.bend:736  :15 `assert all(x < len(devs) for x in ids)` -- every id must be IN RANGE, and
+runtime/support/system.bend:747  which of the two `if` arms :13 took. The range arm is the one that CONSUMES THE
+runtime/support/system.bend:766  SO `cap.barrier_lib` reads `have_atomic` on the NON-OSX ARM ONLY, and
+runtime/support/system.bend:813  here and emitted no read at all, which made `sy_write_ok_nread` and
+runtime/support/system.bend:820  `functools.cached_property` / `functools.cache` rules and one refusal, and the
+runtime/support/system.bend:829  second reservation of the same range would destroy whatever was there.
+runtime/support/system.bend:942  so the port records the order and does not reorder it.
+runtime/support/system.bend:957  (c) THE BAR PROBE LOOP, :163-183. `bar_off` starts at 0 and the loop is
+runtime/support/system.bend:958  `while bar_off < 24`, advancing `8 if bar_64 else 4`, so there are AT MOST
+runtime/support/system.bend:1027  bus=2 -> 0x40300, bus=3 -> 0x40400. So the bus number lands in bits 8..15 and
+runtime/support/system.bend:1034  register and the hardware reads it as one value: the bus numbers are a
+runtime/support/system.bend:1191  check, which is the only way the second check can disagree with the first, and
+runtime/support/system.bend:1272  unaligned tail falls back to 4KB pages, increasing TLB pressure". THE SIZE IS
+runtime/support/system.bend:1276  PRESSURE: an allocation that is not a multiple of the granule has an
+runtime/support/system.bend:1302  one comparison so no word needs a `+` -- which is the reason these are written as
+runtime/support/system.bend:1417  the caller blocks on it, while a WRITE only has to be ORDERED, so it can be
+runtime/support/system.bend:1421  protocol has FOUR commands rather than two: `MMIO_READ`/`MMIO_WRITE` and
+runtime/support/usb.bend:19  talks to a device through a GENERATED ctypes binding, and
+runtime/support/usb.bend:34  with `dma_view` and the `0/4096/20480` controller window, with
+runtime/support/usb.bend:35  `TODO(p3) runtime/ops_amd.py:786  symbol=__init__  USB3.list_devices` and
+runtime/support/usb.bend:48  * AND A CORRECTION TO CARRY BACK. ops_amd's 4096 is `0x1000`, which is NOT
+runtime/support/usb.bend:74  printed with one `IO.print` joined on "\n". That is not a style choice: a
+runtime/support/usb.bend:312  name -> value, LAST match wins for the same reason. A NAME no entry has is
+runtime/support/usb.bend:315  from a real constant. 4294967295 is LIBUSB_ERROR_IO's bit pattern, and
+runtime/support/usb.bend:364  `iProduct`), and `usb_xfer` (:218) sizes its placeholder with
+runtime/support/usb.bend:383  `field("status")` is this lookup, and its index is the byte offset divisor in
+runtime/support/usb.bend:481  AND A CORRECTION TO CARRY BACK. ops_amd's 4096 is `0x1000`, which is NOT
+runtime/support/usb.bend:542  :41-42 the two ctypes buffers: 4 MiB for bulk and 0x1000 for control. The
+runtime/support/usb.bend:552  packet rows and the trace read them, and Bend refuses a def USED before it is
+runtime/support/usb.bend:569  :253 `usb_wire(size) = (size + 512 + SLOT - 1) // SLOT * SLOT`. The 512 is a
+runtime/support/usb.bend:628  0xFFFFFFFF, address >> 32, value)` SPLITS it before anything else happens, and
+runtime/support/usb.bend:629  `helpers.bend` has `i64_add`/`i64_sub`/`i64_cmp` and NO 64-bit shift, so
+runtime/support/usb.bend:643  :135 `(data >> (8 * offset)) & ((1 << (8 * size)) - 1)`. `size == 4` asks for
+runtime/support/usb.bend:738  :147-149 the streaming chunk loop, `range(0, len(data), USB_MAX_STREAM)` with
+runtime/support/usb.bend:753  :375 `wire = (size + (second > 0 ? 512 : 0) + 511) // 512 * 512` where
+runtime/support/usb.bend:769  :336-355 `usb_chunk`. `end = (half + 1) * HALF`, so half 0's window is
+runtime/support/usb.bend:1231  while 300 and 43 differ by 257 and the masked difference is 1, which is not
+runtime/support/usb.bend:1284  -- so 0b001, 0b010 and 0b100 have names and EVERYTHING else is Reserved. It is a
+runtime/support/usb.bend:1291  `case _:` does not close a `Nat` match in Bend 2.0.34, so the three keys are an
+runtime/support/usb.bend:1340  :67 / :71 the two request types, and they are the ONLY difference between
+runtime/support/usb.bend:1341  `control_write` and `control_read`: 0x40 is vendor|device|OUT and 0xC0 adds the
+runtime/support/usb.bend:1358  message is non-empty" would stay green with the prefix removed, and
+runtime/support/usb.bend:1362  is exactly the shape `<>` and `List.concat` want and a LITERAL does not, and
+runtime/support/usb.bend:1696  unconditional and only the ref/bus/address triple is conditional, so a miss is
+runtime/support/usb.bend:1700  `libusb_ref_device` (:35) is RAW and cannot refuse; the descriptor read (:33) is
+runtime/support/usb.bend:1719  :32 GET_DEVICE_LIST, the walk, then :36 `libusb_free_device_list(devs, 1)`. THE
+runtime/support/usb.bend:1726  THE OPEN. `USB3.__init__` (:39-62). `ops_disk.bend` records `_might_open` as a
+runtime/support/usb.bend:1739  :55-57 the detach branch, and its THREE calls appear ONLY when
+runtime/support/usb.bend:1800  :350-351 `field("status").store(0xff)`, `field("length").store(wire)` and
+runtime/support/usb.bend:1825  pointer and the timeout are the seam's and are the `usb_ctrl_buf_in_trace` and
+runtime/support/usb.bend:1885  THE TRACE ROWS. Three things are gateable about a trace and only three: the
+runtime/support/usb.bend:2041  overwritten by the later literal -- and both folds have to agree with that. But
+runtime/support/usb.bend:2045  in every table is UNIQUE. `M36` and `M37` measured 0 rows moved, and a 0 is a
+runtime/support/usb.bend:2046  REQUEST FOR A FIXTURE, not a coverage claim. So the rule gets a table BUILT TO
+runtime/support/am/__init__.bend:3  Empty upstream (0 lines), marker only. Same shape and finding as
+runtime/support/am/amdev.bend:11  * the FIRMWARE DESCRIPTOR LADDER (:30-109) -- which ucode blocks are handed to the
+runtime/support/am/amdev.bend:25  silently wrong register write: `indirect_wreg_pcie`'s `1 << 34` (tinygrad/runtime/support/am/amdev.py:342 symbol=indirec
+runtime/support/am/amdev.bend:38  says ALL PROOFS CHECK with no foreign effect: the seam is `Tr.emit`, not a
+runtime/support/am/amdev.bend:42  a header. The oracle is `.agents/slop/amdev_oracle.py` (1472 rows) with
+runtime/support/am/amdev.bend:47  the descriptor list, its order, its offsets, its sizes and its
+runtime/support/am/amdev.bend:52  a recording `self`, so those traces are amdev.py's own too.
+runtime/support/am/amdev.bend:61  * the code arm at :78 reads `hdr.ucode_size_bytes`, which in
+runtime/support/am/amdev.bend:63  common header's -- a fixture that set only the common one yields a
+runtime/support/am/amdev.bend:102  amdgpu_discovery_harvest_ip)". A HARVESTED INSTANCE IS ONE THE SILICON DOES
+runtime/support/am/amdev.bend:103  NOT HAVE: the manufacturer disabled it, and the discovery table still
+runtime/support/am/amdev.bend:141  (`mmRCC_CONFIG_MEMSIZE = 0xde3`, a local in `_run_discovery`) rather than an
+runtime/support/am/amdev.bend:215  rather than gathered at the front. So the load-bearing claim is that
+runtime/support/am/amdev.bend:395  == ip.hw_id`. :391 builds its INVERSE for the harvest table, and 108 is in
+runtime/support/am/amdev.bend:440  :28 `'_'.join(map(str, adev.ip_ver[hwip]))` -- the FILENAME the blob is keyed by.
+runtime/support/am/amdev.bend:557  `wait_cond(lambda: self.vf_mailbox[0] & 2, ...)` reads the mailbox and
+runtime/support/am/amdev.bend:602  the entries' `a`, in order, for one tag -- the ADDRESSES, which is what the
+runtime/support/am/amdev.bend:681  0xffffffff some of the time and the right value other times. That is a
+runtime/support/am/amdev.bend:691  The walk is `cap, seen = read_config(0x34, 1) & 0xfc, set()` then
+runtime/support/am/amdev.bend:724  THE CONDITION, left to right: `cap` non-zero, then `cap not in seen`, then the
+runtime/support/am/amdev.bend:747  THE WALK. `fuel` is the only countdown and it is the FIRST parameter. The
+runtime/support/am/amdev.bend:764  `cap == 0` is not a special case -- it is just a cap, and :154's guard reads it.
+runtime/support/am/amdev.bend:770  THE FINAL WRITE (:154), guarded by `cap and cap not in seen`. A chain that ran to
+runtime/support/am/amdev.bend:813  Every one of the eleven (or nine) trace entries is a hardware store, and the
+runtime/support/am/amdev.bend:829  `range`, and :272's `enumerate` is exactly this.
+runtime/support/am/amdev.bend:872  one so the host does not have to FLR the VF later". THE ACCESS WINDOW IS A
+runtime/support/am/amdev.bend:953  :333-334 `self.reg("regBIF_BX_PF0_RSMU_INDEX").write(reg * 4)` THEN
+runtime/support/am/amdev.bend:984  instance), and for those two the gateway writes the value STRAIGHT to
+runtime/support/am/amdev.bend:1044  `max((k >> 2 for k in insts), default=0)`, and `default=0` is load-bearing: an
+runtime/support/am/amdev.bend:1068  the four flags of group `aidn` are at `aidn * 4 + slot`, and `aidn * 4` is the
+runtime/support/am/amdev.bend:1126  `1 << (i + 12)` is 64-BIT for i >= 20, and :233's list runs to i = 27 -- so
+runtime/support/am/amdev.bend:1128  whole top half of the allocator's free list a run of ZERO-SIZED entries: a
+runtime/support/am/amdev.bend:1130  shape as `ops_amd`'s 2^34 SQTT pointer. So the size is its TWO WORDS, and
+runtime/support/am/amdev.bend:1193  is `read_config(cap, 1)` and `nexts` is `read_config(cap + 1, 1)`, one entry per
+runtime/support/am/amdev.bend:1196  `first` is what `read_config(0x34, 1)` answers -- the FIRST CAP, and it is a
+runtime/support/am/amdev.bend:1197  DIFFERENT register from the chain: `links` is what `read_config(cap, 1)` says and
+runtime/support/am/amdev.bend:1229  that only exists on real hardware, and `AMDev.boot` reaches `:185` only after
+runtime/support/am/amdev.bend:1231  decision. What these four lines SHARE, and what is genuinely portable, is the
+runtime/support/am/amdev.bend:1240  1. Not initialized. 2. Initialized by amdgpu. 3. Initialized by AM." THE
+runtime/support/am/amdev.bend:1244  RESET, because the amdgpu driver left the hardware in a configuration the
+runtime/support/am/amdev.bend:1247  time. In this case, only the GFX and SDMA IPs need to be initialized." THE
+runtime/support/am/amdev.bend:1248  PARTIAL BOOT IS AN OPTIMISATION AND IT IS POSSIBLE ONLY BECAUSE OF A
+runtime/support/am/amdev.bend:1267  amdev.py:198 -- "Quiesce first: mode1 reset over live engines can wedge the
+runtime/support/am/amdev.bend:1269  the same reason: a mode1 reset issued while engines are live can WEDGE the
+runtime/support/am/amdev.bend:1274  oracle's LANE B pulls the right-hand side out of each cited line with
+runtime/support/am/amdev.bend:1282  (ip.bend's header names them but has no `AM_GFX` def). So the class name is a
+runtime/support/am/amdev.bend:1283  PARAMETER and the gate supplies upstream's own spelling. `init_hw` is called as
+runtime/support/am/amdev.bend:1314  THE FOUR SITES. Two args for :251 (the IP class name) and one for the rest, and
+runtime/support/am/amdev.bend:1316  why the gate and the text are two defs rather than one `if`, and
+runtime/support/am/ip.bend:8  the KIQ `flush_tlb` PM4 PACKET (:108-110), the PTE FLAG TABLES (:178-195), the
+runtime/support/am/ip.bend:25  extractor one bit at a time to recover its mask and shift, and by reading the
+runtime/support/am/ip.bend:64  `ops_amd.bend` cites `am/ip` nowhere. Their one overlapping FUNCTION is
+runtime/support/am/ip.bend:73  ONE device call and the number that identifies it. `arg` is the ordinal of the
+runtime/support/am/ip.bend:85  THE RAISE IS HERE. `Tr.emit` records NOTHING once a refusal has fired, and
+runtime/support/am/ip.bend:86  `Tr.refuse` is IDEMPOTENT after the first. `nth` counts refusals so far and
+runtime/support/am/ip.bend:132  the refusal ordinal the seam should fail on, 0 = never. `nth` is NOT reset by
+runtime/support/am/ip.bend:217  carried as a second list. THE FUEL IS THE TRACE LENGTH and the answer is
+runtime/support/am/ip.bend:263  `am.AMDGPU_PDE_BFS(a)` is MEASURED to be `a << 59`: `PDE_BFS(1) == 2**59` and
+runtime/support/am/ip.bend:276  instead of its LOWEST, and `amp_pte_mtype_12_uc` printed 786432 where
+runtime/support/am/ip.bend:318  :624, `self.ring_size = 0x10000`; :715 advances the wptr by
+runtime/support/am/ip.bend:423  then reads `PPSMC_MSG_*` and `PPCLK_*` OFF THE MODULE. So every message id in
+runtime/support/am/ip.bend:430  `0` is the "the module has no such name" sentinel and it is SAFE: MEASURED, no
+runtime/support/am/ip.bend:453  MODULES with identical values for every column, so they share row 1, and
+runtime/support/am/ip.bend:524  `hi32(x)`/`lo32(x)` are 64-bit helpers (helpers.py) and Bend 2.0.34 has no
+runtime/support/am/ip.bend:525  `Word(64n)`, so the port keeps the pair as a `U32` and the HIGH half is
+runtime/support/am/ip.bend:549  :241-242, `level is None` sets the soft MIN to `clck << 16` and the soft MAX to
+runtime/support/am/ip.bend:553  :254-257, `_aca_read_reg`. The argument is
+runtime/support/am/ip.bend:562  :249-251, `ppt_limit = max(int(round(watts)), 1)`. `int(round(watts))` is a
+runtime/support/am/ip.bend:563  FLOAT round and `base.bend`'s F32 has no round and no to_bits, so the FLOOR is
+runtime/support/am/ip.bend:585  module's symbol. The other two are read out of the per-arch table, and both are
+runtime/support/am/ip.bend:613  2**54, so a `U32` port silently drops the whole flag. `pte.of` answers an
+runtime/support/am/ip.bend:622  `Nat.sub` in the guard made `pte.mtype(12, 3)` print `3 << 16` instead of
+runtime/support/am/ip.bend:643  `am.AMDGPU_PDE_BFS(a)` is MEASURED to be `a << 59`: `PDE_BFS(1) == 2**59` and
+runtime/support/am/ip.bend:657  :179, the first three terms. `system`/`snooped`/`valid` are MULTIPLIERS and
+runtime/support/am/ip.bend:672  :183 and :186, the NON-TABLE page flag and the table-page flag. They are
+runtime/support/am/ip.bend:682  `AMDGPU_PTE_TF` is 2**56, which is bit 24 of the LOW half: 2**56 - 2**32 is
+runtime/support/am/ip.bend:738  `MTYPE_UC if uncached else 0` -- :182, :185 and :188 all spell it that way and
+runtime/support/am/ip.bend:814  :592, `SDMA_ENGINE0 + (pipe+queue*4)*0xA`. The channel index is
+runtime/support/am/ip.bend:815  `pipe + queue*4` -- queue is the FAST term -- and :591's register name is
+runtime/support/am/ip.bend:832  then reads `PPSMC_MSG_*` and `PPCLK_*` OFF THE MODULE. So every message id in
+runtime/support/am/ip.bend:839  `0` is the "the module has no such name" sentinel and it is SAFE: MEASURED, no
+runtime/support/am/ip.bend:868  2**54, so a `U32` port silently drops the whole flag. `pte.of` answers an
+runtime/support/am/ip.bend:888  :592, `SDMA_ENGINE0 + (pipe+queue*4)*0xA`. The channel index is
+runtime/support/am/ip.bend:889  `pipe + queue*4` -- queue is the FAST term -- and :591's register name is
+runtime/support/am/ip.bend:895  offset is `(SDMA_ENGINE0 + (entry-1)*0xA) * 2`, so the doorbell channel is
+runtime/support/am/ip.bend:939  `!= 0` gets that exactly backwards -- MEASURED, `amp_db_kiq_0` is
+runtime/support/am/ip.bend:965  `eop_size=(eop_size//4).bit_length()-2`. SAME formula, and `bit_length` of a
+runtime/support/am/ip.bend:975  :605, `rb_size=(ring_size//4).bit_length()-1`. ONE MORE than `mqd.size` and
+runtime/support/am/ip.bend:982  :592, `SDMA_ENGINE0 + (pipe+queue*4)*0xA`. The channel index is
+runtime/support/am/ip.bend:983  `pipe + queue*4` -- queue is the FAST term -- and :591's register name is
+runtime/support/am/ip.bend:992  :591, the two register-name spellings. On SDMA (4,4) the name is
+runtime/support/am/ip.bend:993  `regSDMA_GFX` and `inst` is the CHANNEL; on everything else it is
+runtime/support/am/ip.bend:1000  :373, `eop_size=(eop_size//4).bit_length()-2`, the SAME encoding as
+runtime/support/am/ip.bend:1008  :592, `SDMA_ENGINE0 + (pipe+queue*4)*0xA`. The channel index is
+runtime/support/am/ip.bend:1009  `pipe + queue*4` -- queue is the FAST term -- and :591's register name is
+runtime/support/am/ip.bend:1026  then reads `PPSMC_MSG_*` and `PPCLK_*` OFF THE MODULE. So every message id in
+runtime/support/am/ip.bend:1033  `0` is the "the module has no such name" sentinel and it is SAFE: MEASURED, no
+runtime/support/am/ip.bend:1062  2**54, so a `U32` port silently drops the whole flag. `pte.of` answers an
+runtime/support/am/ip.bend:1082  :592, `SDMA_ENGINE0 + (pipe+queue*4)*0xA`. The channel index is
+runtime/support/am/ip.bend:1083  `pipe + queue*4` -- queue is the FAST term -- and :591's register name is
+runtime/support/am/ip.bend:1089  offset is `(SDMA_ENGINE0 + (entry-1)*0xA) * 2`, so the doorbell channel is
+runtime/support/am/ip.bend:1095  offset is `(SDMA_ENGINE0 + (entry-1)*0xA) * 2`, so the doorbell channel is
+runtime/support/am/ip.bend:1135  written into the KIQ ring at `ring[(ptrs[1] + i) % 0x400]` for `i` in
+runtime/support/am/ip.bend:1136  `enumerate(pkt)`, so the ORDER is the wire format and the wptr advance is
+runtime/support/am/ip.bend:1145  the count is in the HIGH field, the opposite of the order the two appear in.
+runtime/support/am/ip.bend:1146  `WR_CONFIRM` is `1 << 20` and `WRITE_DATA_DST_SEL(x)` is `x << 8`; MEASURED, their
+runtime/support/am/ip.bend:1199  `*data64_le(...)` is a STAR-UNPACK and so it contributes TWO words: `wr` is the
+runtime/support/am/ip.bend:1200  LOW half and `wr_hi` the HIGH half. MEASURED out of CPython, the whole packet is
+runtime/support/am/ip.bend:1272  against a NAME that came out of a generated table -- so the COMPARISON is
+runtime/support/am/ip.bend:1277  soc21 and `getbits(ctx[0], 26, 27)` before it; `err_type` is
+runtime/support/am/ip.bend:1301  :518-519, the two NAME tables. `['auto','wave','error'][enc_type]` and
+runtime/support/am/ip.bend:1311  mcatype. THE VALUE IS 64-BIT: `_aca_read_reg` at :256-257 is
+runtime/support/am/ip.bend:1351  `inst` selects the INSTANCE and is part of the write. `amp_reg_473` and
+runtime/support/am/ip.bend:1520  below are read out of `autogen/am/am.py`'s `register_fields`, and they are BY
+runtime/support/am/ip.bend:1539  `struct_psp_gfx_cmd_resp` (:728/:737/:745/:751/:755). `cmd` is the
+runtime/support/am/ip.bend:1573  :707-709, the frame's five NAMED fields. `fence_value=(prev_wptr:=…)+1` is a
+runtime/support/am/ip.bend:1582  :611, `reg_pref` is one string or the other and EVERY register in `AM_PSP` is
+runtime/support/am/ip.bend:1602  :675, the ONE component whose `compid` skips the post-write wait, and it is the
+runtime/support/am/ip.bend:1626  tests on the same paddr, and they are what make a partial boot not write the
+runtime/support/am/ip.bend:1635  :643 and :652, `PSP_FW_TYPE_PSP_TOC in sos_fw` decides `_tmr_init` and
+runtime/support/am/ip.bend:1641  :651, `_rlc_autoload_cmd` is `GFX_CMD_ID_AUTOLOAD_RLC` for gfx11+ and the
+runtime/support/am/ip.bend:1679  ONE ROW PER REGISTER ROW, printed as `line <L> | <register> | <fields...>`. The
+runtime/support/am/ip.bend:1711  `pm4.PACKET3(op, n)` over a fixture grid that crosses the `0xff` op mask and the
+runtime/support/am/ip.bend:1908  the seam's offsets kept in one place so WALL 1 is a list and not a smell, and
+runtime/support/am/ip.bend:1927  `amp_mqd_pqbits_*` is the row that shows the split is real: it prints the
+runtime/support/am/ip.bend:2296  :489/:503, the drain's two wrap arithmetic claims: the offset is
+runtime/support/am/ip.bend:2352  are separate claims: `amp_refuse_fail_44_0_1` is 0 (below SDMA 5) and
+runtime/support/am/ip.bend:2360  THE TRACE a `setup_ring` makes, in the order :595-606 write it: the
+runtime/support/am/ip.bend:2446  that says idx=1 truncates). `amp_has_fwd` / `amp_has_rev` are the
+runtime/support/am/ip.bend:2557  14 blind spots survive, and here they are:
+runtime/support/am/ip.bend:2570  is outside `U32`, so the type system refuses it.
+runtime/support/rdma/__init__.bend:3  Empty upstream (0 lines), marker only. Same shape and finding as
+runtime/support/rdma/bnxtdev.bend:18  2. THE PAGE TABLES (:27-37, `build_pbl`), BOTH DIRECTIONS. Forward is
+runtime/support/rdma/bnxtdev.bend:22  gated both ways: encode from (paddr, flags) and decode back out.
+runtime/support/rdma/bnxtdev.bend:24  (:91-108, `setup_backing_store`). Nine (type, extra) pairs, a
+runtime/support/rdma/bnxtdev.bend:34  composition, the `level << LVL_SFT | log_page << LOG2_SFT` in
+runtime/support/rdma/bnxtdev.bend:80  :66  `db_off = kb * 1024`      PORTED  `dev.db_off_of` -- and it is a
+runtime/support/rdma/bnxtdev.bend:110  :183 `register_mem`            PORTED  `dev.register_mem` -- the
+runtime/support/rdma/bnxtdev.bend:129  THE FFI SEAMS. Every one of these is NAMED with its Python line and is a
+runtime/support/rdma/bnxtdev.bend:130  `CALL_*` tag in the trace; none of them is made here, and there is no
+runtime/support/rdma/bnxtdev.bend:160  keyword constructor, and `c.record` structs are OPAQUE: `t._fields_` is
+runtime/support/rdma/bnxtdev.bend:169  WALL(p3) bnxtdev.py:131 getattr(bnxt, f"struct_cmdq_{name}"). -- BLOCKED. THE SAME
+runtime/support/rdma/bnxtdev.bend:170  RUNTIME NAME RESOLUTION as the marker at :77, one family over.
+runtime/support/rdma/bnxtdev.bend:179  3. `MMIOInterface` (tinygrad/runtime/support/rdma/bnxtdev.py:40-41 symbol=BNXTQueue). A byte-addressed slice of host mem
+runtime/support/rdma/bnxtdev.bend:184  this: the field LISTS are ported by name and the BYTES are computed as
+runtime/support/rdma/bnxtdev.bend:196  7. THE GENERATOR OF :94-96. `sum(splits)`, `range(...)` and the
+runtime/support/rdma/bnxtdev.bend:213  `Tr.emit` records NOTHING once `refused` is set, so a refusal appears as a
+runtime/support/rdma/bnxtdev.bend:218  THE CONSTANTS. Every one MEASURED, and every one in
+runtime/support/rdma/bnxtdev.bend:339  `c.record` structs are OPAQUE: `bnxt.struct_cq_base._fields_` is
+runtime/support/rdma/bnxtdev.bend:380  `BNXTQP.__init__` (:194) sizes its completion queues with
+runtime/support/rdma/bnxtdev.bend:426  with `kind` -- the 3, the size in 16-byte units -- in the HIGH byte and
+runtime/support/rdma/bnxtdev.bend:517  that can never be set and would hang. `cqe_of` / `cqe_status` are pinned by
+runtime/support/rdma/bnxtdev.bend:541  fact 2. `0` is the one-page shortcut, `1` and `2` are the two real levels, and
+runtime/support/rdma/bnxtdev.bend:561  the port wrote, recover which flags it carries. `last` and `next_to_last` are
+runtime/support/rdma/bnxtdev.bend:620  is replaced by a whole page of entries -- `aq_entries_default` is the row, and
+runtime/support/rdma/bnxtdev.bend:655  Its 930 rows are compared against `gates/bnxtdev-oracle.py` by
+runtime/support/nv/__init__.bend:3  Empty upstream (0 lines), marker only. Same shape and finding as
+runtime/support/nv/ip.bend:48  2. The ring's usable length is `msgSize*msgCount`, and the wrap threshold is
+runtime/support/nv/ip.bend:53  readers that were never written; the contract above is carried by
+runtime/support/nv/ip.bend:131  the include ORDER is ported as data and the includes are not
+runtime/support/nv/ip.bend:148  rpc.func_alloc.is_tag    moved 2 rows, and found `C_ALLOC_MEM()` passed to
+runtime/support/nv/ip.bend:163  That is the substrate fact the whole file is built on.
+runtime/support/nv/ip.bend:183  inverted -- five green rows over a bug. `.agents/slop/nv_ip_oracle4.py` now
+runtime/support/nv/ip.bend:196  table disagree, one of the two is a transcription error and the differ says which.
+runtime/support/nv/ip.bend:270  each struct is one row carrying names, order, offsets AND widths at once, and
+runtime/support/nv/ip.bend:776  false, and the untaken arm does not reach the answer. So a fold written as
+runtime/support/nv/ip.bend:1001  live here rather than being recomputed per call; `handle` is the
+runtime/support/nv/ip.bend:1117  a header of 0x1001 consumes TWO elements and not one, and the modulo is by
+runtime/support/nv/ip.bend:1136  a comment is not a row. The FOUR ZERO slots ([8], [11], [18], [19]) have no
+runtime/support/nv/nvdev.bend:23  tinybendygrad/runtime/support/system.bend` returns ZERO hits: it is a NAME IN A
+runtime/support/nv/nvdev.bend:30  which is NOT sorted by bit position: `architecture_1` sits at bit 8 between
+runtime/support/nv/nvdev.bend:47  a. `pte_covers = [1 << x for x in va_shifts][::-1]` -- 1<<38, 1<<47 and 1<<56 do
+runtime/support/nv/nvdev.bend:50  (2 on ver 2, 3 on ver 3, MEASURED) and gated per level by
+runtime/support/nv/nvdev.bend:82  dev_mmu.py, and nvdev.py never reads them -- :128 hands them to
+runtime/support/nv/nvdev.bend:83  `NVPageTableEntry`, which uses them only for `.encode`/`.decode`/`.mask`. So
+runtime/support/nv/nvdev.bend:124  gated row reaches it. The MMU_VER structs DO: `address_sys` is 46 bits wide and
+runtime/support/nv/nvdev.bend:253  f"{implementation:02d}"` -- :114. THE DICT HAS THREE KEYS and the
+runtime/support/nv/nvdev.bend:294  THE ORDER IS LOAD-BEARING: memory.py REVERSES it into `pte_covers`, so
+runtime/support/nv/nvdev.bend:305  :188 `self.level_cnt = len(va_shifts)` -- the shifts WITHOUT the extra that
+runtime/support/nv/nvdev.bend:380  :151 `sysmem is True or (sysmem is None and not self.large_bar)`. `sm` is 0 for
+runtime/support/nv/nvdev.bend:422  nvdev.py's `else True` answers True for EVERY entry. `nv.ispage_top` had the
+runtime/support/nv/nvdev.bend:432  :44,:45,:66 the `small` and `sys` suffixes. `_small` is the dual test; `_sys` is
+runtime/support/nv/nvdev.bend:449  The `& 1 == 1` half, which needs the stored word. It is only ever asked of a
+runtime/support/nv/nvdev.bend:488  NOTE THE VALUES DIFFER: a PTE stores the CACHED bit, a directory stores the
+runtime/support/nv/nvdev.bend:514  :72 -- `(1 << 0) | (1 << 1) | (1 << 6) | (1 << 31)`, written through
+runtime/support/nv/nvdev.bend:539  range(sz // 0x1000)]`. BAR1's base is 0x100000000, which is 2^32 -- so the
+runtime/support/nv/nvdev.bend:629  THE SATURATION WALL, made explicit. `U32.shln` SATURATES TO 0 PAST 31, so
+runtime/support/nv/nvdev.bend:659  `1 << 38`, `1 << 47` and `1 << 56` DO NOT FIT A U32: `nv.pw` wraps them to 0, so
+runtime/support/nv/nvdev.bend:682  their value, so `mask`/`encode`/`decode` over any of them is THE WALL. See the
+runtime/support/nv/nvdev.bend:686  slip: those six entries in dev_mmu.py are `(None, None, {fields})`. They have
+runtime/support/nv/nvdev.bend:687  NO register address, because nvdev.py never reads them -- :128 hands them to
+runtime/support/nv/nvdev.bend:753  :131 `vram_size = NV_PGC6_AON_SECURE_SCRATCH_GROUP_42.read() << 20` -- and
+runtime/support/nv/nvdev.bend:772  AND THE ORDER MATTERS: nvdev.py evaluates `lv >= level_cnt - 3` FIRST, so at
+runtime/support/nv/nvdev.bend:783  `nv.huge_at` -- is the index in range. Separated from `pte_huge_ok` because the
+runtime/support/nv/nvdev.bend:801  --- set_entry's FIELD NAMES and the two branch encodings. This is where a
+runtime/support/nv/nvdev.bend:842  :85-86 `for ip in [self.flcn, self.gsp]: ip.init_sw()` then the same for
+runtime/support/nv/nvdev.bend:871  :152,:155,:157 `_alloc_boot_mem`'s two branches. `sysmem` picks between
+runtime/support/nv/nvdev.bend:872  `alloc_sysmem` -- which yields NO paddr and a driver-supplied sysaddr list -- and
+runtime/support/nv/nvdev.bend:892  THE GATE. Every `py=` value below is a row the CPython oracle emitted by
+runtime/support/nv/nvdev.bend:916  --- ONE def per register, so a row NAMES its register and a mutation that
+runtime/support/nv/nvdev.bend:1010  `is_pte=False` for a directory, and the key it is looked up under is
+runtime/support/nv/nvdev.bend:1158  :20 `read` -- `self.nvdev.rreg(self.base + self.off)`. The pure half is the
+runtime/support/nv/nvdev.bend:1218  :105 `NV_PFB_PRI_MMU_WPR2_ADDR_HI.read() != 0` -- the WPR2-IS-UP test. The
+runtime/support/nv/nvdev.bend:1258  high word is 1 whatever the offset. The only thing that could make it 2 is a
+runtime/support/nv/nvdev.bend:1287  nest of `Bool.pick`s for a measured reason: `Bool.pick` CHOOSES an arm and
+runtime/support/nv/nvdev.bend:1360  Between them a transposition cannot hide: all six of these fields have s != e, and
+runtime/support/nv/nvdev.bend:1480  `implementation` update on a word of all ones the ini came out 0xC00000FF, which
+runtime/support/nv/nvdev.bend:1542  the count of fields WIDER THAN 32 bits -- the WALL COUNT. Not zero for the
+runtime/support/nv/nvdev.bend:1635  (the register max comes from `address_sys`) nor `_wide` (0 is not > 32) nor
+runtime/support/nv/nvdev.bend:1688  :25 `update` -- READ THEN WRITE. `mask` is over the NAMES GIVEN, and
+runtime/support/nv/nvdev.bend:1732  :112-113 -- chip_id is a RAW read of BOOT_0 and chip_details a read of
+runtime/support/nv/nvdev.bend:1736  :105 -- the WPR2 read, the config clear, the reset, the config set. The
+runtime/support/nv/nvdev.bend:1771  the U32 arm of Python's `self.fields[name][0]` at :30, and the walk is over the
+runtime/support/nv/nvdev.bend:1826  `architecture_1` at bit 8 sits between `major_revision` (4:7) and
+runtime/support/nv/nvdev.bend:1884  The `read()` answer `update` needs, INJECTED. :25 is
+runtime/support/nv/nvdev.bend:2077  `nv.revs` -- `va_shifts[::-1]` and NOTHING ELSE. `nv.rev.go` is the SAME fold with
+runtime/autogen/ggml_common.bend:4  THE GRID FAMILY of `tinygrad/runtime/autogen/ggml_common.py`: the six grids the
+runtime/autogen/ggml_common.bend:6  into, plus the sixteen `kvalues_iq4nl`. A grid is `(entries, words)` -- an
+runtime/autogen/libclang.bend:23  sizes, field offsets in BITS and in bytes, and the CXCursor record -- against the
+runtime/autogen/libclang.bend:27  THIS FILE DOES NOT RUN.  `bend <file>` and `bend <file> -o out.js` both fail with
+runtime/autogen/libclang.bend:29  imports only `libclang-ffi.c`, and `references/bend/bend2/comp.ts:3385` asks for a
+runtime/autogen/libclang.bend:2346  and `U32` alike, measured: `U32.show(i) ++ U32.show(i)` fails with
+runtime/autogen/libclang.bend:2417  law `main` never calls, so every law above is called here directly, once each.
+runtime/autogen/libclang.bend:2453  ---- port-only rows, AFTER the shared ten and on rows the oracle does not

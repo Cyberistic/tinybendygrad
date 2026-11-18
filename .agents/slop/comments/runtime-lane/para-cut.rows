@@ -1,0 +1,9 @@
+runtime/ops_cl.bend:442  A: # the three-way choice, as two Bool.picks: a `U32` ladder over tags that are not
+                         B: # 0/1/n is refused outright ("a declared constructor (unknown: U32)"), and
+                         HISTORY: 0/1/n is refused outright ("a declared constructor (unknown: U32)"), and  (081ae8c30e)
+runtime/ops_cl.bend:443  A: # 0/1/n is refused outright ("a declared constructor (unknown: U32)"), and
+                         B: # bend2-constraints rule 34 at line 4982 is the note on it.
+                         HISTORY: bend2-constraints rule 34 at line 4982 is the note on it.  (081ae8c30e)
+runtime/support/autogen.bend:780  A: "from tinygrad.runtime.support.c import _IO, _IOW, _IOR, _IOWR",
+                                  B: "from tinygrad.runtime.support import c", *prolog,
+                                  HISTORY: "from tinygrad.runtime.support import c"]  (cbc8a37c11)

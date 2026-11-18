@@ -1,0 +1,197 @@
+##### runtime/ops_null.bend:760
+        # the WORDS of the measured stream, one row per position, so a port that
+        # padded correctly and filled the pad with something else is caught
+
+##### runtime/ops_null.bend:1145
+    #   M28  `EvA.step` last-wins. A SOUND EQUIVALENCE, with a proof rather than a
+    #
+    #   M53  `nr.zero_of.go` last-wins. THE SAME ARGUMENT: the thirteen names are
+    #        thirteen separately MEASURED ops, so at most one row ever matches.
+    #        There is no duplicate to plant, and planting one would assert a state
+    #        the table cannot be in.
+    #
+    #
+    # THE MEASURED ENTRIES for the rules above. The other 109 - these and the
+    # CPU half's, which is in `ops_cpu.bend` - are filed by the def each names;
+    # `cn-mutate.py` walked them in order M1..M109 across the pre-split file.
+    #
+    #   M28    0  EvA.step: last-wins becomes first-wins  (argued above)
+    #   M53    0  nr.zero_of.go: last-wins becomes first-wins (argued above)
+    #   M1      5  nr.pads: `3 - arity` -> `4 - arity`
+    #   M2     22  nr.words: emit FIVE words (the `[:4]` slice dropped)
+    #   M3      4  nr.nargs: swap the TIMESTAMP and STORE arities
+    #   M4      2  nr.timestamp: drop the `+ 8` (the timeline value slot)
+    #   M5      1  nr.copy_dev: drop the `:SDMA:0` suffix
+    #   M28     0  Ev.lookup: last-wins instead of first-wins   ZERO -- see below
+    #   M29     5  Ev.put: the miss does NOT insert (setdefault -> get)
+    #   M30     1  Nk.same: the `key` field ignored (device+name only)
+    #   M31     1  nr.copy_name: the arrow becomes a comma
+    #   M32     1  nr.cfop_threefry: a space after the comma
+    #   M34     2  nalloc.va: the 1<<32 step becomes 1<<31
+    #   M35     2  nalloc.map_is_null: `startswith` -> equality
+    #   M36     1  nalloc.copyout_ok: the flag IGNORED (always refuse)
+    #   M37     5  nprog.sig7: the cmdbuf name at index 5 does not start with `cmdbuf`
+    #   M38     2  nprog.qwords: bytes divided by 4 instead of 8
+    #   M39     7  nprog.is_work: EXEC or COPY -> EXEC only
+    #   M40     3  nprog.stamp_val: microseconds, not nanoseconds
+    #   M41     2  nprog.done_at: the inclusive accumulate becomes exclusive
+    #   M42     2  nprog.lane.go: `or` becomes `and` (the count stops growing)
+    #   M43     3  nprog.sigs: the lane term dropped from the odd entries
+    #   M47     1  pkend: the sum of the itemsizes instead of the running `next`
+    #   M49     6  ndev.emulate_arch: the `<arch>` fallback replaced by the key
+    #   M50     2  ndev.emulate_table: AMD_CDNA4 maps to gfx1201 not gfx950
+    #   M51     1  nr.zero_table: `eye` marked as all-zero (the scheduler fact, faked)
+    #   M52     1  nr.zero_table: `arange` marked as all-zero
+    #   M53     0  nr.zero_of.go: last-wins (the hit overwrites)   ZERO -- see below
+    #   M58     1  nprog.streams.go: the pairs CONS (the stream order reverses)
+    #   M59     3  cmds(): the whole 12-command stream emitted in REVERSE
+    #   M68     1  nr.asm_ok: `startswith("gfx")` -> `startswith("gfx1")`
+    #   M69     7  ndev.emulate_prefix: DEV=NULL:HIP -> DEV=NULL:HIP2
+    #   M70     1  nr.cfop_max: `max(` -> `Max(`
+    #   M71     1  ndev.timeline_n: `link_buffer(2, uint64)` -> 3 slots
+    #   M72     1  ndev.link_ext_ptr: external_ptr=1 -> 0
+    #   M76     2  nprog.ent_ids: `2i, 2i+1` -> `2i, 2i+2`
+    #   M80     1  ndev.bufferize_n: the ONE NULL rule becomes Compiled`s THREE
+    #   M86     1  nr.zero_table: `rand` marked as NOT all-zero
+    #   M91     2  nr.submit_graph: the STORE root becomes a LOAD
+    #   M93     1  nr.float4: `float4` -> `float2`
+    #   M94     1  nr.barrier: `// BARRIER` -> `//barrier`
+    #   M95     1  nr.has_local: False -> True
+    #   M96     1  ndev.renderers_pre: the raw list is 27 long
+    #   M97     2  ndev.link_nbytes: `n * itemsize` -> `n`
+    #   M101   15  nr.words: the op tag is the SECOND slot, not the first
+    #   M102    6  nprog.done_at: EVERY work command counts, not just EXEC
+    #   M104    4  ndev.init: the assert is INVERTED (a non-empty EMULATE passes)
+    #   M105    1  nr.zero_of: a name that is NOT in the table answers 0, not 2
+    #   M107    1  nr.zero_table: `randn` marked as NOT all-zero (M86 does `rand`)
+    #   M108    1  nprog.writes: nothing is stamped
+    #   M109    3  nprog.stamp_val: nanoseconds, not microseconds -- and the other way
+
+##### runtime/ops_python.bend:1448
+    # the wire name of a uop's op, for the probes in .agents/slop -- a debug aid and
+    # nothing the walk depends on
+
+##### runtime/ops_python.bend:1772
+    # THE HOT CHUNK. `Val.put` rebuilds the 16-cell chunk AND the chunk spine -- ~24 heap cells per
+    # value store -- and `Val.at` walks the spine to find the chunk. BOTH COSTS ARE THE SPINE, and the
+    # walk is sequential, so the chunk being written is almost always the one just written.
+    #
+    #   MEASURED 2 000 000 stores in the `Val.put` shape:            0.90 s  (450 ns, ~24 cells)
+    #   MEASURED the same traffic through a linear `Array`:         <0.01 s  (<5 ns, no allocation)
+    #
+    # `Array` cannot live in a `Data` record -- `type S is Data: S{a: Array<E>}` is REFUSED -- so the
+    # arena cannot become an `Array` without making the whole record linear (42 defs, 37 constructors).
+    # THIS IS THE CHEAP HALF: keep the chunk being written in the record and flush it back into the
+    # spine only when the walk moves to another chunk. A hit is one 16-cell rebuild and NO spine
+    # traffic; the flush is one spine rebuild per chunk CROSSING instead of one per store.
+    #
+    # EVERY OTHER WRITER INVALIDATES: `Prog.vs1` replaces the spine and cold-starts the cache, so a
+    # stale chunk can never be read back through a hit.
+    # fold the held chunk back into the spine; nothing to do when the cache is cold
+
+##### runtime/ops_python.bend:1989
+    # the store gate of :87 and the load gate of :24: `exec_masks[-1]`, which is True
+    # when nothing is masked
+
+##### runtime/ops_python.bend:2578
+    # `_store(m, o + j*_step, v, src_dtypes[1])` -- `to_storage_scalar` is the
+    # identity for the three 4-byte lanes and `bool(x)` for bool, AND THE WRITE
+    # itself is `m[i] = v` into the BUFFER's memoryview, which is the conversion
+    # `Prog.store.bits` MAKES.
+    # ONE arena read per lane, for the value and nothing else
+
+##### runtime/ops_qcom.bend:1328
+      # :128-138 -- marker, SP_UPDATE_CNTL twice, TSIZE, USIZE, MODE_CNTL,
+      # PERFCTR_SHADER_MASK, TPL1_MODE_CNTL, TPL1_DBG_ECO_CNTL, WAIT_FOR_IDLE
+
+##### runtime/support/amd.bend:340
+    # `v[0]` on the empty tuple is the IndexError that is NOT caught (WALL 4), and
+    # it aborts the WHOLE comprehension rather than skipping the child
+
+##### runtime/support/amd.bend:482
+        # the SAME value at TWO different fields, which is what the oracle's
+        # `encode({n0: v0}) == encode({n1: v0})` asks: 1 at bit 0 against 1 at
+        # bit 1
+
+##### runtime/support/autogen.bend:373
+    # SECTION 5 -- `arc_families`, autogen.py:98.
+    # https://clang.llvm.org/docs/AutomaticReferenceCounting.html#arc-method-families
+
+##### runtime/support/autogen.bend:748
+    # autogen.py:264 the external VarDecl:
+    #   try: <nm> = <T>.in_dll(<dll>, '<nm>') # type: ignore
+    #   except (ValueError,AttributeError): pass
+
+##### runtime/support/compiler_cpu.bend:171
+    # :13 the comment as a row: x18 is the reserved register that is clobbered on
+    # context switch in macos and holds the TEB pointer on windows/arm
+
+##### runtime/support/compiler_cpu.bend:213
+    # the element COUNT of the built list -- which is the thing a dropped feature
+    # or a mis-spliced arm changes and which `ClangCompiler.arm_n` (the arm INDEX)
+    # cannot see
+
+##### runtime/support/compiler_cpu.bend:320
+    # the position CPython's ValueError names: the first bad character, or the
+    # digit COUNT when the count is odd
+
+##### runtime/support/compiler_cpu.bend:347
+    # the outcome of `__init__`, as a STRING so that a refusal and an absence are
+    # never the same row: "ok", the assert, or the unsupported-arch RuntimeError
+
+##### runtime/support/compiler_cuda.bend:525
+    # the `PTXCompiler.compile` fixture: one `VERSION` and two `TARGET`s, so a
+    # replace-one instead of a replace-all shows
+
+##### runtime/support/compiler_llvm.bend:133
+    # `expect` has no return type for `ret=None`, so the sentinel is the EMPTY STRING
+    # and `expect.ret_none` is the row that says which one the caller meant
+
+##### runtime/support/compiler_llvm.bend:365
+    # the nth element of a space-separated list, as a two-arm ladder over a FOUR
+    # element window -- the recorded call NAMES are what `compile` is pinned on
+
+##### runtime/support/hcq2.bend:817
+    # ONE `Ops.INS` in a queue's command stream, or one `Ops.CALL`. An INS is
+    # `UOp(Ops.INS, arg=("wait", dtypes.void), src=(dst, val))`, so the KIND is the
+    # identity and the operands are what the gate reads:
+    #   BARRIER    :255     a = 0
+    #   WAIT       :252     a = the queue-signal slot (2*queue index), b = t + 1
+    #   WAIT       :256     a = TIMELINE_MARK, b = the device id -- a queue's START
+    #                       wait is on the device TIMELINE, not on a slot
+    #   TIMESTAMP  :266     a = the slot index
+    #   STORE      :271     a = the queue-signal slot, b = tag + 1
+    #   BUMP       :278     a = TIMELINE_MARK, b = the device id, c = 1
+    #   CALL                a = the batch tag
+
+##### runtime/support/usb.bend:1786
+    # THE TRANSFER CALLS. `usb_chunk` (:336-355), `usb_reap` (:324-328),
+    # `usb_drained` (:330-334) and the control/bulk wrappers (:64-84) are where the
+    # remaining trace kinds are emitted, and what matters is the SEQUENCE.
+    #
+    # ONE CALL PER DEF, and the composition IS the order. Nesting seven `Tr.emit`s
+    # inside each other is a counting exercise with no compiler help, and a miscount is
+    # a silent change to which call is recorded first; one def per call makes the
+    # sequence read top-down and each def independently gateable.
+    # :457 `libusb_alloc_transfer(0)` -- the xfer this chunk submits
+
+##### runtime/support/am/amdev.bend:219
+    # the struct field lists, by name and in order, with their byte offsets.
+    # `names` is `_real_fields_`; `offs` is the generator's own `register_fields`,
+    # which lists the SCALAR members ONLY -- a nested struct or an array is in the
+    # first list and not the second, and the scalars are INTERSPERSED among those
+    # rather than gathered at the front. So the load-bearing claim is that
+    # `onnames` is `names` FILTERED to the scalars, in order, and `offs` rises
+    # strictly: that is what says the layout is packed in declaration order, and
+    # an INVERTED list breaks it while a field COUNT would not.
+    # :33 :47 :57 :68 :86 :91 -- load_fw's version probe and every image's first member
+
+##### runtime/support/am/ip.bend:772
+    # :193-195, `is_pte_huge_page`. the three arms answer different shapes and the
+    # pre-gfx10 arm MASKS (`pte & ...`) where the other two return the same thing, so
+    # a port that assumes "the answer is a bit" is wrong for exactly one generation.
+    #   >= (12,0,0)   pte & AMDGPU_PDE_PTE_GFX12   (2**63)
+    #   >= (10,0,0)   pte & AMDGPU_PDE_PTE         (2**54)
+    #   else          pte & AMDGPU_PDE_PTE   if pte_lv != PDB0
+    #                 not (pte & AMDGPU_PTE_TF)  if pte_lv == PDB0
+

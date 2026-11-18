@@ -1,0 +1,6 @@
+runtime/ops_cl.bend:442  WAS-FOLLOWED-BY: 0/1/n is refused outright ("a declared constructor (unknown: U32)"), and
+                      NOW-FOLLOWED-BY: # 0/1/n is refused outright ("a declared constructor (unknown: U32)"), and
+                      FROM: 081ae8c30e
+runtime/ops_cl.bend:443  WAS-FOLLOWED-BY: bend2-constraints rule 34 at line 4982 is the note on it.
+                      NOW-FOLLOWED-BY: # bend2-constraints rule 34 at line 4982 is the note on it.
+                      FROM: 081ae8c30e

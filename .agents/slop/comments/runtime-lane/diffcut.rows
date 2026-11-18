@@ -1,0 +1,541 @@
+runtime/device.bend:7  CUT 1 LINE(S) BETWEEN:
+                         BEFORE: 
+                           CUT: #   * `schedule/__init__.bend:1139` `schedule(+ar, +sink) -> Lin` IS upstream's
+                         AFTER:  * `schedule/__init__.bend:1124` `schedule(+ar, +sink) -> Lin` IS upstream's
+                         FROM: afdea42951
+runtime/device.bend:9  CUT 1 LINE(S) BETWEEN:
+                         BEFORE: `create_schedule` (`tinygrad/schedule/__init__.py:32-80`), and
+                           CUT: #     `schedule/__init__.bend:1140` `linear(+x: Lin) -> O.Found` IS upstream's
+                         AFTER:  `schedule/__init__.bend:1125` `linear(+x: Lin) -> O.Found` IS upstream's
+                         FROM: afdea42951
+runtime/device.bend:12  CUT 1 LINE(S) BETWEEN:
+                         BEFORE: (`tinygrad/schedule/__init__.py:80`).
+                           CUT: #   * `renderer/cstyle.bend:2297` `render(+dev, cpu, +kus) -> String` IS upstream's
+                         AFTER:  * `renderer/cstyle.bend:2257` `render(+dev, cpu, +kus) -> String` IS upstream's
+                         FROM: afdea42951
+runtime/device.bend:14  CUT 1 LINE(S) BETWEEN:
+                         BEFORE: `ClangRenderer.render` (`tinygrad/renderer/cstyle.py:268-278`).
+                           CUT: #   * `runtime/ops_cpu.bend:1578` `Cpu.compile(src, argv)` and `:1582`
+                         AFTER:  * `runtime/ops_cpu.bend:1546` `Cpu.compile(src, argv)` and `:1582`
+                         FROM: afdea42951
+runtime/device.bend:17  CUT 1 LINE(S) BETWEEN:
+                         BEFORE: `__call__` (`tinygrad/runtime/ops_cpu.py:23-62`), in upstream's own order.
+                           CUT: #   * `runtime/support/elf.bend:1816` `jit_loader(+e, +base) -> Img` IS
+                         AFTER:  * `runtime/support/elf.bend:1796` `jit_loader(+e, +base) -> Img` IS
+                         FROM: afdea42951
+runtime/device.bend:21  CUT 3 LINE(S) BETWEEN:
+                         BEFORE: AND `grep -rn "Cpu.compile\|Cpu.exec" tinybendygrad/` ANSWERS ONLY THE TWO
+                           CUT: # DEFINITIONS: NOTHING IN THE PORT CALLS THEM, AND NOTHING IN THE PORT CALLS
+                           CUT: # `schedule()` OUTSIDE ITS OWN GATE ROWS. **THE PORT'S `Device` LANE IS A SET OF
+                           CUT: # STAGES WITH NO LANE.**
+                         AFTER:  definitions: nothing in the port calls them, and nothing in the port calls
+                         FROM: beb16379e4
+runtime/device.bend:60  CUT 1 LINE(S) BETWEEN:
+                         BEFORE: 
+                           CUT: 
+                         AFTER:  what is still missing, and it is named here rather than hided.
+                         FROM: bd7a2d14c3
+runtime/device.bend:47  CUT 1 LINE(S) BETWEEN:
+                         BEFORE: is the entry that hands it the argv
+                           CUT: #              (`runtime/support/compiler_cpu.bend:268`) and the C.
+                         AFTER:  (`runtime/support/compiler_cpu.bend:260`) and the C.
+                         FROM: afdea42951
+runtime/device.bend:58  CUT 1 LINE(S) BETWEEN:
+                         BEFORE: (`tinygrad/runtime/ops_cpu.py:34`) and it is the port's own
+                           CUT: # `runtime/support/elf.bend:1816`.
+                         AFTER:  `runtime/support/elf.bend:1796`.
+                         FROM: afdea42951
+runtime/device.bend:63  CUT 1 LINE(S) BETWEEN:
+                         BEFORE: `program` takes a `List<KU>` and the port has no DEF that builds one from the
+                           CUT: # PORT's ARENA. The `KU` record (`renderer/cstyle.bend:126-129`) is a FLATTENED
+                         AFTER:  PORT's ARENA. The `KU` record (`renderer/cstyle.bend:121-124`) is a FLATTENED
+                         FROM: afdea42951
+runtime/device.bend:66  CUT 1 LINE(S) BETWEEN:
+                         BEFORE: `list[UOp]` instead (`tinygrad/renderer/cstyle.py:456`). The port's
+                           CUT: # `codegen/late/linearizer.bend:836 linearize(+ar, +lst, vms, +sink) -> List<&2,
+                         AFTER:  `codegen/late/linearizer.bend:827 linearize(+ar, +lst, vms, +sink) -> List<&2,
+                         FROM: afdea42951
+runtime/device.bend:62  CUT 1 LINE(S) BETWEEN:
+                         BEFORE: 
+                           CUT: # `program` TAKES A `List<KU>` AND THE PORT HAS NO DEF THAT BUILDS ONE FROM THE
+                         AFTER:  `program` takes a `List<KU>` and the port has no DEF that builds one from the
+                         FROM: beb16379e4
+runtime/device.bend:70  CUT 1 LINE(S) BETWEEN:
+                         BEFORE: 
+                           CUT: # AND THE LINK IS BLOCKED BY A NAMED WALL, NOT BY A MISSING IDEA:
+                         AFTER:  and the link is blocked by a named wall, not by a missing idea:
+                         FROM: beb16379e4
+runtime/device.bend:76  CUT 2 LINE(S) BETWEEN:
+                         BEFORE: 
+                           CUT: # ⇒ SO `program`'s INPUT IS A `List<KU>`, AND WHOEVER PRODUCES IT IS THE NEXT
+                           CUT: # UNIT. THIS FILE IS THE LANE THAT RECEIVES IT.
+                         AFTER:  - so `program`'s input is a `List<KU>`, and whoever produces it is the next
+                         FROM: beb16379e4
+runtime/device.bend:108  CUT 1 LINE(S) BETWEEN:
+                         BEFORE: back: the port's `List` is a persistent structure and `render` CONSUMES it.
+                           CUT: # ⇒ A CALLER THAT NEEDS THE LIST TWICE BUILDS IT TWICE, which is what
+                         AFTER:  - a caller that needs the list twice builds it twice, which is what
+                         FROM: beb16379e4
+runtime/device.bend:115  CUT 2 LINE(S) BETWEEN:
+                         BEFORE: (`tinygrad/schedule/__init__.py:32-80`) IS THE PORT's `schedule()`
+                           CUT: # (`schedule/__init__.bend:1139` symbol=schedule), and `linear`
+                           CUT: # (`schedule/__init__.bend:1136` symbol=linear) IS upstream's
+                         AFTER:  (`schedule/__init__.bend:1124` symbol=schedule), and `linear`
+                         FROM: afdea42951
+runtime/device.bend:119  CUT 3 LINE(S) BETWEEN:
+                         BEFORE: 
+                           CUT: # ⇒ THIS IS THE CALLER THE PORT's SCHEDULER DID NOT HAVE, AND IT IS WHY THE
+                           CUT: # PORT's `Device` LANE "HAS NO SCHEDULER" WAS TRUE IN CODE AND NOT IN PROSE:
+                           CUT: # THE FUNCTION WAS THERE AND UNREACHABLE FROM ANY DEVICE.
+                         AFTER:  - this is the caller the port's scheduler did not have, and it is why the
+                         FROM: beb16379e4
+runtime/device.bend:123  CUT 1 LINE(S) BETWEEN:
+                         BEFORE: 
+                           CUT: # THE ANSWER IS THE LINEAR NODE AND ITS ARENA: `schedule` CONSUMES the arena and
+                         AFTER:  the answer is the linear node and its arena: `schedule` consumes the arena and
+                         FROM: beb16379e4
+runtime/device.bend:134  CUT 1 LINE(S) BETWEEN:
+                         BEFORE: `cc_argv` is the port's own spelling of that argv
+                           CUT: # (`runtime/support/compiler_cpu.bend:268 symbol=ClangCompiler.compile_argv`), and it is
+                         AFTER:  (`runtime/support/compiler_cpu.bend:260 symbol=ClangCompiler.compile_argv`), and it is
+                         FROM: afdea42951
+runtime/device.bend:133  CUT 1 LINE(S) BETWEEN:
+                         BEFORE: 
+                           CUT: # `cc_argv` IS THE PORT's OWN SPELLING OF THAT ARGV
+                         AFTER:  `cc_argv` is the port's own spelling of that argv
+                         FROM: beb16379e4
+runtime/device.bend:151  CUT 1 LINE(S) BETWEEN:
+                         BEFORE: `jit_loader(lib, base=mv_address(self.mem))` and it is the port's own
+                           CUT: # `runtime/support/elf.bend:1816`.
+                         AFTER:  `runtime/support/elf.bend:1796`.
+                         FROM: afdea42951
+runtime/device.bend:153  CUT 1 LINE(S) BETWEEN:
+                         BEFORE: 
+                           CUT: # THE BASE IS `0`, AND THAT IS MEASURED, NOT CHOSEN: the port's
+                         AFTER:  the base is `0`, and that is measured, not chosen: the port's
+                         FROM: beb16379e4
+runtime/device.bend:165  CUT 1 LINE(S) BETWEEN:
+                         BEFORE: 
+                           CUT: # ⇒ THE BUFFERS CROSS AS HEX, and that is UPSTREAM's SHAPE AND NOT A
+                         AFTER:  - the buffers cross as hex, and that is upstream's shape and not a
+                         FROM: beb16379e4
+runtime/device.bend:168  CUT 2 LINE(S) BETWEEN:
+                         BEFORE: (`references/bend/bend2/effs/process_run.c:277` builds it with `io_str`, and
+                           CUT: # `io_str` REPLACES EVERY INVALID SEQUENCE WITH U+FFFD) and AN ELF OBJECT IS NOT
+                           CUT: # UTF-8. ⇒ THE HEX IS THE ONLY WAY THE BYTES SURVIVE THE SEAM.
+                         AFTER:  `io_str` replaces every invalid sequence with u+fffd) and an elf object is not
+                         FROM: beb16379e4
+runtime/ops_amd.bend:2  CUT 1 LINE(S) BETWEEN:
+                          BEFORE: 
+                            CUT: # THE AMD BACKEND'S SHAPE, WITHOUT THE AMD DRIVER. `ops_amd.py` is 1073 lines and
+                          AFTER:  THE AMD BACKEND'S shape, WITHOUT the AMD DRIVER. `ops_amd.py` is 1073 lines and
+                          FROM: ed6567123e
+runtime/ops_amd.bend:11  CUT 5 LINE(S) BETWEEN:
+                          BEFORE: 
+                            CUT: #   * the KERNEL ARGUMENT TRACE -- `kernargs` (:361-364) is `layout_args` then
+                            CUT: #     `pack_args` over a list whose widths are `8` per global and
+                            CUT: #     `v.dtype.itemsize` per var. That is `hcq2.py:74-80` and it is the SAME
+                            CUT: #     contract `ops_webgpu.bend`, `ops_cl.bend` and `ops_nv.bend` port. Getting
+                            CUT: #     it consistent across six files matters more here than anywhere.
+                          AFTER:  * the KERNEL ARGUMENT TRACE -- `kernargs` (tinygrad/runtime/ops_amd.py:374 symbol=kernargs) is `layout_args` t
+                          FROM: 056eeb1d59
+runtime/ops_amd.bend:36  CUT 8 LINE(S) BETWEEN:
+                          BEFORE: NO PROOFS FAIL HERE, and the brief expected some. `dtype.bend`'s seams are
+                            CUT: # `def ... -> IO(R)` over two `import "./x.c"` lines, and every one of them is
+                            CUT: # expected to make its importer print SOME PROOFS FAIL (constraints line 1868:
+                            CUT: # the foreign notice is a "who names whom" closure that `@unsafe` does not
+                            CUT: # shrink). This file does not take that route, because the WebGPU template does
+                            CUT: # not and `ops_metal.bend` does not: a driver call is RECORDED in a `Tr` trace,
+                            CUT: # so there is no foreign effect to declare and `--check-only` says ALL PROOFS
+                            CUT: # CHECK. The seam is `Tr.emit`, the ORDER is the artefact, and `wgsl.bend`'s
+                            CUT: # green lane is the precedent. See `.agents/slop/amd_oracle.py`.
+                          AFTER:  
+                          FROM: 0a73428fed
+runtime/ops_amd.bend:38  CUT 4 LINE(S) BETWEEN:
+                          BEFORE: THE SPLIT, stated once and then obeyed. A def here EITHER builds the argument
+                            CUT: # of one driver call (pure, and the gate checks it) OR records that call in the
+                            CUT: # trace (and the gate checks the ORDER and the IDENTITY). There is no third
+                            CUT: # kind. That is what puts every `raise` into the trace: a refusal records NOTHING
+                            CUT: # further, so it appears as a TRUNCATION and no step needs a guard of its own.
+                          AFTER:  
+                          FROM: 0a73428fed
+runtime/ops_amd.bend:60  CUT 3 LINE(S) BETWEEN:
+                          BEFORE: A fifth was found by the port's own arithmetic rather than the oracle: the SQTT
+                            CUT: # write pointer is `(raw & 0x1FFFFFFF) * 32`, which is up to 2^34, and the first
+                            CUT: # version computed it in `U32` and WRAPPED. It is an `H.I64` and an `i64row`,
+                            CUT: # which is what `ops_nv.bend` does for the same reason.
+                          AFTER:  
+                          FROM: 0a73428fed
+runtime/ops_amd.bend:37  CUT 1 LINE(S) BETWEEN:
+                          BEFORE: 
+                            CUT: 
+                          AFTER:  THE SPLIT, stated once and then obeyed. A def here EITHER builds the argument
+                          FROM: bd7a2d14c3
+runtime/ops_amd.bend:39  CUT 1 LINE(S) BETWEEN:
+                          BEFORE: 
+                            CUT: 
+                          AFTER:  THE HEADLINE, measured. `--check-only` says ALL PROOFS CHECK. Both lanes print
+                          FROM: bd7a2d14c3
+runtime/ops_amd.bend:61  CUT 1 LINE(S) BETWEEN:
+                          BEFORE: 
+                            CUT: 
+                          AFTER:  WHAT IS PORTED, DEF BY DEF. `amd:NN` is ops_amd.py.
+                          FROM: bd7a2d14c3
+runtime/ops_amd.bend:136  CUT 1 LINE(S) BETWEEN:
+                          BEFORE: 
+                            CUT: 
+                          AFTER:  THE FIVE WALLS.
+                          FROM: bd7a2d14c3
+runtime/ops_amd.bend:189  CUT 1 LINE(S) BETWEEN:
+                          BEFORE: 
+                            CUT: 
+                          AFTER:  TWO things that are not in the port at all, and why.
+                          FROM: bd7a2d14c3
+runtime/ops_amd.bend:209  CUT 1 LINE(S) BETWEEN:
+                          BEFORE: 
+                            CUT: 
+                          AFTER:  WHAT device.bend AND helpers.bend OW this file, and they OWN four things:
+                          FROM: bd7a2d14c3
+runtime/ops_amd.bend:54  CUT 1 LINE(S) BETWEEN:
+                          BEFORE: * `pd.lds` used `ceildiv` where `tinygrad/runtime/ops_amd.py:522 symbol=_amd_program_image` uses `//`, i.e. FL
+                            CUT: #     512 granules read back as 2 instead of 1 and the `rsrc2` bit was wrong.
+                          AFTER:  * `dev_max_copy` compared a three-part version COMPONENTWISE where
+                          FROM: 1d3d5e7a62
+runtime/ops_amd.bend:58  CUT 2 LINE(S) BETWEEN:
+                          BEFORE: * `is_am` read as `iface == PCIIface` where `ops_amd.py:850` is an
+                            CUT: #     `isinstance` and `USBIface(PCIIface)` -- so the USB device was not AM and
+                            CUT: #     `can_recover` was wrong for it.
+                          AFTER:  
+                          FROM: 1d3d5e7a62
+runtime/ops_amd.bend:186  CUT 1 LINE(S) BETWEEN:
+                          BEFORE: | WALL(p3) tinygrad/runtime/ops_amd.py:676 symbol=on_device_hang  `_str(st)` over `st._real_fields_`. -- BLOCK
+                            CUT: # | WALL(p3) runtime/ops_amd.py:714  the MMU-fault f-string. -- BLOCKED: an MMU-FAULT f-string inside a signal
+                          AFTER:  | wall(p3) runtime/ops_amd.py:714  the mmu-fault f-string. -- blocked: an mmu-fault f-string inside a signal-h
+                          FROM: beb16379e4
+runtime/ops_amd.bend:144  CUT 5 LINE(S) BETWEEN:
+                          BEFORE: | WALL(p3) runtime/ops_amd.py:596  FileIOInterface("/dev/kfd"). -- BLOCKED: needs `FileIOInterface("/dev/kfd")
+                            CUT: # | WALL(p3) runtime/ops_amd.py:613  AMDKFD_IOC_ACQUIRE_VM. -- BLOCKED: needs the `AMDKFD_IOC_ACQUIRE_VM` ioct
+                            CUT: # | WALL(p3) runtime/ops_amd.py:631  AMDKFD_IOC_ALLOC_MEMORY_OF_GPU. -- BLOCKED: needs the `AMDKFD_IOC_ALLOC_M
+                            CUT: # | WALL(p3) runtime/ops_amd.py:665  AMDKFD_IOC_MAP_MEMORY_TO_GPU. -- BLOCKED: needs the `AMDKFD_IOC_MAP_MEMOR
+                            CUT: # | WALL(p3) runtime/ops_amd.py:685  AMDKFD_IOC_CREATE_QUEUE. -- BLOCKED: needs the `AMDKFD_IOC_CREATE_QUEUE` 
+                            CUT: # | WALL(p3) runtime/ops_amd.py:702  AMDKFD_IOC_WAIT_EVENTS. -- BLOCKED: needs the `AMDKFD_IOC_WAIT_EVENTS` io
+                          AFTER:  | WALL(p3) runtime/ops_amd.py:613  AMDKFD_IOC_ACQUIRE_VM. -- BLOCKED: needs the `AMDKFD_IOC_ACQUIRE_VM` ioctl:
+                          FROM: ed6567123e
+runtime/ops_amd.bend:157  CUT 1 LINE(S) BETWEEN:
+                          BEFORE: | WALL(p3) runtime/ops_amd.py:740  PCIIfaceBase.__init__ (vendor 4098). -- BLOCKED: needs `PCIIfaceBase.__init
+                            CUT: # | WALL(p3) runtime/ops_amd.py:753  AMDev.gc_info / AMDev.gfx.xccs. -- BLOCKED: needs `AMDev.gc_info` / `AMDe
+                          AFTER:  | WALL(p3) runtime/ops_amd.py:753  AMDev.gc_info / AMDev.gfx.xccs. -- BLOCKED: needs `AMDev.gc_info` / `AMDev.
+                          FROM: ed6567123e
+runtime/ops_amd.bend:159  CUT 1 LINE(S) BETWEEN:
+                          BEFORE: | WALL(p3) runtime/ops_amd.py:772  AMDev.{sdma,gfx}.setup_ring. -- BLOCKED: needs `AMDev.{sdma,gfx}.setup_ring
+                            CUT: # | WALL(p3) runtime/ops_amd.py:731-733  struct_drm_amdgpu_info_device.cu_bitmap. -- BLOCKED: needs `struct_dr
+                          AFTER:  | WALL(p3) runtime/ops_amd.py:731-733  struct_drm_amdgpu_info_device.cu_bitmap. -- BLOCKED: needs `struct_drm_
+                          FROM: ed6567123e
+runtime/ops_amd.bend:211  CUT 1 LINE(S) BETWEEN:
+                          BEFORE: 
+                            CUT: #  1. `D.iter_sig` IS `layout_args`' ENGINE, and THIS FILE USES ITS FORM AND
+                          AFTER:  1. `D.iter_sig` IS `layout_args`' ENGINE, and THIS file uses its form and
+                          FROM: ed6567123e
+runtime/ops_amd.bend:53  CUT 1 LINE(S) BETWEEN:
+                          BEFORE: * `args.ks` used `LANES_PER_WAVE` (64) for a `getaddr`, which is EIGHT bytes.
+                            CUT: #   * `pd.lds` used `ceildiv` where `ops_amd.py:551` uses `//`, i.e. FLOOR, so
+                          AFTER:  * `pd.lds` used `ceildiv` where `tinygrad/runtime/ops_amd.py:522 symbol=_amd_program_image` uses `//`, i.e. FL
+                          FROM: 056eeb1d59
+runtime/ops_amd.bend:161  CUT 2 LINE(S) BETWEEN:
+                          BEFORE: 
+                            CUT: # 3. USB3 (USBIface, :810-833). `USB3.list_devices`, `dma_view`, the
+                            CUT: #    `0/4096/20480` controller window and its `AddrSpace.SYS` mapping.
+                          AFTER:  3. USB3: `USB3.list_devices`, `dma_view`, the `0/4096/20480` controller window and its `AddrSpace.SYS` mapping
+                          FROM: 056eeb1d59
+runtime/ops_amd.bend:167  CUT 7 LINE(S) BETWEEN:
+                          BEFORE: 
+                            CUT: # 4. THE UOp MATCHER (:841-844, :888-892, :895-896, :905-906). `pm_encode`
+                            CUT: #    matches `CUSTOM_FUNCTION` nodes and `pm_bufferize` PREPENDS three rules to
+                            CUT: #    `Compiled`'s. The port carries the three rules' PATTERNS and their
+                            CUT: #    first-wins fold and the profiling rules' four names, in order; a rule's
+                            CUT: #    body is a UOp graph and building one needs `./uop/ops.bend` and the HCQ2
+                            CUT: #    lowering this file does not own. `amd_pmb_order` and `amd_pmb_prof` are the
+                            CUT: #    rows, and they are about ORDER, which is all that is portable here.
+                          AFTER:  4. THE UOp MATCHER. AT THIS PIN upstream's `Compiled.pm_encode` is tinygrad/runtime/ops_amd.py:1026 and its TW
+                          FROM: 056eeb1d59
+runtime/ops_amd.bend:180  CUT 6 LINE(S) BETWEEN:
+                          BEFORE: 
+                            CUT: # 5. THE HANG PATH (:705-717, :800-802, :798). `on_device_hang` builds its
+                            CUT: #    report out of `queue_event_arr[i].memory_exception_data.failure`, whose
+                            CUT: #    `_real_fields_` it walks by name. A field NAME is a Python string table and
+                            CUT: #    a walk over it is a `dict`, so the port keeps the two refusal MESSAGES and
+                            CUT: #    the trace truncation and nothing of the report's body.
+                            CUT: # | WALL(p3) runtime/ops_amd.py:706  `_str(st)` over `st._real_fields_`. -- BLOCKED: needs `_str(st)` over `st
+                          AFTER:  5. THE HANG PATH. AT THIS PIN `on_device_hang` is KFDIface's (tinygrad/runtime/ops_amd.py:675-688 symbol=on_de
+                          FROM: 056eeb1d59
+runtime/ops_amd.bend:191  CUT 1 LINE(S) BETWEEN:
+                          BEFORE: 
+                            CUT: #  * `_amd_program_image`'s ELF WALK (:544-548). `elf_loader(lib)` returns the
+                          AFTER:  * `_amd_program_image`'s ELF WALK (`tinygrad/runtime/ops_amd.py:515-519 symbol=_amd_program_image`). `elf_load
+                          FROM: 056eeb1d59
+runtime/ops_amd.bend:223  CUT 1 LINE(S) BETWEEN:
+                          BEFORE: `amd_arg_at_*` is generated from the CPython call.
+                            CUT: #  2. `D.round_up` is `helpers.py:69`, and `H.round_up_u32` / `H.ceildiv_u32` /
+                          AFTER:  2. `D.round_up` is `tinygrad/helpers.py:70 symbol=round_up`, and `H.round_up_u32` / `H.ceildiv_u32` /
+                          FROM: 056eeb1d59
+runtime/ops_amd.bend:199  CUT 1 LINE(S) BETWEEN:
+                          BEFORE: 4), b"\x00")`, the whole-dwords upload.
+                            CUT: #    TODO(p3) runtime/ops_amd.py:544  elf_loader(lib) and the reloc loop.
+                          AFTER:  TODO(p3) runtime/ops_amd.py:515  symbol=_amd_program_image  elf_loader(lib) and the reloc loop.
+                          FROM: af3fe33513
+runtime/ops_amd.bend:207  CUT 1 LINE(S) BETWEEN:
+                          BEFORE: row about CPython, NOT about this file, which is said in the row's name.
+                            CUT: #    TODO(p3) runtime/ops_amd.py:558  hashlib.md5(lib).digest()[:8].
+                          AFTER:  TODO(p3) runtime/ops_amd.py:515  symbol=_amd_program_image -- the md5 digest slice -- NOT IN upstream at this 
+                          FROM: af3fe33513
+runtime/ops_amd.bend:143  CUT 6 LINE(S) BETWEEN:
+                          BEFORE: seam's.
+                            CUT: #    TODO(p3) runtime/ops_amd.py:596  FileIOInterface("/dev/kfd").
+                            CUT: #    TODO(p3) runtime/ops_amd.py:613  AMDKFD_IOC_ACQUIRE_VM.
+                            CUT: #    TODO(p3) runtime/ops_amd.py:631  AMDKFD_IOC_ALLOC_MEMORY_OF_GPU.
+                            CUT: #    TODO(p3) runtime/ops_amd.py:665  AMDKFD_IOC_MAP_MEMORY_TO_GPU.
+                            CUT: #    TODO(p3) runtime/ops_amd.py:685  AMDKFD_IOC_CREATE_QUEUE.
+                            CUT: #    TODO(p3) runtime/ops_amd.py:702  AMDKFD_IOC_WAIT_EVENTS.
+                          AFTER:  | WALL(p3) runtime/ops_amd.py:596  FileIOInterface("/dev/kfd"). -- BLOCKED: needs `FileIOInterface("/dev/kfd")
+                          FROM: 5f6c736233
+runtime/ops_amd.bend:156  CUT 4 LINE(S) BETWEEN:
+                          BEFORE: not their offsets, which are the seam's.
+                            CUT: #    TODO(p3) runtime/ops_amd.py:740  PCIIfaceBase.__init__ (vendor 4098).
+                            CUT: #    TODO(p3) runtime/ops_amd.py:753  AMDev.gc_info / AMDev.gfx.xccs.
+                            CUT: #    TODO(p3) runtime/ops_amd.py:772  AMDev.{sdma,gfx}.setup_ring.
+                            CUT: #    TODO(p3) runtime/ops_amd.py:731-733  struct_drm_amdgpu_info_device.cu_bitmap.
+                          AFTER:  | WALL(p3) runtime/ops_amd.py:740  PCIIfaceBase.__init__ (vendor 4098). -- BLOCKED: needs `PCIIfaceBase.__init
+                          FROM: 5f6c736233
+runtime/ops_amd.bend:238  CUT 1 LINE(S) BETWEEN:
+                          BEFORE: THE CONSTANTS, and where each one was read.
+                            CUT: 
+                          AFTER:  ops_amd.py:36, "based on a comment in nvd.h".
+                          FROM: bd7a2d14c3
+runtime/ops_amd.bend:544  CUT 1 LINE(S) BETWEEN:
+                          BEFORE: `kernargs_segment_size - end`, which is ZERO when the args fill it.
+                            CUT: 
+                          AFTER:  `(1)`: `8` per global, then the var widths. The fold APPENDS, so the order is
+                          FROM: bd7a2d14c3
+runtime/ops_amd.bend:631  CUT 1 LINE(S) BETWEEN:
+                          BEFORE: `g * l` cast to uint32, `zip`ped over `global_size` and `local_size`.
+                            CUT: 
+                          AFTER:  the grid, `g * l` for the three zipped pairs, and the cast to uint32 is the
+                          FROM: bd7a2d14c3
+runtime/ops_amd.bend:777  CUT 1 LINE(S) BETWEEN:
+                          BEFORE: rows. `amd_recycled_*` is `D.recycled` called with this file's specs.
+                            CUT: 
+                          AFTER:  the two flags `Allocator.free` reads, as `D.Bspec.go` hands them over. A
+                          FROM: bd7a2d14c3
+runtime/ops_amd.bend:768  CUT 1 LINE(S) BETWEEN:
+                          BEFORE: eviction policy the file reaches is `Allocator.free`'s four conjuncts
+                            CUT: # (device.py:280), through a `BufferSpec`:
+                          AFTER:  (device.py:435), through a `BufferSpec`:
+                          FROM: d5783a8ff6
+runtime/ops_amd.bend:800  CUT 1 LINE(S) BETWEEN:
+                          BEFORE: that row and it is the reason the formatting is a def and not a format.
+                            CUT: 
+                          AFTER:  shortest lowercase hex, no padding: `%x`. `0 -> "0"`, `4 -> "4"`, `55 -> "37"`.
+                          FROM: bd7a2d14c3
+runtime/ops_amd.bend:870  CUT 1 LINE(S) BETWEEN:
+                          BEFORE: <= the target" ladder, and it is driven on real autogen names in the oracle.
+                            CUT: 
+                          AFTER:  OCCUPANCY. `tmpring_size` (:973-987) is FIVE steps and the last of them is a
+                          FROM: bd7a2d14c3
+runtime/ops_amd.bend:873  CUT 1 LINE(S) BETWEEN:
+                          BEFORE: file and it is gated end to end.
+                            CUT: 
+                          AFTER:  :977, `mem_alignment_size = 256 if self.target[0] != 9 else 1024`.
+                          FROM: bd7a2d14c3
+runtime/ops_amd.bend:919  CUT 1 LINE(S) BETWEEN:
+                          BEFORE: derived -- so a wrong `wave_cnt` shows up here and nowhere else.
+                            CUT: 
+                          AFTER:  :952, `lds_size_per_cu = props["lds_size_in_kb"] << 10 if target[:2] == (9,5)
+                          FROM: bd7a2d14c3
+runtime/ops_amd.bend:962  CUT 1 LINE(S) BETWEEN:
+                          BEFORE: sees the folded spelling of every name the device can produce.
+                            CUT: # TODO(p3) runtime/support/hcq2.py:66  `to_name`'s lower+colon fold.
+                          AFTER:  | WALL(p3) runtime/support/hcq2.py:66  `to_name`'s lower+colon fold. -- BLOCKED: needs `to_name`'s lower+colon
+                          FROM: 5f6c736233
+runtime/ops_amd.bend:986  CUT 1 LINE(S) BETWEEN:
+                          BEFORE: in the file that a wrong pointer arithmetic trips at RUNTIME.
+                            CUT: 
+                          AFTER:  :1042, `wptr = (self.sqtt_wptrs[slot * sqtt_ses + se] & 0x1FFFFFFF) * 32`. The
+                          FROM: bd7a2d14c3
+runtime/ops_amd.bend:1008  CUT 1 LINE(S) BETWEEN:
+                          BEFORE: `xccs` times 8 is one counter's record size.
+                            CUT: 
+                          AFTER:  :256-260, `sa_mask = (1 << (cu_per_simd_array // 2)) - 1` and
+                          FROM: bd7a2d14c3
+runtime/ops_amd.bend:1051  CUT 1 LINE(S) BETWEEN:
+                          BEFORE: list are all reachable, and the first element carries the scratch flag bit.
+                            CUT: 
+                          AFTER:  THE INIT SEQUENCE, :852-884, in the order the source runs it. Fifteen steps,
+                          FROM: bd7a2d14c3
+runtime/ops_bend.bend:77  CUT 3 LINE(S) BETWEEN:
+                           BEFORE: silently, so a boolean about a string can be true while the string is wrong.
+                             CUT: # `bend_encode_*` rows print the packet's own lines, and `emit.diff` prints the
+                             CUT: # whole packet. Those rows are TEXT; the diff against CPython's packet is the
+                             CUT: # check, and it is line for line.
+                           AFTER:  
+                           FROM: 1e5c95e600
+runtime/ops_bend.bend:87  CUT 2 LINE(S) BETWEEN:
+                           BEFORE: `arg_kind(op)`.
+                             CUT: #    The cost is stated rather than hidden: `Ops`-NUMBERED traces elsewhere in
+                             CUT: #    this repo cannot be compared with these.
+                           AFTER:  
+                           FROM: 1e5c95e600
+runtime/ops_bend.bend:49  CUT 1 LINE(S) BETWEEN:
+                           BEFORE: 
+                             CUT: 
+                           AFTER:  WHAT is ported, DEF BY DEF. THE port'S own defs are in `ops_bend.py` (REPO root; UPSTREAM has no `ops_bend.py`
+                           FROM: bd7a2d14c3
+runtime/ops_bend.bend:69  CUT 1 LINE(S) BETWEEN:
+                           BEFORE: 
+                             CUT: 
+                           AFTER:  THE SPLIT, stated once and then obeyed. A def here EITHER builds the argument
+                           FROM: bd7a2d14c3
+runtime/ops_bend.bend:78  CUT 1 LINE(S) BETWEEN:
+                           BEFORE: 
+                             CUT: 
+                           AFTER:  THE THREE WALLS.
+                           FROM: bd7a2d14c3
+runtime/ops_bend.bend:117  CUT 1 LINE(S) BETWEEN:
+                           BEFORE: 
+                             CUT: 
+                           AFTER:  `has_local = False` (tinygrad/renderer/__init__.py:68 symbol=has_local) is a CONSTANT the scheduler consults
+                           FROM: bd7a2d14c3
+runtime/ops_bend.bend:75  CUT 1 LINE(S) BETWEEN:
+                           BEFORE: 
+                             CUT: # THE EMITTED TEXT IS A GATE, NOT A BOOLEAN. `String.concat` drops a literal
+                           AFTER:  THE emitted text is a gate, NOT a boolean. `String.concat` drops a literal
+                           FROM: 12ae249d21
+runtime/ops_bend.bend:80  CUT 1 LINE(S) BETWEEN:
+                           BEFORE: 
+                             CUT: # 1. THE Op NUMBER IS NOT PORTED, AND THAT IS THE POINT. Python writes
+                           AFTER:  1. THE Op NUMBER is not ported, AND that is the point. Python writes
+                           FROM: 12ae249d21
+runtime/ops_bend.bend:96  CUT 1 LINE(S) BETWEEN:
+                           BEFORE: `bend_wall_float_bits` records the seam.
+                             CUT: #    TODO(p3) THE PORT's `runtime/ops_bend.bend` HEADER  symbol= -- the FLOAT CONST's `struct.pack('<f', u.arg
+                           AFTER:  TODO(p3) THE port's `runtime/ops_bend.bend` HEADER  symbol= -- the FLOAT CONST's `struct.pack('<f', u.arg).hex
+                           FROM: 12ae249d21
+runtime/ops_bend.bend:102  CUT 1 LINE(S) BETWEEN:
+                           BEFORE: over ./bin/bend, os.replace. The build and the cache.
+                             CUT: #      :214      `to_mv(b, nb)` -- a ctypes memoryview over a device pointer.
+                           AFTER:  tinygrad/helpers.py:575 symbol=to_mv  `to_mv(b, nb)` -- a ctypes memoryview over a device pointer.
+                           FROM: 056eeb1d59
+runtime/ops_bend.bend:108  CUT 1 LINE(S) BETWEEN:
+                           BEFORE: :232      `src.encode()` -- BendCompiler, which is a pass-through.
+                             CUT: #      :219      `time.perf_counter()` -- the returned duration. Not modelled:
+                           AFTER:  tinygrad/runtime/ops_python.py:56 symbol=__call__  `time.perf_counter()` -- the returned duration. Not modelle
+                           FROM: 056eeb1d59
+runtime/ops_bend.bend:110  CUT 1 LINE(S) BETWEEN:
+                           BEFORE: the only thing this port does with a time is hand it back, and
+                             CUT: #               no caller of `Program.__call__` reads it (engine/realize.py:168
+                           AFTER:  no caller of `Program.__call__` reads it (tinygrad/engine/realize.py:167 -- the `ets.append` line --
+                           FROM: 056eeb1d59
+runtime/ops_bend.bend:9  CUT 1 LINE(S) BETWEEN:
+                           BEFORE: THE WIRE, v1.1 (ASCII text, one launch per packet). This is the executor's own
+                             CUT: # format, taken from the header of tinybendygrad/runtime/executor.bend, which is
+                           AFTER:  format, taken from the header of tinybendygrad/runtime/ops_python.bend, which is
+                           FROM: e64f30b5bb
+runtime/ops_bend.bend:235  CUT 1 LINE(S) BETWEEN:
+                           BEFORE: THE NODE LIST. `self.uops` -- the renderer's own list, already in post-order.
+                             CUT: 
+                           AFTER:  `i` is a WIRE POSITION -- 1-based, the number `encode` writes -- while a Bend
+                           FROM: bd7a2d14c3
+runtime/ops_bend.bend:271  CUT 1 LINE(S) BETWEEN:
+                           BEFORE: the three.
+                             CUT: 
+                           AFTER:  Which arm owns an op. 0 is "no payload", and every op Python never names
+                           FROM: bd7a2d14c3
+runtime/ops_bend.bend:293  CUT 1 LINE(S) BETWEEN:
+                           BEFORE: something the Python does not do. `bend_arg_local_param` records the KeyError.
+                             CUT: #   0 = a, 1 = g, 2 = r, 3 = the KeyError
+                           AFTER:  0 = a, 1 = g, 2 = r, 3 = the KeyError.
+                           FROM: 1e5c95e600
+runtime/ops_bend.bend:392  CUT 1 LINE(S) BETWEEN:
+                           BEFORE: between <arg> and an EMPTY src list, because every other field is non-empty.
+                             CUT: 
+                           AFTER:  `is_buf(wire_arg(u))` -- the test is on the ARG, not on the addrspace, because
+                           FROM: bd7a2d14c3
+runtime/ops_bend.bend:378  CUT 1 LINE(S) BETWEEN:
+                           BEFORE: 
+                             CUT: # THE TWO ASSERTS ARE PORTED AS REFUSALS, which is the only way a refusal can
+                           AFTER:  THE two asserts are ported as refusals, which is the only way a refusal can
+                           FROM: 12ae249d21
+runtime/ops_bend.bend:585  CUT 1 LINE(S) BETWEEN:
+                           BEFORE: 
+                             CUT: # SO THE HEADER'S WALL 4 WAS THE WRONG DEF. It blamed `String.split(s, NLCH())`,
+                           AFTER:  SO the header'S wall 4 WAS the wrong DEF. It blamed `String.split(s, NLCH())`,
+                           FROM: 12ae249d21
+runtime/ops_bend.bend:607  CUT 1 LINE(S) BETWEEN:
+                           BEFORE: and saying so is cheaper than a second field for one bit.
+                             CUT: # THE TRAILING EMPTY FIELD, DROPPED FROM THE END -- AND THIS IS A BUG FIX, not a
+                           AFTER:  THE trailing empty field, DROPPED from the end -- AND this is a bug fix, not a
+                           FROM: 12ae249d21
+runtime/ops_bend.bend:615  CUT 1 LINE(S) BETWEEN:
+                           BEFORE: 
+                             CUT: # THE HEAD IS REMOVED AND THEN THE LIST IS REBUILT, because there is no
+                           AFTER:  THE HEAD IS removed and then the list is rebuilt, because there is no
+                           FROM: 12ae249d21
+runtime/ops_bend.bend:681  CUT 1 LINE(S) BETWEEN:
+                           BEFORE: is a lie.
+                             CUT: #   TODO(p3) runtime/ops_bend.py:180 -- split a packet into LINES.
+                           AFTER:  TODO(p3) runtime/ops_bend.bend:1  symbol= -- split a packet into LINES -- UPSTREAM'S `runtime/ops_bend.py` IS 
+                           FROM: af3fe33513
+runtime/ops_bend.bend:696  CUT 1 LINE(S) BETWEEN:
+                           BEFORE: written out: it is four lines and it keeps the two lists in one family.
+                             CUT: # PREPEND, AND THAT IS THE FIX. The original APPENDED with
+                           AFTER:  PREPEND, AND that is the fix. The original APPENDED with
+                           FROM: 12ae249d21
+runtime/ops_bend.bend:731  CUT 1 LINE(S) BETWEEN:
+                           BEFORE: 
+                             CUT: # AND THE WALK IS ORDER-PRESERVING, which the old one was not. `drop3`/`drop4`
+                           AFTER:  destructured four cells and then appended `[h]` from the WRONG cell, so
+                           FROM: 1d3d5e7a62
+runtime/ops_bend.bend:744  CUT 1 LINE(S) BETWEEN:
+                           BEFORE: reverse and `10 11` without. `acc` is returned as it stands.
+                             CUT: # THE COUNT IS EXHAUSTED BY THE `Nat`, AND THE TAIL IS THE ANSWER -- collected
+                           AFTER:  THE count is exhausted by the `Nat`, AND the tail is the answer -- collected
+                           FROM: 12ae249d21
+runtime/ops_bend.bend:808  CUT 1 LINE(S) BETWEEN:
+                           BEFORE: 
+                             CUT: # AND THIS IS WHERE THE ORIGINAL `drop_final` WAS DOING DOUBLE DUTY. It dropped
+                           AFTER:  AND this is WHERE THE original `drop_final` WAS doing double duty. It dropped
+                           FROM: 12ae249d21
+runtime/ops_bend.bend:929  CUT 1 LINE(S) BETWEEN:
+                           BEFORE: THE TABLE IS 0-BASED, and it WAS 1-BASED. `ls_at` is 0-based and `store_base.of`
+                             CUT: # feeds it `u.src[0]-1` -- CPython's `b = u.srcs[0]-1` (ops_bend.py:208) -- so the
+                           AFTER:  feeds it `u.src[0]-1` -- CPython's `b = u.srcs[0]-1` (ops_bend.py:207) -- so the
+                           FROM: d5783a8ff6
+runtime/ops_bend.bend:960  CUT 1 LINE(S) BETWEEN:
+                           BEFORE: which is CPython's own `out_bufs = [0]`.
+                             CUT: 
+                           AFTER:  AND `go_` IS "STILL WALKING", i.e. the op IS a chain op -- not its negation.
+                           FROM: bd7a2d14c3
+runtime/ops_bend.bend:963  CUT 1 LINE(S) BETWEEN:
+                           BEFORE: chain op and stopped immediately, so every answer was the starting index.
+                             CUT: 
+                           AFTER:  THE FUEL LEADS, and it must: arguments are read left to right and every argument
+                           FROM: bd7a2d14c3
+runtime/ops_bend.bend:968  CUT 1 LINE(S) BETWEEN:
+                           BEFORE: This is the same rule `take_nat` and `lines.go` obey above.
+                             CUT: # AND `go_` IS RE-TESTED AT THE NEW `b` INSIDE THE PICK -- passing it through
+                           AFTER:  AND `go_` IS re-TESTED at the new `b` INSIDE the pick -- passing it through
+                           FROM: 12ae249d21
+runtime/ops_bend.bend:1039  CUT 2 LINE(S) BETWEEN:
+                           BEFORE: its position decides WHICH.
+                             CUT: def hit_arg(+ls: List<&2, Line>, bs: List<&2, U32>, +j: U32) -> Bool:
+                             CUT: is_buf(Line.arg(ls_at(ls, U32.to_nat(store_base.of(bs, ls, ls_nat(j))))))
+                           AFTER:  `bs` IS GONE from both readers, because the table it named was the false
+                           FROM: cadc04a6d6
+runtime/ops_bend.bend:1060  CUT 1 LINE(S) BETWEEN:
+                           BEFORE: the gate compares against.
+                             CUT: def out_go(+ls: List<&2, Line>, +rest: List<&2, Line>, +bs: List<&2, U32>,
+                           AFTER:  `j` IS 0-BASED, like `ls_at` and `ls`. It started at 1, which read every line one
+                           FROM: cadc04a6d6
+runtime/ops_bend.bend:1125  CUT 1 LINE(S) BETWEEN:
+                           BEFORE: EVALUATED and only the first refusal takes effect. The trace is identical.
+                             CUT: 
+                           AFTER:  The launch facts :211-213. `gx/gy/gz` are the global_size and are read only by

@@ -1,0 +1,49 @@
+THE runtime/ LANE's LEDGER AND ITS INSTRUMENTS: COMMENTS ONLY, NO PORT FILE
+
+THE TREE's RULE (`AGENTS.md`): "Update .agents/TOOLS.md with the tools or
+libraries you're using, it will act as a ledger and overview for the project."
+AND: "Whenever you finish a task, make sure to tick it off in .agents/TODO.md."
+
+WHAT LANDS:
+  .agents/TOOLS.md                       EIGHT ROWS, ONE PER INSTRUMENT
+  .agents/TODO.md                        THE `runtime-lane` TASK, 10/10
+  .agents/slop/comments/runtime-lane/    THE INSTRUMENTS THEMSELVES
+
+THE INSTRUMENTS, AND **EACH **ONE **IS **A **POPULATION **THAT **IS **DISCOVERED**
+(Doctrine 1) **AND **NOT **A **LIST**:
+  dangle.py           THE DANGLING-SENTENCE DETECTOR. A BLOCK THAT ENDS ON A LINE
+                      THAT IS NOT A SENTENCE IS A TRUNCATION. THE EXEMPTIONS ARE
+                      THE THREE SHAPES THAT NEED NO FULL STOP: A TABLE BLOCK, A
+                      SECTION DIVIDER, AND AN INDENTED ROW OF A PROSE TABLE.
+                      IT FOUND 60 IN THE LANE AND THE LANE IS NOW 0.
+  dangle-repair.py    THE REPAIR. IT READS `git log -p` AND FINDS THE COMMIT WHERE
+                      THE CUT LINE WAS THE LAST LINE OF A LONGER SENTENCE. THE
+                      HISTORY IS THE ONLY WITNESS: A CUT LEAVES NO TRACE IN THE
+                      CURRENT TEXT.
+  dangle-apply.py     THE APPLIER. IT ONLY INSERTS A LINE AND NEVER REWRITES A
+                      KEPT ONE, AND IT WORKS FROM THE BOTTOM UP.
+  move-tables.py      THE TABLE MOVER. THE NAMING IS `<path-with-slashes-as-
+                      dashes>-<line>.md` AND THE SOURCE KEEPS A POINTER THAT
+                      NAMES IT. ITS EXTENT RULE HAS TWO FIXES AND BOTH WERE
+                      MEASURED (A MULTI-LINE HEADER, AND THE TABLE BEING THE
+                      BLOCK THE HEADER OPENS).
+  verify-tables.py    THE TABLE VERIFIER. EVERY POINTER IN THE LANE IS READ AND
+                      EVERY REMOVED LINE IS CHECKED AGAINST THE TABLES. IT
+                      ANSWERS "POINTERS OK: 48   BAD: 0".
+  cut.py              THE PARAGRAPH-LEVEL CUTTER. A KEPT PARAGRAPH IS A PREFIX OF
+                      THE ORIGINAL, SO NO KEPT LINE IS EVER REWRITTEN.
+  plan-cut.py         THE CUT PLAN. IT PRINTS WHAT THE RULE WOULD CUT WITH THE
+                      TEXT. IT PROVED THE LANE WAS ALREADY CUT: IT FOUND 10
+                      PARAGRAPHS AND 23 LINES, AND EVERY ONE WOULD HAVE LOST REAL
+                      CONTENT.
+
+AND TWO **PRE-EXISTING **DEFECTS **IN **THE **LANE **WERE **REPAIRED **AND **THE
+**REPAIRS **ARE **MEASURED**:
+  * `runtime/support/objc.bend` CARRIED A POINTER TO
+    `.agents/slop/tables/runtime-support-objc-88.md` AND **THE FILE WAS NEVER
+    COMMITTED**. THE COMMIT THAT MOVED THE TABLE (`012448a8d`) REMOVED THE BODY
+    AND WROTE THE POINTER AND NEVER WROTE THE FILE. THAT IS THE CLASS `AGENTS.md`
+    NAMES -- "A PATH INSIDE A SWEPT TREE IS DELETABLE WHILE THE GATE STILL NAMES
+    IT". THE TABLE WAS RECOVERED FROM THE PRE-CUT BLOB (`012448a8d^`).
+  * TWO TABLE FILES FROM EARLIER AGENTS CARRIED NO `# BLOCK:` MARKER, AND SO THE
+    VERIFIER COULD NOT READ THEM. THEY WERE NORMALISED TO THE CONVENTION.

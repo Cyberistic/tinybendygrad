@@ -109,6 +109,32 @@ upstream-comments [######....] 6/10      **UPSTREAM'S **COMMENTS **PORTED**, **�
                                          **PRE-EXISTING **`nn/onnx.bend` **CITATIONS**, **⇒⇒† AND **THE
                                          **STALE **`Defines` **QUOTE **IN **`uop/spec.bend`**, **⇒⇒† AND **THE
                                          **`tn_bitwise_not.bend:40`** **POINTER.**
+runtime-lane    [##########] 10/10    **THE **`runtime/` **LANE's **COMMENT **MASS **CUT **AND
+                                         **ITS **DANGLING **SENTENCES **REPAIRED.** **⇒⇒† AND
+                                         **THE **DANGLING **COUNT **IS **60 **⇒⇒† AND **0**,
+                                         **MEASURED **BY **`.agents/slop/comments/runtime-lane/
+                                         dangle.py`** -- **A **BLOCK **THAT **ENDS **ON **A **LINE
+                                         **THAT **IS **NOT **A **SENTENCE **IS **A **TRUNCATION**,
+                                         **⇒⇒† AND **A **TRUNCATION **IS **A **LIE**. **⇒⇒† AND
+                                         **26 **WERE **RESTORED **FROM **THE **FILE's **OWN
+                                         **`git log -p`**, **⇒⇒† AND **THE **OTHER **34 **WERE
+                                         **HAND-WRITTEN**, **⇒⇒† AND **TWO **STALE **BLOCKS **WERE
+                                         **CUT **WHOLE **BECAUSE **THEY **DESCRIBED **A **DESIGN
+                                         **THAT **IS **NOT **IN **THE **FILE**. **⇒⇒† AND **THE
+                                         **LANE's **MASS **IN **THE **SOURCE **IS **18,741 **⇒⇒† AND
+                                         **17,460 **LINES**, **⇒⇒† AND **THE **LINES **IN **BLOCKS
+                                         **OF **6+ **IS **13,037 **⇒⇒† AND **11,772**. **⇒⇒† AND
+                                         **27 **INVENTORY **TABLES **MOVED **TO
+                                         **`.agents/slop/tables/`**, **⇒⇒† AND **EVERY **MOVED
+                                         **LINE **IS **IN **A **TABLE **FILE**, **MEASURED **BY
+                                         **`.agents/slop/comments/runtime-lane/verify-tables.py`**
+                                         **⇒⇒† AND **IT **ANSWERS **"POINTERS OK: 48   BAD: 0"**.
+                                         **⇒⇒† AND **THE **CORPUS **IS **GREEN **AT
+                                         **`9f3e4cea6`**: **38 **graphs **/ **38 **agree **/ **0
+                                         **disagree **/ **38 **byte-identical**, **⇒⇒† AND
+                                         **`REPRO: **339 **of **339 **files **identical`**, **⇒⇒† AND
+                                         **`gates/corpuswitness-gate.py` **⇒⇒† AND **`PASS **--
+                                         **the **claim **is **ESTABLISHED`**.
 table-files     [##########] 10/10    **THE **TABLES **LEAVE **THE **COMMENT **BLOCKS.** **⇒⇒† AND
                                          **A **TABLE **IS **DATA**, **⇒⇒† AND **DATA **IN **A
                                          **COMMENT **BLOCK **IS **A **FILE **IN **THE **WRONG
