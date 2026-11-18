@@ -4980,6 +4980,16 @@ one program whose answer is bit-identical to CPython's on real hardware, and
 `.agents/slop/e2e.sh` says so in one command. It is **1/1 and not 2/2** on purpose: the
 second would be a forward pass, and there is no kernel executor to run one.
 
+- [x] **A SECOND WITNESS TO THE SAME BAR, AND IT EXECUTES THE PORT's OWN RENDERED KERNEL**
+      (2026-11-18). `.agents/slop/execgap/execgate.bend` renders with `renderer/cstyle.bend`
+      (`_render` + `render_kernel`) and then ONE `bin/bend` process writes the `.c`, spawns `cc`,
+      spawns the binary and prints ITS stdout (`Base`'s `File.write` + `Process.run` -- measured,
+      not assumed: `.agents/slop/execgap/probe_io.bend`). `execgate-gate.py --plants` is **PASS**:
+      7 rows against pins derived BY HAND, and 3 plants RED. **IT IS ONE KERNEL FROM A
+      HAND-BUILT ARENA**, because the port's `schedule()` answers zero kernels (rangeify stage 1),
+      so the sentence above stands unchanged: there is still no forward pass.
+      See `.agents/slop/execgap/REPORT.md`.
+
 ---
 
 ## Phase P0 — toolchain and scaffolding
