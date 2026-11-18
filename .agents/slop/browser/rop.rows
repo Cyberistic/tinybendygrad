@@ -1,3 +1,5 @@
+texts=neginf=((float)(-__builtin_inff())) posinf=((float)(__builtin_inff())) nan=((float)(__builtin_nanf(""))) finite=1.0f int=7
+ident=node=CONST:cother: arg=CFloat=-inf
 rop=node=REDUCE:other:PERMUTE arg=n=2 nsrc=1
 raw=raw arg=n=0 nsrc=1
 rebuild=rebuild arg=n=0 nsrc=1

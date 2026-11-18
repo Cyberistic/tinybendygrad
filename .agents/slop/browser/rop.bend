@@ -8,6 +8,10 @@ import ./../../../tinybendygrad/mixin/movement.bend as MX
 import ./../../../tinybendygrad/schedule/realize.bend as RZ
 import ./../../../tinybendygrad/schedule/rangify.bend as RF
 import ./../../../tinybendygrad/helpers.bend as H
+import ./../../../tinybendygrad/codegen/kernel.bend as KR
+import ./../../../tinybendygrad/renderer/cstyle.bend as C
+import ./../../../tinybendygrad/base.bend as B
+import ./../../../tinybendygrad/LAWS/spec.bend as S
 
 def rop_num.a(a: O.Arg) -> String:
   match a:
@@ -50,8 +54,36 @@ def rop_raw() -> String:
   String.concat(["raw arg=", rop_num.a(O.Arena.arg(ar, red)),
                  " nsrc=", U32.show(O.Arena.nsrc(ar, red))])
 
+# WHAT DOES identity_element(MAX) ANSWER? And is the pool reduce's dtype FLOAT?
+def ident.a(a: O.Arg) -> String:
+  match a:
+    case O.APy{O.CInt{i}}: String.concat(["CInt=", H.i64_dec(i)])
+    case O.APy{O.CFloat{f}}: String.concat(["CFloat=", H.f32_show(f)])
+    case _: "other"
+
+def ident.m(m: Maybe<&2, O.Found>, +ar: O.Arena) -> String:
+  match m:
+    case Some{+f}: String.concat(["node=", RF.rr_node_str(O.Found.ar(f), O.Found.i(f)),
+                                 " arg=", ident.a(O.Arena.arg(O.Found.ar(f), O.Found.i(f)))])
+    case None{}: "none"
+
+def ident() -> String:
+  +ar = O.Arena.empty()
+  +m = KR.lr_ident(O.OpsMAX{}, ar, S.single())
+  ident.m(m, ar)
+
+# THE CONST TEXT ITSELF: the -inf arm, and a finite one.
+def texts() -> String:
+  String.concat(["neginf=", C.ku_const_repr(O.CFloat{B.F32.from_bits(4286578688)}),
+                 " posinf=", C.ku_const_repr(O.CFloat{B.F32.from_bits(2139095040)}),
+                 " nan=", C.ku_const_repr(O.CFloat{B.F32.from_bits(2143289344)}),
+                 " finite=", C.ku_const_repr(O.CFloat{B.F32.from_bits(1065353216)}),
+                 " int=", C.ku_const_repr(O.CInt{H.i64_of_i32(7)})])
+
 def main() -> IO(Unit):
   do IO<Unit>:
+    IO.print(String.concat(["texts=", texts()]))
+    IO.print(String.concat(["ident=", ident()]))
     IO.print(String.concat(["rop=", rop()]))
     IO.print(String.concat(["raw=", rop_raw()]))
     IO.print(String.concat(["rebuild=", rop_dbg()]))

@@ -296,8 +296,50 @@ def lt_pick(c: Bool, +u: U32, +ar: O.Arena, +rs: List<&2, LateRep>, fired: Bool)
       lt_hit(DC.Hit.on(h), h, u, ar, rs, fired)
     case False{}: lt_keep(u, ar, rs, fired)
 
+# `pm_split_ends` -- linearizer.py:88-99, and it is the SECOND half of upstream's
+# `pm_final_rewrite` (`codegen/__init__.py:348`: `pm_decomp + pm_split_ends`). An `END`
+# over N ranges becomes N NESTED single-range ENDs, built in DESCENDING range order so the
+# lowest range ends up OUTERMOST:
+#
+#   ret = e.src[0]; for r in sorted(rngs, key=arg, reverse=True): ret = ret.end(r)
+#
+# THE PORT NEEDED IT AND THAT IS MEASURED, not stylistic: this renderer prints one
+# `for (...) {{` per RANGE and one `}}` per END, so an END over two ranges closed ONE loop
+# and the max_pool kernel came out with 5 openers and 3 closers, and its output store
+# landed INSIDE the window loop.
+def se_rev.go(+xs: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
+  match xs:
+    case Nil{}: acc
+    case x <> t: se_rev.go(t, List.append(&2, U32, [x], acc))
+
+def se_wrap.go(+rs: List<&2, U32>, +ar: O.Arena, +b: U32) -> O.Found:
+  match rs:
+    case Nil{}: O.Found{ar, b}
+    case r <> t:
+      +f = O.UOp.end(ar, b, [r])
+      se_wrap.go(t, O.Found.ar(f), O.Found.i(f))
+
+def se_end(+u: U32, +ar: O.Arena, +rs: List<&2, LateRep>) -> Lt:
+  +b = lt_get(rs, O.Arena.src0(ar, u))
+  +f = se_wrap.go(se_rev.go(O.Arena.src_from(ar, u, 1), Nil{}), ar, b)
+  lt_put(O.Found.ar(f), u, O.Found.i(f), rs, True{})
+
+def lt_kind(isend: Bool, +u: U32, +ar: O.Arena, +rs: List<&2, LateRep>, fired: Bool) -> Lt:
+  match isend:
+    case True{}: se_end(u, ar, rs)
+    case False{}:
+      +h = lt_rule(ar, u)
+      lt_hit(DC.Hit.on(h), h, u, ar, rs, fired)
+
+def lt_pick2(c: Bool, isend: Bool, +u: U32, +ar: O.Arena, +rs: List<&2, LateRep>, fired: Bool) -> Lt:
+  match c:
+    case True{}: lt_kind(isend, u, ar, rs, fired)
+    case False{}: lt_keep(u, ar, rs, fired)
+
 def lt_step(+u: U32, +st: Lt) -> Lt:
-  lt_pick(lt_claimed(O.Arena.op(Lt.ar(st), u)), u, Lt.ar(st), Lt.rs(st), Lt.fired(st))
+  +op = O.Arena.op(Lt.ar(st), u)
+  lt_pick2(Bool.or(lt_claimed(op), O.eq_op(op, O.OpsEND{})), O.eq_op(op, O.OpsEND{}),
+           u, Lt.ar(st), Lt.rs(st), Lt.fired(st))
 
 def lt_pass.go(+us: List<&2, U32>, st: Lt) -> Lt:
   match us:

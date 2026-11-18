@@ -21,6 +21,9 @@ import ./../../../tinybendygrad/uop/ops.bend as O
 import ./../../../tinybendygrad/uop/fold.bend as F
 import ./../../../tinybendygrad/tensor.bend as T
 import ./../../../tinybendygrad/mixin/movement.bend as MX
+import ./../../../tinybendygrad/renderer/cstyle.bend as C
+import ./../../../tinybendygrad/uop/weak.bend as WK
+import ./../../../tinybendygrad/codegen/kernel.bend as KR
 
 # A VALID 3x3 CONV (no padding): PAD needs `valid` + `pm_simplify_valid`, which is the
 # other half of W3, and SHRINK alone lands first. Output is (1,1,26,26).
@@ -249,6 +252,131 @@ def pool_cons() -> String:
                  " cons=", pool_ids(RR.rr_cons(ar, topo, red)),
                  " rdop=", RR.rr_node_str(ar, red)])
 
+# THE LINEARISED KU ORDER FOR THE POOL: where the init store, the reduce loop and the
+# update store sit, and what the init store's VALUE is.
+def pc_op(+k: C.KU) -> String: RF.eng_op_name(C.KU.op(k))
+
+def pc_sig.go(+ks: List<&2, C.KU>, +i: U32, +acc: List<&2, String>) -> List<&2, String>:
+  match ks:
+    case Nil{}: acc
+    case k <> t: pc_sig.go(t, U32.add(i, 1), List.append(&2, String, acc, [String.concat([U32.show(i), ":", pc_op(k)])]))
+
+def pc_arg.a(a: C.KUArg) -> String:
+  match a:
+    case C.KAConst{v}: String.concat(["const=", C.ku_const_repr(v)])
+    case _: "arg=-"
+
+def pc_arg(+k: C.KU) -> String: pc_arg.a(C.KU.arg(k))
+
+def pc_sig2.go(+ks: List<&2, C.KU>, +i: U32, +acc: List<&2, String>) -> List<&2, String>:
+  match ks:
+    case Nil{}: acc
+    case k <> t:
+      pc_sig2.go(t, U32.add(i, 1),
+        Bool.pick(List<&2, String>, Bool.or(O.eq_op(C.KU.op(k), O.OpsCONST{}), O.eq_op(C.KU.op(k), O.OpsSTORE{})),
+          List.append(&2, String, acc, [String.concat([U32.show(i), ":", pc_op(k), "@", pc_arg(k)])]), acc))
+
+def pc_pair(p: (O.Arena & List<&2, C.KU>)) -> String:
+  (ar, +kus) = p
+  String.concat([String.join(pc_sig.go(kus, 0, Nil{}), " "),
+                 " |args ", String.join(pc_sig2.go(kus, 0, Nil{}), " ")])
+
+def pool_ku() -> String:
+  +q = RZ.rz_rebuild(pool_prog(), False{}, False{})
+  +kg = RR.rr_kernel_graph(RZ.RZProg.ar(q), RZ.RZProg.sink(q))
+  +lin = SCH.schedule(O.Found.ar(kg), O.Found.i(kg))
+  +a2 = SCH.lin_ar(lin)
+  pc_pair(DEV.body_kus(a2, SCH.sc_src0(a2, Maybe.default(&2, U32, List.head(&2, U32, SCH.lin_kernels(lin)), 0))))
+
+# THE LOWERED BODY, DUMPED: what is the init STORE's src[1]?
+def pool_low2() -> String:
+  +q = RZ.rz_rebuild(pool_prog(), False{}, False{})
+  +kg = RR.rr_kernel_graph(RZ.RZProg.ar(q), RZ.RZProg.sink(q))
+  +lin = SCH.schedule(O.Found.ar(kg), O.Found.i(kg))
+  +a2 = SCH.lin_ar(lin)
+  +k = SCH.sc_src0(a2, Maybe.default(&2, U32, List.head(&2, U32, SCH.lin_kernels(lin)), 0))
+  +l = DEV.body_low(a2, SCH.sc_src0(a2, k))
+  RR.rr_dump(O.Found.ar(l), O.Found.i(l))
+
+# WHICH PASS TURNS THE INIT STORE'S VALUE FROM A CONST INTO A BUFFER?
+# the FIRST store in the body whose dst is not a buffer-index, and its value's op.
+def pc_val.rw(+ar: O.Arena, +ns: List<&2, U32>, acc: String) -> String:
+  match ns:
+    case Nil{}: acc
+    case x <> t:
+      pc_val.rw(ar, t, Bool.pick(String, O.eq_op(O.Arena.op(ar, x), O.OpsSTORE{}),
+        String.concat([RF.eng_op_name(O.Arena.op(ar, x)), "(", RF.eng_op_name(O.Arena.op(ar, O.Arena.src0(ar, x))), ",",
+                       RF.eng_op_name(O.Arena.op(ar, O.Arena.src(ar, x, 1))), ")" ]), acc))
+
+def pc_val(+ar: O.Arena, +f: O.Found) -> String:
+  pc_val.rw(O.Found.ar(f), O.UOp.toposort(O.Arena.budget(O.Found.ar(f)), O.Found.ar(f), O.Found.i(f)), "")
+
+def pc_seq(n: U32, +ar: O.Arena, +b: U32) -> String:
+  match n:
+    case 0: pc_val(ar, WK.wk_commit(ar, b))
+    case 1: pc_val(ar, KR.lower_reduce_all(ar, b))
+    case 2: pc_val(ar, DEV.late_apply(ar, b))
+    case _: pc_val(ar, KR.alloc_to_buf_all(ar, b))
+
+def pc_stage(n: U32) -> String:
+  +q = RZ.rz_rebuild(pool_prog(), False{}, False{})
+  +kg = RR.rr_kernel_graph(RZ.RZProg.ar(q), RZ.RZProg.sink(q))
+  +lin = SCH.schedule(O.Found.ar(kg), O.Found.i(kg))
+  +a2 = SCH.lin_ar(lin)
+  +k = SCH.sc_src0(a2, Maybe.default(&2, U32, List.head(&2, U32, SCH.lin_kernels(lin)), 0))
+  pc_seq(n, a2, SCH.sc_src0(a2, k))
+
+# IS THE -inf IDENTITY IN THE LOWERED BODY AT ALL?
+def pc_isfloat(a: O.Arg) -> Bool:
+  match a:
+    case O.APy{O.CFloat{f}}: True{}
+    case _: False{}
+
+def pc_cnt.go(+ar: O.Arena, +ns: List<&2, U32>, +acc: U32) -> U32:
+  match ns:
+    case Nil{}: acc
+    case x <> t:
+      pc_cnt.go(ar, t, Bool.pick(U32, Bool.and(O.eq_op(O.Arena.op(ar, x), O.OpsCONST{}), pc_isfloat(O.Arena.arg(ar, x))),
+                                 U32.add(acc, 1), acc))
+
+def pc_cnt(+ar: O.Arena, +f: O.Found) -> U32:
+  pc_cnt.go(ar, O.UOp.toposort(O.Arena.budget(ar), ar, O.Found.i(f)), 0)
+
+def pool_fcnt() -> String:
+  +q = RZ.rz_rebuild(pool_prog(), False{}, False{})
+  +kg = RR.rr_kernel_graph(RZ.RZProg.ar(q), RZ.RZProg.sink(q))
+  +lin = SCH.schedule(O.Found.ar(kg), O.Found.i(kg))
+  +a2 = SCH.lin_ar(lin)
+  +k = SCH.sc_src0(a2, Maybe.default(&2, U32, List.head(&2, U32, SCH.lin_kernels(lin)), 0))
+  +before = pc_cnt(a2, DEV.body_low(a2, SCH.sc_src0(a2, k)))
+  +after = pc_cnt(O.Found.ar(DEV.body_low(a2, SCH.sc_src0(a2, k))), DEV.body_low(a2, SCH.sc_src0(a2, k)))
+  String.concat(["fcnt_after_low=", U32.show(before), "/", U32.show(after)])
+
+def pc_lr2(m: Maybe<&2, O.Found>, red: U32) -> String:
+  match m:
+    case Some{+f}:
+      String.concat(["red=", U32.show(red), " fcnt=", U32.show(pc_cnt(O.Found.ar(f), f)),
+                     " dump=", RR.rr_dump(O.Found.ar(f), O.Found.i(f))])
+    case None{}: String.concat(["red=", U32.show(red), " NONE"])
+
+# `lower_reduce` ON THE REAL NODE: does its answer carry the -inf const?
+def pc_firstred.go(+ar: O.Arena, +ns: List<&2, U32>, +acc: U32) -> U32:
+  match ns:
+    case Nil{}: acc
+    case x <> t:
+      pc_firstred.go(ar, t, Bool.pick(U32, Bool.and(U32.is_eq(acc, 0), O.eq_op(O.Arena.op(ar, x), O.OpsREDUCE{})), x, acc))
+
+def pc_lr() -> String:
+  +q = RZ.rz_rebuild(pool_prog(), False{}, False{})
+  +kg = RR.rr_kernel_graph(RZ.RZProg.ar(q), RZ.RZProg.sink(q))
+  +lin = SCH.schedule(O.Found.ar(kg), O.Found.i(kg))
+  +a2 = SCH.lin_ar(lin)
+  +k = SCH.sc_src0(a2, Maybe.default(&2, U32, List.head(&2, U32, SCH.lin_kernels(lin)), 0))
+  +body = WK.wk_commit(a2, SCH.sc_src0(a2, k))
+  +ar = O.Found.ar(body)
+  +red = pc_firstred.go(ar, O.UOp.toposort(O.Arena.budget(ar), ar, O.Found.i(body)), 0)
+  pc_lr2(KR.lower_reduce(ar, red), red)
+
 def main() -> IO(Unit):
   do IO<Unit>:
     _ : Unit <- IO.print(String.concat(["pool_rr=", pool_rr()]))
@@ -262,5 +390,13 @@ def main() -> IO(Unit):
     _ : Unit <- IO.print(String.concat(["pool_sk=", pool_sk()]))
     _ : Unit <- IO.print(String.concat(["pool_lk=", pool_lk()]))
     _ : Unit <- IO.print(String.concat(["pool_low=", pool_low()]))
+    _ : Unit <- IO.print(String.concat(["pc_lr=", pc_lr()]))
+    _ : Unit <- IO.print(String.concat(["pool_fcnt=", pool_fcnt()]))
+    _ : Unit <- IO.print(String.concat(["st0=", pc_stage(0)]))
+    _ : Unit <- IO.print(String.concat(["st1=", pc_stage(1)]))
+    _ : Unit <- IO.print(String.concat(["st2=", pc_stage(2)]))
+    _ : Unit <- IO.print(String.concat(["st3=", pc_stage(3)]))
+    _ : Unit <- IO.print(String.concat(["pool_low2=", pool_low2()]))
+    _ : Unit <- IO.print(String.concat(["pool_ku=", pool_ku()]))
     _ : Unit <- IO.print(String.concat(["pool_c=", cn_src(pool_prog())]))
     IO.print(String.concat(["conv_c=", cn_src(conv_prog())]))

@@ -9,7 +9,15 @@ pool_id=end=121 srcs=[120,76,84] ended=[76,84] open=[]
 pool_rn=True/0/
 pool_sk=open=True bufs=0 rngs=0 bad=True
 pool_lk=1/CALL>SINK
-pool_low=SINK:other:END;END:none:STORE,RANGE,RANGE;STORE:none:INDEX,AFTER;RANGE:other:OTHER;RANGE:other:OTHER;INDEX:none:PARAM,OTHER;AFTER:none:BUFFER,END;OTHER:other:CONST;PARAM:other:OTHER;OTHER:none:ADD,CONST;BUFFER:other:CONST;END:none:STORE,RANGE,RANGE;CONST:cother:;OTHER:other:CONST;ADD:none:OTHER,ADD;CONST:cother:;CONST:cother:;STORE:none:AFTER,WHERE;RANGE:other:OTHER;RANGE:other:OTHER;OTHER:other:RANGE;ADD:none:MUL,ADD;AFTER:none:BUFFER,STORE,RANGE,RANGE;WHERE:none:OTHER,INDEX,AFTER;OTHER:other:CONST;MUL:none:CONST,OTHER;ADD:none:MUL,MUL;STORE:none:AFTER,BUFFER;OTHER:none:AFTER,INDEX;INDEX:none:PARAM,OTHER;CONST:cother:;OTHER:other:RANGE;MUL:none:OTHER,OTHER;AFTER:none:BUFFER,RANGE,RANGE;PARAM:other:OTHER;OTHER:none:ADD,CONST;OTHER:other:CONST;OTHER:other:CONST;ADD:none:OTHER,ADD;CONST:cother:;CONST:cother:;OTHER:other:RANGE;ADD:none:OTHER,ADD;OTHER:none:OTHER,CONST;ADD:none:MUL,ADD;MUL:none:CONST,OTHER;ADD:none:MUL,ADD;CONST:cother:;OTHER:other:RANGE;MUL:none:CONST,OTHER;ADD:none:MUL,MUL;CONST:cother:;MUL:none:OTHER,OTHER
+pool_low=SINK:other:END;END:none:END,RANGE;END:none:STORE,RANGE;RANGE:other:OTHER;STORE:none:INDEX,AFTER;RANGE:other:OTHER;OTHER:other:CONST;INDEX:none:PARAM,OTHER;AFTER:none:BUFFER,END;CONST:cother:;PARAM:other:OTHER;OTHER:none:ADD,CONST;BUFFER:other:CONST;END:none:END,RANGE;OTHER:other:CONST;ADD:none:OTHER,ADD;CONST:cother:;CONST:cother:;END:none:STORE,RANGE;RANGE:other:OTHER;OTHER:other:RANGE;ADD:none:MUL,ADD;STORE:none:AFTER,WHERE;RANGE:other:OTHER;OTHER:other:CONST;MUL:none:CONST,OTHER;ADD:none:MUL,MUL;AFTER:none:BUFFER,STORE,RANGE,RANGE;WHERE:none:OTHER,INDEX,AFTER;CONST:cother:;OTHER:other:RANGE;MUL:none:OTHER,OTHER;STORE:none:AFTER,CONST;OTHER:none:AFTER,INDEX;INDEX:none:PARAM,OTHER;OTHER:other:CONST;AFTER:none:BUFFER,RANGE,RANGE;CONST:cother:;PARAM:other:OTHER;OTHER:none:ADD,CONST;CONST:cother:;OTHER:other:CONST;ADD:none:OTHER,ADD;CONST:cother:;OTHER:other:RANGE;ADD:none:OTHER,ADD;OTHER:none:OTHER,CONST;ADD:none:MUL,ADD;MUL:none:CONST,OTHER;ADD:none:MUL,ADD;CONST:cother:;OTHER:other:RANGE;MUL:none:CONST,OTHER;ADD:none:MUL,MUL;CONST:cother:;MUL:none:OTHER,OTHER
+pc_lr=red=195 fcnt=1 dump=AFTER:none:ALLOC,END;ALLOC:other:CONST;END:none:STORE,RANGE,RANGE;CONST:cother:;STORE:none:AFTER,OTHER;RANGE:other:OTHER;RANGE:other:OTHER;AFTER:none:ALLOC,STORE,RANGE,RANGE;OTHER:none:AFTER,INDEX;OTHER:other:CONST;STORE:none:AFTER,CONST;INDEX:none:PARAM,OTHER;CONST:cother:;AFTER:none:ALLOC,RANGE,RANGE;CONST:cother:;PARAM:other:OTHER;OTHER:none:ADD,CONST;RANGE:other:OTHER;RANGE:other:OTHER;OTHER:other:CONST;ADD:none:OTHER,ADD;CONST:cother:;OTHER:other:CONST;OTHER:other:RANGE;ADD:none:MUL,ADD;CONST:cother:;MUL:none:CONST,OTHER;ADD:none:MUL,ADD;OTHER:other:RANGE;MUL:none:CONST,OTHER;ADD:none:MUL,ADD;CONST:cother:;OTHER:other:RANGE;MUL:none:CONST,OTHER;ADD:none:MUL,MUL;CONST:cother:;OTHER:other:RANGE;MUL:none:OTHER,OTHER;OTHER:other:CONST;CONST:cother:
+pool_fcnt=fcnt_after_low=0/1
+st0=STORE(INDEX,REDUCE)
+st1=STORE(INDEX,AFTER)
+st2=STORE(INDEX,REDUCE)
+st3=STORE(INDEX,REDUCE)
+pool_low2=END:none:STORE,RANGE,RANGE;STORE:none:INDEX,AFTER;RANGE:other:OTHER;RANGE:other:OTHER;INDEX:none:PARAM,OTHER;AFTER:none:BUFFER,END;OTHER:other:CONST;PARAM:other:OTHER;OTHER:none:ADD,CONST;BUFFER:other:CONST;END:none:END,RANGE;CONST:cother:;OTHER:other:CONST;ADD:none:OTHER,ADD;CONST:cother:;CONST:cother:;END:none:STORE,RANGE;RANGE:other:OTHER;OTHER:other:RANGE;ADD:none:MUL,ADD;STORE:none:AFTER,WHERE;RANGE:other:OTHER;OTHER:other:CONST;MUL:none:CONST,OTHER;ADD:none:MUL,MUL;AFTER:none:BUFFER,STORE,RANGE,RANGE;WHERE:none:OTHER,INDEX,AFTER;CONST:cother:;OTHER:other:RANGE;MUL:none:OTHER,OTHER;STORE:none:AFTER,CONST;OTHER:none:AFTER,INDEX;INDEX:none:PARAM,OTHER;OTHER:other:CONST;AFTER:none:BUFFER,RANGE,RANGE;CONST:cother:;PARAM:other:OTHER;OTHER:none:ADD,CONST;CONST:cother:;OTHER:other:CONST;ADD:none:OTHER,ADD;CONST:cother:;OTHER:other:RANGE;ADD:none:OTHER,ADD;OTHER:none:OTHER,CONST;ADD:none:MUL,ADD;MUL:none:CONST,OTHER;ADD:none:MUL,ADD;CONST:cother:;OTHER:other:RANGE;MUL:none:CONST,OTHER;ADD:none:MUL,MUL;CONST:cother:;MUL:none:OTHER,OTHER
+pool_ku=0:CONST 1:CAST 2:PARAM 3:CONST 4:CAST 5:PARAM 6:CONST 7:BUFFER 8:CONST 9:CAST 10:RANGE 11:CAST 12:RANGE 13:CAST 14:CONST 15:CAST 16:AFTER 17:CONST 18:CONST 19:CAST 20:STORE 21:RANGE 22:RANGE 23:AFTER 24:CAST 25:SHL 26:CONST 27:CAST 28:MUL 29:CONST 30:MUL 31:MUL 32:ADD 33:ADD 34:ADD 35:ADD 36:ADD 37:TRUNCMOD 38:INDEX 39:CMPLT 40:WHERE 41:STORE 42:END 43:END 44:MUL 45:MUL 46:ADD 47:ADD 48:ADD 49:TRUNCMOD 50:INDEX 51:AFTER 52:STORE 53:END |args 0:CONST@const=196 3:CONST@const=784 6:CONST@const=1 8:CONST@const=14 14:CONST@const=0 17:CONST@const=((float)(-__builtin_inff())) 18:CONST@const=2 20:STORE@arg=- 26:CONST@const=28 29:CONST@const=56 41:STORE@arg=- 52:STORE@arg=-
 pool_c=
 void test(float* restrict data0_196, float* restrict data1_784) {
   float buf0[1];
@@ -17,14 +25,16 @@ void test(float* restrict data0_196, float* restrict data1_784) {
     int cast0 = ((int)(Lidx0));
     for (int Lidx1 = 0; Lidx1 < 14; Lidx1++) {
       int cast1 = ((int)(Lidx1));
-      *buf0 = buf0;
+      *buf0 = ((float)(-__builtin_inff()));
       for (int Lidx3 = 0; Lidx3 < 2; Lidx3++) {
         for (int Lidx2 = 0; Lidx2 < 2; Lidx2++) {
           float alu1 = ((buf0<(data1_784+((((int)(Lidx2))+(cast0<<1)+(28*((int)(Lidx3)))+(56*cast1)+(784*0)+(784*0))%784)))?(data1_784+((((int)(Lidx2))+(cast0<<1)+(28*((int)(Lidx3)))+(56*cast1)+(784*0)+(784*0))%784)):buf0);
           *buf0 = alu1;
         }
-        *(data0_196+((cast0+(14*cast1)+(196*0)+(196*0))%196)) = buf0;
       }
+      *(data0_196+((cast0+(14*cast1)+(196*0)+(196*0))%196)) = buf0;
+    }
+  }
 }
 conv_c=
 void test(float* restrict data0_676, float* restrict data1_784, float* restrict data2_9) {

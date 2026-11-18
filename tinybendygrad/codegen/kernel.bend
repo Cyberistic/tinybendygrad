@@ -1352,10 +1352,22 @@ def lr_acc(rop: O.Op, +inp: U32, +rs: List<&2, U32>, idc: O.Found, +ar: O.Arena,
   +e2 = O.UOp.end(O.Found.ar(s2), O.Found.i(s2), rs)
   Some{O.UOp.after(O.Found.ar(e2), acc, [O.Found.i(e2)])}
 
+# THE ARENA IS THE IDENTITY'S, NOT THE ONE PASSED IN, AND THAT IS THE WHOLE OF THIS DEF.
+# `lr_ident` MINTS the identity, so it answers a GROWN arena and the caller's `ar` is one
+# node shorter -- and `lr_acc` mints the accumulator on it. MEASURED, the two indices then
+# COLLIDE: `lr_acc`'s ALLOC took the index the identity const had in the grown arena, and
+# the init store read the accumulator as its own value --
+#
+#   STORE:none:AFTER,ALLOC        (*buf0 = buf0;)
+#
+# with the -inf identity NOWHERE in the body (`fcnt=0`). It is invisible for `ADD` and
+# `MUL` because their identity consts already exist in the arena and interning returns
+# them without growing it; `MAX`'s `-inf` is new every time, which is why max_pool saw it
+# and the fc did not.
 def lr_go(idm: Maybe<&2, O.Found>, rop: O.Op, +inp: U32, +rs: List<&2, U32>, +ar: O.Arena, +self: U32) -> Maybe<&2, O.Found>:
   match idm:
     case None{}   : None{}
-    case Some{idc}: lr_acc(rop, inp, rs, idc, ar, self)
+    case Some{+idc}: lr_acc(rop, inp, rs, idc, O.Found.ar(idc), self)
 
 # ---- THE SMALL-REDUCE UNROLL ----------------------------------------------------
 #

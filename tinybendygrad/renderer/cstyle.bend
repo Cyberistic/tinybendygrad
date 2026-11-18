@@ -2057,9 +2057,42 @@ def ku_text_stack(+dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> 
 # arm: `{c.val}`. `ku_text.go` had no CONST arm, so a bare CONST fell through to the ALU
 # path and printed NOTHING. MEASURED: the RESHAPE's modulus divisor is a bare CONST whose
 # value is right (20/12/15) and whose row was empty, so the C read `...%` with no divisor.
+# A FLOAT CONST'S TEXT, AND IT IS SPELLED HERE BECAUSE THE PORT RENDERS THE CONST ITSELF.
+# Upstream never renders a bare float const: `pm_cast_const` wraps every one in a CAST and
+# cstyle's own rules spell the CAST -- `ops.py`-side `cstyle.py:25-28` answers
+# `(render_cast(x, nan_or_infinity))` for a NON-FINITE value and `:29` answers `{v}f` for a
+# FINITE one. So:
+#
+#   finite     1.0f                     (Python's `f"{c.val}f"`, and `H.f32_show` is its repr)
+#   -inf       ((float)(-__builtin_inff()))
+#   +inf       ((float)(__builtin_inff()))
+#   nan        ((float)(__builtin_nanf("")))
+#
+# `__builtin_inff()` is THIS LANE's `infinity` (`ClangRenderer.infinity`, `cstyle.py:294`),
+# which is why no `#define INFINITY` prelude is needed here: that prelude (`cstyle.py:564`)
+# exists for the targets whose `infinity` IS the literal string `INFINITY`.
+# MEASURED: without this arm a float const rendered as the EMPTY string, so the reduce's
+# identity store came out `*buf0 = buf0;` instead of assigning -inf.
+def ku_f32_text(fin: Bool, +f: F32) -> String:
+  Bool.pick(String, H.f32_is_int_valued(fin, f),
+            String.concat([H.f32_show(f), ".0f"]),
+            String.concat([H.f32_show(f), "f"]))
+
+def ku_float_text(nan: Bool, fin: Bool, neg: Bool, +f: F32) -> String:
+  match nan:
+    case True{}: "((float)(__builtin_nanf(\"\")))"
+    case False{}:
+      match fin:
+        case True{}: ku_f32_text(fin, f)
+        case False{}:
+          match neg:
+            case True{}: "((float)(-__builtin_inff()))"
+            case False{}: "((float)(__builtin_inff()))"
+
 def ku_const_repr(v: O.Const) -> String:
   match v:
     case O.CInt{i}: H.i64_dec(i)
+    case O.CFloat{+f}: ku_float_text(H.f32_is_nan(f), H.f32_is_finite(f), H.f32_is_neg(f), f)
     case _: ""
 
 def ku_const_repr.of(a: KUArg) -> String:
