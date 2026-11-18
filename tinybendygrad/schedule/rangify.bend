@@ -691,24 +691,62 @@ def rr_reshape.ok(+ins: List<&2, U32>, +outs: List<&2, U32>, +rngs: List<&2, U32
     Bool.and(Bool.not(U32.is_zero(U32.from_nat(List.length(&2, U32, outs)))),
       U32.is_eq(U32.from_nat(List.length(&2, U32, rngs)), U32.from_nat(List.length(&2, U32, outs)))))
 
-# `ok` TRUE means DO THE MATH; a shape the port cannot read answers the identity, which is
-# the pre-W-A behaviour and not a wrong index.
-def rr_reshape.same(ok: Bool, +ar: O.Arena, +ins: List<&2, U32>, +outs: List<&2, U32>, +rngs: List<&2, U32>) -> (O.Arena & List<&2, U32>):
+# POSITIONS -> ENTRIES -> NODES. Upstream's map holds UOps; this one holds `IxRange`, so
+# the boundary is explicit and kind 2 is the node arm that makes it possible.
+def rr_ents.go(+pos: List<&2, U32>, +tbl: List<&2, IX.IxRange>, +acc: List<&2, IX.IxRange>) -> List<&2, IX.IxRange>:
+  match pos:
+    case Nil{}: acc
+    case r <> t: rr_ents.go(t, tbl, List.append(&2, IX.IxRange, acc, [IX.ix_tbl_at(tbl, r)]))
+
+def rr_nodes.go(+ents: List<&2, IX.IxRange>, +ar: O.Arena, +acc: List<&2, U32>) -> (O.Arena & List<&2, U32>):
+  match ents:
+    case Nil{}: (ar, acc)
+    case e <> t:
+      +f = IX.ix_rg_node(O.AXIS_WEAK{}, ar, e)
+      rr_nodes.go(t, O.Found.ar(f), List.append(&2, U32, acc, [O.Found.i(f)]))
+
+def rr_wrap.go(+ns: List<&2, U32>, +acc: List<&2, IX.IxRange>) -> List<&2, IX.IxRange>:
+  match ns:
+    case Nil{}: acc
+    case n <> t: rr_wrap.go(t, List.append(&2, IX.IxRange, acc, [IX.ix_rg_n(n)]))
+
+def rr_reshape.fin3(p: (O.Arena & List<&2, U32>)) -> (O.Arena & List<&2, IX.IxRange>):
+  (ar, ns) = p
+  (ar, rr_wrap.go(ns, Nil{}))
+
+def rr_reshape.fin2(p: (O.Arena & List<&2, U32>), +ins: List<&2, U32>, +outs: List<&2, U32>) -> (O.Arena & List<&2, IX.IxRange>):
+  (ar, rngs) = p
+  rr_reshape.fin3(rr_reshape.go(ar, ins, outs, rngs))
+
+def rr_reshape.mk(+ar: O.Arena, +ins: List<&2, U32>, +outs: List<&2, U32>, +pos: List<&2, U32>, +tbl: List<&2, IX.IxRange>) -> (O.Arena & List<&2, IX.IxRange>):
+  rr_reshape.fin2(rr_nodes.go(rr_ents.go(pos, tbl, Nil{}), ar, Nil{}), ins, outs)
+
+# `ok` TRUE means DO THE MATH; a shape the port cannot read answers its own entries back,
+# which is the pre-W-A behaviour and not a wrong index.
+def rr_reshape.same(ok: Bool, +ar: O.Arena, +ins: List<&2, U32>, +outs: List<&2, U32>, +pos: List<&2, U32>, +tbl: List<&2, IX.IxRange>) -> (O.Arena & List<&2, IX.IxRange>):
   match ok:
-    case True{} : rr_reshape.go(ar, ins, outs, rngs)
-    case False{}: (ar, rngs)
+    case True{} : rr_reshape.mk(ar, ins, outs, pos, tbl)
+    case False{}: (ar, rr_ents.go(pos, tbl, Nil{}))
 
-def rr_reshape(+ar: O.Arena, +ins: List<&2, U32>, +outs: List<&2, U32>, +rngs: List<&2, U32>) -> (O.Arena & List<&2, U32>):
-  rr_reshape.same(rr_reshape.ok(ins, outs, rngs), ar, ins, outs, rngs)
+def rr_reshape(+ar: O.Arena, +ins: List<&2, U32>, +outs: List<&2, U32>, +pos: List<&2, U32>, +tbl: List<&2, IX.IxRange>) -> (O.Arena & List<&2, IX.IxRange>):
+  rr_reshape.same(rr_reshape.ok(ins, outs, pos), ar, ins, outs, pos, tbl)
 
-# `apply_movement_op`'s FOUR arms, with the arena they grow. `O.u32_list_eq` is the
-# port's list equality (`H.u32_list_eq`); an unchanged shape is the identity.
-def rr_mvx(op: O.Op, +ar: O.Arena, +tb: F.Table, +x: U32, +arg: List<&2, U32>, +out: List<&2, U32>) -> (O.Arena & List<&2, U32>):
+# `apply_movement_op`'s FOUR arms, with the arena they grow and the ENTRIES they answer.
+def rr_mvx(op: O.Op, +ar: O.Arena, +tb: F.Table, +x: U32, +arg: List<&2, U32>, +out: List<&2, U32>, +tbl: List<&2, IX.IxRange>) -> (O.Arena & List<&2, IX.IxRange>):
   match op:
-    case O.OpsPERMUTE{}: (ar, IX.ix_mv_permute(arg, out))
-    case O.OpsEXPAND{} : (ar, IX.ix_mv_expand(arg, out))
-    case O.OpsRESHAPE{}: rr_reshape(ar, rr_dims(ar, tb, O.Arena.src0(ar, x)), arg, out)
-    case _: (ar, out)
+    case O.OpsPERMUTE{}: (ar, rr_ents.go(IX.ix_mv_permute(arg, out), tbl, Nil{}))
+    case O.OpsEXPAND{} : (ar, rr_ents.go(IX.ix_mv_expand(arg, out), tbl, Nil{}))
+    case O.OpsRESHAPE{}: rr_reshape(ar, rr_dims(ar, tb, O.Arena.src0(ar, x)), arg, out, tbl)
+    case _: (ar, rr_ents.go(out, tbl, Nil{}))
+
+# append each entry to the table, answering its POSITION. The table is the map, so the
+# positions are the ranges' names for the rest of the apply.
+def rr_put_entries.go(+es: List<&2, IX.IxRange>, +tbl: List<&2, IX.IxRange>, +acc: List<&2, U32>) -> (List<&2, IX.IxRange> & List<&2, U32>):
+  match es:
+    case Nil{}: (tbl, acc)
+    case e <> t:
+      +i = U32.from_nat(List.length(&2, IX.IxRange, tbl))
+      rr_put_entries.go(t, List.append(&2, IX.IxRange, tbl, [e]), List.append(&2, U32, acc, [i]))
 
 # `apply_movement_op` -- `indexing.py:165-180`. PERMUTE AND EXPAND ARE FULLY
 # PORTED -- `indexing.bend`'s OWN `ix_mv_permute` AND `ix_mv_expand`, REUSED AND
@@ -854,15 +892,24 @@ def rr_p4.stack(isstack: Bool, +m: RrMap, +out: List<&2, U32>, +rngs: List<&2, U
     case True{}: RrMap.put(m, out, List.drop(&2, U32, out, 1n), RrMap.e(m), RrMap.b(m), RrMap.ne(m))
     case False{}: RrMap.put(m, out, rngs, RrMap.e(m), RrMap.b(m), RrMap.ne(m))
 
-def rr_p4.move.of(p: (O.Arena & List<&2, U32>), isstack: Bool, +m: RrMap, +out: List<&2, U32>) -> (O.Arena & RrMap):
-  (+ar, rngs) = p
-  (ar, rr_p4.stack(isstack, m, out, rngs))
+def rr_p4.stack2(isstack: Bool, +m: RrMap, +rngs: List<&2, U32>) -> RrMap:
+  match isstack:
+    case True{}: RrMap.put(m, RrMap.out(m), List.drop(&2, U32, RrMap.out(m), 1n), RrMap.e(m), RrMap.b(m), RrMap.ne(m))
+    case False{}: RrMap.put(m, RrMap.out(m), rngs, RrMap.e(m), RrMap.b(m), RrMap.ne(m))
+
+def rr_p4.move.put(q: (List<&2, IX.IxRange> & List<&2, U32>), isstack: Bool, +m: RrMap, +out: List<&2, U32>, +ar: O.Arena) -> (O.Arena & RrMap):
+  (tbl, +rs) = q
+  (ar, rr_p4.stack2(isstack, RrMap{RrMap.ctx(m), RrMap.ends(m), tbl, out, rs, RrMap.e(m), RrMap.b(m), RrMap.ne(m)}, rs))
+
+def rr_p4.move.of(p: (O.Arena & List<&2, IX.IxRange>), isstack: Bool, +m: RrMap, +out: List<&2, U32>) -> (O.Arena & RrMap):
+  (ar, es) = p
+  rr_p4.move.put(rr_put_entries.go(es, RrMap.tbl(m), Nil{}), isstack, m, out, ar)
 
 def rr_p4.move(+ar: O.Arena, +tb: F.Table, +ctx: IX.IxCtx, +m: RrMap, +x: U32) -> (O.Arena & RrMap):
   +out = RrMap.out(m)
   +op = O.Arena.op(ar, x)
   +arg = rr_marg(ar, x)
-  rr_p4.move.of(rr_mvx(op, ar, tb, x, arg, out), rr_is_stack(ar, x), m, out)
+  rr_p4.move.of(rr_mvx(op, ar, tb, x, arg, out, RrMap.tbl(m)), rr_is_stack(ar, x), m, out)
 
 def rr_p4.reduce(+ar: O.Arena, +tb: F.Table, +ctx: IX.IxCtx, +m: RrMap, +x: U32) -> RrMap:
   # - the grown table is the point: `rr_new.all` appends the reduce-axis
@@ -1078,9 +1125,12 @@ def rr_ap_bcast(+ar: O.Arena, +tb: F.Table, +ctx: IX.IxCtx, +x: U32, +s: U32) ->
 # the realized case (`indexing.py:85-93`): a STORE becomes an `END` with its closed
 # ranges, => and everything ELSE becomes a `STAGE` -- => and the stage is then indexed
 # IF THE NODE IS IN THE RANGE MAP.
+# KIND 0 IS A RANGE AND KIND 2 IS A NODE (an index expression `_apply_reshape` built);
+# both are index arguments and both stay in `closed`, where a CONST 0 does not.
 def rr_ap_is_range.of(k: U32) -> Bool:
   match k:
     case 0: True{}
+    case 2: True{}
     case _: False{}
 
 def rr_ap_is_range(+tbl: List<&2, IX.IxRange>, r: U32) -> Bool:

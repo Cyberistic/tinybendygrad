@@ -229,6 +229,12 @@ def ix_rg_r(idx: U32, ext: U32) -> IxRange: IxRange{0, idx, ext}
 
 def ix_rg_is_c0(x: IxRange) -> Bool: U32.is_eq(IxRange.kind(x), 1)
 
+# KIND 2 IS A NODE: an index expression that is NOT a single RANGE. Upstream's range
+# map is keyed by UOp, so `_apply_reshape` can return `sum / % / //` nodes into it; this
+# table is `{kind, idx, ext}`, so the node needs an arm. `idx` is the ARENA INDEX and
+# `ext` is unused -- the node carries its own extent.
+def ix_rg_n(n: U32) -> IxRange: IxRange{2, n, 0}
+
 # the RANGE table's read: the entry at an INDEX. the missing entry is the CONST
 # 0, WHICH IS INDEX 0 AND IS ALWAYS THERE.
 def ix_tbl_at.of(m: Maybe<&2, IxRange>) -> IxRange:
@@ -943,8 +949,13 @@ def ix_rg_c0_idx() -> U32: 0
 # `new_range` decision with the node -- so there is one `new_range` and not two.
 # - the port's arena internes (`uop/ops.bend:2570 symbol=UOp.make.intern`), so one RANGE is one node
 # everywhere, which is what makes the table sound.
+def ix_rg_node.disp(k: U32, at: O.AxisType, +ar: O.Arena, +r: IxRange) -> O.Found:
+  match k:
+    case 2: O.Found{ar, IxRange.idx(r)}
+    case _: ix_nr_pick(U32.is_eq(k, 1), at, ar, IxRange.ext(r), IxRange.idx(r))
+
 def ix_rg_node(at: O.AxisType, +ar: O.Arena, +r: IxRange) -> O.Found:
-  ix_nr_pick(ix_rg_is_c0(r), at, ar, IxRange.ext(r), IxRange.idx(r))
+  ix_rg_node.disp(IxRange.kind(r), at, ar, r)
 
 # the realize-map rule bodies -- indexing.py:28-43. All four mutate the Python
 # context, and all four are therefore DECISIONS here: each answers the LIST of
