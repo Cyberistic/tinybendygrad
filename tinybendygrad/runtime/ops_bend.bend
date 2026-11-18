@@ -507,11 +507,7 @@ def encode(+us: List<&2, N>) -> Res:
 # (:145) and `String.split` KEEPS the empty field after it where `splitlines`
 # does not, so `drop_final` is the whole difference, and it is one field.
 #
-# WHAT IS NOT PORTED: `_, nuops, nbufs = head.split()` at :185 raises ValueError
-# on a header that is not exactly three fields. `parse` here answers 0 for both
-# counts instead, so a malformed header is a WRONG ANSWER and not a refusal. That
-# is stated because it is the one place `parse` is weaker than the Python, and
-# `bend_parse_short_header` is the row that records it.
+# THE TABLE IS IN `.agents/slop/tables/runtime-ops_bend-510.md` -- WHAT IS NOT PORTED: `_, nuops, nbufs = head.split()` at :185 raises ValueError on a header that is not exactly three fields.
 
 type Line is Data:
   Line{op: String, dt: String, arg: String, srcs: List<&2, U32>}

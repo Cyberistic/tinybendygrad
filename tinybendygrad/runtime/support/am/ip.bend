@@ -1,13 +1,6 @@
 # tinybendygrad/runtime/support/am/ip.bend -- port of tinygrad/runtime/support/am/ip.py
 #
-# WHAT SURVIVES THE CROSSING IS DATA: the REGISTER FIELD LISTS (every
-# `.write(...)` / `.update(...)` names its bitfields, and the ORDER of those
-# names is the register write -- so this gate is BY NAME and IN ORDER rather than
-# by count), the STRUCT FIELD LISTS (`struct_psp_gfx_rb_frame` :707, the four
-# `union_psp_gfx_commands` members :728-751), the SMU MESSAGE PROTOCOL (:264-273),
-# the KIQ `flush_tlb` PM4 PACKET (:108-110), the PTE FLAG TABLES (:178-195), the
-# DOORBELL ARITHMETIC (:354, :367, :570-571, :592), the VERSION LADDERS, and every
-# REFUSAL as a TRUNCATION of the trace (:588 is the only `raise`).
+# THE TABLE IS IN `.agents/slop/tables/runtime-support-am-ip-3.md` -- WHAT SURVIVES THE CROSSING IS DATA: the REGISTER FIELD LISTS (every `.write(...)` / `.update(...)` names its bitfields, and the ORDER of those names is the register write -- so this gate is BY NAME and IN ORDER rather than by count), the STRUCT FIELD LISTS (`struct_psp_gfx_rb_frame` :707, the four `union_psp_gfx_commands` members :728-751), the SMU MESSAGE PROTOCOL (:264-273), the KIQ `flush_tlb` PM4 PACKET (:108-110), the PTE FLAG TABLES (:178-195), the DOORBELL ARITHMETIC (:354, :367, :570-571, :592), the VERSION LADDERS, and every REFUSAL as a TRUNCATION of the trace (:588 is the only `raise`).
 #
 
 # THE SPLIT, stated once and then obeyed. A def here EITHER builds the argument
@@ -33,15 +26,7 @@
 #
 # THE TABLE IS IN `.agents/slop/tables/runtime-support-am-ip-34.md` -- WHAT IS PORTED, section by section, with the CPython lines it covers: the version substrate `V`: three-part and `[:2]` compares, every ladder .....................................................................
 #
-# WHAT IS NOT PORTED -- the six walls, each with its own `TODO(p3)` markers
-# in the WALLS section below, and each naming the lines it covers:
-#   WALL 1  register ACCESS and `AMDReg.encode`'s bit POSITIONS           :367 :411
-#   WALL 2  `hasattr` / `getattr` NAME probing
-#     ..................................................................... :17 :21 :22 :25 :56 :58 :103 :260 :359 :389 :477 :506 :646
-#   WALL 3  `functools.cache` memoisation                                :177 :230
-#   WALL 4  firmware BLOBS, `from_buffer`, `int(round(watts))`           :228 :250
-#   WALL 5  thirteen `wait_cond` polls and six `time.sleep`s             :113 :117 :121 :219 :222 :271 :284 :346 :393 :417 :450 :584 :640 :656 :692 :695 :702 :704 :717
-#   WALL 6  the memory manager: `mm.palloc`, `mm.map_range`, `paddrs`    :278 :331
+# THE TABLE IS IN `.agents/slop/tables/runtime-support-am-ip-29.md` -- WHAT IS NOT PORTED -- the six walls, each with its own `TODO(p3)` markers in the WALLS section below, and each naming the lines it covers: WALL 1 register ACCESS and `AMDReg.encode`'s bit POSITIONS :367 :411 WALL 2 `hasattr` / `getattr` NAME probing .....................................................................
 #
 # THE CROSS-FILE CONTRACT. Wall 1 is the seam's, and `ops_amd.bend`'s wall 2
 # (its lines 173-178) says the same thing about `regCOMPUTE_*`: the port carries
