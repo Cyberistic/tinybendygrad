@@ -1247,12 +1247,28 @@ comment-cut        [######...] 6/8      **THE **PORT's **COMMENT **MASS **IS **C
                                          **`runtime/support/`** **AND **`extra/`** **LANES **ARE
                                          **BEING **CUT **BY **OTHER **UNITS **CONCURRENTLY**, **AND
                                          **THE **TREE's **OWN **CENSUS **IS **THE **VERDICT**.
-                                         **THE **REMAINING **WORK **IS **THREE **PARTS**: **(A)**
-                                         **THE **REST **OF **THE **TREE** (**THE **`uop/`** **AND
-                                         **`renderer/`** **LANES**), **(B)** **A **PER-FILE
-                                         **BUDGET **THAT **CANNOT **BE **RAISED **WITHOUT **A
-                                         **REASON**, **AND **(C)** **THE **CORPUS**, **ONCE**, **ON
-                                         **A **CLEAN **WORKTREE **OF **THE **FINAL **COMMIT**.
+                                         **AND **THE **CORPUS **IS **RUN**, **ONCE**, **ON **A
+                                         **CLEAN **WORKTREE **OF **THE **FINAL **COMMIT**:
+                                         **`graphs=38 graphs-answered=38 graphs-agree=38
+                                         graphs-disagree=0 byte-identical=38 graphs-refused=0`**,
+                                         **AND **`substrate-start == substrate-end == 97096fa9`**,
+                                         **AND **`substrate-head=51ec4940b`** (THE **CUT's **COMMIT**),
+                                         **AND **THE **REPRO **IS **"339 of 339 files identical
+                                         across two clean runs"**, **AND **`gates/corpuswitness-gate.py`
+                                         **IS **"PASS -- **THE **CLAIM **IS **ESTABLISHED"** **WITH
+                                         **ALL **SEVEN **READINGS **OK**, **AND **`gates/corpusverdict-gate.py`
+                                         **IS **"PASS"** **AND **ITS **`run.readiness` **ROW **IS
+                                         **GREEN** (WHICH **`AGENTS.md` **RECORDS **AS **RED**).
+                                         **THE **RUN **IS **KEPT **AS
+                                         **`.agents/slop/comments/corpus/D0-run-summary.rows`**.
+                                         **THE **REMAINING **WORK **IS **TWO **PARTS**: **(A)** **THE
+                                         **REST **OF **THE **TREE** (**THE **`uop/`**, **`renderer/`**
+                                         **AND **`runtime/support/`** **LANES**, **WHICH **OTHER
+                                         **UNITS **ARE **CUTTING **CONCURRENTLY**), **AND **(B)** **A
+                                         **PER-FILE **BUDGET **THAT **CANNOT **BE **RAISED **WITHOUT
+                                         **A **REASON** (**`comment-budget.py` **HAS **NO
+                                         **`budget.rows` **YET**, **SO **IT **REFUSES **INSTEAD
+                                         **OF **GRADING**).
                                          **BATCH **6 **LANDED** (**`1e5c95e60`**, **46 **FILES**,
                                          **+628/-1552**, **COMMENTS **ONLY**, **AND **THE
                                          **PER-FILE **NON-COMMENT **CHECK **IS **EMPTY **FOR
