@@ -1,147 +1,78 @@
 # realize.bend -- tinygrad/engine/realize.py.
 #
-# THE REALIZATION DRIVER, and the first unit in the port whose subject is not a
-# rewrite. `realize.py` answers one question -- "a scheduled LINEAR is lowered,
-# compiled and executed; what is the PLAN for each CALL in it?" -- and it answers
-# it in two halves a reader can easily mistake for one file:
+# `realize.py` answers one question -- "a scheduled LINEAR is lowered, compiled and executed; what
+# is the PLAN for each CALL in it?" -- and it answers it in two halves: the DATA FLOW, which nodes
+# of a CALL are arguments, which are outputs and which are inputs, which buffers a call writes, how
+# a runtime symbol is resolved against the input uops, which calls still need lowering, and the
+# shape of the per-execution context. Pure function of the arena. PORTED.
 #
-#   * the DATA FLOW: which nodes of a CALL are arguments, which are outputs and
-#     which are inputs, which buffers a call writes, how a runtime symbol is
-#     resolved against the input uops, which calls still need lowering, and the
-#     shape of the per-execution context. Pure function of the arena. PORTED.
+# the unit brief for this file names `run_schedule`, `lower_schedule` and an `ExecItem`. NONE OF
+# THEM EXISTS in this checkout. `realize.py` is 296 lines and its driver entry points are
+# `compile_linear`, `link_linear`, `run_linear` and `time_call`; the type that plays `ExecItem`'s
+# role is the `ExecContext` dataclass at realize.py:118. REPORTED, NOT GUESSED AT: the port follows
+# the file in front of it.
 #
-# the unit brief for this file names `run_schedule`, `lower_schedule` and an
-# `ExecItem`. NONE OF THEM EXISTS in this checkout. `realize.py` is 296 lines and
-# its driver entry points are `compile_linear`, `link_linear`, `run_linear` and
-# `time_call`; the type that plays `ExecItem`'s role is the `ExecContext`
-# dataclass at realize.py:118. REPORTED, NOT GUESSED AT: the port follows the
-# file in front of it. (An older tinygrad had `ExecItem`; this one replaced it
-# with the `ExecContext` record, which is why the line count still matched.)
+# THE TWO GROUPS, INVENTORIED, ARE IN `.agents/slop/tables/engine-realize-22.md`.
 #
-
-# THE TWO GROUPS, INVENTORIED. `[a]` is ported, `[b]` is the foreign-effect seam.
+# `realize.py` builds FOUR `PatternMatcher`s -- `pm_flatten_linear`, `pm_validate`, `pm_beam` and
+# `pm_exec` -- and `ops.bend` cannot call a def in this file, so each gets its own table and its
+# own scan. `uop/spec.bend` says the same in its own header and does it six times. `pm_validate` is
+# Python's `PatternMatcher([...]) + pm_flatten_linear`, so its table is the validate rule at tag 0
+# and the SAME flatten body at tag 1, and `va_1` really is `fl_0`.
 #
-# [a] realize.py:16   get_call_arg_uops     -- `call.src[1:]`, minus VARIABLES
-# [a] realize.py:17   get_call_kernel_args  -- one entry per kernel PARAM, in slot order
-# [a] realize.py:21   get_call_outs_ins     -- (outs, ins) per body op
-# [a] realize.py:29   get_call_written_bufs -- outs \ ins, BUFFERs only, deduped
-# [a] realize.py:35   get_call_kernels      -- the device list (non-HCQ half)
-# [a] realize.py:43   get_call_name         -- the PROGRAM arm
-# [a] realize.py:55   estimate_uop          -- the DISPATCH and the byte count
-# [a] realize.py:118  ExecContext           -- the dataclass, field for field
-# [a] realize.py:128  _resolve              -- PARAM slot lookup, view recursion
-# [a] realize.py:126 symbol=_resolve  resolve_params        -- `_resolve` over `get_call_arg_uops`
-# [a] realize.py:138  unwrap_multi's `has_dnum` -- the DEVICE-axis toposort fold
-# [a] realize.py:204  pm_flatten_linear     -- a RULE
-# [a] realize.py:209  pm_validate / _validate -- the rule TABLE and the claim
-# [a] realize.py:217  pm_beam               -- a RULE, body fully ported
-# [a] realize.py:227  _get_call_to_compile  -- the predicate
-# [a] realize.py:237  lower_and_compile's collection -- `toposort` + filter
-# [a] realize.py:264  pm_exec               -- the rule TABLE and the dispatch
-# [a] realize.py:271  compile_linear        -- the STAGE ORDER
+# A GENERIC SCAN IS NOT AVAILABLE: a shared scan would have to hold the rule BODIES, a body is a
+# function value, a function value in a datatype field forces `Type` rather than `Data`, and a
+# `Type` table is affine so one pass consumes it and the next pass rebuilds it. There are four
+# passes here and `graph_rewrite` calls each many times, so the driver per table is duplicated.
 #
-# [b] realize.py:57   the HCQInfo arms      -- `call.arg.aux` is DROPPED from
-#                                             `CallInfo` in ops.bend
-# [b] realize.py:58   Estimates             -- the FIELD is PORTED (2026-10-30)
-#                                             and always `None`: `do_estimates`
-#                                             is a WALL in codegen/kernel.bend# [b] realize.py:60   first_run_cache       -- a process-global `set[bytes]`
-# [b] realize.py:64   track_stats           -- GlobalCounters, DEBUG, PROFILE,
-#                                             cpu_events, print, synchronize
-# [b] realize.py:107  runtime_cache         -- a process-global dict
-# [b] realize.py:108  get_runtime           -- `Device[d].runtime(ast.to_elf())`
-# [b] realize.py:116  capturing             -- a process-global list of classes
-# [b] realize.py:133  unwrap_multi's bufs   -- `UOp.buffer` needs a REALIZED buffer
-# [b] realize.py:141  unwrap_multi's lanes  -- `MultiBuffer`, device.py
-# [b] realize.py:148  exec_copy             -- allocators, `_transfer`, `host[:]`
-# [b] realize.py:163  exec_kernel           -- the runtime call, `launch_dims`
-# [b] realize.py:172  exec_validate         -- a CPU runtime + numpy
-# [b] realize.py:183  exec_hcq              -- HCQInfo, timelines, ProfileGraphEntry
-# [b] realize.py:225  _compile_kernel       -- `Context(x[2])`, `to_program`
-# [b] realize.py:240  to_program_key / to_program_cache -- codegen, P5
-# [b] realize.py:245  the worker pool and tqdm -- a subprocess pool and a bar
-# [b] realize.py:275  `linear.substitute`   -- ops.py:514 symbol=substitute
-# [b] realize.py:108  hcq_compile           -- `runtime/support/hcq2.py`, not ported
-# [b] realize.py:279  hcq_link              -- same
-# [b] realize.py:285  run_linear            -- perf_counter_us, the dispatch loop
-# [b] realize.py:287  time_call             -- invalidate_caches, Tensor.ones
+# THE ESCAPE IS AN ARGUMENT. A body cannot live in the TABLE, but it can be BUILT BY THE CALLER
+# and handed to the scan as a `Verdict` value -- `rz_fire(claim, body)`. So the table keeps what is
+# data (the op set and the reject set), `rz_claim` reads the claim off it with `ops.bend`'s own
+# already correct `pm_claimed`/`pm_early`, and the one scan is shared. `O.pm_rewrite` cannot be that
+# scan, because its `pm_dispatch` is `ops.bend`'s own tag-to-body table; see the paragraph at
+# `rz_claim`.
 #
-# the four rule tables, and why there are four dispatches.
+# `early_reject` IS A VETO HERE, and that is a DIFFERENCE FROM `spec.bend`, so it gets a
+# paragraph. `spec.bend`'s six tables carry four non-empty reject sets and all four are implied by
+# their own src-op test, so there the subset test decides nothing. Here `pm_flatten_linear` carries
+# `custom_early_reject={Ops.LINEAR}` (realize.py:205) and that set is the WHOLE of the rule's
+# claim beyond the op: a LINEAR with no LINEAR child is REJECTED and `rewrite` answers `None`,
+# while a LINEAR with one fires. `lin_none` and `lin_fired` below are the two rows that pin it,
+# and `lin_none` is `9` rather than `1` because `show_v` spells Python's `None` as `VSkip`.
 #
-# `realize.py` builds FOUR `PatternMatcher`s -- `pm_flatten_linear`,
-# `pm_validate`, `pm_beam` and `pm_exec` -- and `ops.bend` cannot call a def in
-# this file, so each gets its own table and its own scan. `uop/spec.bend` says
-# the same in its own header and does it six times. `pm_validate` is Python's
-# `PatternMatcher([...]) + pm_flatten_linear`, so its table is the validate rule
-# at tag 0 and the SAME flatten body at tag 1, and `va_1` really is `fl_0`.
+# the reject set is read off `ops.bend`'s `pm_ler`, which folds over every src. `spec.bend`
+# reported the two-src version as a real bug there (`te_22`'s four-op reject set could never fire);
+# that is fixed upstream of here, so this file has no `rz_ler` of its own and nothing to keep in
+# step.
 #
-# A GENERIC SCAN IS NOT AVAILABLE, and the reason is worth writing down because
-# it is why every scan in the port is copied rather than factored: a shared scan
-# would have to hold the rule BODIES, a body is a function value, a function
-# value in a datatype field forces `Type` rather than `Data`, and a `Type` table
-# is affine so one pass consumes it and the next pass rebuilds it. There are four
-# passes here and `graph_rewrite` calls each many times. So the driver per table
-# is duplicated. That is the price of not having first-class functions, and
-# `uop/spec.bend` pays it too.
+# DEF ORDER IS THE OTHER COST, and it is the one Bend imposes that Python does not: `def
+# f.b(...)` must be declared BEFORE `def f.a(...)` that calls it, so every dotted helper is above
+# the dotted entry point that calls it. Python's order is kept everywhere else.
 #
-# THE ESCAPE IS AN ARGUMENT, and this file now uses it. A body cannot live in the
-# TABLE, but it can be BUILT BY THE CALLER and handed to the scan as a `Verdict`
-# value -- `rz_fire(claim, body)`. So the table keeps what is data (the op set and
-# the reject set), `rz_claim` reads the claim off it with `ops.bend`'s own already
-# correct `pm_claimed`/`pm_early`, and the one scan is shared. `O.pm_rewrite`
-# cannot be that scan, because its `pm_dispatch` is `ops.bend`'s own tag-to-body
-# table; see the paragraph at `rz_claim`.
+# `case _:` IS A WILDCARD AND IT DOES NOT DISCRIMINATE. One arm answers for both values of the
+# scrutinee, and so does a PAIR of them: `case _:` / `case _:` answers its FIRST arm for both
+# values. A `Bool` choice therefore needs its tags named, `case True{}:` and `case False{}:`, and
+# so does any other scrutinee that has a tag worth testing (`Some{n}` and not `Some{_}`, `Nil{}`
+# and not `_`). A `case _:` is a correct LAST arm, and that is the only place one belongs.
 #
-# `early_reject` IS A VETO HERE, and that is a DIFFERENCE FROM `spec.bend`, so it
-# gets a paragraph. `spec.bend`'s six tables carry four non-empty reject sets and
-# all four are implied by their own src-op test, so there the subset test decides
-# nothing. Here `pm_flatten_linear` carries `custom_early_reject={Ops.LINEAR}`
-# (realize.py:205) and that set is the WHOLE of the rule's claim beyond the op: a
-# LINEAR with no LINEAR child is REJECTED and `rewrite` answers `None`, while a
-# LINEAR with one fires. `lin_none` and `lin_fired` below are the two rows that
-# pin it, and `lin_none` is `9` rather than `1` because `show_v` spells Python's
-# `None` as `VSkip`.
+# THIS FILE HAD THAT DEFECT EVERYWHERE: `bl_u.go` and `bl_t.go` were one-armed and so returned `f`
+# for both values, and about a dozen entry points (`oi_cf.go2`, `gcc_pick.of`, `gk_is_v.g`,
+# `rz_wbuf.take`, `rz_prod.go`, `rz_find.got.hit`, `ExecContext.has_timeout.of`, `oi_store.go`,
+# `rz_expr_s.some`, the five `has_*` predicates) were ladders written AROUND it -- a chain of
+# one-armed selectors, each of which is itself a constant.
 #
-# the reject set is read off `ops.bend`'s `pm_ler`, which folds over every src.
-# `spec.bend` reported the two-src version as a real bug there (`te_22`'s four-op
-# reject set could never fire); that is fixed upstream of here, so this file has no
-# `rz_ler` of its own and nothing to keep in step.
+# The wave is converted and the ladder is gone: 21 of the 50 rows moved onto CPython's own answers
+# and `--check-only` is green with both lanes identical. Two of those 21 were NOT the `Bool` cascade
+# and are recorded at their own defs -- `pa_bound.of` (a dispatch that answered `None{}` for every
+# `Arg`, so the bound map was always empty) and `rz_beam_sink` (a bare index returned from an
+# arena it had grown, so the index pointed into an arena its caller did not hold).
 #
-# DEF ORDER IS THE OTHER COST, and it is the one Bend imposes that Python does
-# not: `def f.b(...)` must be declared BEFORE `def f.a(...)` that calls it, so
-# every dotted helper is above the dotted entry point that calls it. Python's
-# order is kept everywhere else.
-# * read this before writing a `Bool` selector in this file. *
+# What is left as a constant is a constant ON PURPOSE: `rz_isdt.go`, `rz_nbytes.mul`, `rz_shape.go`
+# and `rz_nbytes_of0` are the `None` halves of sibling matches, reached only from a sibling's
+# `None` arm.
 #
-# `case _:` is a wildcard and it does not discriminate. One arm answers for both
-# values of the scrutinee, and so -- this is the part that surprised us -- does a
-# PAIR of them: `case _:` / `case _:` answers its FIRST arm for both values. A
-# `Bool` choice therefore needs its tags named, `case True{}:` and `case False{}:`,
-# and so does any other scrutinee that has a tag worth testing (`Some{n}` and not
-# `Some{_}`, `Nil{}` and not `_`). A `case _:` is a correct LAST arm, and that is
-# the only place one belongs.
-#
-# This file HAD THAT DEFECT EVERYWHERE: `bl_u.go` and `bl_t.go` were one-armed and
-# so returned `f` for both values, and about a dozen entry points (`oi_cf.go2`,
-# `gcc_pick.of`, `gk_is_v.g`, `rz_wbuf.take`, `rz_prod.go`, `rz_find.got.hit`,
-# `ExecContext.has_timeout.of`, `oi_store.go`, `rz_expr_s.some`, the five `has_*`
-# predicates) were ladders written AROUND it -- a chain of one-armed selectors,
-# each of which is itself a constant, which is why fixing only `bl_u` turned the
-# cascade inside out and made the gate memory-fault partway through `main`.
-#
-# The wave is converted and the ladder is gone: 21 of the 50 rows moved onto
-# CPython's own answers and `--check-only` is green with both lanes identical. Two
-# of those 21 were NOT the `Bool` cascade and are recorded at their own defs --
-# `pa_bound.of` (a dispatch that answered `None{}` for every `Arg`, so the bound
-# map was always empty) and `rz_beam_sink` (a bare index returned from an arena it
-# had grown, so the index pointed into an arena its caller did not hold).
-#
-# What is left as a constant is a constant ON PURPOSE: `rz_isdt.go`,
-# `rz_nbytes.mul`, `rz_shape.go` and `rz_nbytes_of0` are the `None` halves of
-# sibling matches, reached only from a sibling's `None` arm.
-#
-# `gate_count` is the row that keeps this honest -- it is the number of rows
-# printed, so a row that stops printing cannot pass unnoticed.
-
+# `gate_count` is the row that keeps this honest -- it is the number of rows printed, so a row that
+# stops printing cannot pass unnoticed.
 import Base
 import ./../helpers.bend as H
 import ./../LAWS/spec.bend as S
@@ -1215,8 +1146,7 @@ def ExecContext.timeout_or0.m(m: Maybe<&1, U32>) -> U32:
 def ExecContext.timeout_or0(c: ExecContext) -> U32:
   ExecContext.timeout_or0.m(ExecContext.timeout(c))
 
-# `_resolve` -- realize.py:128-131, as ONE self-recursive def with a NESTED
-# `match`.
+# `_resolve` -- realize.py:128-131, as ONE self-recursive def with a NESTED `match`.
 #
 #     if b.op in (Ops.MSELECT, Ops.SHRINK, Ops.BITCAST):
 #       return b.replace(src=(_resolve(b.src[0], inputs), *b.src[1:]))
@@ -1224,54 +1154,49 @@ def ExecContext.timeout_or0(c: ExecContext) -> U32:
 #       return b.replace(src=tuple(_resolve(x, inputs) for x in b.src))
 #     return inputs[b.arg.slot] if b.op is Ops.PARAM else b
 #
-# THE NESTED MATCH IS LOAD-BEARING and this is the first file in the port that
-# needed it. Splitting the arm dispatch into a helper is MUTUAL RECURSION -- the
-# helper must call `rz_res` to recurse and `rz_res` must call the helper to
-# dispatch -- and Bend refuses that outright. Keeping the arm `match` INSIDE the
-# fuel `match` leaves exactly ONE call site, so the only recursion left is the
-# self-call. `uop/spec.bend`'s drivers never need this because they do not recurse
-# into the arena.
+# THE NESTED MATCH IS LOAD-BEARING and this is the first file in the port that needed it.
+# Splitting the arm dispatch into a helper is MUTUAL RECURSION -- the helper must call `rz_res` to
+# recurse and `rz_res` must call the helper to dispatch -- and Bend refuses that outright. Keeping
+# the arm `match` INSIDE the fuel `match` leaves exactly ONE call site, so the only recursion left
+# is the self-call. `uop/spec.bend`'s drivers never need this because they do not recurse into the
+# arena.
 #
-# The fuel is a `Nat` and comes FIRST because a self-call reads its arguments LEFT
-# TO RIGHT and stops at the first that shrinks, so the fuel is what makes the call
-# decreasing and everything after it is free. `case 0n` answers the node UNCHANGED,
-# so too small a fuel is a MISS and never a wrong value. `rz_res_fuel` is the exact
-# bound and it is `Arena.budget`.
+# The fuel is a `Nat` and comes FIRST because a self-call reads its arguments LEFT TO RIGHT and
+# stops at the first that shrinks, so the fuel is what makes the call decreasing and everything
+# after it is free. `case 0n` answers the node UNCHANGED, so too small a fuel is a MISS and never
+# a wrong value. `rz_res_fuel` is the exact bound and it is `Arena.budget`.
 #
-# ARM 1 (`Ops.MSTACK`) IS NOT PORTED, and the wall is the SAME mutual recursion one
-# level up. The arm applies `_resolve` to EVERY src, so it needs a WALK over a
-# list, and the walk calls `_resolve` on each element while `_resolve`'s MSTACK arm
-# calls the walk. Two shapes were measured and both refused:
+# ARM 1 (`Ops.MSTACK`) IS NOT PORTED, and the wall is the SAME mutual recursion one level up. The
+# arm applies `_resolve` to EVERY src, so it needs a WALK over a list, and the walk calls
+# `_resolve` on each element while `_resolve`'s MSTACK arm calls the walk. Two shapes were measured
+# and both refused:
 #
 #   * a `rz_res.ms(todo, ...)` beside `rz_res` -- mutual recursion, refused;
-#   * ONE def carrying `(fuel, pending, accumulator, arena, inputs)` -- a self-call
-#     must pass a SUBTERM of its own parameter, and the pending list is REBUILT by
-#     the step rather than being one, so the check refuses it too.
+#   * ONE def carrying `(fuel, pending, accumulator, arena, inputs)` -- a self-call must pass a
+#     SUBTERM of its own parameter, and the pending list is REBUILT by the step rather than being
+#     one, so the check refuses it too.
 #
-# one of those two refutations is now measured and is wrong, and the rule behind it
-# is stated wrong: a self-call does not need a subterm of its own parameter, it
-# needs one argument that shrinks, and it reads them left to right and stops at the
-# first one, so the shrinking argument has to LEAD. `rz_prod.fold` and
-# `ka_go` both put the list tail first and both are accepted; with the tail
-# last they are refused with "expected a decreasing self-call". So the worklist
-# shape the header guessed at -- a LIST TAIL -- is the right answer, and the
-# "rebuilt rather than a subterm" objection does not apply to it.
+# one of those two refutations is now measured and is wrong, and the rule behind it is stated wrong:
+# a self-call does not need a subterm of its own parameter, it needs one argument that shrinks, and
+# it reads them left to right and stops at the first one, so the shrinking argument has to LEAD.
+# `rz_prod.fold` and `ka_go` both put the list tail first and both are accepted; with the tail last
+# they are refused with "expected a decreasing self-call". So the worklist shape the header
+# guessed at -- a LIST TAIL -- is the right answer, and the "rebuilt rather than a subterm"
+# objection does not apply to it.
 #
-# SO WHAT IS LEFT, and it is not the shape, is the ARENA. The walk has to call
-# `rz_res` per src, `rz_res` GROWS the arena on a view arm, and each growth has to
-# reach the next element and the answer -- which is the same defect just fixed in
-# `rz_find` and `rz_beam_sink`, where a bare index was returned from an arena the
-# caller did not hold. Here the accumulator is `rz_res`'s OWN parameter and a
-# self-call may not rewrite an argument, so the queue needs its own record the way
-# `RList` is its own record above. That, plus a fixture: `main_arena` has no MSTACK
-# node, so the arm could not be ROWED without adding one, and adding one moves
-# `arena_n` and every index after it. Not worth doing inside a fix for the Bool
-# selectors.
+# SO WHAT IS LEFT, and it is not the shape, is the ARENA. The walk has to call `rz_res` per src,
+# `rz_res` GROWS the arena on a view arm, and each growth has to reach the next element and the
+# answer -- which is the same defect just fixed in `rz_find` and `rz_beam_sink`, where a bare index
+# was returned from an arena the caller did not hold. Here the accumulator is `rz_res`'s OWN
+# parameter and a self-call may not rewrite an argument, so the queue needs its own record the way
+# `RList` is its own record above. That, plus a fixture: `main_arena` has no MSTACK node, so the
+# arm could not be ROWED without adding one, and adding one moves `arena_n` and every index after
+# it. Not worth doing inside a fix for the Bool selectors.
 #
-# SO `rz_res` answers an MSTACK UNCHANGED and the gate row is `res_ms_same`: not a
-# wrong value, a MISSING one. That direction is the safe one -- an unresolved MSTACK
-# leaves the argument pointing at the node the caller already had -- and
-# `res_ms_same` is what makes the omission VISIBLE instead of silent.
+# SO `rz_res` answers an MSTACK UNCHANGED and the gate row is `res_ms_same`: not a wrong value, a
+# MISSING one. That direction is the safe one -- an unresolved MSTACK leaves the argument pointing
+# at the node the caller already had -- and `res_ms_same` is what makes the omission VISIBLE
+# instead of silent.
 def rz_res.v(+f: O.Found, +b: U32, +ar: O.Arena) -> O.Found:
   rz_replace(O.Found.ar(f), b, O.Found.i(f) <> O.Arena.src_from(ar, b, 1))
 
@@ -2259,103 +2184,8 @@ def t_ctx_time() -> U32: bl_of(ExecContext.wait(ExecContext.of_time(False{}, Tru
 
 def t_ctx_time_cache() -> U32: bl_of(ExecContext.cache(ExecContext.of_time(False{}, True{}, None{}, False{})))
 
-# THE GATE, and what each row is FOR.
-#
-#   arena_n=42    the fixture is 42 nodes, so a MISSING fixture node moves this
-#                 and every row that reads a later index.
-#   flat_len=1    realize.py:204 is ONE rule.
-#   va_len=2      realize.py:214 is `PatternMatcher([...]) + pm_flatten_linear`, so
-#                 TWO entries -- and the second is the FIRST table's rule.
-#   beam_len=1    realize.py:217 is ONE rule.
-#   arg_len=2     realize.py:15 over `(prog, g0, g1)` is two arg uops.
-#   arg_len_b=1   ... and ONE after the bound variable is dropped.
-#   arg_len_var=1 realize.py:16 AT THE PIN FILTERS `is_variable`, SO AN UNBOUND
-#                 variable is dropped too: the fixture's CALL 20 passes `(g0, m)`
-#                 and the answer is one. the pre-PIN filter said two, and that is
-#                 THE WHOLE OF THE FILTER CHANGE.
-#   oi_out_p=1    realize.py:24, a PROGRAM's `arg.outs` is `(0,)`.
-#   oi_out_s=1    realize.py:25, a STORE is `(0,)`.
-#   oi_in_p=1     realize.py:24, a PROGRAM's `arg.ins` is `(1,)`.
-#   oi_in_e=1     realize.py:26, `encdec` is `range(1, 2)` for a 2-arg call, AND THE
-#                 second argument is the unbound `n` which the PIN's filter drops.
-#                 THE PRE-PIN ANSWER WAS `range(1, 3)` AND `2`.
-#   oi_out_v=0    realize.py:27, `validate` is NOT `encdec`, so `(), ()`.
-#   oi_in_v=0     ... the second half of that pair.
-#   wbuf_p=0      realize.py:33 keeps only `Ops.BUFFER`, and a PARAM is not one.
-#   wbuf_buf=1    ... and a BUFFER argument IS one. Two rows, because a filter that
-#                 dropped everything would move only `wbuf_p`.
-#   kern_p=1      realize.py:41, one device.
-#   kern_v=0      realize.py:40, a `validate` call enqueues no kernel.
-#   ka_none_len=1   realize.py:17 at the PIN: a program with no variable answers one
-#                   ENTRY, AND IT IS THE BUFFER's ADDRESS.
-#   ka_none_addr=1  ... and it is a `GETADDR`.
-#   ka_zero_len=1   A VARIABLE BOUND TO ZERO IS STILL A VARIABLE.
-#   ka_zero_cast=1  ... and its value is a `CAST` over the CONST 0, NOT A MISS.
-#   ka_unb_len=1    AN UNBOUND VARIABLE IS ONE ENTRY.
-#   ka_unb_param=1  ... and it is a `PARAM`.
-#   ka_unb_slotless=1 ... and its slot is the PIN's `-1`: the slotless var read.
-#   ka_unb_arglen=0  and `get_call_arg_uops` drops it, so the call has no args.
-#   ka_af_len=2      AN ARG PRECEDES A BUFFER: TWO ENTRIES.
-#   ka_af_p0=1       ... AND THE ARG IS ENTRY ZERO.
-#   ka_af_a1=1       ... and the BUFFER's address is entry one. the order is the
-#                    slot order, not "the buffers first".
-#   ka_af_slotless=1 ... AND THE ARG's SLOT IS `-1`.
-#   ka_bf_len=2      THE MIRROR: A BUFFER PRECEDES AN ARG.
-#   ka_bf_a0=1       ... AND THE BUFFER's ADDRESS IS ENTRY ZERO.
-#   ka_bf_p1=1       ... AND THE ARG IS ENTRY ONE.
-#   ka_bf_slotless=1 ... AND THE ARG's SLOT IS `-1`.
-#   ka_sh_len=2      A VARIABLE THAT SHADOWS A GLOBAL's NAME.
-#   ka_sh_cast=1     ... and the variable's own value is a `CAST`, not the
-#                    GLOBAL's ADDRESS.
-#   ka_sh_a0=1       ... and the global's address is still entry zero.
-#   name_p=k1     realize.py:48 reads `ast.src[0].arg.name`, the KERNEL name and not
-#                 the call's. A STRING row, because this is the one reader where a
-#                 wrong `arg` would give a plausible wrong STRING.
-#   res_len=2     realize.py:132, one resolved entry per arg uop.
-#   res_slot0=1   THE SWAP: `inputs=(g1,g0)` answers `g1` for slot 0.
-#   res_slot1=1   ... and `g0` for slot 1.
-#   res_ms_same=1 the `_resolve` MSTACK WALL, printed rather than hidden: arm 0 is
-#                 the VIEW arm and a BITCAST is a view, so the wall is real.
-#   dnum_p=0      realize.py:139, no DEVICE axis and no `_device_num`.
-#   dnum_d=1      ... a DEVICE-axis RANGE.
-#   dnum_n=1      ... a `_device_num` PARAM. Two code paths, two rows.
-#   gcc_p=1       realize.py:227, an uncompiled kernel still needs lowering.
-#   gcc_c=0       ... a PROGRAM whose `src[-1]` is a BINARY is ALREADY compiled.
-#   gcc_s=0       ... a STORE body is not a PROGRAM and not a SINK.
-#   gcc_k=1       ... a SINK body with a `KernelInfo` IS.
-#   est_copy_s=1  realize.py:59, a copy carries a byte count.
-#   est_copy_p=0  ... and a kernel does not.
-#   ctx_stats=1   realize.py:120, `update_stats` defaults True.
-#   ctx_jit=0     realize.py:122, `jit` defaults False.
-#   ctx_wait=0    realize.py:123, `wait` defaults False.
-#   ctx_cache=1   realize.py:126, `cache` defaults True.
-#   ctx_timeout=0 realize.py:125, `timeout` defaults None.
-#   ctx_inputs=0  realize.py:121, `input_uops` defaults `()`.
-#   ctx_time=1    realize.py:288, `time_call`'s `wait=True`.
-#   ctx_time_cache=0  ... and its `cache=False`. Two rows on ONE constructor.
-#   lin_fired=1   realize.py:206, a nested LINEAR IS spliced.
-#   lin_len=2     ... and the result has TWO srcs where the input had two as well --
-#                 the count is what says the CHILDREN moved, and `lin_first_is_call`
-#                 is the row that says WHICH.
-#   lin_first=1   the first src of the rewritten LINEAR is the inner CALL, i.e. the
-#                 nested LINEAR was INLINED rather than kept.
-#   lin_none=9    and a LINEAR with NO nested child is REJECTED by
-#                 `custom_early_reject`, so `rewrite` answers `VSkip`, which
-#                 `show_v` spells `9` and Python spells `None`. This is the row
-#                 that makes `early_reject` load-bearing HERE, which it is not in
-#                 `spec.bend`: drop the reject set and this becomes `1`.
-#   beam_fired=1  realize.py:219, `sink.arg.beam == 0` so the body fires.
-#   beam_new=7    ... and the rewritten sink's `KernelInfo.beam` IS the ctx value.
-#   beam_skip=9   a sink that already carries a beam is left alone, so `rewrite`
-#                 answers `VSkip` where `beam_fired` answers `VTrue`. This is the
-#                 row that makes `sink.arg.beam == 0` load-bearing: drop that
-#                 conjunct and this becomes `1`.
-#   ex_copy=0     realize.py:265, a CALL over a STORE is `exec_copy`, tag 0.
-#   ex_prog=1     realize.py:266, a CALL over a PROGRAM is tag 1.
-#   ex_valid=2    realize.py:268, a CALL over `validate` is tag 2.
-#   ex_encdec=9   realize.py:269's rule carries `arg="validate"`, so an `encdec`
-#                 body is claimed by NO rule: `9` is Python's `None`.
-#   ex_none=9     a LINEAR is not a CALL at all.
+# THE GATE, and what each row is FOR, IS IN
+# `.agents/slop/tables/engine-realize-2205.md` -- THE ROW NAMES AND WHAT EACH ONE PINS.
 
 def t_lin_fired(+l: Land) -> U32:
   show_v(flatten_rewrite(Land.ar(l), Land.lin2(l)))
