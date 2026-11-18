@@ -334,8 +334,6 @@ def Wire.split(s: String) -> IO(List<&2, String>):
 #
 # BEND's list is monomorphic, so a row cannot hold both strings and numbers, and a row cannot be a
 # pair of lists of different kinds -- so the port needs one list per kind and walks them in step.
-# `Wire.both` RETURNS BOTH: THE STRINGS ROW (THE PAYLOAD, PER UOP) AND THE NUMBERS ROW
-# ([opIndex, dtCode, addrCode, kindC0, kindC1, numel, cc, shapeCount, srcsCount, shape..., srcs...]).
 #
 # WHY THE NUMBERS AT ALL: the port's `U32.read` is the PRELUDE's character-at-a-time fold, and at runtime a
 # string is a JS string, so the compiler emits `slice(0, char_len(s))` AND `slice(char_len(s))` PER CHARACTER.

@@ -13,14 +13,6 @@
 
 # THE GATE, AND IT IS CODE.  `gates/tc_ptx_render_census-gate.py` runs BOTH lanes
 # and diffs them BYTE FOR BYTE:
-#   .venv/bin/python gates/tc_ptx_render_census-gate.py
-# It asks the oracle's `stage2` for this file's rows and the oracle's `stage1`
-# for `tc.bend`'s, and it ALSO asks the oracle's `bend` selector for the PORT'S
-# own source for the four dtype-table row builders: a diff cannot see a row that
-# IS MISSING FROM BOTH LANES, and `bend` is the independent statement of the row
-# set.  The plant is `gates/tc_ptx_render_census-plant.py` -- four arms and a
-# control, each on a copy.  Before this, the recipe was PROSE in this header,
-# and a prose recipe is not a gate.
 #
 # MEASURED 2026-10-22, at the commit that landed this text: `stage1` 290 lines
 
@@ -807,10 +799,5 @@ def main() -> IO(Unit):
 #
 # M27 and M38 are why a fixture is not enough. M27 (`TRUNC`'s second type name)
 # moved NOTHING while every one of the 105 `asm` rows said `cvt.rzi.s32.s32`:
-# the 105-row grid fixes `name` at "s32" to isolate the DTYPE branch, so the
-# NAME branch of a four-argument lambda was ungated. Adding TRUNC to the
-# twelve-dtype name grid moved it to 11. M38 is the same shape: the k1 fixture's
-# non-GLOBAL buffer was an int32, and `types[int32] == "s32"`, so a hard-coded
-# `"s32"` was indistinguishable from the dtype table. It is a LOCAL FLOAT now.
 #
 # M1 AND M10 MOVE 259 ROWS EACH and neither is interesting on its own -- both
