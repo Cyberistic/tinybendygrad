@@ -1,0 +1,116 @@
+# FROM: THE TABLE FILES' OWN MANIFEST, GENERATED FROM THEIR OWN `FROM:` LINES
+#
+# 109 tables, 40 source files, 2 commits of the cut.
+# 8 are `.rows` (A PIPE-ROW TABLE) AND 101 ARE `.md` (PROSE).
+# THE LINES ARE 1-BASED AND NAME THE BLOCK's **FIRST** LINE IN THE TREE **AT **THE
+# COMMIT **THAT **MOVED **IT**.
+
+tinybendygrad/codegen/__init__.bend:380	codegen-__init__-380.md
+tinybendygrad/codegen/decomp/dtype.bend:1104	codegen-decomp-dtype-1104.md
+tinybendygrad/codegen/decomp/dtype.bend:2159	codegen-decomp-dtype-2159.md
+tinybendygrad/codegen/decomp/op.bend:1345	codegen-decomp-op-1345.md
+tinybendygrad/codegen/decomp/transcendental.bend:1786	codegen-decomp-transcendental-1786.md
+tinybendygrad/codegen/kernel.bend:940	codegen-kernel-940.md
+tinybendygrad/codegen/late/linearizer.bend:147	codegen-late-linearizer-147.md
+tinybendygrad/codegen/late/linearizer.bend:373	codegen-late-linearizer-373.md
+tinybendygrad/codegen/late/linearizer.bend:977	codegen-late-linearizer-977.md
+tinybendygrad/codegen/late/.linearizer-mut.bend:377	codegen-late-linearizer-mut-377.md
+tinybendygrad/codegen/late/.linearizer-mut.bend:940	codegen-late-linearizer-mut-940.md
+tinybendygrad/codegen/late/regalloc.bend:1449	codegen-late-regalloc-1449.md
+tinybendygrad/codegen/opt/postrange.bend:551	codegen-opt-postrange-551.md
+tinybendygrad/dtype.bend:574	dtype-574.md
+tinybendygrad/engine/realize.bend:1554	engine-realize-1554.md
+tinybendygrad/function.bend:1071	function-1071.md
+tinybendygrad/function.bend:1893	function-1893.rows
+tinybendygrad/helpers.bend:2121	helpers-2121.md
+tinybendygrad/helpers.bend:2544	helpers-2544.md
+tinybendygrad/helpers.bend:633	helpers-633.md
+tinybendygrad/mixin/creation.bend:320	mixin-creation-320.md
+tinybendygrad/mixin/creation-mut.bend:327	mixin-creation-mut-327.md
+tinybendygrad/mixin/dtype.bend:172	mixin-dtype-172.md
+tinybendygrad/mixin/dtype.bend:290	mixin-dtype-290.md
+tinybendygrad/mixin/elementwise.bend:1856	mixin-elementwise-1856.rows
+tinybendygrad/mixin/elementwise.bend:216	mixin-elementwise-216.md
+tinybendygrad/mixin/elementwise.bend:811	mixin-elementwise-811.md
+tinybendygrad/mixin/gradient.bend:1056	mixin-gradient-1056.md
+tinybendygrad/mixin/gradient.bend:3119	mixin-gradient-3119.md
+tinybendygrad/mixin/gradient.bend:3456	mixin-gradient-3456.md
+tinybendygrad/mixin/gradient.bend:780	mixin-gradient-780.md
+tinybendygrad/mixin/movement.bend:1119	mixin-movement-1119.md
+tinybendygrad/mixin/movement.bend:1255	mixin-movement-1255.md
+tinybendygrad/mixin/movement.bend:1447	mixin-movement-1447.md
+tinybendygrad/mixin/movement.bend:1919	mixin-movement-1919.md
+tinybendygrad/mixin/movement.bend:462	mixin-movement-462.md
+tinybendygrad/mixin/movement.bend:510	mixin-movement-510.md
+tinybendygrad/mixin/movement.bend:763	mixin-movement-763.md
+tinybendygrad/mixin/rand.bend:182	mixin-rand-182.md
+tinybendygrad/nn/layers.bend:225	nn-layers-225.md
+tinybendygrad/nn/layers.bend:621	nn-layers-621.md
+tinybendygrad/nn/onnx.bend:1931	nn-onnx-1931.rows
+tinybendygrad/nn/optim.bend:882	nn-optim-882.md
+tinybendygrad/nn/state.bend:825	nn-state-825.rows
+tinybendygrad/renderer/amd/dsl.bend:1249	renderer-amd-dsl-1249.md
+tinybendygrad/renderer/amd/dsl.bend:685	renderer-amd-dsl-685.md
+tinybendygrad/renderer/isa/x86.bend:1797	renderer-isa-x86-1797.md
+tinybendygrad/renderer/llvmir.bend:526	renderer-llvmir-526.md
+tinybendygrad/renderer/nir.bend:1199	renderer-nir-1199.md
+tinybendygrad/renderer/nir.bend:1427	renderer-nir-1427.md
+tinybendygrad/renderer/ptx.bend:339	renderer-ptx-339.md
+tinybendygrad/renderer/tc_ptx.bend:487	renderer-tc_ptx-487.md
+tinybendygrad/renderer/tc_ptx.bend:506	renderer-tc_ptx-506.md
+tinybendygrad/renderer/tc_ptx.bend:775	renderer-tc_ptx-775.md
+tinybendygrad/renderer/wgsl.bend:136	renderer-wgsl-136.md
+tinybendygrad/renderer/wgsl.bend:1518	renderer-wgsl-1518.md
+tinybendygrad/renderer/wgsl.bend:1845	renderer-wgsl-1845.md
+tinybendygrad/runtime/ops_bend.bend:1059	runtime-ops_bend-1059.md
+tinybendygrad/runtime/ops_bend.bend:893	runtime-ops_bend-893.md
+tinybendygrad/runtime/ops_bend.bend:972	runtime-ops_bend-972.md
+tinybendygrad/runtime/ops_cl.bend:1366	runtime-ops_cl-1366.md
+tinybendygrad/runtime/ops_cpu.bend:1082	runtime-ops_cpu-1082.md
+tinybendygrad/runtime/ops_dsp.bend:853	runtime-ops_dsp-853.md
+tinybendygrad/runtime/ops_nvme.bend:685	runtime-ops_nvme-685.md
+tinybendygrad/runtime/ops_nvme.bend:827	runtime-ops_nvme-827.md
+tinybendygrad/runtime/ops_python.bend:700	runtime-ops_python-700.md
+tinybendygrad/runtime/ops_rdma.bend:1136	runtime-ops_rdma-1136.md
+tinybendygrad/runtime/ops_rdma.bend:1223	runtime-ops_rdma-1223.md
+tinybendygrad/runtime/ops_rdma.bend:274	runtime-ops_rdma-274.md
+tinybendygrad/runtime/ops_rdma.bend:41	runtime-ops_rdma-41.md
+tinybendygrad/runtime/ops_webgpu.bend:1059	runtime-ops_webgpu-1059.md
+tinybendygrad/runtime/support/am/ip.bend:1678	runtime-support-am-ip-1678.md
+tinybendygrad/runtime/support/autogen.bend:471	runtime-support-autogen-471.rows
+tinybendygrad/runtime/support/c.bend:302	runtime-support-c-302.md
+tinybendygrad/runtime/support/c.bend:762	runtime-support-c-762.md
+tinybendygrad/runtime/support/nv/ip.bend:92	runtime-support-nv-ip-92.md
+tinybendygrad/runtime/support/nv/nvdev.bend:497	runtime-support-nv-nvdev-497.md
+tinybendygrad/runtime/support/rdma/bnxtdev.bend:535	runtime-support-rdma-bnxtdev-535.md
+tinybendygrad/runtime/support/system.bend:351	runtime-support-system-351.md
+tinybendygrad/runtime/support/usb.bend:1251	runtime-support-usb-1251.md
+tinybendygrad/runtime/support/usb.bend:1283	runtime-support-usb-1283.md
+tinybendygrad/runtime/support/usb.bend:2186	runtime-support-usb-2186.md
+tinybendygrad/runtime/support/usb.bend:2239	runtime-support-usb-2239.rows
+tinybendygrad/schedule/__init__.bend:1565	schedule-__init__-1565.md
+tinybendygrad/schedule/__init__.bend:2037	schedule-__init__-2037.md
+tinybendygrad/schedule/multi.bend:2305	schedule-multi-2305.md
+tinybendygrad/schedule/multi.bend:669	schedule-multi-669.md
+tinybendygrad/schedule/rangeify.bend:2350	schedule-rangeify-2350.md
+tinybendygrad/schedule/rangeify.bend:2383	schedule-rangeify-2383.md
+tinybendygrad/tensor.bend:1615	tensor-1615.md
+tinybendygrad/tensor.bend:2487	tensor-2487.md
+tinybendygrad/tensor.bend:3156	tensor-3156.rows
+tinybendygrad/tensor.bend:453	tensor-453.md
+tinybendygrad/uop/divandmod.bend:858	uop-divandmod-858.md
+tinybendygrad/uop/movement.bend:900 at ba3f52b0a^; ba3f52b0a REPLACED the block	uop-movement-911.md
+tinybendygrad/uop/ops.bend:1294	uop-ops-1294.md
+tinybendygrad/uop/ops.bend:4189	uop-ops-4189.md
+tinybendygrad/uop/ops.bend:5125	uop-ops-5125.md
+tinybendygrad/uop/ops.bend:6592	uop-ops-6592.md
+tinybendygrad/uop/ops.bend:6972	uop-ops-6972.md
+tinybendygrad/uop/ops.bend:7235	uop-ops-7235.md
+tinybendygrad/uop/ops.bend:8427	uop-ops-8427.md
+tinybendygrad/uop/render.bend:2105	uop-render-2105.md
+tinybendygrad/uop/render.bend:2982	uop-render-2982.md
+tinybendygrad/uop/symbolic.bend:7069	uop-symbolic-7069.md
+tinybendygrad/uop/symbolic.bend:7750	uop-symbolic-7750.md
+tinybendygrad/uop/symbolic.bend:8439	uop-symbolic-8439.rows
+tinybendygrad/uop/upat.bend:1950 at ba3f52b0a^; ba3f52b0a REPLACED the block	uop-upat-1965.md
+tinybendygrad/uop/validate.bend:124 at ba3f52b0a^; ba3f52b0a REPLACED the block	uop-validate-124.md
