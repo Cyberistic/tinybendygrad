@@ -24,6 +24,24 @@ fw_sd=dst=RESHAPE:none:PARAM,STACK dst_dims=1,1,7,7 st_dims=
 pool_rl=STORE:none:RESHAPE,REDUCE:none
 fw_rl=STORE:none:RESHAPE,RESHAPE:none
 xp_rm=33:REDUCE:other:PERMUTE,35:STORE:none:RESHAPE,EXPAND
+xw_lk=1/CALL>SINK
+xw_c=
+void test(float* restrict data0_784, float* restrict data1_784) {
+  float buf0[1];
+  for (int Lidx0 = 0; Lidx0 < 28; Lidx0++) {
+    for (int Lidx1 = 0; Lidx1 < 28; Lidx1++) {
+      int alu0 = ((((int)(Lidx0))+(28*((int)(Lidx1)))+(784*0)+(784*0))%784);
+      *buf0 = 0;
+      for (int Lidx2 = 0; Lidx2 < 3; Lidx2++) {
+        for (int Lidx3 = 0; Lidx3 < 3; Lidx3++) {
+          *buf0 = (buf0+(data1_784+alu0));
+        }
+      }
+      *(data0_784+alu0) = buf0;
+    }
+  }
+}
+xw_row=rm=23:STORE:none:RESHAPE,REDUCE red_dims=3,3,1,1,28,28 red=rm=False True in=9,10,11,12 out=7,8,3,4,5,6 tbl=17 kg=SINK:none:AFTER;AFTER:none:PARAM,CALL;PARAM:other:CONST;CALL:none:SINK,PARAM,PARAM;CONST:cother:;SINK:other:END;PARAM:other:CONST;END:none:STORE,RANGE,RANGE;STORE:none:INDEX,REDUCE;RANGE:other:CONST;RANGE:other:CONST;INDEX:none:PARAM,OTHER;REDUCE:other:INDEX,RANGE,RANGE;CONST:cother:;PARAM:other:CONST;OTHER:none:ADD,OTHER;INDEX:none:PARAM,OTHER;RANGE:other:CONST;RANGE:other:CONST;ADD:none:RANGE,ADD;OTHER:other:CONST;PARAM:other:CONST;CONST:cother:;ADD:none:MUL,ADD;MUL:none:OTHER,RANGE;ADD:none:MUL,MUL;OTHER:other:CONST;MUL:none:OTHER,CONST;CONST:cother:
 tp_xp=n=22 uniq=22
 tp_pool=n=21 uniq=21
 nw_row=rs=0,0,1,2 tbl=3

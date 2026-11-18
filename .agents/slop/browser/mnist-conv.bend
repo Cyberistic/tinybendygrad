@@ -587,6 +587,45 @@ def tp_row(+pr: RZ.RZProg) -> String:
   String.concat(["n=", U32.show(U32.from_nat(List.length(&2, U32, ns))),
                  " uniq=", U32.show(U32.from_nat(List.length(&2, U32, u)))])
 
+# THE WINDOW BROADCAST upstream's own chains carry: `EXPAND (3,3,1,1,28,28)`, i.e. marg
+# `(3,3)` over a `(1,1,28,28)` source -- a SIX-dim `_shape` whose trailing part is the whole
+# source. (The `xp` probe above is a BATCH broadcast and produces a shape/range mismatch that
+# CPython truncates on too, so it cannot be the shape to tune `flatten_bufferize` against.)
+def xw_prog() -> RZ.RZProg:
+  +dst = RZ.rz_input(O.Arena.empty(), 0, 784, [1, 1, 28, 28])
+  +x = RZ.rz_input(T.Tensor.ar(dst), 1, 784, [1, 1, 28, 28])
+  +e = MX.mxw_expand(x, [3, 3])
+  +f = T.tn_rop(T.Tensor.ar(e), T.Tensor.u(e), O.OpsADD{}, [0, 1])
+  +v = T.tn_new(O.Found.ar(f), O.Found.i(f))
+  +aft = RZ.rz_after(dst, v)
+  +snk = RZ.rz_sink(O.Found.ar(aft), O.Found.i(aft))
+  RZ.RZProg{O.Found.ar(snk), O.Found.i(snk)}
+
+def xw_row() -> String:
+  +ar = RZ.RZProg.ar(RZ.rz_rebuild(xw_prog(), False{}, False{}))
+  +sk = RZ.RZProg.sink(RZ.rz_rebuild(xw_prog(), False{}, False{}))
+  +tb = F.Folded.t(F.folded(ar))
+  +st = SCH.sc_src(ar, SCH.sc_src0(ar, sk), 1)
+  +v = SCH.sc_src(ar, st, 1)
+  +r = SCH.sc_src0(ar, v)
+  String.concat(["rm=", rm_row(RZ.rz_rebuild(xw_prog(), False{}, False{})),
+                 " red_dims=", RR.rr_dims_str(RR.rr_dims(ar, tb, r)),
+                 " red=", RR.rr_rngm_row(ar, sk, r),
+                 " kg=", RR.rr_dump(O.Found.ar(RR.rr_kernel_graph(ar, sk)), O.Found.i(RR.rr_kernel_graph(ar, sk)))])
+
+def xw_c() -> String:
+  +q = RZ.rz_rebuild(xw_prog(), False{}, False{})
+  +kg = RR.rr_kernel_graph(RZ.RZProg.ar(q), RZ.RZProg.sink(q))
+  DEV.Prog.src(DEV.compile_sink(O.Found.ar(kg), O.Found.i(kg)))
+
+def xw_lk() -> String:
+  +q = RZ.rz_rebuild(xw_prog(), False{}, False{})
+  +kg = RR.rr_kernel_graph(RZ.RZProg.ar(q), RZ.RZProg.sink(q))
+  +lin = SCH.schedule(O.Found.ar(kg), O.Found.i(kg))
+  +ks = SCH.lin_kernels(lin)
+  String.concat([U32.show(U32.from_nat(List.length(&2, U32, ks))), "/",
+    String.join(fw_lk.go(SCH.lin_ar(lin), ks, Nil{}), " ")])
+
 def main() -> IO(Unit):
   do IO<Unit>:
     _ : Unit <- IO.print(String.concat(["pool_rr=", pool_rr()]))
@@ -614,6 +653,9 @@ def main() -> IO(Unit):
     _ : Unit <- IO.print(String.concat(["pool_rl=", rl_row(RZ.rz_rebuild(pool_prog(), False{}, False{}))]))
     _ : Unit <- IO.print(String.concat(["fw_rl=", rl_row(RZ.rz_rebuild(fw_prog(), False{}, False{}))]))
     _ : Unit <- IO.print(String.concat(["xp_rm=", rm_row(RZ.rz_rebuild(xp_prog(), False{}, False{}))]))
+    _ : Unit <- IO.print(String.concat(["xw_lk=", xw_lk()]))
+    _ : Unit <- IO.print(String.concat(["xw_c=", xw_c()]))
+    _ : Unit <- IO.print(String.concat(["xw_row=", xw_row()]))
     _ : Unit <- IO.print(String.concat(["tp_xp=", tp_row(RZ.rz_rebuild(xp_prog(), False{}, False{}))]))
     _ : Unit <- IO.print(String.concat(["tp_pool=", tp_row(RZ.rz_rebuild(pool_prog(), False{}, False{}))]))
     _ : Unit <- IO.print(String.concat(["nw_row=", nw_row()]))
