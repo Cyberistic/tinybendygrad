@@ -2053,8 +2053,26 @@ def ku_text_stack(+dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> 
   String.concat([float4_with(dev, render_type(dev, KU.dtype(k), KU.numel(k), KU.addr(k), KU.op(k), False{})),
     float4_open(dev), String.join(ku_stack_srcs(k, kus, r), ","), float4_close(dev)])
 
+# A BARE CONST -- `UPat.cvar("c").cast()` WITH NO DTYPE CHANGE, cstyle.py:33's last const
+# arm: `{c.val}`. `ku_text.go` had no CONST arm, so a bare CONST fell through to the ALU
+# path and printed NOTHING. MEASURED: the RESHAPE's modulus divisor is a bare CONST whose
+# value is right (20/12/15) and whose row was empty, so the C read `...%` with no divisor.
+def ku_const_repr(v: O.Const) -> String:
+  match v:
+    case O.CInt{i}: H.i64_dec(i)
+    case _: ""
+
+def ku_const_repr.of(a: KUArg) -> String:
+  match a:
+    case KAConst{v}: ku_const_repr(v)
+    case _: ""
+
+def ku_text_const(+k: KU) -> List<&2, String>:
+  [ku_const_repr.of(KU.arg(k))]
+
 def ku_text.go(op: O.Op, dev: U32, i: U32, k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> List<&2, String>:
   match op:
+    case O.OpsCONST{}: ku_text_const(k)
     case O.OpsRANGE{}: [ku_text_range(dev, i, k, kus, r)]
     case O.OpsEND{}: ["}"]
     case O.OpsENDIF{}: ["}"]

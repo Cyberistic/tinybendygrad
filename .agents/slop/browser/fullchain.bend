@@ -116,6 +116,30 @@ def chain_ksig.go(+ks: List<&2, C.KU>, acc: List<&2, String>) -> List<&2, String
 
 def chain_ksig(+ks: List<&2, C.KU>) -> String: String.join(chain_ksig.go(ks, Nil{}), " ")
 
+# ONE HOP: `index:opname/nsrc`, so a DIVISOR can be named at each stage.
+def chain_hop(+ar: O.Arena, +i: U32) -> String:
+  String.concat([U32.show(i), ":", RF.eng_op_name(O.Arena.op(ar, i)), "/",
+                 U32.show(Maybe.default(&2, U32, O.ParamArg.size.const(O.Arena.arg(ar, i)), 999))])
+
+def chain_hops.go(+ar: O.Arena, +ss: List<&2, U32>, +acc: List<&2, String>) -> List<&2, String>:
+  match ss:
+    case Nil{}: acc
+    case s <> t: chain_hops.go(ar, t, List.append(&2, String, acc, [chain_hop(ar, s)]))
+
+def chain_tm.put(hit: Bool, +ar: O.Arena, +n: U32, +acc: List<&2, String>) -> List<&2, String>:
+  match hit:
+    case True{}: List.append(&2, String, acc,
+      [String.concat(["tm", U32.show(n), "=", String.join(chain_hops.go(ar, O.Arena.srcs(ar, n), Nil{}), ",")])])
+    case False{}: acc
+
+def chain_tm.go(+ar: O.Arena, +ns: List<&2, U32>, +acc: List<&2, String>) -> List<&2, String>:
+  match ns:
+    case Nil{}: acc
+    case n <> t: chain_tm.go(ar, t, chain_tm.put(O.eq_op(O.Arena.op(ar, n), O.OpsTRUNCMOD{}), ar, n, acc))
+
+def chain_tm(+ar: O.Arena, +root: U32) -> String:
+  String.join(chain_tm.go(ar, O.UOp.toposort(O.Arena.budget(ar), ar, root), Nil{}), " ")
+
 def chain_rows(+cc: Chain) -> List<&2, String>:
   +ar = chain_ar(cc)
   +k = chain_k(cc)
@@ -143,6 +167,8 @@ def chain_rows(+cc: Chain) -> List<&2, String>:
    String.concat(["chain_ku_n=", U32.show(U32.from_nat(List.length(&2, C.KU, kus)))]),
    String.concat(["chain_lin_ops=", chain_codes(lar, lst)]),
    String.concat(["chain_ku_sig=", chain_ksig(kus)]),
+   String.concat(["chain_tm_reduced=", chain_tm(lar, lb)]),
+   String.concat(["chain_tm_sched=", chain_tm(war, wb)]),
    String.concat(["chain_dump_sched=", RR.rr_dump(ar, chain_body(ar, k))]),
    String.concat(["chain_dump_committed=", RR.rr_dump(war, wb)]),
    String.concat(["chain_dump_reduced=", RR.rr_dump(lar, lb)]),
