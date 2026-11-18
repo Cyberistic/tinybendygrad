@@ -128,14 +128,6 @@ def Scan.cp(s: Scan) -> List<&2, U32>:
 #
 # the fuel is the only `match` in the recursive DEF, and the descent is a
 # separate `step`. That is `ops.bend`'s `toposort` shape, and it is forced:
-#   * a def may only call defs declared ABOVE it, so a wrapper/step pair that
-#     calls each other is MUTUAL recursion and is refused;
-#   * a self-call must be DECREASING with its fuel the FIRST parameter, and the
-#     fuel may not feed two self-calls in one arm.
-# So the worklist and the accumulator ride along as parameters and `step` is a
-# pure function of them: pop the head, and either keep it (a BUFFER) or push its
-# srcs back (an MSELECT/MSTACK). The fuel is `Arena.budget(ar)` -- the same bound
-# `UOp.toposort` takes, one visit per edge into a node.
 
 def mem_collect.is_buf(op: O.Op) -> Bool:
   match op:
@@ -352,9 +344,6 @@ def Bf.b(x: Bf) -> U32:
 #     for i, si in enumerate(linear.src):
 #       si_bufs = [b for src in si.src[1:] for b in _collect_bufs(src) if _can_plan(b, held_bufs)]
 #       for b in si_bufs:
-#         if b not in first_appearance: first_appearance[b] = i
-#         last_appearance[b] = i
-#       if si.src[0].op is Ops.STORE: copy_bufs.update(si_bufs)
 #
 # `si.src[1:]` is the load-bearing part: a kernel SINK's src[0] is its BODY, so
 # the STORE destination is never collected -- only the kernel ARGUMENTS are. That
@@ -364,9 +353,6 @@ def Bf.b(x: Bf) -> U32:
 # collects it twice -- so `mem_bf_touch` is an UPSERT, not an append: `f` is set
 # once and `l` on every visit, which is exactly what the Python does with
 # `if b not in first_appearance` and the unconditional `last_appearance[b] = i`.
-# what the scan needs from the caller: the fold, the held set and the unplannable
-# device tags. One record because three of them ride through every step and the
-# step already has a fuel, a node index and a kernel index.
 type Plan is Data:
   Plan{fx: F.Folded, held: List<&2, U32>, unpl: List<&2, U32>}
 
@@ -504,10 +490,6 @@ def mem_i_next(i: U32) -> U32:
 # `si.src[1:]` is the load-bearing slice: a kernel SINK's src[0] is its BODY, so
 # the STORE destination is never collected -- only the kernel ARGUMENTS are. That
 # is why the fixture's store destinations never reach `first_appearance`.
-# one touch per buffer in this kernel's arg list: record it, and add the buffer to
-# the distinct list the first time it is seen.
-# the touch list is PREPENDED, so it is built newest-first; `mem_scan_done` reverses
-# it once. One reverse at the top level, where it is measurable (see `Scan`).
 def mem_touch.one(+i: U32, +b: U32, +s: Scan) -> Scan:
   Scan{mem_tc_add(i, b, Scan.tc(s)), mem_bs_add(b, Scan.bs(s)), Scan.cp(s)}
 
@@ -619,12 +601,6 @@ def mem_head_bf(xs: List<&2, Bf>) -> Bf:
 #   * it is built by PREPENDING, so it is ordered NEWEST-FIRST. `f` is therefore
 #     the LAST match and `l` the FIRST -- the two folds differ only in whether
 #     they overwrite.
-#   * it stays that way. A `List.reverse` at the end of the scan LOOKED right and
-#     (`.agents/slop/notes/probe-list2.bend`) and does NOT reverse one threaded
-#     through a fuel fold's accumulator (`probe-put.bend`), where a three-entry
-#     table comes back `4,3,5` instead of `3,4,5`. Rather than depend on which,
-#     this file reads the list in the order the fold produced. REPORTED, not
-#     worked around silently -- see the notes file.
 #
 # NEITHER fold uses `Maybe.bind`. A keyed search written as
 # `Maybe.bind(.., some_if(hit, e), _ => recurse)` measured as ALWAYS `None` on this

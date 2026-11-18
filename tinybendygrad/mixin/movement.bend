@@ -3,17 +3,6 @@
 #
 # THE SPLIT IN THIS FILE IS PYTHON'S. `mixin/movement.py` is a `MovementMixin` over `Tensor`
 # AND over `UOp` (ops.py:233 symbol=UOp), and the two halves are not the same:
-#   (1) the `ssimplify` RULE TABLE that cleans up movement ops, ported at
-#       `tinybendygrad/uop/movement.bend` (24 gate rows). Its header says
-#       `tinygrad/uop/movement.py`, the path movement.py had BEFORE it moved to `mixin/`, so
-#       it is real and at the wrong path. It imports `./ops.bend` and `./fold.bend` and
-#       nothing from `mixin/`.
-#   (2) the shape arithmetic and the wrappers -- this file.
-# Neither is a subset of the other: `uop/movement.bend` builds a `Hop{ar, at}` from a table
-# and knows `fold.Table`; this file never builds a `Hop`, never reads a rule table, builds
-# UOp arenas and reads `marg`. So the naming should say the HALF, not move the content.
-# WHICH FILE MOVES IS A COORDINATOR CALL; neither has been moved or edited here and
-# `uop/movement.bend` is read-only to this file.
 #
 # WHAT IS PORTED HERE, gated against CPython -- read it as a list of what exists, not a
 # summary of the file:
@@ -453,9 +442,6 @@ def mxm_nth_u(+srcs: List<&2, U32>, ix: U32) -> U32:
 # (`O.eq_op(O.Arena.op(ar, u), O.OpsCONST{})`). It is a `Bool` and not a
 # `Maybe<&1, U32>` because `Maybe` is a `Type` that cannot carry `+` and cannot
 # be read twice, and the walk reads the answer once per element.
-# IS THIS ELEMENT NOT A CONST -- the `bad` accumulator's step. It is the NEGATION of
-# `mxm_is_const` and it is a separate def because `Bool.not` of a call cannot be a
-# `match` scrutinee and this one is inlined into `Bool.or`, not matched.
 def mxm_not_const(+ar: O.Arena, +srcs: List<&2, U32>, ix: U32) -> Bool:
   Bool.not(mxm_is_const(ar, mxm_nth_u(srcs, ix)))
 
@@ -904,8 +890,6 @@ def G.stk4(+ar: O.Arena, a: U32, b: U32, c: U32, d: U32) -> O.Found:
 #   def shape_to_shape_arg(arg:tuple[sint, ...]) -> UOp:
 #     src = tuple(x if isinstance(x, UOp) else UOp.const(x) for x in arg)
 #     for x in src:
-#       if not dtypes.is_int(x.dtype): raise RuntimeError(...)
-#     return src[0] if len(src) == 1 else UOp(Ops.STACK, src=src)
 #
 # SO A LENGTH-1 SHAPE IS A BARE CONST AND A LONGER ONE IS A
 # `STACK` NODE -- AND THE PORT's `G.stk4` HARD-CODES THE LENGTH-4 CASE
@@ -984,13 +968,6 @@ def G.reshape.of(+b: O.Found, +sk: O.Found) -> O.Found:
 # later, so it is read twice, and a `let` is a shared reference while a pattern binder
 # is not. `+b` rather than `b` would also be legal but `let` is what the notes record
 # for a value the walk needs twice.
-# THE RESHAPE FIXTURE. It takes FOUR dims rather than a `List<&2, U32>` and interns
-# them through `G.stk4` -- an earlier revision passed the dim list STRAIGHT to
-# `G.mstack`, which builds a STACK whose "srcs" are the raw VALUES 0, 1, 2, 3 read as
-# arena indices. That is the aliasing rule the notes record, it typechecked, and
-# `resh_marg` printed `0` because `mxm_as_shape` read arena index 0 -- the BOTTOM --
-# and `mxm_const_val` of the bottom's `ANone` arg is 0. The row that saw it is
-# `resh_nsrc` being right while `resh_marg` was empty.
 def G.reshape(+ar: O.Arena, a: U32, b: U32, c: U32, d: U32) -> O.Found:
   G.reshape.of(G.base(ar), G.stk4(O.Found.ar(G.base(ar)), a, b, c, d))
 
@@ -1029,9 +1006,6 @@ def G.permute(+ar: O.Arena, +ys: List<&2, U32>) -> O.Found:
 
 # A FLIP, same arg reader, and its marg is a list of 0/1 FLAGS -- the row that
 # separates the two `MOrder` cases by the permutation test.
-# THE ARENA ROWS, one def per row, and each is an `IO(Unit)` def rather than a line of
-# `main` for two reasons: a `do` block cannot contain a `match`, and each row needs to
-# build a fixture whose arena is threaded through two calls.
 #
 # `mxm_marg` is read through `MxMarg`'s three predicates because a `Bool` has no
 # `U32.show` (the notes' R3) and because the DISCRIMINATOR is the thing worth pinning:
@@ -1061,15 +1035,6 @@ def marg_tag(+m: MxMarg) -> U32: marg_tag.of(MxMarg.is_ord(m), MxMarg.is_dim(m),
 # the second reason a fixture builder cannot return a bare list: the caller has to
 # know which arena the four indices belong to. A pair is a `Type` and cannot travel in
 # a list, so it is a two-field `Data` record.
-# WHICH OF THE FOUR, from the countdown. `1n` is `a`, `2n` is `b`, `3n` is `c` and the
-# catch-all is `d`, and the arms are `Nat` prefix matches in DESCENDING order so the
-# first arm does not claim its successors. It is the one place in this file where a
-# `Nat` countdown doubles as a value, and it is why `mx_pool_perm`'s index had to be a
-# separate `U32` parameter instead.
-# THE PAD, and the node is built in the arena `hi` left -- `tn_mop.pairs`' rule, and
-# the reason `op.bend`'s `mo_arena` exists. Building it in the ORIGINAL arena would
-# intern the PAD at an index that arena does not have, and `mxm_marg` would then read a
-# node that is not there.
 def G.padfix.of(+b: O.Found, +lo: O.Found, +hi: O.Found) -> O.Found:
   O.UOp.new(O.Found.ar(hi), O.OpsPAD{}, [O.Found.i(b), O.Found.i(lo), O.Found.i(hi)], O.ANone{}, O.TNone{})
 
@@ -1351,7 +1316,6 @@ def mxw_srcops(+ar: O.Arena, +ss: List<&2, U32>) -> List<&2, String>:
 # it is one string and not four rows on purpose. Four separate rows let a fixture drop
 # one of them, and a PAD built with ONE STACK instead of two has the right root op and
 # the right node count, so a gate carrying only those two is green on a wrong graph.
-# `pad_nsrc` in Section H exists for the same reason and this is the generalisation.
 def mxw_sig(+ar: O.Arena, +u: U32) -> String:
   String.concat(["n=", U32.show(mxw_count(ar, u)),
                   " op=", O.Ops.name(O.Arena.op(ar, u)),
@@ -1425,20 +1389,6 @@ def mxw_permute(+t: T.Tensor, +ys: List<&2, U32>) -> T.Tensor:
 # outside its own arena, and the NODE must be interned in the arena that contains the shape
 # args -- an arena one node short of them interns the node at an index that arena does not
 # have.
-# --- THE WRAPPER SHAPE, ONCE. Every wrapper below is: intern the args, build the node
-# in the last arena, then `mxw_same` against the SOURCE. The three steps are three lines
-# here and they are three lines in each wrapper, because a def cannot both branch on a call
-# and branch on a value and there is no higher-order way to say "and then apply the identity
-# test". The duplication is six lines per wrapper and it is the honest cost of no closures.
-# THE PAIR NODE is written out rather than calling `T.tn_mop` with `T.APairs` because
-# `tn_mop.pairs` takes a `MopArg` whose `APairs` arm is `List<&2, O.Const>` (CONST VALUES)
-# while the wrappers here carry `List<&2, U32>` (Python ints) and intern them themselves.
-# Two spellings of the same arg is a real duplication and it is named rather than hidden.
-# the node, and it is called twice on purpose -- the same shape as `mxw_stk` and for the
-# same reason. `O.UOp.new` is PURE given its arena and its arguments (the arena carries the
-# intern table, so the second call finds the node the first one added and answers the same
-# index), and the alternative -- a `let` carrying the `Found` -- needs a def boundary, and
-# every def boundary here closes a cycle the walk just opened.
 def mxw_pairs_new(+ar: O.Arena, +op: O.Op, +t: T.Tensor, +a: O.Found, +b: O.Found) -> O.Found:
   O.UOp.new(ar, op, [T.Tensor.u(t), O.Found.i(a), O.Found.i(b)], O.ANone{}, O.TNone{})
 

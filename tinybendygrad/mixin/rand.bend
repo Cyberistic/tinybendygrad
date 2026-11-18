@@ -483,7 +483,6 @@ def rd_zeros(n: Nat) -> List<&2, U32>: rd_zeros.go(n, Nil{})
 # old `go`/`acc` fold appended every element and handed back the list it was GIVEN, so
 # `rd_take.sz`/`rd_take.of` shrank with a 2-element size arg and reshaped to `[0]` instead of
 # to `[]` -- the malformed SHRINK `gates/rd_graph_census-gate.py`'s `three`/`tfb` rows named.
-# A tail is the ONE line `viz/serve.bend`'s `vs.tail` already is.
 def rd_tail(+ds: List<&2, U32>) -> List<&2, U32>:
   match ds:
     case Nil{}: Nil{}

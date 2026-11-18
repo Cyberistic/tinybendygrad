@@ -349,40 +349,6 @@ def dc_isn2(+ar: O.Arena,+u: U32) -> Bool:
 #       so the MAX rewrite is LATE, and the reason it is late is that the
 #       WHERE form LOSES the bound that the MAX carries -- the comparison is
 #       `<` and the equality case has to be handled by the WHERE.
-#   "rewrite MUL/TRUNCDIV to SHL+SHR: x*(2**y) -> shl(x,y) and x//(2**y) ->
-#    shr(x,y)" (87)
-#       so the SHL and the SHR forms exist because the hardware has them and
-#       the MUL and the DIV do not.
-#   "uint TRUNCDIV by 2**v -> x >> v (DIV is lowered to TRUNCDIV by the rule
-#    above before reaching here)" (90)
-#       and the parenthetical is the ORDERING: the DIV rule fires FIRST and
-#       lowers DIV to TRUNCDIV, so this rule only ever sees a TRUNCDIV.
-#   "signed TRUNCDIV by 2**v -> (x + (x<0 ? c-1 : 0)) >> v" (93)
-#       so the SIGNED case needs the rounding correction and the unsigned one
-#       does not -- an arithmetic shift is a floor division for a non-negative
-#       value and a truncation for a negative one.
-#   "fast_idiv handles non-pow2 divisors on non-negative inputs" (98)
-#       so the magic-multiply path is only for NON-NEGATIVE inputs; a signed
-#       value has to go through the general path.
-#   "rewrite raw TRUNCMOD -> x - d*fast_idiv(x,d), only when fast_idiv can
-#    actually divide; avoids disturbing floormod_to_mod's general-path output
-#    (which uses Ops.TRUNCMOD as an implementation detail)" (100-101)
-#       and THAT is the gotcha: `floormod_to_mod`'s general path USES
-#       `Ops.TRUNCMOD` as an IMPLEMENTATION DETAIL, so rewriting a TRUNCMOD
-#       here would rewrite the general path's own output and the two rules
-#       would fight. The rule therefore fires only where `fast_idiv` can
-#       actually divide.
-#   "These are late rewrites because simplex expects equalities to be a certain
-#    format" (108)
-#       so the comparison rewrites are LATE because the simplifier's equality
-#       format is a precondition for them.
-#   "also fuse (x << n) + c -> MULACC(x, 2^n, c) since MUL->SHL may run first"
-#       (118)
-#       and the reason is an ORDERING: the MUL-to-SHL rewrite may have already
-#       fired, so the MULACC rule has to recognise the SHL form too.
-#   "some backends emit FDIV for RECIP, in that case: a*(1/b) -> a/b" (120)
-#       so the FDIV rewrite is CONDITIONAL on the backend: a backend that has
-#       RECIP does not want a*(1/b) turned into a/b.
 #
 # `0`  !x & !y      -> !(x|y)              op.py:85-86   AND    [CMPNE]
 # `1`  x * 2y     -> x << y              op.py:88      MUL    [CONST]
@@ -406,10 +372,6 @@ def dc_isn2(+ar: O.Arena,+u: U32) -> Bool:
 # the two rules both claiming one node are `2`/`3`/`4`: `3` (the signed
 # power-of-two TRUNCDIV) and `4` (`fast_idiv`) both claim `TRUNCDIV(x, 2y)` and they
 # answer DIFFERENTLY -- `3` is an ADD under a SHR and `4` is a MUL under a SHR.
-# FIRST-WINS, and `l7`/`l8`/`l9` are the three sides: `l7` is int32 `// 4` and
-# rule 3 answers, `l8` is the same on a non-negative numerator and STILL rule 3
-# answers, and `l9` is `// 3` where rule 3 SKIPS on the power-of-two test and
-# rule 4 answers. A last-wins scan moves `l7` and `l8` to rule 4's answer.
 
 def dc_l_tab(+fast: Bool) -> O.PMEntrys:
   match fast:
@@ -713,9 +675,6 @@ def dc_l15.c(+ar: O.Arena, +self: U32) -> U32:
 # WHERE are ternaries and the rest are binary. A fold over `Arena.srcs` would
 # need a fuel walk, so the arity is a `Bool` and the list is unrolled to three,
 # which covers every rule in both tables.
-# `O.Arena.src(ar, u, 1)` on a ONE-src node is the arena's BOTTOM NOOP (index 0,
-# from `O.Arena.empty()`), so the arity is read BEFORE any src is. `dc_isn2`
-# guards the rules; the printer has to guard itself.
 def dc_arity1(+ar: O.Arena, +u: U32) -> U32:
   U32.sub(U32.min(O.Arena.nsrc(ar, u), 3), 1)
 
@@ -872,10 +831,6 @@ def dc_l17(+fx: F.Folded,+self: U32) -> Maybe<&2, O.Found>:
 # THE DTYPE CONJUNCTS. `dtypes.ints` is the four SIGNED widths and it is NOT
 # weakint, so `Cls.is_int` is the wrong test here -- it admits `CWeakInt`. One
 # reader and a NAME, so a rule spells `dc_dt(fx, x, 0)`.
-#   0 ints  1 uints  2 bool  3 floats
-# A nested `match c:` in every arm of `match want:` makes `c` a binder matched
-# more than once, which Bend reads as a consumed binder. One def per class and
-# one `match want` over those is the same four lines and it compiles.
 def dc_dt.sint(+c: S.Cls) -> Bool:
   match c:
     case S.CSint{}: True{}
@@ -1289,20 +1244,6 @@ def tf_split_str(+ar: O.Arena,+x: U32) -> String:
 #       so the table's defining property is SIMPLICITY, not completeness: a
 #       rewrite belongs here if it makes the graph easier, and the general
 #       path is elsewhere.
-#   "DIV by 2**y -> x >> y (an arithmetic shift is exactly floor division for
-#    any sign); fires before floordiv_to_idiv" (69)
-#       and the parenthetical is the CORRECTNESS: an arithmetic shift is a
-#       FLOOR division, not a truncation, so it is right for negative values
-#       too. And "fires before" is the ORDERING: the power-of-two case must be
-#       taken before the general `floordiv_to_idiv`.
-#   "MOD by 2**y -> x & (2**y-1) (correct floor mod for any sign in two's
-#    complement); fires before floormod_to_mod" (73)
-#       same shape: the mask is a correct floor MOD in two's complement for
-#       any sign, and it must fire before the general path.
-#   "no real hardware supports THREEFRY, but NullRenderer does" (76)
-#       so the THREEFRY rule exists ONLY when the renderer does NOT have the
-#       op -- and the NullRenderer is the exception because it emulates
-#       everything.
 #
 # `0` DIV(x:ints, c) -> x >> v if v            op.py:70-71
 # `1` DIV(a, b)     -> floordiv_to_idiv        op.py:72

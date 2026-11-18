@@ -320,12 +320,6 @@ def ew_remint(fuel: Nat, +ar: O.Arena, +u: U32, +dt: S.Dt) -> O.Found:
 # a shape arg is at most a STACK of CONSTs, so four is two levels more than any
 # fixture needs -- and an OVER-provisioned bound costs nothing while an
 # under-provisioned one answers `None` for everything (uop/upat.bend's M2 lesson).
-# `+ar` is the arena the answer lives in, on every arm -- including the two that mint
-# nothing. That is the point. An arm that answers `t` unchanged hands back a tensor
-# carrying the arena as it was BEFORE the sibling promotion grew it, and the next
-# build in that stale store takes an index a real node already holds. Rebasing on the
-# no-op arms costs one node of nothing and makes "one arena per method" true rather
-# than merely intended.
 def ew_promote.b(same: Bool, +ar: O.Arena, +t: T.Tensor, +wd: S.Dt) -> T.Tensor:
   match same:
     case True{}: ew_rebase(ar, t)
@@ -812,9 +806,6 @@ def ew_row(nm: String, b: Bool) -> IO(Unit):
 # The bits and not the decimal, because the port has no F64 and a decimal comparison would
 # pass a value that rounds differently; the constants themselves are gated by value in
 # ew-consts-gate.sh, and THIS is the gate that says a given method uses a given one.
-# The ARG IS A PARAMETER and not a computed value: a `match` may scrutinise a parameter
-# or a field and not a call, and `O.Arena.arg(ar, u)` is a call. So the reader is its own
-# def over the arg and the caller passes it -- the shape `range_at.of` uses.
 def ew_sig.bits.of(a: O.Arg) -> String:
   match a:
     case O.APy{O.CFloat{f}}: String.concat(["=", U32.show(F32.bits(f))])
@@ -1514,9 +1505,6 @@ def t_count_add() -> IO(Unit): ew_cnt("ew_count_add", g_add())
 
 # `sub` is `a.alu(Ops.ADD, -b)`, so the ROOT is an ADD and NOT an Ops.SUB, and src1
 # is a MUL and not a bare CONST. Reading the op is the only thing that sees either.
-# `ew_opname_root` / `ew_opname_src` take the fixture as a PARAMETER rather than
-# binding it in the row, because a `do` block can only bind an `IO`; each call runs
-# its own pure `g_sub()` and the fixture is five nodes.
 def ew_opname_root(nm: String, +t: T.Tensor) -> IO(Unit):
   ew_opname(nm, t, T.Tensor.u(t))
 

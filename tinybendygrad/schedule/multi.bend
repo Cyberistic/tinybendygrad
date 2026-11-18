@@ -66,8 +66,6 @@ def Sh.n(s: Sh) -> U32:
 # `axis` (with `has_ax` for Python's `None`, because `Bool` cannot carry one
 # and an U32 sentinel would collide with axis 0 -- and axis 0 IS a real sharded
 # axis, see `rs_head`), whether it is a SCALAR, and its `sharding`.
-# It is a record rather than six parameters because `shard_subview`,
-# `alu_multi` and `shard_srcs` each read three of the six on one source.
 type Nd is Data:
   Nd{op: O.Op, ax: U32, has_ax: Bool, sc: Bool, sh: List<&2, Sh>}
 
@@ -266,25 +264,6 @@ def mu_rej_nil() -> List<&2, O.Op>: Nil{}
 #       a VALUE-PRODUCING CALL has a body, and the body has to be rewritten by
 #       the SAME table -- so the rule cannot be a named function, it has to be
 #       a lambda that reads `multi_pm` at CALL time rather than at DEF time.
-#       Upstream says so and the port's tag 12 is the entry.
-#   "just strip the UNSHARD from non-value-producing CALLs (custom kernels,
-#    etc.) -- value-producing CALLs are handled by rewrite_into_function" (294)
-#       so a VOID CALL -- a custom kernel -- only needs the UNSHARD removed and
-#       nothing else, and the two CALL rules do NOT overlap.
-#   "STORE of a sharded value into an unsharded dest (e.g. a fragment into a
-#    full output tile)" (299)
-#   "STORE into a sharded dest (e.g. the fragment init): every shard stores
-#    into its own shard" (301)
-#       the two STORE rules are DISTINCT and the examples are upstream's own:
-#       one is a fragment being written into a whole tile, the other is the
-#       fragment's own initialisation.
-#   "a COPY of a sharded value copies every shard to the target device" (285)
-#       so a COPY of a sharded value is a COPY PER SHARD, not a copy of the
-#       whole.
-#   "NOTE: this is the same pattern as unrolled ranges" (273)
-#       upstream's note on the TABLE ITSELF, and it is the reason the rules
-#       exist in this shape: an UNSHARD is a range that was unrolled over the
-#       devices, so the same machinery serves both.
 
 def mu_own() -> List<&2, O.PMEntry>:
   [O.PMEntry{0,  mu_alu_ops(),                       mu_rej_uns()},  # 282  ALU -> alu_multi
@@ -314,19 +293,6 @@ def mu_own() -> List<&2, O.PMEntry>:
 #   "BROADCAST: explicitly expand broadcast copies and combine with MSTACK" (30)
 #       a copy to a MULTI-device target is a BROADCAST: every device needs the
 #       whole value, and the MSTACK is how a multi-device value is spelled.
-#   "COPY_TO_ONE: if copying from multidevice to one, MSELECT the first (TODO:
-#    a little from each?)" (32)
-#       and upstream's TODO IS STILL OPEN: copying from many devices to one
-#       currently takes the FIRST device's copy and throws the rest away. The
-#       port carries the MSELECT, not the TODO's answer.
-#   "MSELECT on MSTACK is replaced with nothing" (36)
-#       so selecting from a stack of devices is just the selected piece -- the
-#       MSELECT disappears and the MSTACK's src is the answer.
-#   "move shrink before MSTACK" (38)
-#   "move MSELECT before movement/ALU ops" (40)
-#       the two MOVES, and they are the reason this table exists at all: a
-#       selection must be applied to the LEAF of an expression, not in the
-#       middle of it.
 
 def mu_ra0() -> O.PMEntry: O.PMEntry{0, [O.OpsCOPY{}],    mu_rej_nil()}   # 31  BROADCAST copy -> MSTACK
 def mu_ra1() -> O.PMEntry: O.PMEntry{1, [O.OpsCOPY{}],    mu_rej_nil()}   # 33  multidev -> one: MSELECT 0
@@ -361,9 +327,6 @@ def mu_ra_cfg(cfg: Cfg) -> List<&2, O.PMEntry>: mu_ra_cfg.go(Cfg.late(cfg), Nil{
 
 # `multi_pm` -- the nineteen own rules THEN `replace_allreduce`, in Python's
 # order. The concatenation is the ACCUMULATOR's job and not a separate `++`:
-# `replace_allreduce` is itself built by appending, so `mu_ra_cfg` takes the
-# accumulator it starts from and `mu_own()` IS `multi_pm`'s first half. One
-# def shorter than a `List.concat` and the order is the order of the appends.
 def mu_ra_cfg.of(cfg: Cfg, acc: List<&2, O.PMEntry>) -> List<&2, O.PMEntry>:
   mu_ra_cfg.go(Cfg.late(cfg), acc)
 
@@ -497,9 +460,6 @@ def mu_range_u32(n: Nat) -> List<&2, U32>:
 # the EXPANDED half. `i` is the src index and the emitted axis is `nleft + i`,
 # so both ride in the call; recovering `nleft` from `ax - i` would be a
 # subtraction and a `to_nat` per step to save one parameter.
-# the `s == 1` half and the `out_shape[nleft+i] != 1` half, as ONE Bool, because
-# `Bool.and` of two calls cannot be a `match` scrutinee and this is the only
-# thing the step decides.
 def mu_exp_keep(s: U32, out: List<&2, U32>, +nleft: U32, +i: Nat) -> Bool:
   Bool.and(mu_ones(s), mu_not_one(mu_at(out, U32.to_nat(U32.add(nleft, U32.from_nat(i))))))
 
@@ -514,10 +474,6 @@ def mu_exp_add(keep: Bool, ax: U32, acc: List<&2, U32>) -> List<&2, U32>:
 # because `mu_exp` calling back into `mu_exp.go` would be MUTUAL recursion and
 # is refused, and the declaration rule means a helper above cannot call a def
 # below it. The two helpers above are leaves, so this stays a single self-call.
-# the list is the first parameter because the self-call must be decreasing and
-# READ LEFT TO RIGHT, so the subterm has to come first -- the shape `red_factor`
-# and `red_bounds` use. `nleft` and `i` ride at the end and are never both read
-# before the shrink.
 def mu_exp.go(src: List<&2, U32>, +out: List<&2, U32>, acc: List<&2, U32>,
               +nleft: U32, +i: Nat) -> List<&2, U32>:
   match src:
@@ -554,11 +510,6 @@ def mu_in(xs: List<&2, U32>, w: U32) -> Bool:
 # THE TWO WITNESS TYPES, and they are why this file is mostly index arithmetic. Every Python
 # rule body ends in a BUILDER (`.unshard(...)`, `.alu(...)`, `.mselect(i)`,
 # `UOp(Ops.STACK, ...)`, `._mop(...)`) and every one of those is a `TODO(p3)` in `ops.bend`.
-# What is left is the part a rewrite has to get RIGHT before it may reach for a builder: a
-# set of integers -- which axes the rewrite acts on, which shard COUNT divides which dim,
-# which src of the rewritten node comes from where, and whether the rule fires at all. So a
-# "decision" below is a `Data` record of those integers and a `Hop`-shaped answer that is `0`
-# because no node can be built. `Nd` is the read side; the decision records are the write side.
 type Bd is Data:
   Bd{s: U32, l: U32}
 
@@ -725,9 +676,6 @@ def Ss.from_unshard(s: Ss) -> Bool:
 # `len(devices)` -- the FIRST conjunct of `if len(devices):`. `ndev` is the
 # device COUNT, which is `Ss.n` in the DEVICE branch and is not the shard count
 # in the other one, so it is a parameter rather than a read.
-# the `no_dev` Bool is a PARAMETER of `.of` rather than `U32.is_zero(ndev)`
-# computed in the wrapper, because a `match` may not scrutinise a call
-# (brief-port.md, rule 2). The wrapper is one line and the ladder is the other.
 def mu_ss_rng.of(no_dev: Bool, ndev: U32, unshard_n: U32) -> Ss:
   match no_dev:
     case True{} : Ss{unshard_n, True{}}
@@ -759,27 +707,12 @@ def mu_ss_same(devs: List<&2, U32>) -> Bool:
 #   "same axis, just copy through" (70)
 #       the src is ALREADY on the axis being sharded, so there is nothing to
 #       do to it -- it is the shard of that axis.
-#   "otherwise every shard gets the full copy, sharded iff this src has the
-#    axis (broadcast srcs stay whole)" (73)
-#       and the parenthetical is the point: a src that does NOT have the axis
-#       is a BROADCAST src, and a broadcast src must stay WHOLE on every
-#       shard. Sharding it would give each shard only the slice it needed and
-#       the other shards would have nothing.
 #
 # `src_axis = axis - (len(out_shape) - len(mlb.shape))`, then either
 # `srcs.append(mlb.src[0])` when `mlb.axis == src_axis`, or
 # `full = mlb if mlb.axis is None else copy_multi(mlb, mlb.device)` and then
 # `srcs.append(full if axis in broadcast_axes(mlb.shape, out_shape) else
 # full._shard(src_axis, sharding_rng))`.
-# Four outcomes, and the ORDER of the tests is load-bearing because the arms are not
-# disjoint in an obvious way:
-#   0 COPY THROUGH -- `mlb.axis == src_axis`
-#   1 WHOLE        -- no axis at all (`mlb.axis is None`)
-#   2 BROADCAST    -- `axis in broadcast_axes(mlb.shape, out_shape)`
-#   3 SHARDED      -- everything else
-# `1` and `2` both "append the whole src" but for different reasons and they need different
-# BUILDERS (`copy_multi` vs not), which is why they are two numbers. `ml_ss_*` in the gate
-# are one row per outcome and `ml_kind_*` are the two inputs that choose between them.
 type Sk is Data:
   Sk{kind: U32, sa: U32}
 
@@ -819,12 +752,6 @@ def ml_bcast(src: List<&2, U32>, out: List<&2, U32>, axis: U32) -> Bool:
 # is the broadcast_axes membership, and the order is Python's: `through` first
 # (so a src already on the right axis copies through whatever else it is), then
 # `whole`, then `bcast`.
-# BOTTOM UP, because a def may only call defs declared ABOVE it (brief-port.md,
-# rule 1) and this ladder is three `match`es. Python writes it as one `if/elif`
-# chain; here it is three nested defs and the names say which Python test each
-# one is: `.bc` is the broadcast_axes test, `.rest` adds `mlb.axis is None`, and
-# `.of` adds `mlb.axis == src_axis` FIRST because Python's outer `if` is that
-# one.
 def ml_kind.bc(bcast: Bool) -> U32:
   match bcast:
     case True{}: 2
@@ -945,10 +872,6 @@ def al_full(m_sc: Bool, m_shape: List<&2, U32>, tgt: List<&2, U32>) -> Bool:
 # `can_handle(m)` -- `if m.sharding: return m.sharding == sharding` first, and
 # that is a GUARD: a sharded src is judged ONLY by its sharding and the two
 # scalar/full tests never run for it. `al_handle` is that ladder.
-# `can_handle(m)` -- `if m.sharding: return m.sharding == sharding` first, and
-# that is a GUARD and not a filter: a SHARDED src is judged ONLY by its sharding
-# and neither the scalar test nor the full-shape test ever runs for it. That is
-# why `have_sh` short-circuits the other two, and `al_handle` is the ladder.
 def al_handle.of(have_sh: Bool, same_sh: Bool, +m_sc: Bool,
                  m_shape: List<&2, U32>, tgt: List<&2, U32>) -> Bool:
   match have_sh:
@@ -1099,10 +1022,6 @@ def rd_cast(cfg: Cfg, src0_op: O.Op, inner_dt: S.Dt) -> Bool:
 # shape too AND the new axis divides evenly by the shard count. Both raises
 # say the same thing -- IT MOVED ITEMS BETWEEN SHARDS -- and they are two
 # checks because the first can fail before the second is even meaningful.
-# `new_ax = len(arg_acc) - arg_acc[::-1].index(target) - 1` is the LAST index whose running
-# product is `target`, and the REVERSE is load-bearing: two entries of `arg_acc` can be equal
-# (when a dim of `new_shape` is 1) and `.index` on the REVERSED list takes the LAST one,
-# i.e. the LARGEST axis that preserves the boundary. `rs_tie_*` is the row for it.
 type Rs is Data:
   Rs{ok: Bool, ax: U32, acc: List<&2, U32>}
 
@@ -1148,10 +1067,6 @@ def rs_has(+acc: List<&2, U32>, target: U32) -> Bool:
 # FIRST of the reversed list, i.e. the LAST of the forward one. So the fold is a
 # FORWARD walk that keeps the most recent hit, and `rs_tie_*` in the gate is the
 # row that says "most recent" and not "first".
-# The accumulator is `last` and the hit test is a separate leaf, because a
-# `match` may not scrutinise a call (brief-port.md, rule 2). `no` is the
-# not-found marker and is `n`, one past the last index, so it is distinguishable
-# from index 0 by construction -- 0 is a REAL index here and `rs_head_*` uses it.
 def rs_hit.put(hit: Bool, i: Nat, last: Nat) -> Nat:
   match hit:
     case True{} : i
@@ -1305,9 +1220,6 @@ def rs_local.one(+n: Ns, +ax: U32, +d: U32) -> U32:
 # THE FOLD: `s // count if a in axes else s`, walking `new_shape` with the axis
 # INDEX beside it. `List.append` puts each dim at the tail, so the order is
 # `new_shape`'s.
-# the dim list is the first parameter, for the same reason `ns_count.go` is: the
-# self-call must be decreasing and read left to right, so the shrinking list is
-# first and the `Ns` and the counter ride at the end.
 def rs_local.go(dims: List<&2, U32>, +n: Ns, +a: Nat, acc: List<&2, U32>) -> List<&2, U32>:
   match dims:
     case Nil{}: acc
@@ -1418,9 +1330,6 @@ def pm_index(+marg: List<&2, U32>, w: U32) -> Maybe<&2, Nat>:
 # so it is a `Nat` on the way out and a `U32` on the way in. The `Maybe` is kept
 # through `pm_of` -- a missing axis is Python's ValueError -- and 0 is the marker
 # at the ONE place a bare axis is needed.
-# `mu_head32` is the `U32` spelling; `tuple.index` answers an INDEX and this fold
-# keeps it a `Nat` throughout, so the default is the `Nat` one and the conversion
-# to an axis is here at the single place it happens.
 def mu_head_nat(m: Maybe<&2, Nat>) -> Nat:
   Maybe.default(&2, Nat, m, 0n)
 
@@ -1556,10 +1465,6 @@ def pd_of(+marg: List<&2, Bd>, +axs: List<&2, U32>) -> List<&2, Bd>:
 # "resolve each sharded axis independently: a shrink to exactly this range's own
 # shard resolves the UNSHARD along that axis (e.g. a fragment indexed by its
 # LOCAL thread range becomes that thread's REG shard, no copy needed)" (159-160).
-# So the shrink is checked PER AXIS, and a shrink that lands exactly on one
-# shard's own range DISSOLVES the unshard on that axis -- the shard is the
-# thread's own register and no copy is needed. That is why the loop's
-# `remaining.remove((ax, rng))` is there: the axis stops being sharded.
 #
 # AND THE SECOND ARM IS THE LEGACY PATH, and upstream says so:
 # "NOTE: otherwise a shrink on the shard axis is only allowed on the legacy
@@ -1901,8 +1806,6 @@ def ix_strid_ok(diff: U32, shard_sz: U32) -> Bool:
 # the three-way outcome per sharded axis: 0 contiguous, 1 strided, 2 raise. It is
 # `mu_pick` twice because the strided arm has its OWN window and the raise is the
 # fall-through of both.
-# `ix_w` turns the strided window into the OUTCOME NUMBER, so `mu_pick` can select
-# on it: 1 is STRIDED and 2 is the raise.
 def ix_w(win: Bool) -> U32:
   mu_pick(win, 1, 2)
 
@@ -1933,10 +1836,6 @@ def sx_idx(has_dev: Bool, dev_idx: U32) -> U32:
 #       a SINGLE-device target is rebuilt by concatenating the pieces back
 #       together, and the axes are folded LAST TO FIRST so the outermost axis
 #       is the last thing concatenated.
-#   "multi-device target: unshard all axes and allreduce" (240)
-#       a MULTI-device target is the OTHER thing entirely: the value is padded
-#       out to every shard's slice and then ALLREDUCEd, because a copy cannot
-#       assemble a multi-device value -- the combination has to happen.
 def cx_put.go(xs: List<&2, U32>, acc: List<&2, U32>) -> List<&2, U32>:
   List.foldl(~&2, ~U32, ~List<&2, U32>, (a: List<&2, U32>) => (x: U32) => List.append(&2, U32, a, [x]), xs, acc)
 
@@ -2040,9 +1939,6 @@ def st_pick(is_unshard: Bool, full: Bool) -> U32:
 #
 # UPSTREAM'S COMMENT ON IT IS THE WHOLE IDEA: "storing a sharded value into an
 # unsharded dest: every shard stores into its own sub-view of the dest" (250).
-# So the dest is WHOLE and the value is SHARDED, and each shard writes into the
-# slice of the dest that is its own -- which is what `shard_subview(dest,
-# multi)` is for.
 #
 # AND THE OTHER STORE'S COMMENT NAMES ITS CASE: "STORE with a sharded dest:
 # every shard stores into its own shard of the dest" (254). So the dest is
@@ -2098,8 +1994,6 @@ def mu_claimed(+ar: O.Arena, +self: U32, ops: List<&2, O.Op>, rej: List<&2, O.Op
 # tests its srcs. Every tag whose pattern has NO src test answers `True{}` and the
 # name says so; the twenty-five entries are read off CPython's own patterns by
 # `.agents/slop/multi-rows.py` and are in the gate as `mtA_*`.
-# The five shapes are: src[0] is UNSHARD, src[0] is MSTACK, src[0] is a Movement,
-# src[0] is an ALU, src[1] is UNSHARD, and "anything".
 def mu_src_un.go(has: Bool, +ar: O.Arena, +self: U32, n: U32) -> Bool:
   match has:
     case True{} : O.src_op(ar, self, n, O.OpsUNSHARD{})
@@ -2174,9 +2068,6 @@ def mu_claim.go(rs: List<&2, O.PMEntry>, +ar: O.Arena, +self: U32, acc: U32) -> 
 
 # THE OP-SET CLAIM COUNT -- "how many patterns of the table have this node's OP as
 # their pdict key", which is a statement about `pdict` and NOT about matching.
-# `claim_copy` in the gate is 3 for a COPY and `claim_store` is 2 for a STORE, and
-# both are Python's own: a COPY is the key of tags 11, 19(ra_0), 20(ra_1) and a
-# STORE of tags 17 and 18.
 def mu_claim_n(ts: List<&2, O.PMEntry>, ar: O.Arena, self: U32) -> U32:
   mu_claim.go(ts, ar, self, 0)
 
@@ -2197,10 +2088,6 @@ def mu_claim_full(ts: List<&2, O.PMEntry>, ar: O.Arena, self: U32) -> U32:
 # NUMBER, because it is the FIRST non-None and a scan that keeps overwriting is
 # last-wins. `0` is "no rule claimed it", which for `multi_pm` with the builders
 # unported is ALSO the answer every node gets -- and the two are kept apart:
-# `mu_first` is what the TABLE says, and `mu_answers` (below) is what the port can
-# actually produce.
-# the "keep the earlier tag" test, and it is a leaf so the walk reads `held` once
-# per step
 def mu_first.take(have: Bool, held: U32, tag: U32) -> U32:
   match have:
     case True{} : held

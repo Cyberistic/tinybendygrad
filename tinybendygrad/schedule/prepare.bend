@@ -270,8 +270,6 @@ def shape_str(+ar: O.Arena, +tb: F.Table, +self: U32) -> String:
 # the gate's four facts plus the answer as one string. `toposort` SIZE and not
 # arena size: the size of a node's OWN subgraph is graph-intrinsic, so it is the
 # one number that survives the difference between CPython's arena and this one.
-# The dtype is left out because `LAWS/spec.bend` has no `Dt.name` and a dtype is
-# not one of the four facts; where a dtype MATTERS it is a row of its own.
 def src_ops.go(+ar: O.Arena, +self: U32, ns: List<&2, Nat>, acc: List<&2, O.Op>) -> List<&2, O.Op>:
   match ns:
     case Nil{}: acc
@@ -540,10 +538,6 @@ def pr_wm_keep(hop: Bool, +n: U32, a: WmA) -> WmA:
 # AFTER: `(b:=walk_mop(u.src[0])) is not u.src[0]` decides whether to rebuild, and
 # the rebuild is `b.after(*u.src[1:])`.  `ops.bend` HAS `UOp.after`, so this arm is
 # PORTED and is not a wall -- it is the only builder `walk_mop` needs.
-# the builder's arena is the one `UOp.new` returns, never the one it was handed.
-# `UOp.make` appends, so the arena it returns is one node longer than the one it
-# took, and an index read against the OLD arena is out of range -- which is what
-# every `wm_after_mov*_out` row did before this line existed: index `next`, op NOOP.
 def pr_wm_mk.of(+f: O.Found) -> WmA: WmA.of(O.Found.ar(f), O.Found.i(f))
 
 def pr_wm_mk(+ar: O.Arena, +b: U32, +n: U32) -> WmA:
@@ -588,11 +582,6 @@ def pr_wm_fold(+ns: List<&2, U32>, a: WmA) -> WmA:
 # `walk_mop` ITSELF: SPINE then FOLD.  Three Python lines become two passes because
 # a Bend def may have ONE decreasing argument in ONE self-call, and `walk_mop`'s
 # AFTER arm has both a recursion and a builder whose arena has to be threaded.
-# `walk_mop` returns a `Found` and NOT a `U32`: the AFTER arm BUILDS, so the arena
-# GROWS, and a gate that folded the ORIGINAL arena would read the new node's index in
-# an arena that does not contain it.  That is not hypothetical -- it is what this def
-# returned at first, and every `wm_after_*_out` row came out `NOOP` because
-# `Arena.op` read index 0 of an arena whose node 0 is the bottom.
 def pr_wm_all.of(+a: WmA) -> O.Found: O.Found{WmA.ar(a), WmA.ans(a)}
 
 def pr_wm_all(fuel: Nat, +st: WmSp) -> O.Found:

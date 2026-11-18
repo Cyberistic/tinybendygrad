@@ -197,7 +197,6 @@ def gcast(+ar: O.Arena, +x: U32, +dt: S.Dt) -> O.Found:
 # CONCRETE float32, so every one emits a CAST pair. That is why `trunc_n` is 2 and not 1,
 # and why a port that emitted a bare CONST would build a SHORTER tree with the SAME
 # value -- a divergence `t_const_cast` catches and the values would not.
-# `gconst_raw` is the bare one and `t_const_raw` is the control that separates them.
 def gconst_raw(+ar: O.Arena, +v: O.Const) -> O.Found: O.UOp.const(ar, v)
 
 # **THE **ORDER **AS **A **`src[1]`** -- **UPSTREAM's **`_mop` (`ops.py:784,790-791`)
@@ -392,12 +391,6 @@ def gr_0.src(ar: O.Arena, self: U32) -> U32: O.Arena.src(ar, self, 0)
 # `uop/spec.bend` is the same reader written once; it is not imported because
 # `spec.bend` is a validator and importing it would pull six tables this file does not
 # want, so the two lines are here instead.
-# A `F.Folded` is READ ONCE PER FIELD: `F.Folded.ar(fx)` and `F.Folded.t(fx)` are two
-# reads of the same parameter and a `Folded` is `Data`, so the parameter needs `+`.
-# `uop/spec.bend`'s `sp_dt` solves it with two one-read helpers (`sp_ar`, `sp_tb`) for
-# exactly this reason; those helpers are not imported here because importing `spec.bend`
-# would pull six rule tables and a `main` this file does not want, so the two reads are
-# threaded as parameters instead. That is the honest cost and it is two parameters.
 def gr_0.dt(ar: O.Arena, tb: F.Table, self: U32) -> Maybe<&2, S.Dt>:
   dt_of(F.fold.dt(ar, tb, self))
 
@@ -937,9 +930,6 @@ def gr_29_same(+ar: O.Arena, +self: U32) -> Bool: gr_29_same.go(ar, self)
 # `(None, ctx)` -- the clone/assign gradient passes through to the VALUE, so slot 1 is
 # `ctx` and slot 0 is a hole. Python has no arity guard on this rule and a STORE always
 # has two srcs, so two slots is exact.
-# The `match` may only scrutinise a PARAMETER, so the `Bool` `gr_29_same` computes is
-# handed to `pick` as an argument and the two arms are its cases. This is notes rule 2
-# and it is the reason every such def in this file is a `.pick`/`.of` pair.
 def gr_28.pick(ok: Bool, ar: O.Arena, +ctx: U32) -> GRes:
   match ok:
     case True{}: fired([0, ctx], ar)
@@ -1601,11 +1591,6 @@ def compute_gradient(+root: U32, +root_grad: U32, targets: List<&2, U32>, +ar: O
 # first so that a rule's fold literals intern onto nodes that already exist, which is
 # what makes the node COUNTS comparable with Python's (Python's counts depend on its own
 # intern pool having the same entries).
-# ONE arena holding every node shape the gate needs, built in binding order. The field
-# names are the RULE TAGS, because "which rule does this node hit" is the question the
-# gate asks and a field named `t12` answers it without a lookup. CONSTs come first so a
-# rule's fold literals intern onto nodes that already exist, which is what makes the node
-# COUNTS comparable with Python's.
 type Fix is Data:
   Fix{fx: F.Folded, t1: U32, t4: U32, t5: U32, t6: U32, t7: U32, t8: U32, t9: U32,
       t10: U32, t11: U32, t12: U32, t13: U32, t14: U32, t15: U32, t16: U32, t17: U32,
@@ -1821,8 +1806,6 @@ def t_claims() -> U32: U32.from_nat(List.length(&2, O.PMEntry, O.PMEntrys.es(gr_
 #   recip 12   sin 10   log2 8    exp2 8    sqrt 9    trunc 2
 #   pow   24 (slot 0) and 29 (slot 1) -- the SAME rule, and they differ because slot 1
 #         builds the `b.eq(0)` / `e<0` / `-inf` branch that slot 0 does not.
-#   max   21 per slot, both slots equal.
-# ---- the rows that actually PIN the rules -------------------------------------
 #
 # A rule's gradient is a NODE TREE, and its SIZE is the one fact no amount of
 # value-agreement can hide. A port that folded the `CAST` away from a CONST would build
@@ -1838,10 +1821,6 @@ def t_claims() -> U32: U32.from_nat(List.length(&2, O.PMEntry, O.PMEntrys.es(gr_
 #   pow   24 (slot 0) and 29 (slot 1) -- the SAME RULE, and they DIFFER because slot 1
 #         builds the `b.eq(0)` / `e<0` / `-inf` branch that slot 0 does not. A gate that
 #         only read slot 0 would never notice half of the rule being missing.
-#   max   21 per slot, and the two are EQUAL, which is the tie-symmetry fact.
-#   mul   12, where 12 -- not 2 -- is the point: a SQUARE's two slots are the SAME node,
-#         and Python's tree for that one node is still 12.
-# the node count of the gradient tree: `1 + sum(size(s) for s in u.src)`.
 #
 # ONE def, no helper, and the reason is worth recording because it cost four attempts.
 # ANY split into "count this node" and "count this node's srcs" is MUTUALLY RECURSIVE,
@@ -2053,8 +2032,6 @@ def t_neginf() -> U32: k_neginf_bits()
 # `gr_table()[29].ops == [AFTER]` and `gr_table()[29].rej == [STORE]` -- the tag the
 # name-rebind LIVES AT, read out of the TABLE rather than off `gr_28`. If the table were
 # reordered the rebind would still work and the header's tag claim would be a lie.
-# THE BOOL READER. Every gate row is a `U32`, so `1` is a claim that held and `0` a claim
-# that did not -- and Bend has no assertion form, so a `0` in the output is the signal.
 def b32(b: Bool) -> U32:
   match b:
     case True{}: 1
@@ -2186,8 +2163,6 @@ def t_first_wins() -> U32:
 # and the direct row for `gs_keep`, because a scan-level row only proves the answer and
 # not the fold. Two `GFired` answers in, and the EARLIER must survive: `keep_pair`
 # answers 11 if `gs_keep(fired([1,2]), fired([3,4]))` is `[1,2]` and 33 if it is `[3,4]`.
-# Under last-wins this row is 33, and it is the ONLY row that moves for M2 -- the
-# scan-level rows all still pass, which is the trap itself.
 def t_keep_pair() -> U32:
   +r = gs_keep(fired([1, 2], O.Arena.empty()), fired([3, 4], O.Arena.empty()))
   U32.add(gs_len(r), U32.mul(10, gs_get(r, 0n)))
@@ -2375,13 +2350,6 @@ def dag_row() -> String: dag_row.of(dag())
 # `in_target_path` over the toposort -- `oracle_dag_inpath`, and it is the row that sees
 # THE LATTICE. `oracle_dag_inpath=0 0 0 1 0 1 1` is NOT the walk, and it is read over
 # the TOPOSORT's SEVEN nodes -- the empty STACK, `a`, `b`, `p`, `c`, `q`, `r`:
-#   * the STACK is `0` because it has NO SRCS at all -- `any(...)` over an empty list.
-#   * `a` and `b` are `0` because the rule is `any(src is on the path)` and their ONLY
-#     src is that STACK, which is on no path and is not a target.  A port that answered
-#     "in targets" instead of "on the path" prints `1 1 1 1 0 1 1` and this row is what
-#     says so.
-#   * `p` and `q` are `1` because `a` IS a target, and `r` is `1` because `p` is on the
-#     path; `c` is `0` because it is a LEAF that is nobody's ancestor.
 def dag_inpath.go(ns: List<&2, U32>, fs: List<&2, Bool>, +acc: String) -> String:
   match ns fs:
     case _ <> t f <> u: dag_inpath.go(t, u, dag_join(U32.show(b32(f)), acc))

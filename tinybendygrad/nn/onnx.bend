@@ -817,14 +817,6 @@ def onx_odt_tbl() -> String:
 
 # THE DTYPE TABLE, which is the row this file exists for: CPython prints
 # `OnnxDataType(c).to_dtype().name` and Bend prints `DT.dt_name(DT.to_dtype_of(k))`.
-# `S.Dt.nm` IS `DType.name` -- dtype.bend's `promo_mask` spells "u8" and "bf16"
-# for exactly these, and it used to spell "unsigned char" and "__bf16" until
-# tinygrad 793abbb moved `DType.name` onto the rust names -- so the two
-# vocabularies are the same and a byte diff is a real test rather than a spelling
-# argument. NOTE that this row is insensitive to the rename: `onx_odt_dt_name`
-# walks the ONNX integer codes and prints `dt_name` of the result, so the rename
-# moves BOTH sides of the row together and the diff stays empty. The ONNX NAME
-# table above is a different vocabulary ("float", "int32", ...) and did not move.
 def onx_odt_dtbl() -> String:
   onx_join([onx_odt_dt_name(1), onx_odt_dt_name(2), onx_odt_dt_name(3), onx_odt_dt_name(4),
     onx_odt_dt_name(5), onx_odt_dt_name(6), onx_odt_dt_name(7), onx_odt_dt_name(9),
@@ -981,12 +973,6 @@ def onx_odt_inv_neg() -> Bool: U32.is_eq(onx_odt_of_dt(onx_odt_codes(), DT.dtype
 
 # the `AVal` sum's tag set must be `to_field_name`'s EIGHT codes -- the row that
 # says an empty `Ag{}` did not smuggle a ninth constructor past the table.
-# the `At` arm's fixture. `T.Tensor` is `Tensor{ar, uop, is_param, grad}` with a
-# LIVE `O.Arena` in it, so a constructor literal cannot be written inline -- the
-# arena is affine and `O.Arena.empty()` is the substrate's own bottom. One node,
-# index 0, and that is all the TENSOR arm needs: the row is about the TAG. It is
-# a DEF and not a `let` because a `do` block cannot bind a pure value
-# (bend2-constraints' `weak` rule 8) and the row is a fold over a literal list.
 def onx_g_tensor() -> T.Tensor: T.tn_new(O.Arena.empty(), 0)
 
 def onx_aval_tags() -> String:

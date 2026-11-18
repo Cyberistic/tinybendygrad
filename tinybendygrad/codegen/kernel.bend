@@ -365,14 +365,10 @@ def pm_number_params(+n: U32, +ar: O.Arena, +self: U32) -> NP:
 #     def build_range_map(sink):
 #       ctx = {}
 #       for x in sink.toposort():
-#         if x.op is Ops.RANGE and x.axis_type is AxisType.UPCAST:
-#           ctx[x.arg] = len(ctx)
-#       return ctx
 #
 # `AxisType.UNROLL` IS DELETED UPSTREAM and so is the half of the membership test
 # that named it, AND the key changed with it: it was `ctx[x.axis_id]` and is now
 # `ctx[x.arg]`, because a RANGE's `arg` is `(axis_type, *axis_id)` now.
-# `kn_unroll.ax` below still admits `O.AXIS_UNROLL`, so it ports the PIN.
 #
 # MEASURED, NOT ARGUED. `.agents/slop/xb1/build_range_map-oracle.py`, run against
 # a pristine `git archive 6c3d401cf324` tree and against the vendored HEAD tree:
@@ -630,11 +626,6 @@ def pm_alloc_to_buf(+ar: O.Arena, +self: U32) -> Ker:
 #     def line_rewrite(lst, pm, ctx=None):
 #       newlst, replaced = [], {}
 #       for u in lst:
-#         nu = u.replace(src=tuple([replaced.get(x, x) for x in u.src]))
-#         ret = pm.rewrite(nu, ctx) or (nu, [nu])
-#         replaced[u] = ret[0]
-#         newlst.extend(ret[1])
-#       return newlst
 #
 # `replaced` is a `dict[UOp, UOp]` and `ret[1]` is a LIST of nodes -- so the pair
 # `(nu, [nu])` is a `(UOp, list[UOp])`. A rule here may return SEVERAL nodes, which
@@ -754,9 +745,6 @@ def lw_tail(rest: Line, +step: Line) -> Line:
 # `lw_miss` read 0 where Python's `newlst` has one entry per input. The step is
 # bound to a `+s` binder and BOTH fields go into the recursive call's arguments, so
 # the accumulator is threaded and nothing is dropped.
-# `subs` and `acc` are each read TWICE -- once by `lw_nu` to substitute the srcs and
-# once by `lw_put` -- so they need `+`. Both are threaded lists, so `+` costs a
-# copy and nothing else.
 def lw_step(+subs: List<&2, Sub>, +acc: List<&2, U32>, fired: Maybe<&2, Ker>, +ar: O.Arena, +u: U32) -> Line:
   lw_put(lw_answer(fired, lw_nu(subs, ar, u)), subs, u, acc)
 def lw_go(lst: List<&2, U32>, +subs: List<&2, Sub>, +acc: List<&2, U32>, +ar: O.Arena, +fired: Maybe<&2, Ker>) -> Line:
@@ -829,8 +817,6 @@ def cfg_ctx_len() -> U32:
 #
 # `k_lins` is the LINEAR half and `k_is_ins` the op half, and they are two defs
 # because a mutation of either leaves the other's row green.
-# `U32.is_zero` is the defensive arm for a node with no src[1] at all, where
-# `Arena.src` answers the bottom; `k_not_ins` is its control.
 def tp_ins(+first: U32, ar: O.Arena) -> Bool:
   Bool.or(U32.is_zero(first), kn_is(ar, first, O.OpsINS{}))
 
@@ -861,7 +847,6 @@ def k_is_ins(+ar: O.Arena, self: U32) -> Bool:
 # `k_stage_pr1` is the row that matters: `PROGRAM(SINK)` has ONE src, and a version
 # that read the INS before the arity answered 3, because `Arena.src` handed back the
 # bottom for the missing `src[1]` and `U32.is_zero` fired on it.
-# 0 IS "NO STAGE", and 3 IS UNREACHABLE.
 #
 # THE FINDING, AND IT IS THE WHOLE OF `stage_pr3`: all five patterns are keyed
 # `Ops.PROGRAM`, so `pdict[PROGRAM]` preserves the literal order 1,2,3,4,5, and
@@ -1210,8 +1195,6 @@ def k_lw_hit() -> U32:
 # `k_lw_sub` -- `tuple([replaced.get(x, x) for x in u.src])` with the map holding
 # `src[0]`: the second src is substituted and the first is not, so the LIST is
 # `(C0, STORE)`. `k_lw_sub_1` and `k_lw_sub_0` are its two halves.
-# `lw_map`'s answer, positionally. `List.get` and not `[n]`, because the position
-# is a `Nat` and a projection is a NAME lookup (ops.bend's header).
 def lw_at(xs: List<&2, U32>, n: Nat) -> U32:
   Maybe.default(&2, U32, List.get(&2, U32, xs, n), 0)
 

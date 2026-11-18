@@ -109,9 +109,6 @@ def Dir.rel(d: Dir) -> String:
 # foreign: these two are the whole of it. bend 2.0.34's base.bend can ask neither,
 # so each is @unsafe -- a promise the checker reads and never checks, like a foreign
 # def -- and each TODO names the primitive it waits for.
-# TODO(p3) base.bend: File.list(path) -> List<String>  -- no opendir/readdir, so the
-# names of a directory in the order the host lists them are a foreign call, and
-# os.walk keeps that order: runtime/sz.c says why.
 @unsafe
 def Sz.read_dir(path: String) -> IO(List<String>):
   import "./runtime/sz.c"

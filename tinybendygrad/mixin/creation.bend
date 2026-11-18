@@ -271,9 +271,6 @@ def cr_cast_dt(isinv: Bool, dt: S.Dt) -> S.Dt: cr_cast_dt.of(isinv, dt)
 #   upstream's weakfloat const for `0.1` holds the DOUBLE `0.1` (`0x3FB999999999999A`) and
 #   the one for `0.10000000149011612` holds the DOUBLE `0x3FB99999A0000000`; two doubles, two
 #   `ConstFloat.bits`, TWO KEYS in upstream's `ucache`.
-#   the port's `O.CFloat{f}` holds an F32, and a Bend float LITERAL is an F32 literal
-#   (`bend.ts:2204-2210`), so the port's `0.1` and its `0.10000000149011612` are the SAME
-#   `0x3DCCCCCD` and ONE KEY in ONE arena.  `merge_keys`: upstream 2, the port 1.
 #
 # and the constant holds a different number: upstream's weakfloat const for `16777217.0`
 # holds `16777217.0` and the port's holds `16777216.0`, because 2**24+1 is the smallest

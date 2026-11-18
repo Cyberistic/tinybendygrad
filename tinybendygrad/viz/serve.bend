@@ -128,9 +128,6 @@
 #   * TIMESTAMPS. Python's are `Decimal` and `rel_ts`/`flatten_events` do
 #     `int(...)`, which truncates toward zero; every profile timestamp is a
 #     positive integer microsecond count, so `H.I64` is that integer exactly.
-#   * `dur`. Python's is `float(en-ts)`. It is carried as an `F32` for the pack
-#     and as `H.I64` for the gate, and the two are related by nothing in this
-#     file -- see the gap above.
 
 import Base
 import ./../uop/ops.bend as O
@@ -217,9 +214,6 @@ def s1(s: String) -> List<&2, String>: [s]
 # `String.split(s, sep)` on a separator that may be absent returns a one-element
 # list, and viz relies on that in three places (`k.replace`, `row_tuple`,
 # `graph_layout`'s `"LINE:"` test), so the wrapper is not redundant.
-# `String.split` in base 2.0.34 takes a single `Char`, while Python's takes a
-# string. Every separator viz uses is one character (" ", ":") except
-# `row.split()`, which `ws_split` answers separately.
 def splitc(s: String, c: Char) -> List<&2, String>: String.split(s, c)
 def sp(s: String) -> List<&2, String>: String.split(s, Char.from_u32(32))
 def cl(s: String) -> List<&2, String>: String.split(s, Char.from_u32(58))
@@ -363,8 +357,6 @@ def json_obj(+kvs: List<&2, Kv>) -> String:
 #     Movement expansion is position 15, so IF UNSHARD were in GroupOp.Movement
 #     the expansion would win. `op_color.UNSHARD=#f6ccff` -- so it is not, and
 #     `ops.bend`'s `GroupOp.movement` agrees (RESHAPE/EXPAND/PERMUTE/PAD/SHRINK).
-#   * `Ops.WMMA` is "#efefc0" and `Ops.INS` is "#eec4ff", both spelled out before
-#     the ALU expansion. `op_color.WMMA=#efefc0` -- so neither is in GroupOp.ALU.
 #
 # A CHANGE TO `GroupOp.movement` OR `GroupOp.alu` IS A SILENT CHANGE HERE, and it
 # is the `x86.bend` trap from the brief: an arm that stops matching falls
@@ -452,9 +444,6 @@ def wave_color_of.step(+name: String, ks: List<&2, String>, +vs: List<&2, String
 # it. So a step is an ORDERED `List<Kv>`, not a map, and `create_step` appends in
 # the source's order: `name`, `query`, `_data`, `depth`, then `kwargs` in the
 # order the caller passed them.
-# `Kv` is Section 3's pair -- it is the JSON object's item AND the step's item,
-# because Python's `json.dumps(fmt)` and Python's step dict are both the same
-# thing: an ordered str->value mapping.
 def Kv.is_private(+kv: Kv) -> Bool: String.starts_with(Kv.key(kv), "_")
 
 def Kv.of(k: String, v: String) -> Kv: Kv{k, v}
@@ -841,13 +830,6 @@ def tl_keep(dur: F32, e: Ev) -> Bool: Bool.not(Bool.or(U32.is_zero(F32.to_u32(du
 # `rel_ts` RAISES in Python and `timeline_layout` does NOT catch it, so a refusal
 # propagates out of the WHOLE function. Here it propagates as the accumulator
 # unchanged, which is the same "no answer" and emphatically not a zero event.
-# `enum_str(name, scache)` runs BEFORE `enum_str(json.dumps(fmt), scache)` in the
-# same statement list, so the table grows name, fmt, name, fmt ... and the SECOND
-# call must start from the table the FIRST one produced. Three nested `enum_at`s
-# and `enum_pos` is what makes that ordering visible in the source.
-# `<I` name, `<I` option(ref), `<I` option(key), `<I` rel_ts, [GAP float],
-# `<I` fmt. The two zeros are the un-ported `ref_map` branch and are 0 because
-# that branch's answer is `None`, which `option` maps to 0 -- see the header.
 def tl_pack5(d: DevEv, st: U32, ni: U32, fi: U32, +acc: TlAcc) -> List<&2, U32>:
   pack_u32(pack_u32(pack_u32(pack_u32(pack_u32(TlAcc.bs(acc), ni), 0), 0), st), fi)
 
@@ -974,9 +956,6 @@ def tl_row(+acc: TlAcc, ns: H.I64) -> String:
 #
 # NO FLOAT, SO EVERY BYTE HERE IS EXACT, and the fixture puts all three modes one
 # row from each other so a swapped `1` and `2` is a diff and not a coincidence.
-# `num` is the POSITION of the key in `arg["bufs"]`, so it is a 0-based index and
-# an off-by-one shows up as a wrong byte in the middle of a record.
-# `mode = 2 if (num in inputs and num in outputs) else 1 if (num in outputs) else 0`
 def in_list(xs: List<&2, U32>, +v: U32) -> Bool:
   match xs:
     case Nil{}: False{}

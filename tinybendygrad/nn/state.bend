@@ -34,8 +34,6 @@ import ./../uop/ops.bend as O
 #     OTens   a Tensor.  TERMINATES.  key is `prefix.strip('.')`.
 #     OMap    anything with named children: a dict, an OrderedDict, an
 #             `__dict__`, a namedtuple's `_asdat()`.  All four rungs.
-#     OSeq    a list or a tuple.  Same walk, but the key is the INDEX.
-#     OOther  everything else.  Python's `state_dict` stays `{}` and is returned.
 #
 # `ONamed`/`OOrd`/`OAttr` are NOT separate constructors, and this is a MERGE, not
 # a simplification: Python's rungs 2/3/4 differ only in WHICH attribute of the
@@ -225,8 +223,6 @@ def Ent.t(e: Ent) -> T.Tensor:
 # A CONST's VALUE, so a gate fixture's leaves are distinguishable. `Ops.name.of`
 # alone would say `CONST` for all of them and `sd_dup` could not see which value
 # survived the collapse. This is the ONLY reason this file builds a UOp at all.
-# `APy` is ops.bend's spelling of `Arg_Py`, which is where `UOp.const` puts a
-# Python value.
 def sd_cval.arg(a: O.Arg) -> U32:
   match a:
     case O.APy{v}:
@@ -255,8 +251,6 @@ def sd_cval(+t: T.Tensor) -> U32:
 # The accumulator is REVERSED and turned over at the end, so the output is in
 # document order, which is `dict` insertion order, which is the order
 # `get_parameters` hands to an optimizer and the order `load_state_dict` writes.
-# Order is not cosmetic here and the gate prints it.
-# `It` is the work item: a prefix and the object still to be walked under it.
 type It is Data:
   It{p: String, o: Obj}
 
@@ -268,9 +262,6 @@ def gsd_esc(ks: List<&2, Kv>, +pf: String) -> List<&2, It>:
 
 # the children of a sequence, each under `prefix + str(index) + "."` -- the ONE
 # place the list rung differs from the dict rung, and the reason `OSeq` exists.
-# The LIST is the first parameter, not the counter: rule 5 reads a self-call's
-# arguments left to right and stops at the first that shrinks, and the tail is a
-# strict subterm of the list while `U32.add(n,1)` is not a subterm of `n`.
 def gsd_idx(es: List<&2, Obj>, +n: U32, +pf: String) -> List<&2, It>:
   match es:
     case Nil{}: Nil{}
@@ -315,10 +306,6 @@ def get_state_dict.pf(o: Obj, pf: String) -> List<&2, Ent>:
 # It is a REWRITE-IN-PLACE, not a filter: `put` walks the accumulator and
 # replaces the tensor of the matching key, so a later value lands at the earlier
 # position, which is what `dict.__setitem__` does and what a filter would not.
-# ONE def, and the self-call is an ARGUMENT of `Bool.pick` (tensor.bend's rule
-# 3): `pick` is a call, not a `match`, so the choice may scrutinise a computed
-# Bool, and hoisting that Bool into a second def would make the two defs
-# mutually recursive. `pick` evaluates both arms, so `f` and `e` are `+`.
 def sd_put(+es: List<&2, Ent>, +e: Ent) -> List<&2, Ent>:
   match es:
     case Nil{}: [e]
@@ -423,8 +410,6 @@ def sd_is_weak(+dt: S.Dt) -> Bool:
 # `len(self._tensor)` is `t.shape[0]` (movement.py's `__len__`), which for the
 # gate is the CONST's extent and is a PARAMETER here: this def takes the length
 # and the offset and answers the new position, which is the whole of the method.
-# `whence` is 0/1/2 and base's `List.get` is the quantifier-then-element-then-
-# list form, so the three candidates are picked from a three-element list.
 #
 # Measured against CPython's `TensorIO.seek` on a 1-element uint8 tensor:
 # `seek(0)->0 seek(1)->1 seek(-1)->0 seek(1,1)->1 seek(0,2)->1 seek(9)->1 seek(-5)->0`.

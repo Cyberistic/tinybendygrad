@@ -122,12 +122,6 @@ import ./../../uop/ops.bend as O
 
 # the only thing that ever reads `arg` is the `match opt.arg is ...` ladder in
 # `apply_opt`, so the ladder destructures the record directly.
-# A `Data` FIELD IS READ BY DESTRUCTURING, NEVER BY PROJECTION. `s.amt` on a
-# pattern binder is a NAME lookup and fails, so every reader of a nested record
-# is a nested pattern -- `case OA_SPLIT{SPL{amt, t, top}}` -- which is also
-# ops.bend's `case AParam{pa}: match pa:` shape written on one line.
-# `top` is `Maybe` because the arg can be a 2- or 3-tuple; `opt_top` answers its
-# resolved value, which is what `apply_opt`'s `(*opt.arg, False)[0:3]` does.
 def opt_amt(a: O.OPTARG) -> U32:
   match a:
     case O.OA_SPLIT{O.SPL{amt, t, top}}: amt
@@ -484,16 +478,6 @@ def Sched.max_id(x : Sched) -> U32:
 # lands wherever `(pos_key, id)` puts it, NOT at the end, and `full_shape` and
 # `axis_types` are read off THAT list -- so a LOCAL split of axis 0 of a
 # `[GLOBAL, REDUCE]` kernel moves that axis from index 0 to index 1.
-# `Sched.split` -- the rng bookkeeping of `apply_opt(SPLIT)` + `shift_to`.
-# `amt` is ALREADY resolved: `apply_opt` turns `amt == 0` into `int(rng.vmax+1)`
-# before `shift_to` ever runs, and `Sched.at` answers an inert DEVICE rng for an
-# out-of-range axis so every read here is total.
-# the opt is the carrier, which is also python's signature.
-# `def apply_opt(self, opt: Opt, append_opt: bool = True)` takes ONE argument,
-# and this is the reason `Sched.split` does too. The alternative -- `axis: U32,
-# amt: U32, nt: AxisType` -- is unwritable: `axis` is read twice, `amt` is read
-# twice, and `U32` cannot be `+`. `OPT` is `Data`, so `+o` licenses every read
-# and the pair `{axis, arg}` travels the way it travels in Python.
 def opt_spl(a: O.OPTARG) -> O.SPL:
   match a:
     case O.OA_SPLIT{O.SPL{amt, t, top}}: O.SPL{amt, t, top}
@@ -517,8 +501,6 @@ def split_new(x: Sched, a: O.SPL) -> List<&2, RNG>:
 # therefore lands wherever `(pos_key, id)` puts it, NOT at the end, and
 # `full_shape` and `axis_types` are read off THAT list -- so a LOCAL split of
 # axis 0 of a `[GLOBAL, REDUCE]` kernel moves that axis from index 0 to index 1.
-# `U32.is_eq(List.length(acc), OPT.axis(o))` is `i == axis` for the element the
-# walk is ON, because `acc` already holds exactly the elements before it.
 def at_it(acc: List<&2, RNG>, o: O.OPT) -> Bool:
   U32.is_eq(U32.from_nat(List.length(&2, RNG, acc)), O.OPT.axis(o))
 
@@ -653,13 +635,6 @@ def n_opts(x: Sched) -> U32:
 # `check(0 < use_tensor_cores <= 2, "use_tensor_cores value is not valid")` --
 # BOTH bounds. `ok_tc_use` is the row for the upper one: a port that keeps only
 # `> 0` passes the fixture and rejects nothing.
-# `0 < use <= 2` IS `use - 1 <= 1`, ON U32. The disjunction is unspellable --
-# `use` cannot be read twice in one expression -- and the subtraction uses
-# `U32`'s WRAP, which is what makes it an equivalence rather than a guess:
-# `use = 0` wraps to 2^32-1 (not <= 1, correctly rejected), 1 and 2 give 0 and 1
-# (both accepted), 3 gives 2 (rejected), and every larger value gives >= 2.
-# `ok_tc_use` is the row, and it is the row a mutation that keeps only `> 0`
-# moves.
 def ck_use(use: U32) -> Bool:
   U32.is_le(U32.sub(use, 1), 1)
 
@@ -695,8 +670,6 @@ def Sched.tc_up(x : Sched) -> U32:
 #
 #     (a*b).sum(1) on 16x32                 full_shape [16,32] [GLOBAL, REDUCE]
 #       get_kernel_actions(include_0=False) -> 18 keys:
-#         1 11 31 62 72 92 121 122 129 130 145 146 153 154 170 193 194 218
-#       BEAM=1, DEBUG=2: "18 -> 18 actions", "13 -> 13 actions", "2 -> 2"
 #
 #     a@b on 64x64x64                      [64,64,64] [GLOBAL, GLOBAL, REDUCE]
 #       get_kernel_actions(include_0=False) -> 32

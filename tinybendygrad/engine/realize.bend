@@ -9,12 +9,6 @@
 #     which are inputs, which buffers a call writes, how a runtime symbol is
 #     resolved against the input uops, which calls still need lowering, and the
 #     shape of the per-execution context. Pure function of the arena. PORTED.
-#   * the FOREIGN EFFECTS: `Device[device].runtime(ast.to_elf())`, the
-#     allocator's `_transfer`/`_copyin`/`_copyout`, `Device.synchronize()`,
-#     `GlobalCounters`, `perf_counter_us`, tqdm, the worker pool, and
-#     `hcq_compile`/`hcq_link`. NOT ported: there is no device and no driver
-#     here, so the port takes the handles as PARAMETERS and says what it would
-#     do with them.
 #
 # the unit brief for this file names `run_schedule`, `lower_schedule` and an
 # `ExecItem`. NONE OF THEM EXISTS in this checkout. `realize.py` is 296 lines and
@@ -1573,8 +1567,6 @@ def beam_table() -> O.PMEntrys:
 #     if (ast.op is Ops.SINK and isinstance(ast.arg, KernelInfo)) or \
 #        (ast.op is Ops.PROGRAM and not (isinstance(ast.arg, ProgramInfo) and
 #                                        ast.src[-1].op is Ops.BINARY)):
-#       return ast, Device[...].renderer
-#     return None
 #
 # The `isinstance(ast.arg, ProgramInfo)` conjunct is DROPPED: `ops.bend` DROPS
 # `ProgramInfo.target`, so a PROGRAM's arg is always an `AProgram` here and the
@@ -2005,20 +1997,6 @@ def main_arena() -> Land:
 # the plants, and what each one is for:
 #   cNone      a program with no variable at all. the answer is one address per
 #              BUFFER PARAM AND NOTHING ELSE.
-#   cZero      a variable bound to zero. the bound value is a CONST 0 and the
-#              LOOKUP MUST NOT READ 0 AS "ABSENT".
-#   cUnb       an unbound variable. the answer is the slotless var read, and the
-#              ARGUMENT LIST DROPS IT (`get_call_arg_uops` FILTERS `is_variable`).
-#   cArgFirst  an ARG precedes a BUFFER: the kernel's params are (var slot 0,
-#              BUFFER slot 1) and the answer must be in that order.
-#   cBufFirst  the mirror -- (BUFFER slot 0, var slot 1) -- and the answer must be
-#              the other way round. the pair is what says the order is the slot
-#              order and not "the buffers first", which is what the pre-PIN
-#              `exec_kernel` DID: `rt(*[b.get_buf(device) for b in prg_bufs], ...,
-#              vals=vals)` put the buffers first and the values after them.
-#   cShadow    a variable whose name is a global's name. `bound` is keyed on the
-#              name, so the lookup must still answer the variable's own value and
-#              NOT THE GLOBAL's.
 
 type Pl is Data:
   Pl{ar: O.Arena, cNone: U32, cZero: U32, cUnb: U32, cArgFirst: U32, cBufFirst: U32, cShadow: U32}
@@ -2088,10 +2066,6 @@ def beam_rewrite(+ar: O.Arena, +self: U32) -> O.Verdict:
 
 # THE ROWS. Every value is DERIVABLE from `realize.py` on the arena above, and
 # the Python line that fixes each one is in the table at the foot of this file.
-# Bend has no assertion form, so the gate is that BOTH LANES print these.
-# `1 if b else 0` -- `uop/spec.bend` spells this `if_b`. Here the FALSE arm has to
-# be a separate def because the ladder is bottom-up, and `bl_u` is the same
-# function with its arms already at hand.
 def bl_of(b: Bool) -> U32:
   bl_u(b, 1, 0)
 

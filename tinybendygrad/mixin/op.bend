@@ -256,9 +256,6 @@ import ./elementwise.bend as E
 
 # THE READERS. Three of them, and each is a fold read with the fold's own
 # "I cannot answer this node" as the default -- rule 3 in the header.
-# `F.fold.dt` answers `Maybe<&2, S.Dt>` and `F.fold.shape` answers a DOUBLE
-# `Maybe` (the outer is the fold, the inner is Python's own `None`), so the shape
-# reader is two unwraps and the dtype reader is one.
 
 def mo_dt(+fx: F.Folded, i: U32) -> S.Dt:
   Maybe.default(&2, S.Dt, F.fold.dt(F.Folded.ar(fx), F.Folded.t(fx), i), S.void())

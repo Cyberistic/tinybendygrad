@@ -14,10 +14,6 @@
 #                           header says why: "transcendental.py BUILDS GRAPHS,
 #                           it does not EVALUATE them ... every `*`, `//`, `&`,
 #                           `<<` here is an `Ops` node".  Rows are `tx_*`.
-#   transcendental_f32.bend THIS FILE.  It EVALUATES the decompositions in
-#                           IEEE-754 binary32 and gates the ANSWER, so a wrong
-#                           coefficient is a RED row instead of an invisible one.
-#                           Rows are `xf_*`/`xv_*`/`cd_*`/`cu_*`/`cx_*`/`tx_dt.*`.
 #
 # THE NAME SAYS WHICH HALF, because a second file called `transcendental.bend`
 # claiming the same 277 upstream lines is indistinguishable from a duplicate, and
@@ -168,7 +164,6 @@
 # UPSTREAM'S.  The right column is THIS PORT's row name, and it is NOT in upstream --
 # `xf_lazy0_*` and `cu_mb_*` are the port's own gate-row prefixes.  So the port
 # symbol is written as the port's and the upstream construct is named beside it:
-# a citation that names the construct does not rot when the lines move.
 #
 #   :7    `TRANSCENDENTAL_DTYPES` PORTED  `tx_dt.transcendental`
 #   tinygrad/codegen/decomp/transcendental.py:9-11 `_lazy_map_numbers` PORTED  `xf_lazy0_*`, `xf_lazy1_*`

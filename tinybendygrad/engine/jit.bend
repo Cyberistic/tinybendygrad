@@ -169,9 +169,6 @@ def j_at.go(xs: List<&2, U32>, n: Nat) -> List<&2, U32>:
 
 # `List.get` at ONE index, answering the EMPTY list for an index past the end, so
 # the callers can hand a per-element table to a walk without a `Maybe` per element.
-# `U32.to_nat` is the ONLY conversion (`LAWS/spec.bend` rule: "a countdown and the
-# index it counts must have different types") and `List.get`'s quantifier comes
-# first, then the element type, then the list.
 def j_at(xs: List<&2, U32>, n: U32) -> List<&2, U32>:
   j_at.go(xs, U32.to_nat(n))
 

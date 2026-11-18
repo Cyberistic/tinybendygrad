@@ -28,18 +28,6 @@ import ./../datasets/__init__.bend as D
 #
 # EVERYTHING ELSE IN THIS FILE IS ALREADY HERE, which is the other half of the
 # finding and the reason the distance is this short:
-#   `Tensor.scaled_uniform`  mixin/rand.bend:937 symbol=rd_scaled_uniform   (:12,:13,:14,:16,:18,:19,:44,:46)
-#   `Tensor.zeros`           mixin/creation.bend:526 `cr_zeros`         (:12,:13,:14,:16,:18,:19,:21,:22)
-#   `Tensor.ones`            mixin/creation.bend:567 `cr_ones`          (:21,:22)
-#   `x.linear`               nn/layers.bend:518 `nn_linear`            (:26,:28,:32,:33,:36,:37)
-#   `reshape`                mixin/movement.bend:1414 `mxw_reshape`     (:26,:28)
-#   `transpose`              mixin/movement.bend:1432 `mxw_permute`     (:26,:27)
-#   `x.relu`                 nn/layers.bend:292 `nn_relu`              (the `act` default, :4)
-#   `x.dot`                  nn/layers.bend:476 `nn_dot`               (:58,:60)
-#   `log_softmax`            mixin/op.bend:1154 `mo_log_softmax`       (:60)
-#   `softmax` (its sibling)  mixin/op.bend:1140 `mo_softmax`            EXISTS -- the ONE named family that is present
-#   `x.expand`               nn/layers.bend:625 `nn_expand`             (:52)
-#   `x.cast` / `.int()`      mixin/op.bend:386 `mo_cast_t`             (:54)
 #
 # SO `TransformerBlock.__init__` IS PORTABLE TODAY. `rd_scaled_uniform` + `cr_zeros`
 # + `cr_ones` + `NN.nn_scale` are all callable and all gated upstream, so the eight

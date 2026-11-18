@@ -9,16 +9,12 @@
 # `arange(n, 0, -1)` is `[n, n-1, ..., 1]`, so `idx[j]` is `n - j` where the value at
 # `j` IS a maximum and `0` where it is not, so `idx.max` picks the LARGEST `n - j`
 # among the maxima, which is the SMALLEST `j` among them -- THE FIRST OCCURRENCE.
-# the tie-breaking rule is a consequence of the formula, not an assertion about it.
 #
 # the two forms, and why there are two.
 #
 #   * the list form (`nn_argmax`, below) is the recipe as a formula on the values. It
 #     has an ANSWER, and the six rows are UPSTREAM'S ANSWERS, re-checked against
 #     CPython in `.venv`: 0 disagreements of 6.
-#   * the graph form (`nn_argmax_g`, below) is the recipe as a uop graph -- the four
-#     nodes upstream builds -- and it has a SHAPE and a DTYPE but NO VALUE, because
-#     the port builds graphs and has no executor.
 #
 # and the graph form is buildable only because of a fix in `mixin/rand.bend`, and the
 # fix is the whole of the story. measured 2026-10-23, `.agents/slop/nnargmax2/`:

@@ -164,10 +164,6 @@ def MN_IMG() -> Shape: Shape{True{}, [1, 28, 28]}
 #
 # `nbytes` is the PUBLISHED size of each file, so the counts are DERIVABLE here
 # rather than read off a download:
-#   47040016 - 16 = 47040000 = 60000 * 784
-#   7840016  - 16 =  7840000 = 10000 * 784
-#   60008    -  8 =    60000 = 60000 * 1
-#   10008    -  8 =    10000 = 10000 * 1
 #
 # Each member is its OWN def so a gate row can name it and the mutation table can
 # say which one broke. Interning a list literal and reading it back by index is
@@ -236,8 +232,6 @@ def dst_mnist() -> String: String.join(dst_rows.go(mn_entries(), Nil{}), " ")
 # THE `file` COLUMN OF THE TABLE, in the tuple's order. `dst_url_*` above reaches the
 # four names through `mn_url` and the CONSTANTS; this row reaches them through the
 # RECORD, so a table whose `file` column disagreed with the URL rows would be caught.
-# That is the "a count row and the table it counts are two independent transcriptions"
-# rule (nn/onnx.bend note 8) applied to a name column instead of a count.
 def ds_files.go(xs: List<&2, Ds>, acc: List<&2, String>) -> List<&2, String>:
   match xs:
     case Nil{}: acc

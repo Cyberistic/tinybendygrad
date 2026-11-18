@@ -659,11 +659,6 @@ def sc_is_bound_var(+ar: O.Arena, +i: U32) -> Bool:
 #
 # THE filter and the value are two different questions, and a port that conflates
 # them either DROPS a plain ALU PARAM or LEAKS a bound one:
-#   FILTER  `op is PARAM` and `addrspace is ALU` -- `vmin_vmax` is NOT in it, so
-#           a range-less ALU PARAM IS a bind, and its value is ITSELF;
-#   VALUE   `unbound() if is_variable else x` -- only a VARIABLE is stripped.
-# `sc_var.of` is the no-table road to `is_variable`, and since 2026-10-31 it and
-# `F.UOp.is_variable` share `F.isvar_arg`, so the two arg conjuncts have ONE home.
 #
 # THE ARENA IS THREADED, `LinBinds{ar, m}`, because `unbound` MINTS through
 # `UOp.new`, which APPENDS. A map of indices into an arena the caller never
@@ -713,7 +708,6 @@ def sc_lb_step(xs: List<&2, U32>, +k: U32, +r: LinBinds) -> LinBinds:
 # SECOND PASS, because Python's dict literal applies the right-hand side LAST: an
 # INNER bind OVERRIDES an outer one at the same slot, and an outer slot the call
 # does not name SURVIVES.  Seeding the accumulator with `outer` gets both for free:
-# `Map.set` of the inner entry replaces, and a slot that never appears is untouched.
 def sc_linear_binds_outer(+outer: Map<&2, U32>, +ar: O.Arena, +call: U32) -> LinBinds:
   sc_lb_step(sc_src_from(ar, call, 1), 0, LinBinds{ar, outer})
 
@@ -1277,11 +1271,6 @@ def Q.l(x: Q) -> Lin:
 
 # `queue = deque(k for k,v in in_degree.items() if v == 0)` -- `in_degree`'s
 # INSERTION order, which `da` preserves and which decides the linearization.
-# THE SEED QUEUE, in `in_degree` order, and APPENDED like every other list in this
-# file. The queue is a `List` in Python's DEQUE ORDER -- `popleft` is a head pop
-# and `append` is `List.append`, which is `qs ++ [x]` and therefore O(n) where
-# CPython's deque is O(1). That is the honest cost of a `List` standing in for a
-# deque and it is the ONLY place the port is asymptotically worse.
 def z_pick(z: Bool, acc: List<&2, U32>, k: U32) -> List<&2, U32>:
   match z:
     case True{} : List.append(&2, U32, acc, [k])
@@ -1328,11 +1317,6 @@ def kernel(+ar: O.Arena, +rk: U32) -> U32:
 
 # `for x in children.get(rk, []): in_degree[x] -= 1; if in_degree[x] == 0:
 # queue.append(x)` -- the push is a cons because the queue is a stack here.
-# THE ORDER MATTERS: Python decrements and THEN tests, so the test is on the
-# DECREMENTED value and BOTH arms write it. Testing `d == 0` first strands every
-# kernel whose degree is 1 -- which is every kernel the WAR pass put there -- so
-# fx2 lost Ka and linearized as Kb,Kc with `fx2_marks=23`. `fx2_lin_n=3` and
-# `fx2_marks=231` are the rows.
 def lk.put(z: Bool, q: List<&2, U32>, nl: Lin, x: U32) -> Q:
   match z:
     case True{} : Q{List.append(&2, U32, q, [x]), nl}
@@ -1411,11 +1395,6 @@ def cycles(c: Ctx) -> Nat:
 #   used_vars = set().union(*[{v.expr for v in si.src[0].variables()} for si in linear.src])
 #   var_vals: dict[str,int] = {}
 #   for b in big_sink.src[1:]:
-#     if b.is_bound_var:
-#       nm, val = b.expr, b.arg.val
-#       if nm not in used_vars: continue
-#       if var_vals.get(nm, val) != val: raise RuntimeError(f"bind mismatch on {nm}, ...")
-#       var_vals[nm] = val
 #
 # THE rest of its function is two passes and one transform. `transform_to_call` needs
 # `pm_callify_ctx_collect` and `pm_replace_buf`; the passes are `pm_resolve_linear_call` and
@@ -1574,10 +1553,6 @@ def is_store_after(+ar: O.Arena, +u: U32) -> Bool:
 #
 #     @dataclass
 #     class CallifyCtx:
-#       replacements: list[UOp] = field(default_factory=list)
-#       allocs: dict[UOp, UOp] = field(default_factory=dict)
-#       views: set[UOp] = field(default_factory=set)
-#       stores: list[UOp] = field(default_factory=list)
 #
 # All four are append-only `List`s IN PYTHON'S FIELD ORDER, because the order
 # decides WHICH list a rule body writes: `collect_stores` writes `stores`,
@@ -1585,9 +1560,6 @@ def is_store_after(+ar: O.Arena, +u: U32) -> Bool:
 # `replacements` and `contiguous_mops_to_view` writes `views`. A record whose
 # fields are re-ordered answers the RIGHT list while the gate says it wrote the
 # wrong one, so `cs_reps`/`cs_allocs`/`cs_views` are rows and not decoration.
-# `allocs` is the `dict[UOp,UOp]` and it is an ASSOCIATION LIST `Aa{b,v}`, one
-# entry per key, because Bend's `Map` is String-keyed and this dict is keyed by
-# the node -- the same bill `ka_go` pays for `children`.
 #
 # `views` is a Python `set` and `set.add` DEDUPLICATES while `list.append` does
 # NOT. `cs_dup2` is the identity row for `stores`; no row covers `views` because
@@ -2032,8 +2004,6 @@ def sc_resolve_linear_call(+ar: O.Arena, +call: U32, +outer: Map<&2, U32>) -> Ma
 #
 #     def canonicalize_alloc(ctx:CallifyCtx, b:UOp):
 #       if b.arg.slot >= 0 and b not in ctx.allocs:
-#         ctx.allocs[b] = b.replace(arg=replace(b.arg, slot=-1-len(ctx.allocs)))
-#       return ctx.allocs.get(b)
 #
 # THREE things are the port and all three have a row:
 #   * `-1 - len(ctx.allocs)`, so the slots are -1, -2, ... and NOT 0, -1, ...
@@ -2055,15 +2025,9 @@ def sc_resolve_linear_call(+ar: O.Arena, +call: U32, +outer: Map<&2, U32>) -> Ma
 # only thing it can be excluding is a NEGATIVE slot, and in a `U32` the negative
 # range is the TOP half. `ca_neg_*` uses an incoming slot of `-3`, which this file
 # writes as `4294967293`, and `ca_slot.of` writes `-1 - n` as `4294967295 - n`.
-# A port that read `>= 0` as `!= 0` would answer the same for every slot the
-# gate holds, because none of them is 0 -- so `ca_slot1` and `ca_neg_none` are
-# the pair that separates the two readings.
 #
 # `b.replace(arg=replace(b.arg, slot=n))` is `dataclasses.replace` on a
 # 13-field `ParamArg`, so `ca_slot.of` rebuilds the record with one field moved.
-# `ca_arg.of` answers `None{}` for a non-`AParam`, and that `None{}` is Python's
-# AttributeError -- `ca_noarg` is that row, and it is the one place the port is
-# total where Python raises.
 
 def ca_slot.of(x: O.ParamArg, n: U32) -> O.ParamArg:
   match x:

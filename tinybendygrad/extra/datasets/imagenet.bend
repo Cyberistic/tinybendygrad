@@ -5,21 +5,11 @@
 # nothing else. Upstream's own comment says it: "for imagenet download
 # prepare.sh and run it". The module's first executable line is a directory walk
 # and its last def is a list of paths.
-#   * `get_imagenet_categories` (upstream:9) is `json.load(open(BASEDIR /
-#     "imagenet_class_index.json"))` read as `{v[0]: int(k) for k,v in ci.items()}`
-#     -- so the KEY is the class index and the VALUE's first element is the wnid.
-#   * `get_train_files` (upstream:28) is `glob.glob(p := str(BASEDIR /
-#     "train/*/*"))` and `get_val_files` (upstream:33) is the same over `val/*/*`,
-#     each guarded by `raise FileNotFoundError(f"No {training,validation} files in
-#     {p}")`. THE WALRUS: the glob result AND the pattern come from one expression,
-#     so the pattern is part of the answer.
 #
 # the root is the caller's, not ours. Upstream's `BASEDIR` is
 # `pathlib.Path(__file__).parent / "imagenet"` (upstream:25), a path inside the
 # installed package, and `tinygrad/nn/datasets.py`'s `ImageNet` class takes a
 # root directory THE USER PROVIDES. So this port takes the root as an argument:
-# `get_train_files(root)`. The root is the host's business and the port's job is
-# to read it and to say clearly when it is not there.
 #
 # THE ABSENCE IS NAMED, NOT EMPTY. `extra/datasets/__init__.bend:28-34` is the
 # rule this file follows: "a dataset loader that can report an empty dataset

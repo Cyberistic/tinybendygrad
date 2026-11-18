@@ -30,11 +30,6 @@ import ./../helpers.bend as H
 #   * `prod(dims)` and `nbytes` are `U32`, so this reader covers tensors up to
 #     4 GiB. CPython is unbounded and the gate compares the two directly, so a
 #     bigger tensor would DIVERGE rather than wrap quietly.
-#   * an f64 metadata value carries its EIGHT BYTES, because Bend has no f64 and
-#     the bits ARE the value (the oracle compares them to `struct.pack("<d", v)`).
-#   * an array of arrays is refused. GGUF's own spec forbids it, and it is the
-#     one recursion Bend's termination check will not accept: the tail of a
-#     length-prefixed read is not a subterm of the list it came from.
 #
 # two syntax facts this file had to be written around, both measured, because
 # they decide its shape and not its meaning:
@@ -311,8 +306,6 @@ def blk.bad(t: U32, +prev: U32) -> U32:
 #
 # A truncated file answers short here; CPython raises `struct.error`. The
 # alignment the parser computes is exact on any file that would have parsed.
-# `struct.unpack("<I")` and `"<Q"` are little-endian, so the LOW word of an
-# eight-byte field is bytes 0..3 and its HIGH word is bytes 4..7.
 def le4(a: U32, b: U32, c: U32, d: U32) -> U32:
   U32.add(a, U32.add(U32.mul(b, 256), U32.add(U32.mul(c, 65536), U32.mul(d, 16777216))))
 

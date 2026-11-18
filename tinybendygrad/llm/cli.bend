@@ -8,13 +8,6 @@
 #      `unicodedata.category` ranges (`ucat_range`, compacted with `itertools.groupby`) and compiles it
 #      with `re`; `encode` is then `_split_to_word.findall` + a greedy BPE merge. Bend has no regex
 #      engine and no Unicode category table, so this is a LANGUAGE-CAPABILITY gap and not an oversight.
-#      A port would need `ucat_range` computed as DATA (a generated range table) plus a hand-written
-#      matcher for the compiled pattern, and until that exists an `encode` here would be a different
-#      tokenizer wearing the same name.
-#   2. `FallbackTemplate` -- PORTED HERE. Pure string logic keyed on the tokenizer preset: `role` and
-#      `end_turn`. It is the piece with no Tensor, no regex and no I/O.
-#   3. `main()` + the `models` URL table -- NOT ported: it needs `model.bend`'s `Transformer` (itself a
-#      TODO) and a network fetch.
 #
 # - and `end_turn`'s one dependency is expressed as a parameter, not reconstructed: upstream writes
 # `self.tok.decode([self.tok.eos_id])`, and `decode` is a concatenation of the token's BYTES followed by
@@ -101,9 +94,6 @@ def Tok.find(+vocab: List<&2, Tok>, +tid: U32) -> Maybe<&1, Tok>:
 
 #: ONE self-recursive def carrying the Maybe for the CURRENT id, because a def may not use a later one
 #: and two defs may not call each other (PARITY 18). `rest` LEADS so the shrinking argument comes first.
-#: ONE self-recursive def, and the matches are in DECLARATION ORDER (`rest` first, then `m`, then `tok`):
-#: this tree's Bend refuses matching a binder after a match on a LATER parameter, which is why the two
-#: orderings that read the same do not both compile.
 def Tokenizer.loop(+rest: List<&2, U32>, m: Maybe<&1, Tok>, +vocab: List<&2, Tok>,
   acc: List<&2, U32>) -> Maybe<&1, List<&2, U32>>:
   match rest:
@@ -243,6 +233,3 @@ def Template.render(+preset: U32, +bos: String, +eos: String, +msgs: List<&2, Ms
 
 # TODO(parity): `SimpleTokenizer.encode` -- BLOCKED ON A LANGUAGE CAPABILITY: `__init__` builds the split
 #   regex from `unicodedata.category` ranges, which Bend has neither a regex engine nor a table for.
-# TODO(parity): `FallbackTemplate.render` -- needs a message list and the tokenizer's `decode` for the
-#   BOS/end-turn strings; port it together with `decode`.
-# TODO(parity): `main()` and the `models` URL table -- needs `model.bend`'s `Transformer` and a fetch.

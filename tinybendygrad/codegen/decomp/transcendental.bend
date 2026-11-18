@@ -47,19 +47,6 @@
 # the headline measurement: there is no 64-bit arithmetic in this file, and the
 # brief predicted there would be. The prediction is wrong for a structural reason
 # worth stating: transcendental.py BUILDS GRAPHS, it does not EVALUATE them.
-# Every `*`, `//`, `&`, `<<` here is an `Ops` node, so `_hp_mul` -- the one place
-# a real 32x32 product appears, at line 103 -- is a `MUL` node on two `uint64`
-# operands and the host never multiplies anything. The 64-bit things that DO
-# appear are CONSTANTS:
-#     2**62          line 108, `shr(p, 62)`
-#     0x3fff...ffff  line 109, the mantissa mask
-#     2**32          line 105, `shl(_, 32)`
-#     0x3FE0000000000000 / 0x000FFFFFFFFFFFFF   lines 56-57, `frexp`'s masks
-# and a CONST is `CInt{H.I64}`, so `H.i64_of_hi_lo` mints all of them. So
-# `helpers.bend` needs NONE of `i64_mul`/`i64_div`/`i64_mod`/`i64_shl` for this
-# file, and this file is the only caller. `n_ph` -- 116 nodes, the largest single
-# reduction in the gate -- is reached with nothing but `UOp.alu` and
-# `H.i64_of_hi_lo`.
 #
 
 # six things that are easy to get wrong, and the row that holds each down.
@@ -544,9 +531,6 @@ def frexp.exponent(+ar: O.Arena, +bits: U32, +dt: S.Dt) -> O.Found:
 #
 # AND THE SECOND HALF IS WHAT THE NORMALISATION IS FOR: "Set the exponent bits
 # appropriately to normalize the mantissa into the range of [0.5, 1.0)" (60).
-# So `frexp` returns a mantissa in `[0.5, 1.0)` -- NOT in `[1, 2)` -- and the
-# exponent it returns is therefore one MORE than the raw biased exponent. The
-# port's `frexp.exponent` is the raw one and the `+1` is in the caller.
 def frexp.m1(dt: S.Dt) -> H.I64:
   match dt:
     case S.Dt{pri, bits, cls, nm}:
@@ -691,9 +675,6 @@ def trig_coeffs(d64: Bool) -> List<&2, F32>:
 
 # `trig_poly` -- line 150 -- and `sin_poly` -- lines 152-156. `d*d` is built
 # FIRST because it is `polyN`'s argument, and the outer `d * ...` LAST.
-# The two halves are `(Arena, U32)` -- a `Data` record would be a second type for
-# the same thing -- so every expansion here returns `O.Found` and `O.Found.i` is
-# the only place an index is taken back out.
 def trig_poly(+ar: O.Arena, +d: U32, cs: List<&2, F32>) -> O.Found:
   +sq = tx_alu2(ar, O.OpsMUL{}, d, d)
   +p = tx_poly(O.Found.ar(sq), O.Found.i(sq), cs)
@@ -962,12 +943,6 @@ def ph_p(+ar: O.Arena, +ia: O.Found, +hi: O.Found, +mi: O.Found, +lo: O.Found) -
 #   "round quotient to nearest" (107)
 #       so the quotient is ROUNDED -- `p >> 62` -- and not truncated. The
 #       remainder is then the bits BELOW the rounding point, masked off.
-#   "if fraction >= 0.5, r -= pi/2, q += 1" (112)
-#       and that is the carry into the NEXT QUADRANT: a fraction of half a
-#       quadrant or more means the remainder is past the end of this one, so
-#       pi/2 is subtracted and the quadrant counter is incremented. The
-#       condition is `f < 0.5` -- the OTHER half -- because the mantissa's
-#       fraction is what says which side of the boundary the argument is on.
 #
 # `p.cast(intermediate_dtype)` IS uint64 -> float32 and is therefore a REAL CAST
 # (`a_ph104`); only the SECOND cast, `.cast(d.dtype)`, is the one `same` answers,
@@ -1310,17 +1285,6 @@ def xsin.sign(+ar: O.Arena, +x: U32) -> O.Found:
 #       else happens -- the argument is made finite, and the special values
 #       are restored at the very end. That is why the reduction never sees
 #       them.
-#   "Payne Hanek Reduction assumes abs(x) >= pi/4, so for smaller values, use
-#    cody_waite_reduction." (185)
-#       and THIS is the reason the slow arm computes BOTH reductions: the
-#       payne-hanek one is only valid for a large enough argument, so the
-#       small-argument case uses cody-waite and the two are SELECTED on the
-#       switch-over threshold. The port's `xsin.slow` builds both and the
-#       WHERE picks between them.
-#   "adjusts the sign for abs(x)" (188)
-#       so the polynomial is evaluated on the ABSOLUTE VALUE and the sign is
-#       put back afterwards -- and the sign is put back by MULTIPLICATION by
-#       the `x_sign` value, which is why a zero argument stays zero.
 #
 # THE ORDER of the non-fast arm is NOT the order of the source lines and that is
 # the whole point of the `a_xsin` window. Python evaluates
@@ -1392,23 +1356,6 @@ def exp_coeffs(d64: Bool) -> List<&2, F32>:
 #   "mask +=inf/nan as zero." (199)
 #       so the infinities and the NaN are made ZERO first and restored at the
 #       end -- the polynomial is only ever evaluated on a finite value.
-#   "s = d - round(d)" (202)
-#       so the argument is SPLIT into an integer part and a fraction, and only
-#       the fraction is approximated.
-#   "a polynomial approximation with 13 non-zero terms in the range of
-#    [−(log 2)/2,(log 2)/2]" (204)
-#       and the range is the polynomial's DOMAIN -- the fraction is always
-#       within half a logarithm of an integer, so the polynomial only has to
-#       be right on that half-interval.
-#   "Replace x >= upper with +inf" (212)
-#   "Replace x < lower with zero." (214)
-#       so the two OVERFLOW clamps are applied to the RESULT and they are
-#       applied to the ORIGINAL argument `d` and not to the polynomial's
-#       output -- the overflow of exp2 is a property of the argument's
-#       magnitude, not of the approximation's error.
-#   "exp2(NaN) = NaN" (216)
-#       and the NaN check comes LAST, after the clamps, because a NaN
-#       argument was masked to zero and would otherwise come out as one.
 #
 def xexp2.tail.nan(+ar: O.Arena, +u: U32, +d: U32) -> O.Found:
   +nn = tx_ne(ar, d, d)
@@ -1467,23 +1414,6 @@ def xexp2(+ar: O.Arena, +d: U32, +d64: Bool) -> O.Found:
 #       so a DENORMAL is scaled UP by a power of two before the logarithm is
 #       taken -- and the power is different per dtype because 2**64 OVERFLOWS
 #       a float16.
-#   "s_lo term (x*3.27e-08) only for float32 - underflows in float16" (243)
-#       so the float32-only correction term is dropped in float16 because it
-#       UNDERFLOWS there -- the term is not wrong, it is not representable.
-#   "log2(Inf) = Inf" (246)
-#   "log2(0) = -Inf (handle both +0.0 and -0.0)" (248)
-#   "log2(x) = NaN for x < 0" (250)
-#   "log2(-0.0) = -Inf. In certain devices like PTX, x == -0.0 won't be true.
-#    so making reciprocal." (252)
-#       and THAT is the sharpest one: on a device where `x == -0.0` is not
-#       true -- PTX is the named one -- the negative zero has to be detected
-#       by its RECIPROCAL being -infinity, because the equality test would
-#       not fire.
-#   "Check NaN last: comparisons of its reciprocal are not reliable on every
-#    backend." (254)
-#       and the NaN check is LAST for the same reason: the reciprocal-based
-#       test used for the negative zero is not reliable on every backend, so
-#       the NaN case has to be settled after it rather than before.
 #
 # `x = (m - 1.0) / (m + 1.0)` is `MUL(m-1, RECIP(m+1))` because `div`
 # builds the reciprocal FIRST -- `a_xlog2 42` is the row -- and `denormal_exp`'s
@@ -1587,16 +1517,6 @@ def xlog2(+ar: O.Arena, +d: U32, +d64: Bool) -> O.Found:
 #       so the WHOLE thing is computed through exp2 and log2 -- there is no
 #       separate power routine -- and the base is made POSITIVE first, so the
 #       logarithm has an argument it can take.
-#   "negative base: nan for non-integer exponent, negate for odd integer
-#    exponent. -inf is never nan, it stays |base| ** exponent" (260)
-#       and THIS is the sharp one: a NEGATIVE base is NaN unless the exponent
-#       is an INTEGER, and an odd integer exponent means the result is the
-#       NEGATION of the positive-base answer. The exception is -infinity,
-#       which is never NaN -- it stays |base| ** exponent -- because the
-#       negative-base path is only taken when the base is FINITE.
-#   "x ** 0 = 1, including 0 ** 0 and inf ** 0" (264)
-#       so the zero-exponent case is ONE and it covers 0**0 and inf**0 as
-#       well -- the two that a naive implementation would get wrong.
 #
 # `base` is the fixture's PARAM `d` and `exponent` is its `C(2.0)`.
 #
@@ -2032,9 +1952,6 @@ def tx_tab.ot() -> String:
 # THE ENTRY ROW: `ops|early_reject|match_dtype|name`, exactly as the oracle
 # spells them. `name` is `"x"` for the cast-to-float32 half of a pair and `None`
 # otherwise, and `match_dtype` is `-` for the SQRT rule, which has no `dtype=`.
-# both are read off the tag and the op rather than stored, because `PMEntry` has
-# no dtype field -- the `dtype=` conjunct LIVES IN THE RULE BODY, which is
-# decomp.bend's arrangement and this file's too.
 def tx_tab.mdx(x: Bool) -> String:
   match x:
     case True{}: tx_tab.ot()

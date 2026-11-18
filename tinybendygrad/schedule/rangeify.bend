@@ -287,14 +287,6 @@ def is_noop_after_dep(+ar: O.Arena, +self: U32) -> Bool:
 #
 #   * `src[0]` is KEPT UNCONDITIONALLY. The filter is over `src[1:]` only, so an AFTER
 #     whose BODY is a no-op END is not reduced to nothing.
-#   * the answer is `len(src) == 1` and not "the filter emptied it": the one-src case
-#     returns `src[0]`, a node ALREADY IN THE ARENA, so the arena does not grow.
-#     `raf_after1_is_src0` is the row, and it is why a caller must not assume a rewrite
-#     interns a node.
-#   * `if len(src) != len(x.src)` is the WHOLE test. When nothing was removed the rule
-#     answers `None` and the scan continues -- `raf_afterk` is that row, and asking "is
-#     the answer absent" rather than "is the answer this index" is what makes the
-#     negative side a witness.
 #
 # `x.src[0]` is an `IndexError` in Python for a zero-src node and the gate never asks:
 # the pattern is `UPat(Ops.AFTER, name="x")` and `UOp.after` (ops.py:621) returns `self`
@@ -468,11 +460,6 @@ def nic.one(+ar: O.Arena, +x: U32, acc: List<&2, U32>) -> Bld:
 
 # THE FOLD. The fuel is the first parameter and the SELF-CALL IS IN THIS BODY, passing `p`
 # first, because `nic.go -> nic.step -> nic.go` would be mutual recursion and is refused.
-# The worklist pop and the accumulate are BOTH in the arm, and that is forced rather than
-# chosen: a `List` is consumed as it is walked, and a separate step def holding that
-# `match` would have to be called back into. The head binder is `+` because the MSTACK arm
-# reads the node's own op and its srcs; `b` is threaded whole because `Bld` IS the arena
-# the step reads.
 def nic.go(fuel: Nat, +b: Bld, todo: List<&2, U32>) -> Bld:
   match fuel:
     case 0n   : b
@@ -633,9 +620,6 @@ def rb_1(+ar: O.Arena, self: U32) -> M.Hop:
 # bound name, and `x` is the src, not the node under examination, so `ret is not
 # uop` holds. This is the second place a rewrite returns a node it did not build
 # and the reason `rb_e_n0` is a POSITIVE row.
-# UPSTREAM'S COMMENT IS THE RULE'S NAME: "END on NOOP is NOOP" (131). It is the
-# cleanup half of `rb_1`: a STORE that turned into a NOOP must not leave an END
-# pointing at it.
 def rb_2.of(noop: Bool, +ar: O.Arena, self: U32) -> M.Hop:
   match noop:
     case True{} : M.Hop{ar, M.mp_src0(ar, self)}
@@ -1181,9 +1165,6 @@ def ct_5(+fx: F.Folded, +ar: O.Arena, +self: U32) -> M.Hop: M.Hop{ar, 0}
 #       and the write covered the whole range. An expand means a range was
 #       touched that the AFTER does not cover; a pad or a shrink means the
 #       write was smaller than the range.
-#   "indexing an after with all fully invalid stores is invalid" (118)
-#       so reading such an AFTER is the Invalid value -- the load is DEAD, not
-#       merely undefined.
 #
 # measured defect in CPYTHON, reported and not fixed, because it is a fact about
 # rangeify.py and not about this file. With an END that ends no RANGE, `ended_ranges` is
@@ -1731,8 +1712,6 @@ def ab_8(+fx: F.Folded, +ar: O.Arena, self: U32) -> M.Hop:
 # `sorted(idx.ranges, key=lambda x: x.arg)` (211) is the `UOp.ranges` wall AND a sort by a
 # TUPLE arg; `x.commit_dtype()` (210) is ops.py's committed-dtype walk;
 # `UOp.device_range_src` (230) is P6; and `next(ctx)` is the mutable `itertools.count`.
-# Its CLAIM -- a two-src STAGE -- is ported and it is the claim half of the
-# two-rules-one-node fixture.
 #
 # UPSTREAM'S TWO MORE COMMENTS ARE THE RULE'S TWO HALVES, and they are the reason
 # the port's body is absent rather than merely unwritten:
@@ -1743,18 +1722,6 @@ def ab_8(+fx: F.Folded, +ar: O.Arena, self: U32) -> M.Hop:
 #       cannot have one -- a buffer's width is a property of the memory it
 #       holds. So the STORE is made at the COMMITTED dtype and the RESULT is
 #       cast back, which is what leaves every reader of the buffer unchanged.
-#       The port cannot read `commit_dtype` at all, so this half is unreachable.
-#   "AFTER: add END to the existing STORE, return buffer with kernel dependency"
-#       (211)
-#       when the bufferize is over a buffer that ALREADY has stores, the
-#       bufferize does not allocate -- it turns the existing stores into
-#       ENDs, which is what carries the kernel dependency. That is why the
-#       answer is `buf.after(*ended_stores)` and not a fresh allocation.
-#   "BUFFERIZE(INDEX(...)); store through the underlying global index instead."
-#       (215)
-#       the store's own destination may itself be a bufferize over an INDEX;
-#       upstream writes through the UNDERLYING index, so the store lands on
-#       the global buffer rather than on a view of it.
 def ab_4(+fx: F.Folded, ar: O.Arena, self: U32) -> M.Hop: M.Hop{ar, 0}
 
 # ab_4's CLAIM: `UPat(Ops.STAGE, src=(UPat(), UPat(name="idx")), name="x")` is a
@@ -1780,13 +1747,6 @@ def ab_4_claim(+ar: O.Arena, +self: U32) -> Bool:
 #       the weak cast is a CAST ON THE BUFFER, so an INDEX under it would
 #       index a CAST rather than the buffer. The rule reaches THROUGH the cast
 #       and casts the LOADED VALUE instead.
-#   "this must run in the same rewrite that adds the cast, or the expander
-#    expands the whole casted buffer into one big VECTORIZE" (255)
-#       and THIS is the gotcha. If the cast is added by one rewrite and this
-#       rule runs by another, the expander sees a casted BUFFER and expands
-#       the entire buffer into one vector -- a graph blow-up that is silent.
-#       So the rule is bound to the rewrite that adds the cast, not to a
-#       later pass.
 #
 # The port's `ab_5` is a wall and the CLAIM is the whole of what is here, so
 # the ordering constraint is a note for the reader and not a row.
@@ -2285,17 +2245,6 @@ def ar_of(i: U32) -> O.Arena: g_ar(g())
 #
 # Every `py=` below is printed by `.agents/slop/rf-ct-oracle.py`; the transcript is in
 # `.agents/slop/rf-ct-oracle.txt`:
-#  ct_4  STAGE(INDEX(b4,r0), r0)                      2     BUFFER
-#  ct_4  STAGE(INDEX(b5,r0), r0)                      2     SHRINK(b5,0,4)
-#  ct_4  STAGE(INDEX(b4,r0), r1)                      2     None    <- tails differ
-#  ct_4  INDEX(STAGE(b4,r0), r0)   THE MIRROR        0     None
-#  ct_5  STAGE(c4, r0)                                2     EXPAND(ns2)
-#  ct_5  STAGE(CAST(c4,half), r0)                     2     EXPAND(ns2)
-#  ct_5  STAGE(b4, r0)             inner is neither   1     None
-#  ct_8  INDEX(MSTACK(c4,c1))                         1     INDEX([CONST])
-#  ct_8  INDEX(MSTACK(c4,c1), r0)                     1     INDEX([CONST,RANGE])
-#  ct_8  INDEX(MSTACK(bufdev))      s has a device    1     None
-#  ct_8  MSTACK(c4,c1)              THE MIRROR        0     None
 #
 # `ct_claim_n` is `claim_full` specialised to the `ct` table: the op-set claim PLUS each
 # `.f()` rule's own body test, which is what makes tags 3 and 4 both claim a STAGE and
@@ -2764,7 +2713,6 @@ def efx_b() -> G:
 # left, and one row per stage: how many nodes the stage MOVED and the arena
 # after it. The row NAME carries the fixture and the stage number, so a stage
 # can be read on its own.
-# two rows per stage, and the split is what makes the stage comparable to CPYTHON.
 #
 # `eng_<tag>_s<n>` IS THE GRAPH AND NOTHING ELSE, so CPython can answer it: the dump is
 # `op:argkey:srcops` BFS from the root, and CPython produces the same string from its own

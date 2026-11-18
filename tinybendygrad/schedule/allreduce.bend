@@ -223,18 +223,12 @@ def red_sel(+sh: List<&2, O.Sint>, +ndev: U32, +cfg: Cfg) -> Sel:
 #
 # the bounds walk the sizes forwards with a running start, which is the direct
 # transcription of `accumulate(..., initial=0)` and needs no reversal at all.
-# `List.append(a, A, xs, ys)` is `xs ++ ys` -- ys lands at the TAIL -- so the
-# accumulator is already in order. (It reads like a prepend and it is not: this file
-# one-line reproducer. See bend2-constraints.md section H.)
 
 def red_divides(numel: U32, +f: U32) -> Bool:
   Bool.and(Bool.not(U32.is_zero(f)), U32.is_zero(U32.mod(numel, f)))
 
 # `next((f for f in [32,16,8,4,2] if numel % f == 0), 1)` -- a first-match-wins scan
 # down a fixed list, with 1 as the default that survives to the end.
-# `red_head` -- `List.head` answers a `Maybe` and this file needs the head of a
-# `U32` list all over. 0 is the file's spelling of the IndexError on an empty tuple,
-# the same spelling `schedule/memory.bend` uses.
 def red_head_of(m: Maybe<&2, U32>) -> U32:
   Maybe.default(&2, U32, m, 0)
 
@@ -306,11 +300,6 @@ def red_chunk_sizes(+numel: U32, +ndev: U32) -> List<&2, U32>:
 # the bounds. `e` starts at `numel` and walks down; each step prepends `Chk{e - w, e}`
 # and sets `e` to `e - w`. Prepending while walking the reversed sizes lands chunk 0
 # at the head -- see the note above `red_chunk_sizes`.
-# `e` is the running end and starts at `numel`; each step prepends `Chk{e - w, e}` and
-# carries `e - w` forward. Prepending while walking the REVERSED sizes lands chunk 0
-# at the head with no `List.reverse` anywhere -- see the note above `red_chunk_sizes`.
-# the bounds: a running START, exactly `accumulate(..., initial=0)`, paired with each
-# size. `List.append` keeps the accumulator in order, so nothing is reversed.
 def red_bounds(fuel: Nat, +ws: List<&2, U32>, +st: U32, acc: List<&2, Chk>) -> List<&2, Chk>:
   match fuel:
     case 0n: acc

@@ -11,12 +11,6 @@
 #
 # `decomp/op.bend` is the sibling (`decomp/op.py`) and
 # `decomp/transcendental.bend` is the other half of `decomp/transcendental.py`.
-# BOTH ARE IMPORTED, not re-derived: `P.dc_*` is `op.bend`'s node vocabulary
-# (its `dc_sub` IS `__sub__`'s shape, its `dc_band` IS `x & k`, its `dc_cint` IS
-# `UOp.const(v)`) and `T.tx_*` / `T.exponent_bias` / `T.tx_is_fnuz` /
-# `T.tx_finfo_*` is `transcendental.bend`'s. `dtype.py` itself imports
-# `exponent_bias`, `shl` and `shr` FROM `transcendental.py`, so those three are
-# used under `transcendental.bend`'s names and are not re-derived here.
 #
 
 # THE INVENTORY, def by def, against dtype.py's 224 lines.
@@ -47,20 +41,6 @@
 #
 #   `dt in (long, ulong)`    Cls.is_int AND bits == 64. Renaming `dtypes.long`
 #                            cannot change this answer.
-#   `dt in dtypes.floats`    Cls.is_float AND bits != 800. `800` is the WEAK
-#                            sentinel, and `weakfloat` is a float by class while
-#                            not being in `dtypes.floats`.
-#   `dt in dtypes.fp8s`      Cls.is_float AND bits == 8: the four layouts, OCP
-#                            and fnuz together, which is exactly the set.
-#   `dt in dtypes.fp8_fnuz`  `T.tx_is_fnuz` -- IMPORTED, not re-derived. `pri`
-#                            cannot separate `fp8e4m3` from `fp8e4m3fnuz` (both
-#                            10) and `bits` cannot either (both 8), so the NAME
-#                            is load-bearing here and only here.
-#   `dt == dtypes.fp8e4m3`   NOT fnuz AND `T.tx_finfo_e(dt) == 4`. The exponent
-#                            width is one half of the name, and `pri` alone would
-#                            also accept the fnuz layout.
-#   `dt == dtypes.int`       `pri == 5`, and 5 is `int32` alone.
-#   `dt == dtypes.float64`   `pri == 15`, and 15 is `float64` alone.
 #
 # FIVE DIVERGENCES, stated rather than hidden.
 #
@@ -1442,7 +1422,6 @@ def rne.go(+ar: O.Arena, +v: U32, +s: U32) -> O.Found:
 # `(2m + max_man) * 2(max_exp - bias - m)` with ONE rounding instead of two,
 # and for every target whose mantissa is 23 bits or fewer both factors and the
 # product are exact in `F32`. `float64` is the one exception (divergence E):
-# its `2m + max_man` does not fit a `U32`, so the def refuses.
 
 def rne.sel(zero: Bool, +ar: O.Arena, +v: U32, +s: U32) -> Maybe<&2, O.Found>:
   match zero:
@@ -1639,9 +1618,6 @@ def f2f.norm(+ar: O.Arena, +ns: O.Found, +fm: U32, +tm: U32, +fr: S.Dt, +to: S.D
 # whose `OR`'s operand pointed forward into the `OR` itself: on `f1` port slot 22 was
 # `MUL <- 23,19` and slot 23 was `OR <- 17,22`, a CYCLE, and slot 18's `CONST C(2te)`
 # was gone. `+` means "the callee may REBIND this name", not "consumed on every path":
-# two mints from one arena name both returned index 2 and overwrote each other.
-# The rule this arm now follows is one arena, one builder, per node: `f2f.qmask`
-# returns the arena it grew and that arena is what `dd_or` is handed.
 
 def f2f.qnan(+ar: O.Arena, +ns: O.Found, +fm: U32, +tm: U32, +te: U32) -> O.Found:
   +a = T.tx_shl(ar, O.Found.i(ns), U32.sub(tm, fm))
@@ -1696,15 +1672,6 @@ def f2f.isnan(+ar: O.Arena, +ns: O.Found, +ex: O.Found, +fe: U32, +fm: U32, e4m3
 #       rounds UP to the smallest normal instead. That is the round-to-nearest
 #       boundary and it is the reason the `underflow` test compares against
 #       `min_norm - shl(1, fm - tm)` and not against zero.
-#   "top is one past the largest finite, inf or the nan of formats without inf"
-#       (118)
-#       so the clamp ceiling is a value ONE PAST the largest finite number --
-#       the place where the infinity goes -- and for the formats that have no
-#       infinity the ceiling is the NaN instead.
-#   "fnuz has one nan and no -0" (122)
-#       so the FNUZ formats have their own tail: one NaN and no negative zero.
-#       A negative zero would be flushed to zero, which is why the fnuz arm is
-#       separate rather than a flag on the ordinary one.
 def f2f.ocp(e4m3: Bool, +ar: O.Arena, +ns: O.Found, +sg: O.Found, +ex: O.Found, +nm: O.Found, +nn: O.Found, +fe: U32, +fm: U32) -> O.Found:
   +i = f2f.isnan(ar, ns, ex, fe, fm, e4m3)
   +z = dd_wk(O.Found.ar(i), H.i64_of_i32(0))
@@ -1724,10 +1691,6 @@ def f2f.up(+fe: U32, +fm: U32, +te: U32, +tm: U32, +ar: O.Arena, +v: U32, +fr: S
   #
   # UPSTREAM'S COMMENT ON THE WIDENING BRANCH IS THE FIRST OF THE FOUR
   # FLOATING-POINT SURPRISES AND IT IS A CORRECTNESS RULE, NOT A NICETY:
-  # "NB: denormals are zero!" (100). A DENORMAL -- a value too small to have
-  # the normal exponent -- is flushed to zero in the widening direction. The
-  # widening branch is the `fe <= te and fm < tm` one, and upstream marks the
-  # whole comment with `NB`.
   #
   # AND THE fp8e4m3 EXCEPTION IS ITS OWN LINE: "fp8e4m3 has only one nan"
   # (109). So the NaN test differs between the formats -- the e4m3 format has
@@ -1940,11 +1903,6 @@ def f2f(+ar: O.Arena, +v: U32, +fr: S.Dt, +to: S.Dt, +sat: Bool) -> Maybe<&2, O.
 # `f2f_dt[to]` read four times, and the value is `Maybe` only so that a
 # non-float target is `None`; `f2f` never gets one, so the reader's `Maybe` is
 # unwrapped once and the `k` arm is the arena's BOTTOM dtype, which no arm uses.
-# The three op sets the tables name. `GroupOp.All` is every op, `GroupOp.ALU` is
-# Unary|Binary|Ternary, and `GroupOp.Comparison` is the three that yield bool.
-# They are spelled out because `uop/ops.bend` names each op and nothing owns the
-# groups -- and a table row is only as good as the set it claims, so the gate
-# prints them and a missing op is a red cell rather than a silent narrowing.
 
 def dd_ops.cmp() -> List<&2, O.Op>:
   [O.OpsCMPEQ{}, O.OpsCMPLT{}, O.OpsCMPNE{}]
@@ -1986,29 +1944,12 @@ def dd_ops.all() -> List<&2, O.Op>:
 #       decomp's own bottom-up rewrite produces. The const is committed at the
 #       dtype of the LONG SIBLING -- the word it is a word of -- and not at
 #       its own default.
-#   "long stores, comparisons and casts out of long consume the words of their
-#    long srcs, a stored word is no longer long" (147)
-#       so a STORE of a long is a store of two 32-bit WORDS, and the word is
-#       no longer a long -- which is why the rule consumes the words rather
-#       than keeping the long.
-#   "a pair becomes the STACK of the long's two words" (153)
-#       so a long's "pair" -- the long bitcast to two words -- is a STACK of
-#       two words, and indexing into it selects a word.
 #
 # AND UPSTREAM DEFINES THE PAIR ITSELF: "the pair of a long is the long bitcast
 # to two words, its words are the pair's lanes" (88). So the PAIR is a VIEW --
 # the long seen as two 32-bit words -- and the pair's LANES are the words. The
 # words are not a separate value; they are the pair's lanes, which is why
 # `l2i_words` is a LIST of the pair's two lanes and not a pair of lists.
-#   "a const splits by value, the general CAST below would drop its high word"
-#       (155)
-#       and THIS is a gotcha: a CONST cast to a long is split BY VALUE into
-#       its low and high words, because the general CAST rule would take the
-#       low word and DROP the high one.
-#   "a cast between long dtypes reinterprets the words, a bare const src
-#    commits at the long dtype" (160)
-#       so a cast BETWEEN two long dtypes is a REINTERPRETATION of the words
-#       and not a conversion.
 #
 def pm_long_decomp() -> O.PMEntrys:
   O.PMEntrys{[
@@ -2047,14 +1988,6 @@ def pm_long_decomp() -> O.PMEntrys:
 #       so the INDEX rule does NOT convert -- it converts the thing the INDEX
 #       reads and lets the LOAD rule do the work. The two rules are ORDERED and
 #       the INDEX one defers.
-#   "bitcasted load should just replace load" (174)
-#       so a BITCAST over a LOAD is handled by rewriting the LOAD itself
-#       rather than by casting the loaded value.
-#   "bitcast from" (177)
-#   "bitcast to" (180)
-#       the two directions, and they are NOT symmetric: the "from" direction
-#       converts the SOURCE's bits and the "to" direction converts the
-#       INTERPRETATION.
 #
 def pm_float_decomp() -> O.PMEntrys:
   O.PMEntrys{[
@@ -2309,8 +2242,6 @@ def dd_rs.cat(h: U32, st: List<&2, U32>) -> List<&2, U32>:
 # APPENDS each src in order, so the head popped is src[0], which is what
 # dd-oracle.py's `cone` walks (`for s in v.src: go(s)`). Prepending here popped
 # src[n] first, which reversed the children of every multi-src node in `sig`:
-# `upsig` read `AND/2,CONST/0,PARAM/0,DIV/2,CONST/0,PARAM/0` where CPython
-# reads `AND/2,PARAM/0,CONST/0,DIV/2,PARAM/0,CONST/0`.
 def dd_rs.push(f: Nat, srcs: List<&2, U32>, st: List<&2, U32>) -> List<&2, U32>:
   match f:
     case 0n: st
@@ -2331,10 +2262,6 @@ def dd_rs.has(f: Nat, xs: List<&2, U32>, +u: U32) -> Bool:
 
 # PREPENDED, so the push is O(1) and only the one `List.reverse` at the end is
 # O(n). Appending instead makes the walk O(n^2) in list cells on top of `has`.
-# It is also the MEMBERSHIP TEST, not an append: a node with two parents is
-# reachable ONCE, so it is listed once. Unconditional, it listed a shared node
-# once per parent -- `lgwsig` read `CAST/1,CONST/0,CAST/1` where CPython's
-# `cone` dedups by `id` and reads `CAST/1,CONST/0`.
 #
 # ONE test, TWO consumers: `go` asks `has` twice rather than threading the one
 # answer, because doing both effects from a single test needs a pair return, and
@@ -2434,7 +2361,6 @@ def dd_eck(+ar: O.Arena, f: Nat, +xs: List<&2, U32>, +first: Bool, +acc: String)
 # `Ga` holds the arena BY VALUE, which is why the fixture NODES can be built once
 # in `fixtures` and then only INDEXED: the arena is append-only, so an index
 # minted before the first fixture is still the same node after the last one.
-# That is what makes one text for the whole gate buildable.
 
 type Ga is Data:
   Ga{ar: O.Arena, n: U32, s: String, ps: List<&2, U32>, w: List<&2, U32>, z: U32, o: U32}
@@ -2890,11 +2816,6 @@ def unpack.one(nm: String, +ga: Ga) -> Ga:
 # `SHR`, so no input makes them coincide.  `W2{ar, o, 0}` is this gate's own
 # idiom for "the answer is ONE node": `l2i.two` reads `hi == 0` as such, so
 # `l2i.ph` prints nothing and `l2i.roots` roots the cone at `lo` alone.
-# CPython, `.agents/slop/dd-mut-m09.py`:  hi42=OR(SHL(BITCAST,CAST),SHR(SHR,ADD))
-#   hi42n=22  hi42k=C(31),C(1),C(-1)  and hi.src[0] IS `a1u << n`.
-# The `match` is on a PARAMETER and not on the `l2i(...)` call, because bend will
-# not scrutinise a computed value -- the same seam as `l2i.got` under `l2i.went`,
-# and for the same reason it comes FIRST: a def must be filled before it is used.
 def l2i.hi.put(nm: String, r: Maybe<&2, W2>, +ga: Ga, from: U32) -> Ga:
   match r:
     case Some{W2{+ar, +lo, +hi}}: l2i.two(nm, W2{ar, O.Arena.src(ar, hi, 2), 0}, ga, from)
@@ -3008,8 +2929,6 @@ def dd_cmx.rows(n: Nat, +i: U32, +ga: Ga) -> Ga:
 # ⚠ `f2f` is `Maybe`-returning here because the port's `f2f.sel` declines rather than
 # raising, so the port's answer for `x1` is `None` and CPython's is an exception. That is
 # a REAL divergence and it is why `x1` names `unported` and not `NotImplementedError`.
-# `+ar` IS THE ANSWER'S ARENA and `+i` its slot: `f2f` may intern into either, and a copy
-# of the arena is what makes the two disagree silently.
 type Fx is Data:
   Fx{ar: O.Arena, i: U32}
 
@@ -3022,7 +2941,6 @@ def f2f.fx(r: Maybe<&2, O.Found>, +ar: O.Arena) -> Fx:
 # `a match on a parameter or field (this name is a def or a consumed binder: give the
 # value its own def)`. So the `Maybe` is dispatched in a LEAF def whose first statement is
 # the match, and the accumulated text rides in as a `String` the leaf concatenates onto.
-# `l2i.hi.put` is the same seam for the same reason.
 def f2f.got.put(nm: String, r: Maybe<&2, O.Found>, +s: String, +ar: O.Arena, +ps: List<&2, U32>, +w: List<&2, U32>, n: U32, z: U32, o: U32, from: U32) -> Ga:
   match r:
     case Some{+f}: Ga{O.Found.ar(f), n, String.concat([s, rows.put(nm, True{}, O.Found.i(f), O.Found.ar(f), from)]), ps, w, z, o}

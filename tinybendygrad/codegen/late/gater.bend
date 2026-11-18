@@ -23,7 +23,6 @@
 # is a `UPat` OP, so there is no op set to print and the rules are gated by their
 # top-level op plus their COUNT -- which is what `gt_tbl_len` and `gt_ops<i>` are,
 # and the mutation table reports the arms those rows cannot move.
-# ===========================================================================
 import Base
 import ./../../LAWS/spec.bend as S
 import ./../../uop/ops.bend as O
@@ -42,7 +41,6 @@ import ./linearizer.bend as LT
 # is a `UPat` OP, so there is no op set to print and the rules are gated by their
 # top-level op plus their COUNT -- which is what `gt_tbl_len` and `gt_ops<i>` are,
 # and the mutation table reports the arms those rows cannot move.
-# ===========================================================================
 def gt_tbl() -> List<&2, O.PMEntry>:
   [O.PMEntry{0, [O.OpsLOAD{}], Nil{}},    # 0  buf.index(where, where).load(l)
    O.PMEntry{1, [O.OpsSTORE{}], Nil{}},   # 1  buf.index(where, where).store(d)
@@ -162,9 +160,6 @@ def gt_mwl(+a: Ga) -> Gt:
 
 # `n` is `len(l.src)` and `len(r.src)`: the replacement is
 # `(l.src[0], alt, l.src[2])` -- a PERMUTATION of `l`'s three srcs, not a new arity.
-# `nm` is the row class the PORT needs (one per link, so a dropped link moves
-# exactly one row) and the CALLER supplies it to `srow`, so the value here starts
-# at the `=` and the name is written once.
 def gt_row(+a: Ga, n: U32) -> String:
   String.concat(["LOAD alt=CAST d=", U32.show(Gt.d(gt_mwl(a))),
                  " leaf=", Gt.lf(gt_mwl(a)), " nsrc=", U32.show(n)])
@@ -172,15 +167,6 @@ def gt_row(+a: Ga, n: U32) -> String:
 # THE FOUR `a`s, one per link. `inv` and `same` are the fixture's answers to the
 # two predicates the dtype and `Invalid` decide; `cn` and `ld` are `a`'s own shape
 # and are PORTED reads.
-#   invalid : a is CONST(Invalid)      -> link 1, leaf 0.0, no CAST
-# `a0`'s OWN leaf is 9.0 and NOT 0.0 on purpose. `a.is_invalid` is a CONST whose
-# `arg` is `Invalid`, and if the fixture spelled that leaf "0.0" then link 1's answer
-# (`l.vconst_like(0)`, the zero of l's dtype) and link 2's answer (`l.const_like(a.val)`)
-# would be the SAME ROW, and the mutation table's "drop link 1" would move nothing.
-# 9.0 is what CPython would `str` for the const if it ever reached link 2.
-#   const   : a is CONST(2.0)          -> link 2, leaf 2.0, no CAST
-#   cast_same  : CAST(5.0) at l.dtype  -> link 3, leaf 5.0, no CAST
-#   cast_diff  : CAST(7) at i32 != f32 -> link 4, leaf 7, one CAST over a's own
 def gt_a0() -> Ga:
   Ga{True{}, True{}, 0, "9.0", True{}}
 
@@ -209,8 +195,4 @@ def main() -> IO(Unit):
     # there is no trailing `IO.print("")` and the file ends with the LAST ROW's
     # newline -- exactly what the oracle's `print("\n".join(out))` does. A trailing
     # empty line is a one-line diff that a reader has to notice.
-    # THE LAST ROW IS UNBOUND and IS the `do IO<Unit>` block's final
-    # expression, so there is no trailing `IO.print("")` and the file ends
-    # with the LAST ROW's newline -- what the oracle's `print("\n".join(out))`
-    # does. A trailing empty line is a one-line diff a reader must notice.
     LT.srow("gt_mwl_cast_diff", gt_row(gt_a3(), 3))

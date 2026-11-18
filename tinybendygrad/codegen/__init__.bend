@@ -198,11 +198,6 @@ import ./../LAWS/spec.bend as S
 # The fold's state is the PAIR `(ar, repl)` because `wr.rebuild` mints. Three
 # wrappers exist only because a `match` may not destructure a computed value
 # or a local binder -- a pair is destructurable only as a PARAMETER:
-#   wr.rebuild.found -- `O.Found` -> `(ar, repl)`, out of `O.UOp.new`
-#   wr.step.rebuild  -- `(ar, repl)` -> `(ar, rebuilt, repl)`
-#   wr.step.of       -- that triple -> `(ar, repl)` with the rule applied
-# Fold over a node's srcs, looking each up in `repl`. If absent, the
-# original `s` is its own replacement.
 #
 # visited first" -- IS FALSE UNDER `enter_calls=False`, AND IT WAS LOAD-BEARING.
 # `R.cu32` answers DEFAULT `0` for an absent key, and `0` is a LEGAL arena index.
@@ -434,9 +429,6 @@ def graph_rewrite_ec(+ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: O.CTX, wal
 #   1. THE FIXPOINT. `cached_bpm_rewrite` is called IN A LOOP until it answers
 #      None, so a chain `{a:b, b:c}` resolves `a -> c` AT ONE NODE and not across
 #      passes. `sub_fix` is that loop; dropping it answers `b`.
-#   2. the replacement is rebuilt from its own srcs. Upstream's stage 1 works on
-#      `new_n`, so a replacement whose children are ALSO in `dvars` is rewritten
-#      too. `sub_one` rebuilds the replacement, not the original.
 def sub_has.of2(r: Sigma<&1, &1, Map<&2, U32>, _ => Bool>) -> Bool:
   match r:
     case Tuple{m, v}: v
@@ -604,9 +596,6 @@ def gr_show.repl(ar: O.Arena, m: Map<&2, U32>, topo: List<&2, U32>) -> String:
 # THE FIXPOINT GATE. Every row below calls `graph_rewrite` ITSELF, never a
 # caller of it and never a driver directly -- a row that gates `walk_rewrite`
 # cannot see the dispatcher's ternary, and a mutation there would move nothing.
-# The fixture's fixpoint takes TWO passes: the first moves the sink from 4 to 8
-# and the second confirms it, so `passes=2` is a statement about the LOOP and not
-# about the fold.
 #
 # `grw_cap_*` reaches `capped=True` on purpose. A cap flag no row can reach is a
 # claim, not a measurement, and this row is what makes "a fuel bound and a

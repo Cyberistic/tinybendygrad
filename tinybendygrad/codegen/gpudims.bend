@@ -70,9 +70,6 @@
 # `AxisType.REDUCE` were DELETED upstream, `x.axis_id` became `arg[1:]` and
 # `r.axis_id[-1]` became `arg[0]`, and the four rows are green against the PIN and
 # wrong at HEAD. This split does not fix them and does not mask them.
-# `.agents/slop/codegen3-gate.sh` prints their before and after side by side and
-# `split-codegen3.py --check` prints them too; if any MOVED, that is a finding for
-# the unit that owns them, not something to absorb here.
 
 import Base
 import ./../helpers.bend as H
@@ -236,7 +233,6 @@ def rs_rule(+ar: O.Arena, +i: U32) -> RW.Rew:
 # n-d and n-g moved nothing before their fixtures existed. `g_rs` was four
 # single-id, untagged ranges; `rs_idlast_two` (a two-id GLOBAL range) and
 # `rs_tag_kept` (a TAGGED GLOBAL range) were added, and both mutations then moved.
-# A `0` is a request for a fixture.
 #
 # n-e is a theorem, and it is about a line that looks like defence. `rs_rule` tests
 # `rw_is(ar, i, OpsRANGE)` and `rs_at`'s non-`ARange` arm answers `AXIS_LOOP`, which
@@ -355,10 +351,6 @@ def main() -> IO(Unit):
     # `expected : a term / end of input` FOUR HUNDRED LINES LATER, at the end of
     # `main`. So "the error is at the end of the file" is not "the problem is at the
     # end of the file", and bisecting by truncating the lane is how this was found.
-    # `rs_len` is the COMPOSITE (its own
-    # rule plus `pm_split_ends`'s), `rs_ownlen` is its own, and `se_len` is
-    # `pm_split_ends`'s, so all three together pin the arithmetic the way
-    # `rc_len` / `rc_composite` / `symbolic_len` already do for `pm_reduce_collapse`.
     RW.row("rs_len", t_rs_len())
     RW.row("rs_ownlen", U32.sub(t_rs_len(), t_se_len()))
     RW.row("se_len", t_se_len())

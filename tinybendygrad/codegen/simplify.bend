@@ -15,10 +15,6 @@
 # the shared substrate is imported, not copied. `Rew` (the rule's answer), the
 # `rw_*` node readers, `rw_ranges`, `G` (the fixture's index map), `n_of` and the
 # two row printers live in `codegen/rewriter.bend` and every use here is `RW.<name>`.
-# A TYPE MENTION needs the alias as well as a call -- an unqualified imported
-# `type` name is not in scope -- so it is `RW.Rew` and `RW.Rew.ar`, never `Rew.ar`.
-# A def is in the substrate iff at least TWO of the three files used it; every
-# def only this file used came here.
 #
 
 # THE INVENTORY, def by def, against simplify.py's 156 lines. Every `PY` range is
@@ -328,10 +324,6 @@ def flatten_range(+ar: O.Arena, self: U32) -> RW.Rew:
 #       if len(reduce_unparented) == 0: return None
 #       ret = red.replace(src=(red.src[0],)+tuple(reduce_parented)) if len(reduce_parented) else red.src[0]
 #       if red.arg[0] is Ops.ADD:
-#         for r in reduce_unparented: ret = ret * r.src[0]
-#       if red.arg[0] is Ops.MUL:
-#         for r in reduce_unparented: ret = ret  r.src[0]
-#       return ret
 #
 # PORTED IN FULL except `x in red.src[0].ranges` (the header's wall) and the
 # `assert`, which is a `raise` and not a value. EVERY OTHER CONJUNCT is here and

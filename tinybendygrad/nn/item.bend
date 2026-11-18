@@ -422,8 +422,6 @@ def nn_item_row_multi() -> IO(Unit):
 # this row is red by design. It is the divergence, and it is the only red
 # row in the file. Upstream reads the buffer's element: CPython answers 3.5
 # for `Tensor([3.5]).item()`. THE PORT HAS NO BUFFER TO READ, so it refuses.
-# the `want` is upstream's answer, not the port's, so the row can go red and
-# DOES.
 def nn_item_row_buf() -> IO(Unit):
   +t = nn_item_buf_t()
   nn_item_line("item_buffer_divergence", nn_item_show(nn_item(t)), "3.5")

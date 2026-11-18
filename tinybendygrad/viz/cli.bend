@@ -58,9 +58,6 @@ import ./../helpers.bend as H
 #
 # THE ORDER IS THE FUNCTION: it is the FIRST match, not the last, and the fixture
 # would need two markers with the same name at different timestamps to say so.
-# That is a request for a fixture, not a theorem: `markers_st.first` finds the
-# first by construction and no single-name fixture can separate it from a
-# last-match implementation.
 
 type Marker is Data:
   Marker{name: String, ts: H.I64}

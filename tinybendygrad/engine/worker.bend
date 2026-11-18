@@ -162,13 +162,6 @@ def wpool_n(xs: List<&2, Task>) -> U32:
 # the four constructor arguments, in order, as a record. `maxtasks` is
 # `max_tasks_per_child`, the recycle limit, and it is the ONLY number in this file
 # that is neither 0 nor 1.
-# `id` IS OBJECT IDENTITY and it is here because of a MUTATION. `worker_pool`'s memo
-# returns THE SAME OBJECT, and the only observable of a memo is that identity -- and a
-# `Pool` record without an `id` field makes the memo UNOBSERVABLE, because a rebuilt
-# pool is field-for-field identical to the old one. Mutation W3 (the memo removed)
-# moved NOTHING until this field landed, and `pool_memo_id` is the row that sees it.
-# This is `mixin/creation.bend` rule 23 -- two structures EQUAL BY CONSTRUCTION are the
-# same blindness as two structures equal in COUNT, with the arrow on identity.
 type Pool is Data:
   Pool{id: U32, procs: U32, init_tag: U32, init_name: String, maxtasks: U32}
 

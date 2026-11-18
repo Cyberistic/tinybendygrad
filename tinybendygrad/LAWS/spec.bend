@@ -2,9 +2,6 @@
 #
 # This is the *specification* IR, not the compilation IR, and it is the one
 # place where we are allowed to write something new rather than mirror a file.
-# tinyspec.tex states the derived properties (dtype, shape, device, addrspace,
-# min_max) per op; turning those into total functions over an inductive tree is
-# what lets the checker decide the spec's claims instead of trusting a comment.
 #
 # The compilation IR (tinygrad/uop/ops.py) is a cyclic hash-consed graph in an
 # arena, because the range graph has back-edges and the test suite depends on
@@ -25,19 +22,6 @@
 #      be factored out. Every ALU arm therefore binds its two operand shapes to
 #      locals and calls `dims_zip_max` itself. That is why the broadcast arms
 #      below are three lines each; it is the checker, not sloppiness.
-#   2. A recursive call must be a tail expression, or bound to a local on its
-#      own line. Hence `x = Sp.shape(a)` then `y = Sp.shape(b)`.
-#   3. A recursive call must pass a field of its own parameter, bare or
-#      re-wrapped in the same constructor. A list HEAD binder counts; a list
-#      TAIL does not, in any constructor.
-#   4. So a fold that MAPPS a recursive function over a `List` and COMBINES the
-#      results cannot be written at all: the head and the tail come out of one
-#      destructured list, the tail is unusable by (3), and giving the tail a
-#      field of its own needs a second mutually recursive def, refused by (1).
-#      The two ops that would have needed that fold do not have one. `Stack`'s
-#      shape needs only its HEAD plus the operand count, so it keeps its list.
-#      `Index`'s shape needs EVERY index shape, so its index list cannot stay and
-#      `Index` is bounded-arity instead -- see `SpIdx1` below.
 #
 # ORDER IS LOAD-BEARING otherwise: a def may call only defs declared ABOVE it,
 # and every datatype in this file may name another in any order.
@@ -102,8 +86,6 @@ type Dev is Data:       # a device name, or a tuple of them for a multi-device t
 # fold rather than hidden: the port's IR is STRUCTURAL -- its `one()` and
 # `zero()` are placeholder consts with no NUMBER -- so an interval's bounds
 # cannot be added and multiplied here.  What IS here is the SHAPE of the column:
-# which op has which KIND of interval, and that the "src[0]" cells really do
-# read the source's interval.
 type Iv is Data:
   IvConst{lo: U32, hi: U32}
   IvRange{lo: U32, hi: U32}
@@ -738,8 +720,6 @@ def Sp.shape(s: Sp) -> Maybe<&2, Shape>:
 # `f"dtypes.{INVERSE_DTYPES_DICT[self.name]}"` and is now `f"dtypes.{self.name}"`,
 # so repr used to print the ALIAS ("dtypes.float") and now prints the name
 # ("dtypes.f32"), and INVERSE_DTYPES_DICT is gone. Only the `name` FIELD moved:
-# priority, bitsize and the char code are untouched, so every table keyed on
-# those is still right and only the name keys below are new.
 
 def void() -> Dt: Dt{0, 0, CVoid{}, "void"}
 def weakint() -> Dt: Dt{0, 800, CWeakInt{}, "weakint"}
@@ -954,8 +934,6 @@ def Sp.device(s: Sp) -> Maybe<&2, Dev>:
     # "first non-null src device" -- the CALL's srcs are its body and its args,
     # IN ORDER, and the device is the first of them that HAS one.  The body's
     # device is tried first and the args after it.
-    # "first non-null src device" -- the call's srcs are its body and its args,
-    # IN ORDER.
     #
     # AND THE FOLD TAKES THE BODY'S DEVICE, because the body IS the first src.
     # The args' devices are the SECOND src onward, and the fold cannot reach
@@ -989,16 +967,6 @@ def Sp.device(s: Sp) -> Maybe<&2, Dev>:
 #
 #   * "src[0]"              -- the movement ops, `Unshard`, `Copy`, `Index` and
 #                              `After`.  The interval is the SOURCE's.
-#   * "dtype range"         -- `Buffer`, `Reduce` and `Bitcast`.  The interval
-#                              is the DTYPE'S RANGE, and `Dt.min`/`Dt.max` are
-#                              the port's.
-#   * "[a+b, A+B]" and the
-#     other arithmetic cells -- `Add`, `Mul`, `Max`, `CmpLt`, `Where`, `Const`
-#                              and `Range`.  These need the VALUES, and the
-#                              port's IR is STRUCTURAL -- its `one()` and
-#                              `zero()` are placeholder consts with no number
-#                              -- so the arithmetic is NOT stated here and the
-#                              fold says so at the arm.
 #
 # AND `LAWS.bend`'s header says the min_max column is "pinned by
 # test/null/test_uop_vmin_vmax.py (55 tests) instead" -- AND THAT FILE IS NOT IN

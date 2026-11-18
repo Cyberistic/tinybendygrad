@@ -77,7 +77,6 @@
 # which branches survive. All three are pure functions of the kernel's uop list,
 # so a CPython oracle can be handed the same inputs and the two lanes diffed row
 # for row -- there is no device, no driver and no codegen cache in the way.
-# `regalloc`'s two renderer hooks are the exception and are named below.
 #
 
 # THE INTERFACE, CONSUMED NOT INVENTED. `codegen/kernel.bend` already owns
@@ -408,9 +407,6 @@ def lt_addr_of(a: O.Arg, not_found: Bool) -> Bool:
 
 # THE LADDER, five `Bool.pick`s deep because `match` may not scrutinise a CALL.
 # The order is PYTHON'S ORDER of the `match u.op:` arms and it is load-bearing:
-# `Bool.pick` is strict so every predicate runs on every arm, and the RESULT is
-# the first arm that fires. `po_*` rows are one per arm, and `po_add` is the
-# default because the ladder's `case _:` arm is priority 0 -> offset 20.
 def lt_po.w5(local: Bool, buf: Bool) -> U32:
   Bool.pick(U32, buf, Bool.pick(U32, local, 3, 2), 20)
 
@@ -548,7 +544,6 @@ def LtKey.ex(x: LtKey) -> U32:
 # self-call whose first argument is a COMPUTED `List.drop`, and the decrease check
 # refuses that ("a self-call may not pass a computed argument in front of the
 # tail"). Carrying it is also what makes the comparator's "one field read" free:
-# the comparator reads `k` and the printer reads `i` and `rc`.
 def LtKey.rc(x: LtKey) -> U32:
   match x:
     case LtKey{k, i, rc, ex}: rc
@@ -566,15 +561,6 @@ def LtKey.rc(x: LtKey) -> U32:
 #       nodes in any order consistent with the dependencies; this one emits
 #       the order that is as close to the IDEAL order as the dependencies
 #       allow.
-#   "number the uops in 'ideal' order" (35)
-#   "then force them to be toposorted in as close to the ideal order as
-#    possible" (38)
-#       so the algorithm is TWO PHASES. First the uops are NUMBERED by their
-#       ideal position -- that is the `nkey` table and it is a pure sort. Then
-#       the numbers are used as a PRIORITY in a heap that pops only nodes
-#       whose dependencies have all been emitted. So the ideal order is a
-#       suggestion and the dependencies are the constraint, and the heap is
-#       where the compromise is made.
 #
 # THE SORT KEY IS ONE `U32` (`lt_key`), which is what makes the comparator legal:
 # `List.sort`'s comparator type is `A -> A -> Bool` with `+` REFUSED on its
@@ -613,8 +599,6 @@ def lt_nkey(srt: List<&2, LtKey>, u: U32) -> U32:
 # a list ELEMENT (the notes' FOUR MORE GENERAL RULES, item 1) -- and a bare flat
 # list with no prefix would pair a node with ANOTHER node's ranges whenever the
 # lengths differ, which is a plausible wrong `rc` everywhere and no error at all.
-# `lin_vm` is the row that prints the whole table in the oracle's `;`-separated
-# spelling, and `lin_u<i>` carries every `rc` computed from it.
 type VM is Data:
   VM{vs: List<&2, U32>, rest: List<&2, U32>}
 
@@ -658,18 +642,11 @@ def lt_keys(+ar: O.Arena, lst: List<&2, U32>, vms: List<&2, U32>) -> List<&2, Lt
 #
 #     heap = [(-nkey[sink], sink)];  newlst = []
 #     while heap:
-#       newlst.append(u := heapq.heappop(heap)[1])
-#       for v in u.src_without_body:
-#         out_degree[v] -= 1
-#         if out_degree[v] == 0: heapq.heappush(heap, (-nkey[v], v))
-#     newlst = newlst[::-1]
 #
 # `nkey` is a BIJECTION onto 0..n-1 (`enumerate(sorted(lst, ...))`), so two heap
 # entries never tie and `heapq.heappop` -- the SMALLEST tuple, and the tuple is
 # `(-nkey, v)` -- returns the node with the LARGEST `nkey`. So the pop order is
 # descending in `nkey` AMONG THE AVAILABLE, and `newlst[::-1]` reverses it.
-# `heappush` on a sorted list is a re-sort and `heappop` is taking the head, which
-# is the whole port of `heapq`.
 #
 # READING `-nkey` AS "SMALLEST nkey" IS THE MISTAKE, and it produces a plausible
 # list of the right LENGTH with every position wrong -- which is what the first
@@ -702,10 +679,6 @@ def HP.tb(h: HP) -> RaTb:
 # `heapq.heappush(heap, (-nkey[v], v))` -- the entry is `LtKey{nkey[v], v, 0, 0}`
 # because the heap is held SORTED BY `nkey` ASCENDING and `heappop` takes the
 # HEAD, which is the LAST. `rc` and `ex` are 0 because the heap never reads them.
-# DESCENDING, and stability is irrelevant here (unlike `lt_sorted`, where it is
-# load-bearing): every heap entry is a DISTINCT node and `nkey` is a bijection, so
-# no two entries tie. The sort is descending so the HEAD is the largest `nkey`,
-# which is what `heappop` on `(-nkey, v)` returns.
 def lt_hp.kle(x: LtKey, y: LtKey) -> Bool:
   U32.is_ge(LtKey.k(x), LtKey.k(y))
 
@@ -771,12 +744,6 @@ def lt_hq.step(+h: HP, +srt: List<&2, LtKey>, ar: O.Arena) -> PS:
 # recursion (the step's answer IS the self-call's first argument), which Bend
 # refuses, and this is the documented alternative -- "call the pure function twice"
 # from the notes' movement.bend entry 13.
-# `rem` IS THE REMAINING NUMBER OF POPS and not the queue's length: every node is
-# popped EXACTLY ONCE, so `n - pops` reaches 0 exactly when the queue empties, and
-# it DECREASES BY ONE per step even when the queue grows -- which the queue's own
-# length does not. It is the first parameter because the decrease check reads left
-# to right (the notes' rule 5), and the second argument is computed, which is free
-# once the first has shrunk.
 def lt_hq.go(rem: Nat, +h: HP, +srt: List<&2, LtKey>, +ar: O.Arena, +acc: List<&2, U32>) -> List<&2, U32>:
   match rem:
     case 0n   : acc
@@ -1134,13 +1101,6 @@ def lt_lin_vm() -> String:
 
 # THE ACCUMULATOR IS A PARAMETER, not the recursive result, and that is the WHOLE
 # difference between this row being right and being reversed:
-#     List.append(acc, [x])           -- walk order
-#     List.append(lt.go(tail), [x])   -- the head lands LAST, so it REVERSES
-# Both compile, both run, and the reversed one is a permutation of the right answer
-# -- every value present, every position wrong. `lin_ord` is what caught it, and
-# the lesson generalises: a row whose oracle is a SET rather than a LIST cannot see
-# this at all, which is why `lin_ties` is a separate row and why `lin_ord` (the
-# sorted list itself) is gated alongside `lin_nkey`.
 def lt_lin_nkey.go(ix: List<&2, U32>, +i: U32, +srt: List<&2, LtKey>, +acc: List<&2, U32>) -> List<&2, U32>:
   match ix:
     case Nil{}   : acc
@@ -1257,11 +1217,6 @@ def lt_exmix.pair(+done: List<&2, LtKey>, +e: LtKey, n: U32) -> U32:
 # also why this is not the same shape as `lt_ties.go` above: two accumulators
 # cannot both be parameters after the tail, so the new `done` is a computed
 # argument and the decrease check only ever sees the tail.
-# the call must pass the sort first. `lt_exmix.go(Nil{}, lt_srt(), 0)` typechecks
-# -- both parameters are the same type -- and answers 0 because the walk list is
-# empty, so the row was green and MEASURING NOTHING. Two same-typed parameters in
-# a fold are a silent swap, and the row that catches one COUNTS a difference
-# rather than testing a predicate.
 def lt_exmix.go(walk: List<&2, LtKey>, +done: List<&2, LtKey>, n: U32) -> U32:
   match walk:
     case Nil{}   : n
@@ -1806,9 +1761,6 @@ def se_nsrc(+se: Se) -> U32:
 # is the row `se_ops` rather than a silent difference under it. The LABELS come
 # from the arena, so `se_ops` still gates the built graph -- a `se_len` of 3 over
 # the wrong three nodes changes it.
-#   F2's CONST/CAST, then R2's CONST/CAST and R2, then the first END, then R1's
-# CONST/CAST and R1, then the second END, then R0 (whose CONST is already cached)
-# and the third END. `e` itself is NOT in `ret`'s graph, so it is absent.
 def se_lst() -> List<&2, U32>:
   [5, 6, 1, 2, 9, 11, 3, 4, 8, 12, 7, 13]
 
@@ -1835,7 +1787,6 @@ def se_tbl_ops() -> String:
 # `se_rngs` reading `0 1 2` would be a `sorted` that does nothing. R0 and R2
 # share the CONST 4 and R1 has the CONST 8, so the three `CONST/CAST` PAIRS are
 # all reachable and `se_ops` shows three of them.
-#   1 C4a 2 C4  3 C8a 4 C8  5 C2f 6 F2  7 R0 8 R1 9 R2  10 E
 def se_fix() -> KER.K:
   +c4a = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(4)})
   +c4 = lt_i32(4, O.Found.ar(c4a))

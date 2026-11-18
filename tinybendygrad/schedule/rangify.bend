@@ -96,7 +96,6 @@ import ./realize.bend as RZ
 # it must not. `realize.bend` used to import it (the engine) and this file
 # imports `realize.bend` (the fixture), - so the other way round was a cycle
 # and the engine's stage 1 -- `run_rangeify` -- was an empty table.
-# - and now the composition lives here, WHERE `run_rangeify` lives.
 import ./rangeify.bend as RG
 
 # 1. THE DUMP -- the ORACLE's spelling, `op:argkey:srcops`.
@@ -180,7 +179,6 @@ def rr_dump(+ar: O.Arena, +root: U32) -> String:
 # - and all four rule bodies return `None`, so upstream's
 # `PatternMatcher.rewrite` -- which returns the FIRST non-`None` answer -- runs
 # EVERY rule that MATCHES. That is why rule 1 AND rule 3 both fire on a STORE:
-# the STORE is realized AND its src is tested for the WAR hazard.
 #
 # THE PORT's `grm_table()` (`indexing.bend:1224` symbol=grm_table) carries the op sets and the
 # TAG, and the tag IS the rule index -- the same convention `rangeify.bend`'s
@@ -298,8 +296,6 @@ def rr_realize_plant(+ar: O.Arena, sink: U32) -> IX.IxMap:
 #
 # THE STATE. `ctx` IS UPSTREAM's `IndexingContext`, `ends` IS UPSTREAM's
 # `ending_ranges` as a flag per node (which is all the algorithm reads of it:
-# `len(ending_ranges[x])`), `tbl` IS THE RANGE TABLE, AND `out`/`inp` ARE THE
-# RANGE map's two halves for the node being processed.
 #
 # - the table is also the counter: a RANGE's axis ID is its table INDEX
 # minus one, because INDEX 0 is the CONST 0 and `new_range(1)` does not advance
@@ -581,7 +577,6 @@ def rr_any_range(+tbl: List<&2, IX.IxRange>, +rs: List<&2, U32>) -> Bool:
 # the phases are separate defs because the RANGE table is append-only and a
 # `Bool.pick` evaluates both arms: a branch that creates a RANGE must not also
 # create one in the arm that is not taken. a `match` on a `Bool` is lazy.
-# THE CONSUMERS THAT HAVE RANGES: `for c in consumer_map[x] if c in rctx.range_map`
 def rr_cons_rngs.go(+cs: List<&2, U32>, +ctx: IX.IxCtx, +acc: List<&2, U32>) -> List<&2, U32>:
   match cs:
     case Nil{}: acc
@@ -742,9 +737,6 @@ def rr_p4.reduce(+ar: O.Arena, +tb: F.Table, +ctx: IX.IxCtx, +m: RrMap, +x: U32)
   # so the RANGE's INDEX pointed at a table that never received it. - this is
   # the class "a key that is not the key": the RANGE was created and nothing
   # COULD READ IT.
-  # - and the rows are built like `rr_p1.real`'s, which uses the grown table
-  # the same way -- - and `RrMap.out(m)` is read twice rather than bound, so
-  # THE `+` LOCAL IS NOT USED TWICE.
   +n = rr_new.all(List.take(&2, U32, rr_dims(ar, tb, O.Arena.src0(ar, x)),
                             U32.to_nat(rr_reduce_n.of(O.Arena.arg(ar, x)))),
                   RrMap.tbl(m), Nil{})
@@ -1086,7 +1078,6 @@ def ap_rep_get(+es: List<&2, ApRep>, k: U32) -> Maybe<&2, U32>:
 # arena and makes the reads below it read the old arena's entry -- - and
 # that is a second instance of the class this tree names: a result
 # that nothing reads.  - and the port's own `rr_ap_node` had it too.
-# the two records that carry the arena alongside the list.
 type ApSrcs is Data:
   ApSrcs{ar: O.Arena, ss: List<&2, U32>}
 

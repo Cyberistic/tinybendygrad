@@ -137,8 +137,6 @@ def op_numel(+t: T.Tensor) -> U32:
 # assigned across `__init__`, `_new_optim_param` and the two subclasses'
 # `__init__`; a `Data` record is the immutable spelling of exactly that, and it is
 # ONE record rather than four because `schedule_step` reads all of them at once.
-# The alternative -- a record per class -- buys nothing here, because Python's own
-# answer is "an Optim object with whatever attributes were set".
 #
 # The fields, in Python's assignment order:
 #   params, buffers, device, param_dtype, fused, lr, pos_params   (optim.py:13-22)
@@ -154,8 +152,6 @@ def op_numel(+t: T.Tensor) -> U32:
 #
 # `ns_coeffs` is `List<F32>` and `Nil{}` is `ns_coefficients=None`, which is the
 # same `None`-by-empty convention every other absent optimizer field uses here.
-# The `F32` scalars are `F32` and not `Maybe<F32>` because Python's defaults are
-# real numbers (`momentum=0.9`), not `None`.
 
 type Optim is Data:
   Optim{ar: O.Arena,
@@ -187,8 +183,6 @@ type Optim is Data:
 # projection, so the pattern destructures the record. `H.dedup_u32` then runs on
 # the uop INDICES: Python's `dedup` is on Tensor OBJECTS (`id`-keyed) and per
 # tensor.bend's `tn_hash` header those are NOT the same identity as an arena index.
-# So this file dedups by uop and the header says so rather than letting the gate
-# claim a fidelity it does not have.
 
 def op_filter.t(x: T.Tensor, +acc: List<&2, U32>) -> List<&2, U32>:
   match x:
@@ -814,8 +808,6 @@ def op_mom(+ar: O.Arena, +b: U32, g: U32, momentum: F32) -> T.Tensor:
 # says so rather than being written to match: it is the one place in this file where the
 # port's graph is provably larger, and a reader comparing it against an unpatched oracle
 # needs to know that is deliberate.
-# `b` IS READ TWICE -- once as the momentum term's src and once as the ELSE ARM -- so it
-# is `+`, and `Bool.pick` being strict is why both reads happen at all.
 def op_nesterov(+ar: O.Arena, g: U32, +b: U32, momentum: F32, nesterov: Bool) -> T.Tensor:
   Bool.pick(T.Tensor, nesterov,
     op_add(T.tn_wrap_uop(ar, g), op_mulf(ar, momentum, T.tn_wrap_uop(ar, b))),

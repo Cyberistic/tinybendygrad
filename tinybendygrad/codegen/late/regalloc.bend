@@ -644,11 +644,6 @@ def ra_linv(+es: List<&2, LT.RaEn>, r: U32) -> U32:
 #   1. a register that is NOT LIVE, or that is live but NEVER USED AGAIN, is
 #      FREE and wins outright -- its distance to the next use is `len(uops)`,
 #      which is the largest possible, so it wins the `max`.
-#   2. otherwise the register whose NEXT USE IS FURTHEST AWAY wins -- that is
-#      the one that can stay allocated longest.
-#   3. on a TIE, the one that appears FIRST in `cons` wins -- and `cons` is the
-#      register CONSTRAINT LIST, so this is a PREFERENCE ORDER the hardware
-#      gave us.
 #
 # AND UPSTREAM'S SECTION HEADING IS "allocate registers" (31) -- the whole
 # section is the allocation, and the five dicts under it are its state.
@@ -837,9 +832,6 @@ def ra_def(cs: List<&2, U32>, +s: RaSt, +i: U32, +op: O.Op, v: U32) -> RaSt:
 # (67-68). So on a TWO-ADDRESS instruction the destination IS the source, and
 # the register that already holds the reused src is the only one the
 # instruction can use for the def -- it cannot be coalesced with anything else.
-# Putting it FIRST in `cons` gives it the priority in `alloc`'s tie-break.
-# And it is only the FIRST src: `uses[0]`, because a two-address instruction
-# reuses exactly one src.
 def ra_tw.go(+us: List<&2, U32>, cs: List<&2, U32>, +pre: List<&2, U32>) -> List<&2, U32>:
   match cs:
     case Nil{}    : pre
@@ -1034,7 +1026,6 @@ def ra_w.step(skip: Bool, +e: Su, +s: RaSt, +i: U32) -> RaSt:
 # walk would be. So the two arms are one `Bool.pick`, which is sound HERE and only
 # here: `Bool.pick` evaluates both arms, but the discarded arm (`ra_w.do`) does NOT
 # recurse, so the wasted work is a constant per element and the walk stays linear.
-# A discarded arm that recursed would be exponential in the list length.
 def ra_w.do(+e: Su, +s: RaSt, +i: U32) -> RaSt:
   ra_w.get(Bool.not(LT.tb_has(RaSt.lv(s), Su.v(e))), s, i, Su.v(e))
 
@@ -1078,7 +1069,6 @@ def ra_pro.rn(rng: Bool, +s: RaSt, +i: U32) -> RaSt:
 # "TODO: if a uop is in a different reg in live out vs live in move between
 # registers instead of loading" (90) and "TODO: don't reload if first use in
 # loop is a load" (91). Both are OPTIMISATIONS of the reload, not corrections:
-# the reload is always CORRECT here and merely wasteful.
 #
 # AND THE LAST LINE IS A CORRECTNESS FIX, NOT AN OPTIMISATION: "a spilled var
 # that only got a register inside the loop must be forced to reload from spill
@@ -1121,9 +1111,6 @@ def ra_epi.ex(ex: Bool, +s: RaSt, +i: U32) -> RaSt:
 # THE STEP, and the nesting ORDER IS PYTHON'S: uses, defs, prologue, epilogue.
 # Bend evaluates arguments before the callee branches, so the FIRST stage is the
 # innermost call.
-# THE FOUR STAGES, and bend evaluates arguments before the callee branches, so
-# python's first stage is the innermost call: uses, then defs, then the prologue,
-# then the epilogue.
 def ra_step(+s: RaSt, +i: U32, +u: RaUop) -> RaSt:
   ra_epi.ex(LT.lt_is_exit(RaUop.op(u)),
            ra_pro.rn(LT.lt_is_range(RaUop.op(u)),

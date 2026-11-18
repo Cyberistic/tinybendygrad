@@ -4,13 +4,6 @@
 #
 #   1. `StreamRouter` -- PORTED HERE. A pure string state machine: it splits streamed text on
 #      `<think>` / `</think>` / `<tool_call>` and yields `(field, text)` deltas. No regex, no JSON, no I/O.
-#   2. `parse_tool_call` -- NOT PORTABLE AS WRITTEN. Two `re.match`/`re.finditer` patterns (DOTALL) over a
-#      JSON body plus `json.loads` per argument. Bend has neither a regex engine nor a JSON parser, so
-#      this needs a hand-written matcher and decoder; it is the same class of gap as
-#      `SimpleTokenizer.encode` (see `cli.bend`'s header).
-#   3. `normalize_messages` -- mutates a caller's dicts (joins text parts, empties null content). Needs a
-#      mutable message representation; it ports with the JSON layer, not before it.
-#   4. `Handler` / `LLMServer` -- `http.server`, `uuid`, `time`, and `model.Transformer`. Not ported.
 #
 # - and the state machine is the piece with a gate. The port is pure -- `route` returns the new `Router`
 # and the list of deltas instead of mutating and yielding -- because Bend has no mutable cell. That is a

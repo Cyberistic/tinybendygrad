@@ -80,11 +80,6 @@
 #       two consumers' ranges are compared by their INDEX part; the VALID part
 #       is merged separately, because two consumers may validly disagree about
 #       when an element is in range and the answer has to cover BOTH.
-#   "the new valid is the OR of all the children valids" (251)
-#       so the merged range is valid wherever ANY consumer says it is -- the
-#       union, not the intersection. A consumer that would have read an
-#       out-of-range element still has to be able to, or the other consumer
-#       loses data.
 #
 # THE FOUR INPUT-RANGE SPECIAL CASES, and each is a case where "passed through"
 # would be WRONG:
@@ -92,21 +87,6 @@
 #   "STACK: the leading range selects the src, srcs get the trailing ranges" (284)
 #       a STACK's srcs are all the same shape, so the LEADING range is the
 #       selector and the srcs get the ranges that follow it.
-#   "when the index srcs and output ranges of INDEX address every axis of its
-#    src, the index srcs select the leading axes" (286)
-#       an INDEX whose srcs and output ranges together cover every axis of its
-#       src is a FULL index -- there is no output range left, so the srcs'
-#       own index args take the leading axes.
-#   "if the EXPAND is used to inject a range, we don't mark it as ending_ranges.
-#    otherwise we do." (288)
-#   "NOTE: this doesn't actually always end a range, but this is why convs are
-#    realized, so for now we need it" (289)
-#       an EXPAND INJECTING a range does not end one -- it adds an axis -- and
-#       upstream admits the rule is a blunt instrument kept because it is what
-#       forces convolutions to be realized.
-#   "REDUCE creates ranges for the axes it is reducing" (293)
-#       the reduced axes are FRESH ranges on the input, taken from the input's
-#       shape rather than from the output's.
 #
 # AND TWO UPSTREAM COMMENTS ABOUT THE WRITE-OUT, which is where the port's
 # `IxRngs` record is finally filled:
@@ -115,12 +95,6 @@
 #    ranges, from the x op." (306)
 #       so the map holds BOTH, per node, and the port's `IxRngs` is exactly
 #       that pair -- `IxRngs.inp` and `IxRngs.outp`.
-#   "NOTE: SPEC=3 is broken here with shape" (309)
-#       and upstream's own note says the strictest spec check does not pass at
-#       this point of the pipeline; the shape is not yet the final shape.
-#   "if a deviceless value must materialize, place it on the sink device" (312)
-#       a value with no device of its own is placed on the sink's device when
-#       it has to be materialized -- which is what `pm_fix_deviceless` is.
 #
 # AND THE THREE RANGE-REALIZATION COMMENTS, WHICH ARE THE OTHER HALF OF THE
 # ALGORITHM:
@@ -128,22 +102,6 @@
 #   "ranges the consumers iterate that this node broadcasts over" (210)
 #       a broadcast consumer iterates axes the node does not have, and those
 #       axes are the broadcast's ENDING ranges.
-#   "if this is in the realize_map, we create new ranges (at the output)" (224)
-#   "all ranges are ended now" (226)
-#   "mark all ranges as ended" (228)
-#       so a REALIZED node gets brand-new output ranges and the ranges it was
-#       carrying are all ended -- it is a kernel boundary, so nothing carries
-#       into it.
-#   "if this has one consumer, it inherits the ranges from it" (235)
-#   "if this has two consumers, we have to merge the ranges and might create
-#    new ones" (238)
-#       and "we have to (partially) realize here if there's new ranges" (259)
-#       -- a node whose two consumers cannot share an axis is PARTIALLY
-#       realized: only the axes that had to be split are realized.
-#   "if this element is a reduce and there's ended ranges, we might have to end
-#    some other ranges" (262)
-#       a REDUCE whose input ranges are being ended cannot keep the same
-#       output ranges either, so it is realized too.
 #
 
 # THE THREE WALLS, stated where they bite. Two of the three were named for me:
@@ -379,16 +337,10 @@ def IxCtx.rngm(x: IxCtx) -> IxRMap:
 # with the KEY and the rest, because a `Maybe` cannot be threaded through a
 # recursion (bend2-constraints.md rule 2 of the general set) and an early return
 # out of a fold needs mutual recursion, which is refused.
-# THE LIST IS THE FIRST PARAMETER because the fuel is a `Nat` INDEX that does not
-# shrink and the decrease check reads arguments left to right (bend2-constraints
-# rule 7 of the `divandmod.bend` set: "the countdown has to be the SECOND
-# parameter for both to line up"). `k` is passed unchanged, so the tail is the
-# only subterm and it is first.
 #
 # `n == key` is a `Bool` PARAMETER, not a scrutinee: a `match` may not examine a
 # computed value (bend2-constraints rule 2), so the compare is computed in the
 # caller and the arm consumes a parameter. This is `spec.bend`'s `DevOpt` shape.
-#
 #
 
 def ixr_hit.of(hit: Bool, k: U32, +e: IxReal) -> IxReal:
@@ -428,8 +380,6 @@ def ix_hd(+xs: List<&2, O.Op>) -> O.Op: ix_hd.of(List.head(&2, O.Op, xs))
 # FALSE is a legal answer for a NEGATIVE row -- the recorded "ALL-TRUE tells you
 # the cases you covered and nothing about the rest" in its most embarrassing
 # form. Only the diff against the oracle saw it.
-# `out_shape[nleft+i]`, and `List.get` answers a `Maybe`
-# (bend2-constraints.md, `upat.bend` rule 4).
 
 def ix_mem(+xs: List<&2, O.Op>, +hit: Bool, +w: O.Op) -> Bool:
   match xs:
@@ -465,9 +415,6 @@ def ix_ac(w: O.Op) -> Bool: ix_mem1(w, ix_ac_ops())
 # `ix_resolve_miss()` is the named wall, the same shape `rangeify.bend`'s
 # `rf_ranges_miss()` takes: one constant, `rg "ix_resolve_miss"` lists every
 # dependent, and no caller can get a plausible wrong answer by accident.
-#
-#
-#
 #
 
 def ix_resolve_concrete(s: U32, d: U32) -> Bool: Bool.not(U32.is_eq(s, d))
@@ -521,9 +468,6 @@ def ix_bax_neg(+srcs: List<&2, U32>, +outs: List<&2, U32>) -> Bool:
 # result feeds a walk, not a join -- bend2-constraints.md's `wgsl` entry. An
 # earlier draft prepended and every `bax` row came out reversed, which is the
 # recorded `mxw_stk` failure (movement.bend rule 15) exactly.
-# `out_shape[nleft+i]`, and `List.get` answers a `Maybe`
-# (bend2-constraints.md, `upat.bend` rule 4).
-#
 #
 
 def ix_bax_out.of(m: Maybe<&2, U32>) -> U32:
@@ -597,9 +541,6 @@ def ix_bax(+srcs: List<&2, U32>, +outs: List<&2, U32>) -> List<&2, U32>:
 # The answer is a LENGTH for every arm -- `()`, `src[:1]`, `len(src)` -- and
 # `src[:1]` is empty when there is no src, so `ix_ds_take` handles that without
 # a separate case (movement.bend's `mxm_not_const` does the same).
-# `src[:1]` -- ONE arm, and it is the arm that has to know `src[:1]` of an empty
-# `src` is empty. The parameter is the `src[:1]` DECISION (`ix_ds_one`), so `True`
-# means "take one" and `False` means the `case _` arm, which is all of `src`.
 
 def ix_ds_take.of(one: Bool, +ss: List<&2, U32>) -> List<&2, U32>:
   match one:
@@ -630,10 +571,6 @@ def ix_ds_one(+op: O.Op) -> Bool:
 # THE ANSWER, as a length. `src[:1]` is `1` when there is a src and `0`
 # otherwise, so `ix_ds_n` is the whole of the function's observable behaviour and
 # the gate is 22 `ds_*_srcs` rows.
-# THE ANSWER, as a LENGTH, and it goes through `ix_ds_take` because `src[:1]` is
-# a LIST and `ix_ds_take` is the arm that builds it. A mutation of `ix_ds_take`
-# moved NOTHING before this, which is the blind spot the mutation table exists to
-# find: the def was written, commented and never called.
 
 def ix_ds_n.of(zero: Bool, one: Bool, +ss: List<&2, U32>) -> U32:
   Bool.pick(U32, zero, 0, ix_len(ix_ds_take(one, ss)))
@@ -705,9 +642,6 @@ def ix_aslot(+ys: List<&2, U32>, +placed: List<&2, U32>) -> U32:
 
 # SET `placed[j]`, in place, by rebuilding -- a `List` has no update, and the tail
 # is the shrink the decrease checker wants.
-# `List.append(acc, [x])` is a TAIL append (`acc ++ [x]`), so building `[x] ++ t`
-# needs the append reversed -- the "every row came out reversed" trap of
-# `mxw_stk`, and the reason this walk cannot use `List.append` directly.
 
 def ix_cons(h: U32, +t: List<&2, U32>) -> List<&2, U32>:
   List.append(&2, U32, List.append(&2, U32, Nil{}, [h]), t)
@@ -931,7 +865,6 @@ def ix_mv_reshape_same.go(+as: List<&2, U32>, +bs: List<&2, U32>, +aa: List<&2, 
 # `graph_rewrite` at the end is LOAD-BEARING, not a cleanup, and the port's
 # wall on it is a wall on the whole RESHAPE arm.
 #
-#
 
 def ix_mv_reshape_same(+arg: List<&2, U32>, +src: List<&2, U32>) -> Bool:
   ix_mv_reshape_same.go(arg, src, Nil{}, Nil{})
@@ -1031,7 +964,6 @@ def ix_rg_node(at: O.AxisType, +ar: O.Arena, +r: IxRange) -> O.Found:
 # keys it would insert, and `ix_m*` is the def a caller folds into `IxCtx.rmap`.
 #
 # `realize(ctx, tr)` (:28) inserts `(tr, None)` -- one key, no axis list.
-#
 #
 
 def realize(tr: U32) -> IxReal: IxReal{tr, False{}, Nil{}}
@@ -1177,9 +1109,6 @@ def ix_br_one(bcast: Bool, +nleft: U32, r: U32, +acc: List<&2, U32>, j: U32) -> 
   # `r.const_like(0) if j in baxes else r`, FILTERED BY `j >= nleft` -- => AND
   # `j >= nleft` is not `j > nleft`: the revision this replaces dropped the RANGE
   # AT `j == nleft`, WHICH UPSTREAM KEEPS.
-  # - the revision this replaces kept `r` iff `j in baxes AND j > nleft` --
-  # which keeps the RANGE WHERE upstream replaces it with a CONST 0, and drops
-  # IT WHERE UPSTREAM KEEPS IT. IT HAD NO ROW: `main()` READS NONE OF IT.
   Bool.pick(List<&2, U32>, Bool.not(U32.is_lt(j, nleft)),
             Bool.pick(List<&2, U32>, bcast,
                       List.append(&2, U32, acc, [ix_rg_c0_idx()]),
@@ -1221,8 +1150,6 @@ def broadcast_rngs.of(nb: Bool, +src: List<&2, U32>, +x: List<&2, U32>, +rngs: L
 # THE FUEL IS `lo + (hi - lo)` -- the REMAINING COUNT -- and not `hi`, because
 # `hi` GROWS as the binary split descends and the decrease check reads the first
 # argument that shrinks (bend2-constraints.md, `mixin/creation.bend` rule 1).
-# This is `renderer/__init__.bend`'s `dev_prefix.go` shape exactly, and the
-# reason is the same: `lo` never grows.
 #
 # `ix_ss_*` answers the INDEX SEQUENCE, not a node: the nodes are
 # `r0.eq(k).where(...)` and a `(r0 < mid).where(...)` (W3), and what the gate
@@ -1249,17 +1176,6 @@ def broadcast_rngs.of(nb: Bool, +src: List<&2, U32>, +x: List<&2, U32>, +rngs: L
 #
 #   data_src_count = len(data_srcs(x.op, x.src))
 #   for i, s in enumerate(x.src):
-#     src_rngs = broadcast_rngs(x, s, range_map[x][0]) if x in range_map else ()
-#     if s.op in {PARAM,BUFFER,ALLOC,MSTACK,MSELECT,AFTER}:
-#       if x in range_map and i < data_src_count: new_src = new_src.index(*src_rngs)
-#     elif s in realize_map:
-#       closed_ranges = range_map[s][1]
-#       if s.op is STORE: new_src = s.end(*[...]); del realize_map[s]
-#       else:
-#         removable = s.op not in ALWAYS_CONTIGUOUS and s not in non_removable
-#         new_src = UOp(Ops.STAGE, src=(new_src,)+closed_ranges, arg=opts)
-#         if x in range_map: new_src = new_src.index(*src_rngs)
-#     new_srcs.append(new_src)
 #
 # AND THE STORE BRANCH IS A REALIZATION, not an index: "add the ends if this is
 # a store" (84). A STORE that is realized is turned into an END over its
@@ -1279,10 +1195,6 @@ def broadcast_rngs.of(nb: Bool, +src: List<&2, U32>, +x: List<&2, U32>, +rngs: L
 # because the two sets DIFFER: `ix_ds_zero` has RANGE/SPECIAL and this has
 # MSTACK/MSELECT/AFTER. Writing one of them in terms of the other would have
 # been the copy-paste the brief forbids.
-#
-#
-#
-#
 #
 
 def broadcast_rngs(op: O.Op, +src: List<&2, U32>, +x: List<&2, U32>, +rngs: List<&2, U32>) -> List<&2, U32>:
@@ -1342,9 +1254,6 @@ def ix_rmap_get(+rm: IxMap, k: U32) -> Maybe<&2, IxReal>:
 
 # THE THREE TABLES. Each needs its own table/dispatch/try/scan -- see the
 # header. `ix_early_*` is `early_reject`, a NECESSARY CONDITION.
-# the key of an `IxRngs` IS THE NODE -- `IxRngs.n` -- and the revision this
-# replaces read it "out of the `inp` list's own head by convention", which was
-# a convention about a list that holds the RANGES.
 def ix_rngm_k(e: IxRngs) -> U32: IxRngs.n(e)
 
 # THE MAP, `IxRMap`: a list of `IxRngs` scanned linearly. There is no hash map
@@ -1398,18 +1307,6 @@ def ix_early_step(hit: Bool, +rej: List<&2, O.Op>, have: List<&2, O.Op>) -> Bool
 #       a CALL's arguments are read by the callee, which the scheduler cannot
 #       see into, so anything the callee might read has to be materialized
 #       BEFORE the call.
-#   "always realize" (46)
-#       a STORE is the one thing that must be its own kernel boundary.
-#   "realize srcs of these" (48)
-#       MSELECT and MSTACK pick between values, so their srcs are read by
-#       something the range map cannot describe.
-#   "sometimes we need to realize the src of STORE if there's a self-access, or
-#    if it's a cross device store" (50)
-#       and upstream says WHY it is only SOMETIMES: "you don't usually have to
-#       do this for assign unless there's a WAR hazard like
-#       TestAssign.test_assign_double_diamond_reduce" (33). A store that reads
-#       the buffer it writes is a write-after-read hazard, and the range map
-#       cannot express that the read must happen before the write.
 def grm_table() -> O.PMEntrys:
   O.PMEntrys{[O.PMEntry{0, [O.OpsCALL{}], Nil{}},
              O.PMEntry{1, [O.OpsSTORE{}], Nil{}},
@@ -1452,19 +1349,6 @@ def par_table() -> O.PMEntrys:
 #   "REDUCE(op, axis) -> REDUCE(op) with ranges" (130)
 #       a REDUCE carries the axis it reduces as an ARG; in rangeified form the
 #       axis is a RANGE among the srcs.
-#   "PAD -> WHERE" (132)
-#       a PAD's validity becomes a WHERE, so the padded-out elements are the
-#       ones the WHERE does not select.
-#   "STACK -> WHERE select on the leading range" (134)
-#       a STACK's srcs are selected by a range rather than indexed, and the
-#       LEADING range is the selector.
-#   "finally, apply_rangeify" (136)
-#       and THIS is the rule the whole table exists for: it is the one that
-#       turns a node's ranges into the bufferize/index srcs.
-#   "remove movement op" (138)
-#       and it is LAST because the movement op is now encoded in the ranges,
-#       so the op itself is redundant. Removing it before the ranges were
-#       rewritten would lose the swizzle.
 #
 # THE PORT'S TAGS ARE THE SAME FIVE, in the same order, and rule 4's claim is
 # `ix_mv_ops()` -- `GroupOp.Movement`, the six ops -- because rule 5 removes
@@ -1480,19 +1364,10 @@ def par_table() -> O.PMEntrys:
 #       draws with "is it in range_map" is the port's W3 (`range_map` is a
 #       lookup this file can make, but the PORT's STACK rule is a table entry
 #       and the port has no shape-carrying STACK).
-#   "use the src list directly, a transient STACK of mid-rangeify srcs violates
-#    the spec shape rule" (122)
-#       the rule must NOT build a temporary STACK of the already-rangeified
-#       srcs and then index into it. A STACK's shape rule says its srcs have
-#       the same shape, and the mid-rangeify srcs do not, so the transient
-#       STACK would be an ill-shaped node. Using the src LIST directly keeps
-#       the rule from ever materialising one.
 #
 # AND THE REDUCE'S OWN COMMENT: "input ranges" (109) names the slice
 # `ctx.range_map[x][0][:x.arg[1]]` -- the ranges of the axes the REDUCE
 # reduces, taken from the node's INPUT ranges and not from its output ones.
-# A REDUCE's reduced axes are ranges on the INPUT and the surviving axes are
-# ranges on the OUTPUT, and the rule splits them accordingly.
 
 def pfd_table() -> O.PMEntrys: O.PMEntrys{[O.PMEntry{0, [O.OpsSTAGE{}], Nil{}}]}
 
@@ -1568,12 +1443,6 @@ def ix_g3(op: O.Op) -> O.Found:
 # input and the whole of what a `*_ids` row prints. `n` is a `Nat` and it is the
 # FIRST parameter because the checker wants the shrink before the arena, and the
 # arena GROWS at every step (`O.Found.ar(r)`).
-# THE RANGE FIXTURE. `apply_movement_op` takes a tuple of ranges, so the fixture
-# is a LIST of `n` RANGEs with axis ids `base, base+1, ...` and the arena they
-# live in. `O.Found` carries one node, so the pair is an `IxRngs`. An earlier
-# fixture returned only the LAST range node and the movement rows read `srcs` of
-# that node -- a const -- which is why all eighteen `mv_perm*`/`mv_expand*` rows
-# came out empty. `end` is a NODE INDEX, so the CONST is interned first.
 
 type IxFixture is Data:
   IxFixture{ar: O.Arena, rs: List<&2, U32>}
@@ -1700,9 +1569,6 @@ def ix_pad_k(offs: List<&2, U32>, szs: List<&2, U32>, shs: List<&2, U32>, +k: Na
 
 # PAD's flags are `not noop`, so `ix_mv_walk`'s "non-zero rebuilds" rule lines
 # up with it and the `WHERE` label is the op `valid()` builds.
-# THE LISTS DO NOT SHRINK, and that is the whole point: `ix_pad_k` addresses all
-# THREE by `k`, so peeling the head would make dim 1 read dim 0's tail. The
-# decrease is the counter, which is why it is the first parameter.
 
 def ix_pad_flags.go(n: Nat, +k: Nat, +offs: List<&2, U32>, +szs: List<&2, U32>, +shs: List<&2, U32>, acc: List<&2, U32>) -> List<&2, U32>:
   match n:
