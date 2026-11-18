@@ -153,6 +153,9 @@ def hx.u32_8(+v: U32) -> String:
 # `U32.show` are separate rows: one is the digits, one is the padding.
 #
 # The unpadded decimal is base's `U32.show`, not a hand-rolled divide-by-ten
+# loop, because a `U32` self-call on `U32.div(n, 10)` is not a decreasing call
+# (there is no subterm relation on a number) and a `Nat` fuel for ten digits
+# would be a promise instead of a proof.
 def dc.zeros(k: Nat) -> String:
   match k:
     case 0n: ""

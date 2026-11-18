@@ -122,6 +122,7 @@ def PCI_COMMAND_MASTER() -> U32: 4
 # PAIR.
 #
 # the phase starts at one, not zero. that is the NVMe completion queue's
+# phase bit and it is the one bit that makes a stale completion look like a
 
 type Q is Data:
   Q{qid: U32, tail: U32, phase: U32, entries: U32, sq_addr: U32, cq_addr: U32,
@@ -231,6 +232,7 @@ def q.next_phase(+phase: U32, new_tail: U32) -> U32:
 # is a physical address and is wider than 32 BITS.
 #
 # TWO BUGS THE FIRST GATE RUN CAUGHT, and the oracle is upstream's own
+# `struct.pack` read back out:
 def sqe_words(opcode: U32, slot: U32, nsid: U32, prp1_hi: U32, prp1_lo: U32,
               cdw10: U32, cdw11: U32) -> List<&2, U32>:
   [cmd_word(opcode, slot), nsid, 0, 0, 0, 0, prp1_lo, prp1_hi,
@@ -251,7 +253,6 @@ def SQE_WORDS() -> U32: 16
 # `ceildiv(len(pages) + 1, 256) * 0x1000` AND THE TABLE IS
 # `round_up(16 * len(pages), 0x1000)`. THE `+ 1` IN THE LIST COUNT IS
 # why a single page still gets a list page.
-# the prp list's capacity: 256 entries per list page.
 def PRP_LIST_ENTRIES() -> U32: 256
 
 # the list pages' count. the `+ 1` is LOAD-bearing: a single page still gets
@@ -367,15 +368,6 @@ def dev_size(+nsb: U32, +nsb_hi: U32, +lba: U32) -> U32:
 #   1. the qid is `len(self.queues) + 1`. the admin queue is qid 0 and
 #      the first IO queue is qid 1, so the doorbells of the first IO
 #      QUEUE ARE AT `2 * 1` AND `2 * 1 + 1` -- NOT AT 0 AND 1.
-#   2. BOTH CREATES PASS `(q.entries - 1) << 16 | q.qid`. THE QUEUE SIZE
-#      field is the entry count minus one and it is shifted left by
-#      sixteen, and the qid is in the low sixteen. the `- 1` is the
-#      zero-based SIZE and a port that passes the entry count creates a
-#      queue one entry shorter than the device offers.
-#   3. THE CREATE-SQ'S CDW11 IS `q.qid << 16 | 1` AND THE CREATE-CQ'S
-#      CDW11 is `1`. the square bracket is the physical queue number and
-#      the `1` is the "enable" flag. so the two creates differ in their
-#      CDW11 and the difference is the queue's own identity.
 
 def new_qid(+nqueues: U32) -> U32:
   U32.add(nqueues, 1)
@@ -544,9 +536,6 @@ def last_wave_size(+full: U32, +rem: U32, +entries: U32) -> U32:
 #
 # the `if n else []` is the whole function. a LOOP of zero iterations is
 # no instructions at all -- not an empty LOOP, not a LOOP that runs once.
-# AND THE COMMENT SAYS WHY: "loops in the cmdbuf, so the host program doesn't
-# grow with the read size". a port that emits a zero-iteration LOOP emits a
-# LOOP object and the host program grows with the read SIZE anyway.
 
 def loop_n(+n: U32) -> U32:
   Bool.pick(U32, U32.is_zero(n), 0, 1)
@@ -639,6 +628,8 @@ def page_list.expand(paddrs: List<&2, U32>, sizes: List<&2, U32>) -> List<&2, U3
 #   pcibus = filter_visible_devices(System.list_devices(*NVME_IDS), "NVME")[index][1]
 #
 # the assertion is the whole point: an NVMe drive that the operating system
+# has mounted, or that lvm/md has taken, must not be used. the port carries
+# the rule and names the two reads that decide it, and the reads are the
 
 def IFACE_NVME() -> U32: 1
 def dev.iface_names() -> List<&2, String>: ["NVMEIface"]
@@ -674,8 +665,6 @@ def dev.synchronize_is_noop() -> Bool: True{}
 # call whose first source is a STORE and whose device's name starts with
 # "nvme". and the function returns `None` when there is no such call --
 # it is a transform that may not apply, not a transform that always applies.
-# the port carries both halves, and the second half is the one that matters:
-# a transform that always applies would rewrite every non-NVMe call.
 
 def is_nvme_device(name: String) -> Bool:
   String.starts_with(name, "NVME")

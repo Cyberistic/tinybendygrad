@@ -52,7 +52,6 @@ def kuconv.dt(+fx: F.Folded, a: U32) -> S.Dt:
 # ADDRSPACE" (`ops.py:896` ANSWERS `None` FOR A SINK).  `S.Aalu{}` IS THE
 # default because upstream's `Ops.CONST`/`Ops.RANGE`/`Ops.SPECIAL` are alu
 # (`ops.py:899`) and a sink's `None` is spelled `ALU` in the renderer's own
-# FIXTURE (`gen_kus.py`'s `ADDRS` TABLE MAPS `NONE` TO `S.Aalu{}`).
 def kuconv.addr.go(m: Maybe<&2, Maybe<&2, S.Addr>>) -> S.Addr:
   match m:
     case Some{x}: Maybe.default(&2, S.Addr, x, S.Aalu{})
@@ -279,12 +278,6 @@ def ku_c.fill(+done: List<&2, C.KU>, +k: C.KU) -> C.KU:
   Bool.pick(C.KU, ku_c.refused(C.KU.op(k), k), ku_c.fill.of(done, C.KU.op(k), k), k)
 
 # the pass.  `done` is the completed list, in the same order as the input, so
-# POSITION `p` IS POSITION `p` IN BOTH.
-#
-# THE ARGUMENT ORDER IS (shrinking, changing), WHICH IS `linearizer.bend`'s OWN
-# `lt_deg.go(+ar, rest, +acc)` SHAPE WITH THE UNCHANGED ARGUMENT DROPPED: THE
-# COMPILER READS THE ARGUMENTS LEFT TO RIGHT AND EACH IS PASSED UNCHANGED
-# UNTIL ONE SHRINKS.
 def ku_c.go(+rest: List<&2, C.KU>, +done: List<&2, C.KU>) -> List<&2, C.KU>:
   match rest:
     case Nil{}: done

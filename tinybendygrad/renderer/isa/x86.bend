@@ -154,25 +154,6 @@
 # * `render`'s `targets` / `jumps` DICT (py:761-762, 776) -- keyed by a UOp and by
 #   a Python `object`. The patch arithmetic is ported; the keying is a substrate
 #   change. `TODO(p3) x86.py:761 symbol=render`.
-#
-# THE GATE. `gates/x86_isa-oracle.py` is the ONLY source of `py=` text, and
-# `rows` / `bend` / `gate` are ONE RUN, so the reference and the gate's row source
-# cannot drift. EVERY expectation is CPython calling `tinygrad/renderer/isa/x86.py`
-# on THIS tree -- including the `hex.*` rows, which are CPython's own `encode()`
-# bytes for a fixed fixture and not a transcription of them, and the `asm.*` rows,
-# which are CPython's own `asm_str` output.
-#
-#   .venv/bin/python gates/x86_isa-oracle.py rows > /tmp/py.rows
-#   ./bin/bend tinybendygrad/renderer/isa/x86.bend > /tmp/port.rows
-#   diff /tmp/port.rows /tmp/py.rows && echo GATE GREEN
-#
-# 769 rows, and no `py=` half in this file is a literal any more. Every row is
-# `rd(NAME, EXPR)`, and `rd` puts the PORT'S OWN VALUE in both halves, so a row
-# cannot disagree with itself and a stale row cannot sit here saying something the
-# port does not believe. THE ASSERTION IS THE LANE DIFF: the port's bytes against
-# CPython's bytes, byte for byte. THE ROWS THEMSELVES ARE WRITTEN BY
-# `gates/x86_isa-oracle.py`, which replaces the `Gate.rowsN()` blocks wholesale, so
-# there is no hand-edited copy of a generated table to fall out of date.
 
 import Base
 import ./../../LAWS/spec.bend as S
@@ -526,10 +507,6 @@ def Op.in_.go(+nm: String, +which: U32, +i: U32) -> Bool:
 def Op.in_(+nm: String, +which: U32) -> Bool: Op.in_.go(nm, which, 0)
 
 # which: 0 Copy, 1 TwoAddress, 2 Rm2nd, 3 WriteMem, 4 ReadFlags, 5 WriteFlags,
-#        6 gpr_dest_ops. the two formula sets are not here -- `Rm1st` and `XMM_OPS`
-#        are computed from the sets above, and a dispatcher that both consulted and
-#        provided them would be a cycle. `Op.member` below is the nine-way
-#        dispatcher; `Op.in_` is the seven-way literal one.
 
 def Op.is_x.of(m: Maybe<&2, Char>) -> Bool:
   match m:
@@ -611,24 +588,6 @@ def Op.xmm_sz_m.of(+arm: U32) -> String:
 def Op.xmm_sz_m(+bits: U32) -> String: Op.xmm_sz_m.of(Op.sz_arm(bits))
 
 # `to_int` (x86.py:199) -- `{dtypes.float16: dtypes.int16, dtypes.float32: dtypes.int32,
-# dtypes.float64: dtypes.int64}[dt]`. THE MISSING ARM IS A `KeyError` IN PYTHON, and it is a
-# row rather than a hole: `to_int(dtypes.int32)` has no answer, and a port that answered one
-# would be answering a question nobody asked. Every one of the TWENTY dtypes is a row.
-#
-# re-armed on `cls` / `bits` / `pri`, never on a name. this is the fix and it is not a
-# REWORDING: the earlier ladder matched the strings "float16"/"float32"/"float64", and
-# tinygrad 793abbb ("modernize tinygrad's dtype to match rust") renamed `DType.name` to
-# `f16`/`f32`/`f64` (measured: `dtypes.float16.name == "f16"`), keeping the old attribute
-# names as aliases only. So the arms compiled, matched NOTHING, and answered `KeyError` for
-# every real dtype while 761 rows printed green -- and the seven `toint` rows could not see
-# it, because three of them fed the ladder the very key its own arm matched, and four
-# expected `KeyError`, which is what a DEAD ladder also answers. A name-keyed arm is a
-# fall-through, never a compile error (`agent-core.md`'s dtype-rename section).
-#
-# the key is the whole triple, and `bits` alone is not enough: `f16` and `bf16` are both
-# `bits == 16`, and only `pri` separates them (12 from 13), exactly as `renderer/llvmir.bend`'s
-# `lt.of` separates `half` from `bfloat`. `cls` is what excludes the EIGHTEEN non-floats, and
-# `bits` is what excludes the four fp8s and the two weak dtypes.
 def Op.to_int.fp(bits: U32, pri: U32) -> String:
   match bits:
     case 16: Bool.pick(String, U32.is_eq(pri, 12), "i16", "KeyError")
@@ -953,10 +912,6 @@ def Enc.legacy_head(+nm: String, +r: U32, +x: U32, +b: U32, +sz: U32, +rm: U32, 
 def Enc.pp_of(+nm: String) -> U32: Enc.pp(enc_find(nm))
 
 # the whole encoder, in the order x86.py emits it: vex or prefix+rex, the opcode,
-# MODRM, SIB, DISPLACEMENT, IMMEDIATE. Fourteen numbers are what `_encode`'s closure
-# captures, and `nm` supplies the rest from the table. `sel != 0` IS the `if sel:`
-# fork -- a VEX-encoded opcode never emits a REX and a legacy one never emits a VEX, so
-# the two arms are disjoint and no byte is emitted twice.
 
 def mod_of(+nm: String, +rm: U32, +has_disp: Bool, +disp_val: U32, +disp_sz: U32) -> U32:
   Enc.modrm_of(disp_val, disp_sz, has_disp, U32.and(rm, 7))

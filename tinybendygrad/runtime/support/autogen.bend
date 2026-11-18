@@ -370,6 +370,7 @@ def u32_in(+k: U32, xs: List<&2, U32>) -> Bool:
 
 # SECTION 5 -- `arc_families`, autogen.py:98.
 # https://clang.llvm.org/docs/AutomaticReferenceCounting.html#arc-method-families
+#
 def arc_families() -> List<&2, String>:
   ["alloc", "copy", "mutableCopy", "new"]
 
@@ -742,6 +743,7 @@ def emit_returns_retained(+nm: String) -> String:
 # autogen.py:264 the external VarDecl:
 #   try: <nm> = <T>.in_dll(<dll>, '<nm>') # type: ignore
 #   except (ValueError,AttributeError): pass
+#
 def emit_in_dll(+nm: String, ty: String, dll: String) -> String:
   String.concat(["try: ", nm, " = ", ty, ".in_dll(", dll, ", '", nm, "') # type: ignore\n",
                  "except (ValueError,AttributeError): pass"])

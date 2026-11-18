@@ -130,7 +130,7 @@ def expect.ret_str(+ret: String) -> String: ret
 def expect.msg(+err: String) -> String: err
 
 # `expect` has no return type for `ret=None`, so the sentinel is the EMPTY STRING
-# and `expect.ret_none` is the row that says which one the caller meant
+# and `expect.ret_none` is the row that says which one the caller meant.
 def expect.ret_none() -> String: "None"
 
 # :14-15  the FIRST map: `{'arm64': 'AArch64', 'x86_64': 'X86',
@@ -362,7 +362,7 @@ def AMDLLVMCompiler.dis_row() -> String: "amdgpu_disassemble(lib)"
 def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]))
 
 # the nth element of a space-separated list, as a two-arm ladder over a FOUR
-# element window -- the recorded call NAMES are what `compile` is pinned on
+# element window -- the recorded call NAMES are what `compile` is pinned on.
 def LLVMCompiler.compile_first() -> String: "LLVMCreateMemoryBufferWithMemoryRangeCopy"
 
 def ct.go(+k: Nat, +xs: List<&2, String>, +acc: String) -> String:

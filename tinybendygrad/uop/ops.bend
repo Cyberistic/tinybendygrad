@@ -1,7 +1,10 @@
-# ops.bend -- tinygrad/uop/ops.py.
-# THIS FILE IS THE GATE. .agents/TODO.md: "if the arena does not work here, the
-#   A UOp is a U32 index into an append-only `List<Node>`, threaded through every function
-# WHY AN INDEX AND NOT A TREE. tinygrad hash-conses UOps in `UOpMetaClass.ucache` and the
+# WHY AN INDEX AND NOT A TREE. tinygrad hash-conses UOps in
+#      THE DIFFERENCE IS MEASURED. `Ops.name.of`, `Ops.value` and `all_ops` are
+#      MEASURED, the port's `associative` was MISSING `XOR` and `defines` was
+#     MEASURED: the pin REJECTS the three-element arg and upstream ACCEPTS it.
+#   * `codegen/__init__.py:190` writes
+#   * `runtime/support/hcq2.py:68,87` is `UOp.custom_function(name).call(...)` with
+#     `uop/spec.py:110`'s `isinstance(x.arg, CustomFunction)` needs the TYPE and
 
 import Base
 import ./../helpers.bend as H
@@ -15,6 +18,8 @@ type Op is Data:
   OpsREWRITE_ERROR{}
   OpsPARAM{}
   # REFERENCE A PARAM -- upstream `codegen/__init__.py:426` builds one when a param's addrspace is not ALU,
+  # and every generic predicate that lists PARAM lists it too (`uop/__init__.py:114`'s `Defines`,
+  # `ops.py:169`, `ops.py:350`, `ops.py:873`, `render.py:40`).
   OpsREFPARAM{}
   OpsCALL{}
   OpsPROGRAM{}
@@ -250,11 +255,8 @@ def Ops.value(op: Op) -> U32:
     case OpsALLREDUCE{}: 75
     case OpsPYLITERAL{}: 76
 
-# ==== BEGIN GENERATED GroupOp SETS
-# GENERATOR .agents/slop/enum-tables/groupop-gen.py --write
-# FROM upstream's `class GroupOp` in tinygrad/uop/__init__.py, READ BY PATH.
-# THE PORT'S SET-MEMBERSHIP FUNCTIONS ARE A TRANSCRIPTION OF THAT CLASS, AND A
 # TRANSCRIPTION ROTTS: MEASURED, THE PORT'S `associative` WAS MISSING `XOR` AND
+# WRITTEN AS THE UNION THEY ARE AND NOT AS A FOURTH TABLE, SO A DERIVED SET
 
 def GroupOp.unary(op: Op) -> Bool:
   match op:
@@ -467,6 +469,8 @@ def axis_colors(a: AxisType) -> String:
     case _: "!KeyError"
 
 # `axis_to_pos` IS GONE. ops.py:57 at the pin, deleted by 78d482262 and replaced by
+# range_start -- ops.py:56. `range_start[self.op]` is a slice offset, so it is a
+# DEAD CLAIM, MEASURED. This `U32` ladder has NO CALLER in the port -- `ended_ranges` is
 def range_start(op: Op) -> U32:
   match op:
     case OpsSTAGE{}: 1
@@ -513,16 +517,15 @@ def SInt.uop_of(s: Sint) -> Maybe<&1, U32>:
     case SU{u}: Some{u}
 
 # TWO PYTHON TUPLES, AS RECORDS. `Maybe<&2, A & B>` is a `Type`, not a `Data`,
-# `vmin_vmax: tuple[PyConst, PyConst]|None` -- (min, max) of a Variable's value
 type PyRange is Data:
   PyRange{lo: H.I64, hi: H.I64}
 
 # `image: tuple[int, int]|None` -- (h, w) if this is an image2d buffer, then
-# size == h*w*4. `_shape`'s BUFFER arm reads it.
 type Img is Data:
   Img{h: U32, w: U32}
 
 # ParamArg -- tinygrad/uop/ops.py:22
+#     ...]|None` (`uop/ops.py:34`) and `device.py:29`'s table is string-keyed. See
 
 type ParamArg is Data:
   ParamArg{slot: U32, dtype: S.Dt,
@@ -537,7 +540,6 @@ type ParamArg is Data:
     bind_on_realize: Bool,
     val: Maybe<&2, Const>}
 
-# Tag is `Any` too, and a much smaller one: ops.py reads it in `rtag` (True, a
 # A tag tuple holds UOPS, so it holds their INDICES: ops.py:547 says "tags can
 type Tag is Data:
   TNone{}
@@ -547,7 +549,6 @@ type Tag is Data:
   TTuple{xs: List<&2, U32>}
 
 # The three arg payloads, moved UP from ops.py:1339-1404.
-# They are moved because `Arg` holds them and `eq_arg` -- the ucache key --
 type OPTOPS is Data:
   OPS_TC{}
   OPS_SPLIT{}
@@ -555,7 +556,6 @@ type OPTOPS is Data:
   OPS_SWAP{}
 
 # `auto()` numbering is the declaration order, and `OptOps.__lt__` is the only
-# reader of it -- which nothing calls. Kept anyway: it is the enum's documented value.
 def OPTOPS.value(o: OPTOPS) -> U32:
   match o:
     case OPS_TC{}: 1
@@ -563,10 +563,6 @@ def OPTOPS.value(o: OPTOPS) -> U32:
     case OPS_PADTO{}: 3
     case _: 4
 
-# `Opt.arg: int|tuple|None`. `SPL` and `TC` ARE that arg's TWO TUPLE SHAPES, as
-# records: `apply_opt` reads two of the three split fields at once and a `U32`
-# cannot be `+`, so the pair travels as the `Data` record Python already had it as.
-# `top: Maybe<&2, Bool>` because upstream's split arg is a 2-tuple `(amt, target)`
 # or a 3-tuple `(amt, target, top)` (`postrange.py:114` checks `len(opt.arg) in
 type SPL is Data:
   SPL{amt: U32, t: AxisType, top: Maybe<&2, Bool>}
@@ -597,6 +593,14 @@ def OPT.arg(x: OPT) -> OPTARG:
     case OPT{op, axis, arg}: arg
 
 # The three arg payloads, moved UP from ops.py:1339-1404.
+# KernelInfo -- ops.py:1339. six fields, upstream's six, in upstream's order:
+# upstream's own `ops.py:26` imports it under `TYPE_CHECKING` and Bend REFUSES
+# because `do_estimates` -- upstream's only writer, `codegen/__init__.py:446` --
+# upstream's only writer is `runtime/support/hcq2.py:295` and the port's
+# upstream's elements are `Opt` dataclasses (pin ops.py:1342,1343 `tuple`), and
+# `--graph lin` carries one, MEASURED by calling the py side,
+# which is `heuristic.py:109`'s own `Opt(OptOps.SPLIT, axis, (0, AxisType.UPCAST))`.
+# and the CONTENT was unobservable -- MEASURED, changing a fixture's payload `0` to
 type KernelInfo is Data:
   KernelInfo{name: String, applied_opts: List<&2, OPT>, opts_to_apply: Maybe<&2, List<&2, OPT>>,
     estimates: Maybe<&2, E.Estimates>, beam: U32, optimized: Bool}
@@ -605,6 +609,10 @@ def KernelInfo.of() -> KernelInfo:
   KernelInfo{"test", Nil{}, None{}, None{}, 0, False{}}
 
 # `Target` -- tinygrad/helpers.py:198. `device, renderer, arch, interface, indices`,
+# DIFFERENT identities are two types: a `H.Target.parse`d target could not go
+# be typed at all. MEASURED, before this change: the round trip gate answered
+# ProgramInfo -- ops.py:1343. SEVEN fields, and the SEVENTH is `target: Target`.
+# (`ops.py:1358`) takes a `target` argument and there was no `from_sink`, so
 type ProgramInfo is Data:
   ProgramInfo{global_size: List<&2, H.I64>, local_size: List<&2, H.I64>, params: List<&2, U32>, globals: List<&2, U32>, outs: List<&2, U32>, ins: List<&2, U32>, target: H.Target}
 
@@ -612,7 +620,6 @@ def ProgramInfo.of() -> ProgramInfo:
   ProgramInfo{[H.i64_of_i32(1), H.i64_of_i32(1), H.i64_of_i32(1)], [H.i64_of_i32(1), H.i64_of_i32(1), H.i64_of_i32(1)], Nil{}, Nil{}, Nil{}, Nil{}, H.Target.of()}
 
 # `var_vals: dict[str, int]` -- a `Map` is string-keyed in Bend, which is the
-# So: a declaration nobody calls is not checked, and the file compiled green for the
 type VarVals is Data:
   VarVals{m: Map<&2, H.I64>}
 
@@ -620,7 +627,6 @@ def VarVals.new() -> VarVals:
   VarVals{Map.new(&2, H.I64)}
 
 # the body of a CALL is always one of these: programs (SINK/PROGRAM/LINEAR), bulk stores, and function references
-# OPAQUE_CALL_BODIES = {Ops.SINK, Ops.PROGRAM, Ops.LINEAR, Ops.STORE, Ops.CUSTOM_FUNCTION}
 def GroupOp.opaque_call_bodies(op: Op) -> Bool:
   match op:
     case OpsSINK{}: True{}
@@ -631,25 +637,40 @@ def GroupOp.opaque_call_bodies(op: Op) -> Bool:
     case _: False{}
 
 # CustomFunction -- ops.py:1394-1397 upstream. NOT AT THE PIN: `git show
+# pin a CUSTOM_FUNCTION's arg was a bare `str` (ops.py:1256,
+# here because `uop/spec.py:110` now reads `isinstance(x.arg, CustomFunction)` and
+#   name: str                    the external function's SYMBOL. `hcq2.py:84` writes
+#                                `dtype_from_uop`'s CUSTOM_FUNCTION arm (ops.py:133)
 type CustomFunction is Data:
   CustomFunction{name: String, dtype: S.Dt}
 
-# the default arm, upstream's `CustomFunction(name)`. `UPat.custom_function`
 # (ops.py:1509) builds exactly this value -- `arg=CustomFunction(fn)`, dtype void.
 def CustomFunction.of(name: String) -> CustomFunction:
   CustomFunction{name, S.void()}
 
 # CallInfo -- ops.py:1391. TWO FIELDS DROPPED, and both for the same reason:
+# FALSE and it names a function and a shape, which is why it looked like it confirmed
+# THE FIELD. MEASURED:
+#   * `tinygrad/uop/ops.py:130-132` is `case Ops.CALL:` / "a call has the dtype of its
+#   * `tinygrad/uop/spec.py:112` at HEAD is `lambda x: isinstance(x.arg, CallInfo)` --
 type CallInfo is Data:
   CallInfo{name: Maybe<&2, String>, precompile: Bool, precompile_backward: Bool, dtype: S.Dt}
 
-# Arg -- the `arg: Any` field -- and Tag -- the `tag: Any` field.
-# `Any` is Python's way of saying "this field holds twenty unrelated things
-#   None                    ANone      the default; SINK/STAGE arg is None
-#   DType                   ADt        CAST/BITCAST arg; INS arg[1]
-#   PyConst|InvalidType     APy        CONST arg
-#   ParamArg                AParam     BUFFER/ALLOC/PARAM arg
 #   CustomFunction          ACustom    CUSTOM_FUNCTION arg (ops.py:1394 upstream;
+#   Ops                     AOpLit     PYLITERAL arg (`upat.py:26` passes `self.op[0]`,
+#                                     a bare `Ops`; `__init__.py:101` says the literal is
+#   tuple[int, ...]         ATuple     PERMUTE arg (`movement.py:231`), UNSHARD arg
+#                                     (`ops.py:691`: "the tuple of sharded axes, sorted")
+#   -- and this is the WRONG SPELLING FOR A FLIP, which is `tuple[bool, ...]`:
+#      `ops.py:428` asserts `all(isinstance(x, bool) for x in self.marg)` and
+#      MEASURED on a fresh src `UOp(Ops.FLIP, src, (1, 0))` RAISES
+#   str                     AStr       SPECIAL name (`gpudims.py:104`), SOURCE text
+#                                     (`codegen/__init__.py:455`)
+#   (str, DType)            AInk       INS arg (`ops.py:622`), CUSTOM/CUSTOMI arg --
+#                                     `ops.py:137` ASSERTS that pair: "CUSTOM/CUSTOMI arg
+#                                     byte values. `ops.py:201`'s key holds the `bytes`
+#   int                     AInt       MSELECT's shard index (`ops.py:772`), a bare int.
+#                                     `runs/graphcmp/D/D1-graph-mselect.txt`): `ops.py:201`'s
 
 type Arg is Data:
   ANone{}
@@ -662,14 +683,13 @@ type Arg is Data:
   AProgram{pi: ProgramInfo}
   ARange{ids: List<&2, U32>, at: AxisType}
   AReduce{rop: Op, num_axes: U32}
-  # THE UNPAIRED `Op`. `AReduce` and `AAllred` both hold one and BOTH PAIR it, so before
-  # this variant `Arg` could not spell `UOp(Ops.PYLITERAL, arg=<a bare Ops>)` at all --
   # `upat.py:26`'s `UOp(Ops.PYLITERAL, arg=self.op[0])` -- and the compiler said so:
   AOpLit{op: Op}
   AWmma{dims: List<&2, U32>, dt: S.Dt, threads: U32, tc: Maybe<&2, List<&2, U32>>}
   ATuple{ys: List<&2, U32>}
-  # `tuple[bool, ...]` -- FLIP's arg, and the ONLY reason upstream's `Ops.FLIP` has a
   # guard `not all(isinstance(x, bool) for x in self.marg)` (ops.py:428) while PERMUTE
+  # has none.  ONE upstream pattern (`upat`/`spec.py:166` asserts `isinstance(mv.arg,
+  # this.  MEASURED on the corpus: CPython renders `a.flip(0).uop.arg` as
   ABoolList{bs: List<&2, Bool>}
   AStr{s: String}
   AInk{ins: String, dt: S.Dt}
@@ -732,11 +752,9 @@ def Arena.bottom() -> Node:
   Node{OpsNOOP{}, Nil{}, ABad{}, TNone{}}
 
 # the arena starts with the bottom at index 0, so `Arena.next` is
-# `next(UOp.unique_num)` with the first slot already spent.
 def Arena.empty() -> Arena:
   Arena{[Arena.bottom()], [0]}
 
-# `UOp.unique_num = itertools.count(0)` is a monotonic slot counter that
 # ops.py:842 says must never be reset, and the arena's length IS that counter.
 def Arena.next(ar: Arena) -> U32:
   U32.from_nat(List.length(&2, Node, Arena.nodes(ar)))
@@ -758,7 +776,6 @@ def Arena.at(ar: Arena, i: U32) -> Maybe<&1, Node>:
   Arena.at.go(Arena.nodes(ar), U32.to_nat(i))
 
 # `Arena.node` is `at(i)` or `bottom`, and it is TOTAL, which is what keeps the
-# property readers below from threading a Maybe through everything.
 def Arena.node(ar: Arena, i: U32) -> Node:
   Maybe.default(&1, Node, Arena.at(ar, i), Arena.bottom())
 
@@ -806,7 +823,6 @@ def Arena.src_to(ar: Arena, i: U32, k: U32) -> List<&2, U32>:
   Arena.src_to.go(Node.src(Arena.node(ar, i)), U32.to_nat(k))
 
 # `self.src_without_body` -- ops.py:1327. It is `self.src[1:]` for a CALL and
-# `self.src` otherwise, so it needs the op as well as the srcs.
 def Arena.src_without_body.op(op: Op, src: List<&2, U32>) -> List<&2, U32>:
   match op:
     case OpsCALL{}: Arena.src_from.go(src, 1n)
@@ -839,9 +855,8 @@ def ParamArg.slot(x: ParamArg) -> U32:
   match x:
     case ParamArg{slot, dtype, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}: slot
 
-# `-1` IS `4294967295` IN A `U32`, and this def is where that is SAID ONCE, in the
-# The value is "no POSITIONAL slot": upstream's `variable()` passes `slot=-1`
 # because a Variable is bound by NAME (function.py:15-17), and `param_like` then
+# `from_buffer` (ops.py:860) uses `-id(opaque)` for an unrelated reason -- and a
 def ParamArg.no_slot() -> U32: 4294967295
 
 def ParamArg.has_slot(x: ParamArg) -> Bool:
@@ -920,8 +935,8 @@ def KernelInfo.optimized(x: KernelInfo) -> Bool:
   match x:
     case KernelInfo{name, applied_opts, opts_to_apply, estimates, beam, optimized}: optimized
 
-# `to_function_name` is NOT PORTED, so `function_name` is the name unchanged.
 # helpers.py:156 is `''.join([c if c in (letters+digits+'_') else
+# keeps Python's shape, and it sits HERE rather than at ops.py:1347 because it
 def KernelInfo.function_name(x: KernelInfo) -> String:
   KernelInfo.name(x)
 
@@ -978,7 +993,6 @@ def CustomFunction.dtype(x: CustomFunction) -> S.Dt:
   match x:
     case CustomFunction{name, dtype}: dtype
 # Equality. Bend has no `==` on Data, so the ucache key needs one comparison per
-# A `match` may take two scrutinees, which is what makes a two-constructor type
 
 def eq_bool(x: Bool, y: Bool) -> Bool:
   Bool.not(Bool.xor(x, y))
@@ -1088,7 +1102,6 @@ def eq_opt_dev(x: Maybe<&2, S.Dev>, y: Maybe<&2, S.Dev>) -> Bool:
     case Some{a} None{}: False{}
 
 # `Opt` equality, field by field, for `eq_arg`'s AKernel arm. `OPTOPS.value` and
-# `AxisType.value` rather than a new `==`: both are `auto()` ladders defined above.
 def eq_optops(x: OPTOPS, y: OPTOPS) -> Bool:
   U32.is_eq(OPTOPS.value(x), OPTOPS.value(y))
 
@@ -1171,8 +1184,7 @@ def eq_cls.CWeakFloat(x: S.Cls, y: S.Cls) -> Bool:
     case S.CWeakFloat{}: True{}
     case _: False{}
 
-# `S.Cls` has SEVEN constructors (spec.bend:66-73) and this ladder had SIX, so
-# THE POSITION IS LOAD-BEARING, and `case _` is why. Measured on Bend 2.0.34: an
+# `eq_dt(weakfloat, weakfloat)` FALSE -- dtype.py's `DType` is `@dataclass(frozen=True,
 def eq_cls.sel(x: S.Cls, y: S.Cls) -> Bool:
   match x:
     case S.CVoid{}: eq_cls.CVoid(x, y)
@@ -1186,8 +1198,6 @@ def eq_cls.sel(x: S.Cls, y: S.Cls) -> Bool:
 def eq_cls(x: S.Cls, y: S.Cls) -> Bool:
   eq_cls.sel(x, y)
 
-# `S.Addr` has FOUR constructors (spec.bend:78-82) and this ladder had THREE, so
-# `Aalu` fell into `case _:` and was answered as `AReg`: `eq_addr(Aalu, Aalu)`
 # False and `eq_addr(Aalu, AReg)` True. dtype.py:51-54's `AddrSpace` is a plain
 def eq_addr(x: S.Addr, y: S.Addr) -> Bool:
   match x:
@@ -1217,7 +1227,6 @@ def pa.is_alu.of(a: Arg) -> Bool:
           eq_addr(addrspace, S.Aalu{})
     case _: False{}
 
-# the name compare is only LOAD-bearing for the fp8 pairs, and `String.eq` is a lexicographic ordering.
 # MEASURED (`PARITY.md` §107): `Ops.eq_dt` accounts for 34,757 of the 39,478 `String.eq` calls in 1,500 turns,
 def eq_dt_name(amb: Bool, +nm: String, +n2: String) -> Bool:
   match amb:
@@ -1233,7 +1242,6 @@ def eq_dt(x: S.Dt, y: S.Dt) -> Bool:
           eq_dt_name(Bool.or(U32.is_eq(pr, 10), U32.is_eq(pr, 11)), nm, n2))))
 
 # AxisType is an auto() Enum in Python, so its value is its declaration order,
-# exactly like Ops. That is the whole of eq_axis.
 
 def eq_axis(x: AxisType, y: AxisType) -> Bool:
   U32.is_eq(AxisType.value(x), AxisType.value(y))
@@ -1277,6 +1285,10 @@ def eq_opt_const(x: Maybe<&2, Const>, y: Maybe<&2, Const>) -> Bool:
     case Some{a} None{}: False{}
 
 # `eq_pynest` -- the NESTED `PyConst`, which is a DIFFERENT COMPARATOR from `eq_const` and
+# `ops.py:201`'s key is `(op, src, arg, tag, type(arg))`, so `type(arg)` disambiguates the
+# (ops.py:42, `PyConst = float|int|bool` at dtype.py:38) NESTED inside `arg`, and there
+# CPython-measured, `.agents/slop/ops-oracle.py`, and the fixture is a PAIR THAT DIFFERS
+# `CFloat`: `ConstFloat.__hash__` is `hash(self.bits)` (dtype.py:21) and
 def eq_pynest.CBool(y: Const, +b: Bool) -> Bool:
   match y:
     case CBool{y1}: eq_bool(b, y1)
@@ -1315,7 +1327,6 @@ def eq_paramarg(x: ParamArg, y: ParamArg) -> Bool:
         Bool.and(eq_opt_u32(buffer, b2), Bool.and(eq_bool(bind_on_realize, br2),
           eq_opt_pynest(val, w2))))))))))))
 
-# `KernelInfo` IS A FROZEN DATACLASS UPSTREAM, so its equality is ALL SIX
 # FIELDS -- MEASURED, `KernelInfo() == KernelInfo(optimized=True)` is False and
 def eq_estimates(x: E.Estimates, y: E.Estimates) -> Bool:
   match x y:
@@ -1452,8 +1463,6 @@ def eq_arg.ADev(y: Arg, +dev: S.Dev) -> Bool:
     case ADev{y1}: eq_dev(dev, y1)
     case _: False{}
 
-# CONTENT, NOT A SUMMARY. This arm used to compare `U32.is_eq(n, y1)` on an
-# `ABlob{n: U32}` -- the LENGTH -- and two different same-length blobs were then the
 # same ucache key: ONE node where `ops.py:201`'s key, which holds the `bytes` object
 def eq_arg.ABlob(y: Arg, +bs: List<&2, U32>) -> Bool:
   match y:
@@ -1466,9 +1475,10 @@ def eq_arg.AInt(y: Arg, +i: U32) -> Bool:
     case AInt{y1}: U32.is_eq(i, y1)
     case _: False{}
 
-# ieee equality is correct here, and `F32.bits` would be a regression. `eq_const.CFloat`
-# one hundred lines up compares `F32.bits` and is right, so this arm LOOKS like the
 # same bug. It is the OPPOSITE bug, and the difference is the PYTHON CLASS of the
+# element `ops.py:201`'s key holds -- the key is
+#   * `dtype.py:8-23` `class ConstFloat(float)` says in its own docstring that it
+# MEASURED, live, on both trees this gate can select, by CALLING
 def eq_arg.AFloat(y: Arg, +f: F32) -> Bool:
   match y:
     case AFloat{y1}: F32.is_eq(f, y1)
@@ -1513,6 +1523,7 @@ def eq_tag.TNone(y: Tag) -> Bool:
     case _: False{}
 
 # `ops.py:201`'s key is `(op, src, arg, tag, type(arg))`. It carries `type(arg)` and NOT
+# top-level split must be KEPT. `rtag(self, tag=True)` -- ops.py:258 -- is what makes
 def eq_tag.TBool(y: Tag, +b: Bool) -> Bool:
   match y:
     case TBool{y1}: eq_bool(b, y1)
@@ -1553,11 +1564,11 @@ def eq_node(x: Node, y: Node) -> Bool:
         Bool.and(eq_u32(src, s2), Bool.and(eq_arg(arg, a2), eq_tag(tag, t2))))
 
 # UOpMetaClass.__call__ -- ops.py:193 symbol=UOpMetaClass.__call__. THE CONSTRUCTOR.
+# THE KEY MUST SEPARATE DTYPES. ops.py:193 -- a CONST's dtype comes from the
 type UpAlt is Data:
   UpFixed{ys: List<&2, U32>}
   UpRepeat{x: U32}
 
-# The four shapes of `__init__`'s `src` argument. TUPLE and LIST are separate
 # variants because ops.py:1464 reads the difference: a tuple keeps its order, a
 type SrcArg is Data:
   SNone{}
@@ -1645,9 +1656,6 @@ def intern.find.pick(hit: Bool, k: U32, +nxt: Maybe<&2, U32>) -> Maybe<&2, U32>:
     case True{}: Some{k}
     case False{}: nxt
 
-# the linear scan. `want` is `+` because the key comparison and the next
-# iteration both read it, and a Node is `Data` so the refcount is the only cost.
-# `depth` is `arg`'s tail shape. CPython's key is `(op, src, arg, tag, type(arg))`
 # (ops.py:201); both colliding args are tuples, so `type(arg)` does not split
 def intern.find(ns: List<&2, Node>, ss: List<&2, U32>, +k: U32, +want: Node, +depth: U32) -> Maybe<&2, U32>:
   match ns ss:
@@ -1675,7 +1683,6 @@ def intern.get(ar: Arena, hit: Maybe<&2, U32>) -> Maybe<&2, U32>:
   hit
 
 # `UOp.make(ar, op, src, arg, tag)` -- the `UOp(...)` call itself, with Python's
-# keyword names flattened into positional ones.
 
 def UOp.make.intern.put(+ar: Arena, hit: Maybe<&2, U32>, +want: Node, depth: U32) -> Arena:
   match hit:
@@ -1683,7 +1690,6 @@ def UOp.make.intern.put(+ar: Arena, hit: Maybe<&2, U32>, +want: Node, depth: U32
     case None{}: intern.put.shp(ar, want, depth)
 
 # and the index of that node, which the Python gets for free because the
-# constructor RETURNS the object.
 
 def UOp.make.intern(+ar: Arena, +want: Node, +depth: U32) -> Arena:
   UOp.make.intern.put(ar, intern.find(Arena.nodes(ar), Arena.shp(ar), 0, want, depth), want, depth)
@@ -1702,6 +1708,7 @@ def UOp.of.intern.put(+ar: Arena, hit: Maybe<&2, U32>, +want: Node) -> U32:
     case None{}: U32.sub(Arena.next(ar), 1)
 
 # `Metadata` is helpers.py:293's `(name, backward)` record, and ops.py is where
+# property at ops.py:775.
 
 def UOp.of.intern(+ar: Arena, +want: Node, depth: U32) -> U32:
   UOp.of.intern.put(ar, intern.find(Arena.nodes(ar), Arena.shp(ar), 0, want, depth), want)
@@ -1737,7 +1744,6 @@ def eq_dt_list(xs: List<&2, S.Dt>, ys: List<&2, S.Dt>) -> Bool:
         case y <> u: Bool.and(eq_dt(x, y), eq_dt_list(t, u))
 
 # The `Maybe` wrappers. Each unwrap is its own def, so the scrutinee is a
-# parameter -- the `intern.find.pick` shape.
 
 def eq_opt_op(x: Maybe<&2, List<&2, Op>>, y: Maybe<&2, List<&2, Op>>) -> Bool:
   match x:
@@ -1805,7 +1811,6 @@ def srcarg.ys(s: SrcArg) -> List<&2, U32>:
     case SList{ys}: ys
 
 # `+` is the SHARE annotation: the tag and the payload are two reads of one
-# argument, which is exactly Python's shared reference.
 def eq_in_src(+x: SrcArg, +y: SrcArg) -> Bool:
   Bool.and(U32.is_eq(srcarg.tag(x), srcarg.tag(y)), eq_u32(srcarg.ys(x), srcarg.ys(y)))
 
@@ -1823,7 +1828,6 @@ def eq_upat(x: UPat, y: UPat) -> Bool:
                 U32.is_eq(r1, r2)))))))))
 
 # `functools.cache`. `pintern.find` is `intern.find` with `equal` for `eq_upat`,
-# and `pintern.of` is the same HIT/MISS pair `UOp.make.intern` uses.
 
 def pintern.find.pick(hit: Bool, k: U32, +nxt: Maybe<&2, U32>) -> Maybe<&2, U32>:
   match hit:
@@ -1853,7 +1857,6 @@ type Metadata is Data:
   Metadata{name: String, backward: Bool}
 
 # the `metadata` property, ops.py:775, which is the one getter. Python returns
-# `all_metadata.get(self, None)`, i.e. a `Maybe`, and that is what this answers.
 
 def UOp.metadata(m: Maybe<&2, Metadata>) -> Maybe<&2, Metadata>:
   m
@@ -1875,7 +1878,6 @@ def Found.i(f: Found) -> U32:
     case Found{ar, i}: i
 
 # `UOp.new` is the whole constructor in one call: grow the arena and read the
-# index back, which is what Python's `UOp(...)` does by returning the object.
 def UOp.new.of(+ar: Arena, +made: Arena, +op: Op, +src: List<&2, U32>, +arg: Arg, +tag: Tag) -> Found:
   Found{made, UOp.of(made, op, src, arg, tag)}
 
@@ -1926,6 +1928,7 @@ def UOp.new.shp(+ar: Arena, +op: Op, +src: List<&2, U32>, +arg: Arg, +tag: Tag, 
   UOp.new.shp.of(ar, UOp.make.shp(ar, op, src, arg, tag, depth), op, src, arg, tag, depth)
 
 # The syntactic sugar of ops.py:557-737, in Python's order, and only the part
+# sink -- ops.py:559. `UOp(Ops.SINK, src=tuple([x for x in srcs if x is not None]), kwargs)`
 def UOp.sink(ar: Arena, +srcs: List<&2, U32>) -> Found:
   UOp.new(ar, OpsSINK{}, srcs, ANone{}, TNone{})
 
@@ -1934,12 +1937,10 @@ def UOp.alu(ar: Arena, +op: Op, +srcs: List<&2, U32>) -> Found:
   UOp.new(ar, op, srcs, ANone{}, TNone{})
 
 # `where` -- mixin/elementwise.py:426, `self.alu(Ops.WHERE, x, y)`, i.e.
-# `UOp(Ops.WHERE, src=(cond, x, y))` with `cond` FIRST because `alu` puts `self` at src[0].
 def UOp.where(ar: Arena, +cond: U32, +x: U32, +y: U32) -> Found:
   UOp.new(ar, OpsWHERE{}, [cond, x, y], ANone{}, TNone{})
 
 # `valid` -- ops.py:664. `cond.where(self, self.const_like(Invalid))`, and for the CONST case
-# the arena is the caller's and it must hold all three indices, which cost me a wrong diagnosis
 def UOp.valid_of(ar: Arena, +self: U32, +inv: U32, +cond: U32) -> Found:
   UOp.where(ar, cond, self, inv)
 
@@ -1958,7 +1959,6 @@ def UOp.after(+ar: Arena, +self: U32, +srcs: List<&2, U32>) -> Found:
   UOp.after.go(srcs, ar, self, UOp.new(ar, OpsAFTER{}, List.append(&2, U32, [self], srcs), ANone{}, TNone{}))
 
 # group -- ops.py:536-538, and upstream DELETED `Ops.GROUP` to get there:
-# The one-element case IS the node itself, so that arm hands the arena back UNCHANGED and
 def UOp.group.of(srcs: List<&2, U32>, ar: Arena, +stk: Found) -> Found:
   match srcs:
     case Nil{}: stk
@@ -1991,6 +1991,8 @@ def UOp.mstack(+ar: Arena, +self: U32, +srcs: List<&2, U32>) -> Found:
   UOp.mstack.go(srcs, ar, self, UOp.new(ar, OpsMSTACK{}, List.append(&2, U32, [self], srcs), ANone{}, TNone{}))
 
 # replace -- ops.py:253. `b.replace(op=..., src=..., arg=..., tag=...)` is a
+# -- the field-by-field copy is what `pm_replace_buffers` (hcq2.py:103) and
+# the bool LOAD/STORE rules (ptx.py:49/52) reach for.
 def UOp.replace.go(same: Bool, +new_op: Op, +new_src: List<&2, U32>, +new_arg: Arg, +new_tag: Tag, ar: Arena, self: U32) -> Found:
   match same:
     case True{}: Found{ar, self}
@@ -2027,11 +2029,11 @@ def UOp.replace(+ar: Arena, +self: U32, +mop: Maybe<&2, Op>, +msrc: Maybe<&2, Li
   UOp.replace.go(UOp.replace.all_same(same_op, same_src, same_arg, same_tag), new_op, new_src, new_arg, new_tag, ar, self)
 
 # cast -- mixin/dtype.py:19. `return self if self.dtype == dt else self.alu(Ops.CAST, arg=dt)`.
+# FOLD property (`dtype_from_uop`, ops.py:247). A rule body that has no fold
 def UOp.cast(ar: Arena, self: U32, dt: S.Dt) -> Found:
   UOp.new(ar, OpsCAST{}, [self], ADt{dt}, TNone{})
 
 # `(self,)*count` from `UOp.broadcast` below, written out. It is helpers.py's
-# `list(x) * n`, and it is why `UOp.broadcast` needs no variadic.
 def UOp.replicate.go(+self: U32, n: Nat, acc: List<&2, U32>) -> List<&2, U32>:
   match n:
     case 0n: acc
@@ -2052,10 +2054,17 @@ def UOp.broadcast(+ar: Arena, +self: U32, +count: U32) -> Found:
     UOp.new(ar, OpsSTACK{}, UOp.replicate(self, count), ANone{}, TNone{}))
 
 # const -- ops.py:631. `UOp(Ops.CONST, arg=dtype.const(b), src=()).cast(dtype)`
+# TODO(p3) ops.py:610  def const -- `UOp.const` needs `dtypes.from_py` (dtype.py:100, which also needs
+# `commit_int` and `strong_dtype`) and `truncate` (dtype.py:289, half of which is
 def UOp.const(ar: Arena, +v: Const) -> Found:
   UOp.new(ar, OpsCONST{}, Nil{}, APy{v}, TNone{})
 
 # `shape_to_shape_arg` -- ops.py:103-107, NEW to this file. Upstream:
+# THE INT CHECK IS THE POINT. ops.py:108 -- every element must have an integer
+#     `as_shape` is `(self.val,)` (ops.py:783-786), so the shape is `(n,)`.
+#     Ops.STACK),)` is upstream's own spelling at `ops.py:1002`.
+# `IndexError`, and a scalar PARAM whose src is a CONST `1` is a DIFFERENT NODE from
+# one whose src is an empty STACK. MEASURED on CPython, `Tensor.empty(1).uop.src` is a
 def shape_to_shape_arg.of(+ar: Arena, +made: Arena, n: Maybe<&2, U32>) -> Found:
   match n:
     case Some{k}: UOp.const(made, CInt{H.i64_of_i32(k)})
@@ -2065,6 +2074,10 @@ def shape_to_shape_arg(+ar: Arena, n: Maybe<&2, U32>) -> U32:
   Found.i(shape_to_shape_arg.of(ar, ar, n))
 
 # `src=(shape_to_shape_arg(...),)+UOp.device_range_src(device)` -- ops.py:829, :1187,
+# UPSTREAM's `_mop` (`ops.py:790-791`) CALLS:
+# AND IT LIVES HERE, AND NOT ONLY HERE -- THE PORT HAD THREE
+# IT, AND THE DUPLICATION IS THE DEFECT AND NOT THE COPY.
+# AND THE LENGTH-1 ARM IS A BARE CONST -- `ops.py:112`: `return src[0]
 def shape_arg.const(+ar: Arena, v: U32) -> Found:
   UOp.const(ar, CInt{H.i64_of_i32(v)})
 
@@ -2104,13 +2117,13 @@ def shape_arg(ar: Arena, ys: List<&2, U32>) -> U32:
 def param_src(+ar: Arena, n: Maybe<&2, U32>) -> List<&2, U32>:
   [shape_to_shape_arg(ar, n)]
 
-# `UOp.new.param` is the only safe way to build one of these three nodes, and
 # MEASURED, `gates/../sizetosrc/paramsrc_probe.bend` over both spellings on one BUFFER:
 def UOp.new.param(+ar: Arena, +op: Op, n: Maybe<&2, U32>, arg: Arg, tag: Tag) -> Found:
   +f = shape_to_shape_arg.of(ar, ar, n)
   UOp.new(Found.ar(f), op, [Found.i(f)], arg, tag)
 
 # THE READER, and the reason it takes the OWNER. `ops.py:353-357`:
+# reason upstream's `size_of(owner)` takes a `UOp` (`.agents/slop/graphcmp.py:703`).
 def ParamArg.size.const(arg: Arg) -> Maybe<&2, U32>:
   match arg:
     case APy{CInt{i}}: Some{H.lo32(i)}
@@ -2128,6 +2141,9 @@ def ParamArg.size(+ar: Arena, +self: U32) -> Maybe<&2, U32>:
   ParamArg.size.of(ar, self, Arena.src0(ar, self))
 
 # range -- ops.py:642. `UOp(Ops.RANGE, src=(sint_to_uop(end, dtype),)+src,
+# which is `range_str`'s job and is P3 (`uop/render.py`), plus `hcq2.py:498`'s
+# builds `(at, (0, 1))` (ops.py:643); a flat `arg=(at, 0, 1)` is a different
+# ucache key (ops.py:201) with the same ints. `ARange` stores the ints only.
 def UOp.range_shaped(ar: Arena, +end: U32, +ids: List<&2, U32>, at: AxisType, depth: U32) -> Found:
   UOp.new.shp(ar, OpsRANGE{}, [end], ARange{ids, at}, TNone{}, depth)
 
@@ -2135,6 +2151,10 @@ def UOp.range_end(ar: Arena, +end: U32, +ids: List<&2, U32>, at: AxisType) -> Fo
   UOp.range_shaped(ar, end, ids, at, 0)
 
 # axis_id / axis_type -- ops.py:499-505 upstream, 502-508 at the pin. Both assert
+# MEASURED 2026-10-03, CALLING CPython (`UOp.range(4, <axis_id>, AxisType.WEAK)`), which
+# `pyrender` (render.py:101 is `repr(y) for y in x.arg`, not `axis_id`), and in
+# `range_str` (ops.py:96 joins `str(x) for x in u.axis_id`) -- and this def can see
+# are same-named defs of a DIFFERENT shape, `(ar, i)`, in `fold.bend`, `fold_mm_work.bend`
 def UOp.axis_id(arg: Arg) -> Maybe<&2, List<&2, U32>>:
   match arg:
     case ARange{ids, at}: Some{ids}
@@ -2164,21 +2184,18 @@ type Frame is Data:
 
 type Topo is Data:
   # `calls` is Python's `enter_calls`, and it rides on the RECORD rather than on
-  # the walk because `Topo.step` has to read it on every pop.
   Topo{cache: List<&2, U32>, stack: List<&2, Frame>, calls: Bool}
 
 def Topo.empty() -> Topo:
   Topo{Nil{}, Nil{}, True{}}
 
 # `cache[node] = None` -- an append, because a Dict preserves insertion order and
-# the toposort IS its iteration order.
 
 def Topo.cache_add(n: U32, t: Topo) -> Topo:
   match t:
     case Topo{cache, stack, calls}: Topo{List.append(&2, U32, cache, [n]), stack, calls}
 
 # `if n in cache: continue`
-# `stack.append((n, True))` then the srcs, reversed.
 
 def Arena.push_srcs.go(srcs: List<&2, U32>, st: List<&2, Frame>) -> List<&2, Frame>:
   match srcs:
@@ -2251,13 +2268,11 @@ def toposort(fuel: Nat, +ar: Arena, t: Topo) -> List<&2, U32>:
     case 1n+p: toposort(p, ar, Topo.step(ar, t))
 
 # `UOp.toposort(self, gate=None, enter_calls=True)`. The fuel is the caller's and
-# the only correct one is `Arena.budget(ar)`: the header says why.
 
 def UOp.toposort(fuel: Nat, +ar: Arena, self: U32) -> List<&2, U32>:
   toposort(fuel, ar, Topo.push(ar, self, Topo.empty()))
 
 # toposort(enter_calls=False) -- the two call sites that pass it, both in
-# `ProgramInfo.from_sink` and `contiguous_view`.
 
 def UOp.topovisit(fuel: Nat, +ar: Arena, self: U32) -> List<&2, U32>:
   UOp.toposort(fuel, ar, self)
@@ -2266,6 +2281,8 @@ def UOp.toposort_nocalls(fuel: Nat, +ar: Arena, self: U32) -> List<&2, U32>:
   toposort(fuel, ar, Topo{Nil{}, List.append(&2, Frame, Nil{}, [Frame{self, False{}}]), False{}})
 
 # the backward slice -- ops.py:280, :286, :289. three defs, one walk.
+# WHY `nocalls` AND NOT `toposort`. `enter_calls=False` is the WHOLE of the
+# from the front removes a different node. MEASURED on `chain`:
 def bsl.go(+self: U32, xs: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
   match xs:
     case Nil{}: acc
@@ -2275,11 +2292,12 @@ def UOp.backward_slice(fuel: Nat, +ar: Arena, +self: U32) -> List<&2, U32>:
   bsl.go(self, UOp.toposort_nocalls(fuel, ar, self), Nil{})
 
 # `{self:None, self.backward_slice}` -- a dict literal whose only addition is
-# the key `self`, and a Dict iterates in INSERTION order, so the key is FIRST.
 def UOp.backward_slice_with_self(fuel: Nat, +ar: Arena, +self: U32) -> List<&2, U32>:
   List.append(&2, U32, [self], UOp.backward_slice(fuel, ar, self))
 
 # topovisit -- ops.py:309. "NOTE: this shares a lot of code with toposort". It
+# `src` normalisation -- ops.py:1456-1461, the `permutations` line:
+# OR, XOR, all of them. Arity >= 3 is TODO(p3) ops.py:1457  def UPat.__init__ --
 def all_same.from(+h: U32, t: List<&2, U32>) -> Bool:
   match t:
     case Nil{}: True{}
@@ -2314,7 +2332,6 @@ def src_alts(+ys: List<&2, U32>) -> List<&2, UpAlt>:
   src_alts.of(all_same(ys), ys)
 
 # a `match` may not scrutinise a computed list, so the four-way dispatch is its
-# own def
 def alts_of(s: SrcArg) -> List<&2, UpAlt>:
   match s:
     case SNone{}: Nil{}
@@ -2379,8 +2396,6 @@ def early.alts(+pat: Pat, alts: List<&2, UpAlt>) -> List<&2, Op>:
     case UpFixed{ys} <> _: early.scan(pat, ys)
     case UpRepeat{_} <> _: Nil{}
 
-# the `pp.op is not None and len(pp.op) == 1` guard. Three defs, because a
-# `match` scrutinee must be a PARAMETER: `Maybe` first, then the `Nat` length.
 # The constructor -- ops.py:1449. `UPat(Ops.CAST, dtype, (self,))` becomes
 def early_scan(+pat: Pat, s: SrcArg, alts: List<&2, UpAlt>) -> List<&2, Op>:
   match s:
@@ -2437,7 +2452,6 @@ def UPat.of(
   is_any: Bool) -> PatFound:
 
   # `alts_of(src)` is pure and `src` is `+`-shared, so it is recomputed rather
-  # than bound: a `let` is affine and would be consumed by the constructor.
   u: UPat = UPat{op, match_dtype, arg, name, src, alts_of(src), is_any,
            strict_of(src, allow_any_len), required_of(src),
            early_of(pat, src, custom_early_reject, alts_of(src))}
@@ -2462,14 +2476,12 @@ def UPat.named.of(hit: Maybe<&2, UPat>, name: String, pat: Pat) -> PatFound:
   match hit:
     case Some{u}: UPat.named.put(u, name, pat)
     # a miss cannot happen for a pattern built here; Python would raise
-    # AttributeError, and a bare named var is the honest nothing-to-rebuild
     case None{}: UPat.var(pat, Some{name}, None{})
 
 def UPat.named(+pat: Pat, k: U32, name: String) -> PatFound:
   UPat.named.of(List.get(&2, UPat, Pat.upats(pat), U32.to_nat(k)), name, pat)
 
 # `any` / `or_casted` / `or_bitcasted` / `or_after` -- ops.py:1487-1493.
-# `self if name is None else self.named(name)` is a Maybe-index choice, and the
 
 def UPat.any(pat: Pat, src: List<&2, U32>) -> PatFound:
   UPat.of(pat, None{}, None{}, STuple{src}, None{}, None{}, False{}, None{}, True{})
@@ -2494,13 +2506,6 @@ def UPat.or_bitcasted(pat: Pat, k: U32, name: Maybe<&2, String>) -> PatFound:
 def UPat.or_after(pat: Pat, k: U32, name: Maybe<&2, String>) -> PatFound:
   UPat.or_any(pat, k, name, OpsAFTER{}, True{})
 
-# three steps, each returning `(arena, index)`: pick self-or-named, wrap it, then
-# `UPat.any` over the two. The wrapper's `src` is always the ORIGINAL index.
-# three steps, each carrying the arena: pick self-or-named, wrap the ORIGINAL
-# index, then `UPat.any` over the two. The wrapper's `src=(self,)` is the
-# original pattern even when `any` receives the named copy -- an upstream
-# subtlety a "tidy" rewrite would lose.
-# `self if name is None else self.named(name)`
 # `var` / `cvar` / `const` -- ops.py:1495-1501. `@functools.cache` is the intern
 
 def UPat.cvar(pat: Pat, name: Maybe<&2, String>, dt: Maybe<&2, S.Dt>, arg: Maybe<&2, Arg>) -> PatFound:
@@ -2592,7 +2597,6 @@ def UPat.bitcast(+pat: Pat, +k: U32, dt: Maybe<&2, S.Dt>) -> PatFound:
   UPat.bitcast.of(List.get(&2, UPat, Pat.upats(pat), U32.to_nat(k)), dt, k, pat)
 
 # `broadcast` -- ops.py:1519. `src=self` is a UPat, not a tuple, so this is the
-# `SOne` case: ONE UNBOUNDED alternative rather than a permuted list.
 def UPat.broadcast.put(pat: Pat, u: UPat, k: U32) -> PatFound:
   match u:
     case UPat{_, md, _, _, _, _, _, _, _, _}: UPat.of(
@@ -2668,9 +2672,9 @@ def UPat.alu.of(hit: Maybe<&2, UPat>, op: Op, +k: U32, +other: U32, pat: Pat) ->
 def UPat.alu(+pat: Pat, +k: U32, op: Op, other: U32) -> PatFound:
   UPat.alu.of(List.get(&2, UPat, Pat.upats(pat), U32.to_nat(k)), op, k, other, pat)
 
-# `boolean if op in {CMPLT, CMPNE} else asrc[-1].match_dtype`
-# `list(asrc) if op in GroupOp.Commutative else asrc`
 # ops.py:1474-1475: `custom_early_reject` overrides the computed set.
+# `PatternMatcher` -- ops.py:1587, in its COMPILED form.
+# This is not the interpreter. `ops.py:1588` is
 type PMEntry is Data:
   PMEntry{tag: U32, ops: List<&2, Op>, rej: List<&2, Op>}
 
@@ -2715,7 +2719,6 @@ def pm_keep(acc: Verdict, v: Verdict) -> Verdict:
   pm_keep.go(acc, v)
 
 # `if cond: v else None`, the shape of most of spec.py's rule bodies. A leaf,
-# and what keeps a rule one def instead of three.
 def pm_when.of(b: Bool, v: Verdict) -> Verdict:
   match b:
     case True{}: v
@@ -2773,10 +2776,8 @@ def pm_early.go(+have: List<&2, Op>, rej: List<&2, Op>) -> Bool:
   match rej:
     case Nil{}: True{}
     case o <> t: Bool.and(op_in(have, o), pm_early.go(have, t))
-# `Arena.src` and `Arena.op` are ops.bend's OWN readers and return bare values,
-# not `Maybe` -- so `ler` is a two-element list built directly, with no
-# unwrapping. The model carried its own `Maybe` readers; this reuses the file's.
 # `ler` is ops.py:1607's `{u.op for u in uop.src}`, so it is a FOLD OVER THE SRC
+# by the spec.bend port: spec.py:201's reject set is FOUR ops, so under the pair
 def pm_ler.put(x: List<&2, Op>) -> List<&2, Op>:
   x
 def pm_ler.fold(ns: List<&2, Nat>, +ar: Arena, +self: U32, acc: List<&2, Op>) -> List<&2, Op>:
@@ -2814,7 +2815,6 @@ def CallifyCtx.of(replacements: List<&2, U32>, allocs: List<&2, Aa>, views: List
   CallifyCtx{replacements, allocs, views, stores}
 
 # `CallifyCtx()` -- all four fields are `field(default_factory=...)`, so four
-# `Nil{}`. `CallifyCtx.of` is the four-argument rebuild, exactly as `Ctx.of` is.
 def callify_ctx() -> CallifyCtx:
   CallifyCtx.of(Nil{}, Nil{}, Nil{}, Nil{})
 
@@ -2886,6 +2886,7 @@ def aa_has(+as: List<&2, Aa>, +b: U32) -> Bool:
     case Aa{j, _} <> t: Bool.or(U32.is_eq(j, b), aa_has(t, b))
 
 # 3. `collect_stores` -- __init__.py:220-221. NEEDS ctx, and it is one of only
+# that mutated the ctx and returned the node would be a DIFFERENT rule, so the
 type CTX is Data:
   CArgs{xs: List<&2, U32>}
   CNodes{m: Map<&2, U32>}
@@ -2901,7 +2902,6 @@ def CTX.get_v.m(r: Sigma<&1, &1, Map<&2, U32>, _ => U32>) -> U32:
     case Tuple{m, v}: v
 
 # `None{}` for an ABSENT node, and the presence test is `Map.has` -- `Map.get`
-# answers default `0` and `0` is a legal arena index, which is the exact trap
 def CTX.at_node.of(hit: Bool, +m: Map<&2, U32>, +self: U32) -> Maybe<&2, U32>:
   match hit:
     case True{}: Some{CTX.get_v.m(Map.get(U32, 0, m, U32.show(self)))}
@@ -2928,7 +2928,6 @@ def pm_r_noop_m(+ctx: CTX, ar: Arena, self: U32) -> Maybe<&2, U32>:
   Some{Arena.src(ar, self, 0)}
 
 # Tag 3: PARAM. Reads the node's `AParam` arg, looks up `ctx[slot]`. The
-# The .go split: a `match` cannot scrutinize a computed value, so the match
 def pm_r_param_m.slot(arg: Arg) -> U32:
   match arg:
     case AParam{pa}: ParamArg.slot(pa)
@@ -2964,6 +2963,15 @@ def pm_r_alloc_m(+ctx: CTX, +ar: Arena, +self: U32) -> Maybe<&2, U32>:
   pm_r_alloc_m.at(ctx, 2n)
 
 # THE OPS.PY RULE TABLES -- ops.py:1898 symbol=_substitute,
+# ops.py:1899 symbol=_pm_resolve_params, ops.py:1908 symbol=pm_drop_after, and
+# tinygrad/uop/spec.py:207 symbol=spec_program. The FOURTH is NOT IN upstream's
+# `ops.py:1591-1593` symbol=PatternMatcher.__init__ is where a `PMEntry` comes from, and it is three lines:
+# SET, and it is `ops.py:1601` symbol=PatternMatcher.rewrite's
+# shortcut. `ops.py:1469-1470` symbol=UPat.__init__ computes `upat_match` and
+# `ops.py:1604` symbol=PatternMatcher.rewrite's `if not early_reject.issubset(ler): continue`
+# `tuple(Ops)` -- the claim of ops.py:1898 symbol=_substitute's
+# `UPat(tuple(Ops), name="x")` and of tinygrad/uop/spec.py:207 symbol=spec_program's
+# (tinygrad/uop/__init__.py:134 symbol=GroupOp.All), measured by CPython:
 def all_ops() -> List<&2, Op>:
   [OpsSPECIAL{} OpsBUFFER{} OpsALLOC{} OpsNOOP{} OpsREWRITE_ERROR{} OpsPARAM{} OpsREFPARAM{} OpsCALL{} OpsPROGRAM{} OpsLINEAR{} OpsSOURCE{} OpsBINARY{},
    OpsSINK{} OpsAFTER{} OpsSTACK{} OpsGETADDR{} OpsINDEX{} OpsSHRINK{} OpsLOAD{} OpsSTORE{} OpsWMMA{} OpsCAST{},
@@ -2973,7 +2981,6 @@ def all_ops() -> List<&2, Op>:
    OpsENDIF{} OpsBACKEDGE{} OpsCONST{} OpsCUSTOM{} OpsCUSTOMI{} OpsINS{} OpsCONTIGUOUS_BACKWARD{} OpsDETACH{} OpsSTAGE{} OpsCOPY{} OpsMSELECT{},
    OpsMSTACK{} OpsCUSTOM_FUNCTION{} OpsRESHAPE{} OpsPERMUTE{} OpsEXPAND{} OpsPAD{} OpsUNSHARD{} OpsREDUCE{} OpsALLREDUCE{} OpsPYLITERAL{}]
 
-# `x.tag is not None` -- the guard of the port's OWN `remove_all_tags` lambda,
 # which is NOT IN upstream's `ops.py` at this pin (upstream has NO `remove_all_tags`); the surviving upstream construct is tinygrad/uop/spec.py:207 symbol=spec_program's `UPat(GroupOp.All-{Ops.CONST}, dtypes.weaks)`. `Tag`'s bottom
 def tag_is_none(t: Tag) -> Bool:
   match t:
@@ -2981,12 +2988,10 @@ def tag_is_none(t: Tag) -> Bool:
     case _: False{}
 
 # TAG 40 -- ops.py:1908 symbol=pm_drop_after. `pm_drop_after`:
-# `ctx` is unused because ops.py's lambda takes one and does not read it. The
 def pm_r_drop_m(+ctx: CTX, +ar: Arena, +self: U32) -> Maybe<&2, U32>:
   Some{Arena.src(ar, self, 0)}
 
 # TAG 42 -- ops.py:1899 symbol=_pm_resolve_params. `_pm_resolve_params`:
-# TWO DIFFERENCES FROM `pm_r_param_m` (tag 3) above, and both are the source:
 def pm_r_rp_m.slot(arg: Arg) -> U32:
   match arg:
     case AParam{pa}: ParamArg.slot(pa)
@@ -3040,9 +3045,11 @@ def pm_scan_m(+ts: PMEntrys, +ar: Arena, +self: U32, todo: List<&2, PMEntry>, ac
 def pm_rewrite_m(+ts: PMEntrys, +ar: Arena, +self: U32, +ctx: CTX) -> Maybe<&2, U32>:
   pm_scan_m(ts, ar, self, PMEntrys.es(ts), None{}, ctx)
 
-# two more tables, and each exists because of a TYPE, not a preference.
-# one table cannot hold all four of ops.py's rules, and the blocker is not
 # linearity. `ops.py:1600` symbol=PatternMatcher.rewrite and `ops.py:1698` symbol=TrackedPatternMatcher.rewrite type the pass's `ctx` as `ctx=None`, and each lambda
+# already paid for: `remove_all_tags` MINTS. `ops.py:245-249` symbol=UOp.replace returns
+# TAG 41 -- tinygrad/uop/spec.py:207 symbol=spec_program. `remove_all_tags`:
+# `ops.py:245-249` symbol=UOp.replace is what `replace(tag=None)` is:
+# "every op" is tinygrad/uop/spec.py:207 symbol=spec_program. And the implementation
 def pm_r_tag_m.of(untagged: Bool, made: Found) -> Maybe<&2, Found>:
   Bool.pick(Maybe<&2, Found>, untagged, None{}, Some{made})
 
@@ -3051,6 +3058,7 @@ def pm_r_tag_m(+ctx: CTX, +ar: Arena, +self: U32) -> Maybe<&2, Found>:
     UOp.new(ar, Arena.op(ar, self), Arena.srcs(ar, self), Arena.arg(ar, self), TNone{}))
 
 # TAG 43 -- ops.py:1898 symbol=_substitute. `_substitute`:
+# The ctx is `dvars: dict[UOp, UOp]` (`ops.py:514` symbol=UOp.substitute), so it is keyed by the NODE
 def pm_sub_m.of(r: Sigma<&1, &1, Map<&2, U32>, _ => U32>, s: Sigma<&1, &1, Map<&2, U32>, _ => Bool>) -> Maybe<&2, U32>:
   match r, s:
     case Tuple{m, v}, Tuple{n, b}: Bool.pick(Maybe<&2, U32>, b, Some{v}, None{})
@@ -3058,8 +3066,8 @@ def pm_sub_m.of(r: Sigma<&1, &1, Map<&2, U32>, _ => U32>, s: Sigma<&1, &1, Map<&
 def pm_sub_m(+ctx: Map<&2, U32>, +ar: Arena, +self: U32) -> Maybe<&2, U32>:
   pm_sub_m.of(Map.get(U32, 0, ctx, U32.show(self)), Map.has(&2, U32, ctx, U32.show(self)))
 
-# THE THREE TABLES. Each is `ops.py`'s own `PatternMatcher(...)` as a literal,
 # and each entry's three fields are `ops.py:1604`'s `[p, None, p.early_reject]`
+# scan that reads a table and the dispatch that reads a tag live in DIFFERENT
 def pm_substitute() -> PMEntrys:
   PMEntrys{[PMEntry{43, all_ops(), Nil{}}]}
 
@@ -3073,6 +3081,7 @@ def pm_drop_after_table() -> PMEntrys:
   PMEntrys{[PMEntry{40, [OpsAFTER{}], Nil{}}]}
 
 # `_f` IS THE `_m` FAMILY WITH A DIFFERENT ANSWER, so it is the same five defs in
+# order (ops.py:1618's `return ret` on the first non-None).
 def pm_try_f.go(ok: Bool, +ar: Arena, +self: U32, +ctx: CTX) -> Maybe<&2, Found>:
   match ok:
     case True{}: pm_r_tag_m(ctx, ar, self)
@@ -3095,13 +3104,14 @@ def pm_scan_f(+ts: PMEntrys, +ar: Arena, +self: U32, todo: List<&2, PMEntry>, ac
 def pm_rewrite_f(+ts: PMEntrys, +ar: Arena, +self: U32, +ctx: CTX) -> Maybe<&2, Found>:
   pm_scan_f(ts, ar, self, PMEntrys.es(ts), None{}, ctx)
 
-# one rule: does it claim this op, and does `early_reject` pass?
 # ops.py:1609 is `if not early_reject.issubset(ler): continue`, so the rule FIRES
 def src_op(+ar: Arena, self: U32, n: U32, want: Op) -> Bool:
   op_is(ar, Arena.src(ar, self, n), want)
 
-# THE DISPATCH. `upat.py` emits a closure; Bend has no first-class functions, so
 # `UPatCompileError` -- ops.py:1588 raises when a pattern's source cannot be read,
+# `is_any` is a DISJUNCTION, which is what upat.py:18 compiles it to. The
+# THE BASE FAMILY -- ops.py:785 `base`, :792 `unsharded_base`, :801
+# `base` -- ops.py:785. `if self.op in GroupOp.Movement: return self.src[0].base;
 def UOp.base.peel(+ar: Arena, +self: U32) -> Bool:
   Bool.or(GroupOp.movement(Arena.op(ar, self)), eq_op(Arena.op(ar, self), OpsDETACH{}))
 
@@ -3130,7 +3140,6 @@ def UOp.storage_base(fuel: Nat, +ar: Arena, +self: U32) -> U32:
     case 1n+p: UOp.storage_base(p, ar, Bool.pick(U32, UOp.storage_base.peel(ar, self), Arena.src(ar, self, 0), self))
 
 # `without_after` -- ops.py:623. `self.src[0].without_after if self.op is Ops.AFTER
-# else self`. It does NOT strip UNSHARD, which `s5_wo_after_us` is the row for.
 def UOp.without_after(fuel: Nat, +ar: Arena, +self: U32) -> U32:
   match fuel:
     case 0n: self
@@ -3148,7 +3157,6 @@ def UOp.buf_uop.cont(op: Op) -> Bool:
     case _: True{}
 
 # `len(s.src) and s.op not in {...}` -- the `len` half is load-bearing on its own,
-# because a leaf is the answer and a BUFFER with no srcs must not walk off the end.
 def UOp.buf_uop.walk(+ar: Arena, +self: U32) -> Bool:
   Bool.and((Arena.nsrc(ar, self) > 0 : U32), UOp.buf_uop.cont(Arena.op(ar, self)))
 
@@ -3158,7 +3166,6 @@ def UOp.buf_uop(fuel: Nat, +ar: Arena, +self: U32) -> U32:
     case 1n+p: UOp.buf_uop(p, ar, Bool.pick(U32, UOp.buf_uop.walk(ar, self), Arena.src(ar, self, 0), self))
 
 # `has_buffer_identity` -- ops.py:952. A `U32 -> Bool` walk, so the same shape
-# `after_ok` is a parameter and both its values are rows (`s5_hbi_*` and
 def op_in3(+op: Op) -> Bool:
   Bool.or(eq_op(op, OpsRESHAPE{}), Bool.or(eq_op(op, OpsUNSHARD{}), eq_op(op, OpsMSELECT{})))
 
@@ -3182,11 +3189,12 @@ def UOp.has_buffer_identity(fuel: Nat, +after_ok: Bool, +ar: Arena, +self: U32) 
       UOp.has_buffer_identity.term(Arena.op(ar, self)))
 
 # THE MOVERS -- ops.py:624 `barrier`, :679 `bufferize`, :680 `allreduce`,
+# ops.py:501-1928 is not.
+# `bufferize` -- ops.py:679. `UOp(Ops.STAGE, src=(self,)+args, kwargs)`, and
 def UOp.bufferize(ar: Arena, +self: U32, +args: List<&2, U32>) -> Found:
   UOp.new(ar, OpsSTAGE{}, List.append(&2, U32, [self], args), ABad{}, TNone{})
 
 # `barrier` -- ops.py:624. `UOp(Ops.BARRIER, src=(self,)+src)`, self FIRST, the
-# same self-first convention `UOp.after` and `UOp.end` have.
 def UOp.barrier(ar: Arena, +self: U32, +src: List<&2, U32>) -> Found:
   UOp.new(ar, OpsBARRIER{}, List.append(&2, U32, [self], src), ABad{}, TNone{})
 
@@ -3195,6 +3203,8 @@ def UOp.allreduce(ar: Arena, +self: U32, +rop: Op, +dev: S.Dev) -> Found:
   UOp.new(ar, OpsALLREDUCE{}, [self], AAllred{rop, dev}, TNone{})
 
 # `mselect` -- ops.py:772. `UOp(Ops.MSELECT, src=(self,), arg=arg)` where `arg` is
+# `ABlob` is BINARY's BYTES, not "a bare number in the arg": `ops.py:201`'s key holds
+# `runs/graphcmp/D/D1-graph-mselect.txt`, VERDICT DISAGREE), which is the wall this
 def UOp.mselect(ar: Arena, +self: U32, k: U32) -> Found:
   UOp.new(ar, OpsMSELECT{}, [self], AInt{k}, TNone{})
 
@@ -3218,13 +3228,13 @@ def UOp.sharding(+ar: Arena, +self: U32) -> List<&2, Shard>:
     sharding.pair(Arena.arg(ar, self), ar, self), Nil{})
 
 # `split_uop` -- ops.py:685. `if self.op is sep: for s in self.src: yield from
+# THE STEP IS A `Bool.pick` AND NOT A `match`, because `sep` is a PARAMETER and
 type Wk is Data: Wk{work: List<&2, U32>, out: List<&2, U32>}
 
 def Wk.out(w: Wk) -> List<&2, U32>:
   match w:
     case Wk{work, out}: out
 
-# THE POPPED NODE, as a record, and it is the SECOND `Data` record for the same
 # MEASURED, and this is the bug the shape exists to prevent: the first version had
 type Nd is Data: Nd{go: Bool, srcs: List<&2, U32>, i: U32}
 
@@ -3232,7 +3242,6 @@ def UOp.split_uop.node(+ar: Arena, +sep: Op, +h: U32) -> Nd:
   Nd{op_is(ar, h, sep), Arena.srcs(ar, h), h}
 
 # THE SEPARATOR, and it is the file's own `op_is` rather than a second copy of it.
-# the two lists are parameters and not the record, and that is a measured wall
 def split_uop.step(nd: Nd, work: List<&2, U32>, out: List<&2, U32>) -> Wk:
   match nd:
     case Nd{go, srcs, i}:
@@ -3282,6 +3291,18 @@ def UOp.custom_function(+ar: Arena, name: String, +srcs: List<&2, U32>, dt: S.Dt
   UOp.new(ar, OpsCUSTOM_FUNCTION{}, srcs, ACustom{CustomFunction{name, dt}}, TNone{})
 
 # TODO(p3) ops.py:1247  def call
+# WALL(p3) ops.py:1274  def call_with_outputs -- BLOCKED. ENDS IN THE `alloc` CHAIN: the body binds output ALLOCs through `mint` below, and `mint`
+# WALL(p3) ops.py:1280  def mint -- BLOCKED. CALLS `UOp.alloc` ("`buf = UOp.alloc(...)`"), and `alloc` ends in `ret.view_as(shape)`
+# WALL(p3) ops.py:1298  def call_with_output -- BLOCKED. IS `UOp.call_with_outputs((self,), *srcs)`, one line over the marker above it, so it is
+# wall(p3) ops.py:1299  def custom_kernel -- blocked. builds its placeholders with `UOp.placeholder_like`, and `placeholder_like` delegates to
+# TODO(p3) ops.py:1312  def to_elf
+# TODO(p3) ops.py:1319  def uopfunc
+# done(p3) ops.py:1229 def param -- the shape-less arm only, and it is in `weak.bend`. the third
+# WALL(p3) ops.py:1323  def outlined -- BLOCKED. PYTHON INTROSPECTION OF A CALLABLE: `inspect.signature(fn).bind(*args, kwargs)`,
+# DONE(p3) ops.py:1352 def launch_dims -- `ProgramInfo.launch_dims` is
+# IDENTITY on the port's launch sizes, because `sym_infer` (ops.py:95) is the
+#   ops.py:1366  def vals
+# I GOT THIS BLOCKER WRONG TWICE before landing it, and both errors were the same
 
 def g_const() -> Found:
   UOp.const(Arena.empty(), CInt{H.i64_of_i32(3)})
@@ -3344,13 +3365,8 @@ def t_cycle() -> Bool:
   Bool.and(Bool.and(Bool.and(U32.is_eq(Arena.src0(ar, be), s), U32.is_eq(Arena.src(ar, be, 1), Found.i(g_rng()))),
     eq_op(Arena.op(ar, s), OpsSPECIAL{})), eq_op(Arena.op(ar, Arena.src(ar, be, 1)), OpsRANGE{}))
 
-# FOUR, not five: `Arena.empty()` parks a BOTTOM sentinel at index 0 that is not
-# a UOp, so a four-node graph has `Arena.next(ar) == 5` and a four-element
-# toposort. CPython agrees, on the tree `g_chain` rebuilds --
-#   c0 = UOp.const(0); r0 = UOp.range(c0, (0,), AxisType.LOOP)
-#   list(UOp.range(r0 + c0, (0,), AxisType.GLOBAL).toposort()) has four entries,
-#   'Ops.CONST', 'Ops.RANGE', 'Ops.ADD', 'Ops.RANGE'.
 # ops.py:621 `UOp.after` builds `src=(self,)+src`, so SELF IS src[0]. This row exists
+# builds OpsRANGE, ops.py:660) and the supplied node is a CONST, so self-first means
 def t_after_puts_self_first() -> Bool:
   +c = UOp.const(Arena.empty(), CInt{H.i64_of_i32(0)})
   +e = UOp.range_end(Found.ar(c), Found.i(c), [0], AXIS_GLOBAL{})
@@ -3377,14 +3393,12 @@ def t_toposort() -> Bool:
   Nat.is_eq(List.length(&2, U32, o), 4n)
 
 # the same walk over a cycle must terminate. The fuel is what makes that true,
-# and it answers the partial set rather than looping: `case 0n:` in `toposort`.
 def t_cycle_terminates() -> Bool:
   +f = g_cycle()
   +o = UOp.toposort(64n, Found.ar(f), Found.i(f))
   Bool.and(Bool.not(Nat.is_eq(List.length(&2, U32, o), 0n)), Nat.is_le(List.length(&2, U32, o), 8n))
 
 # the ucache key is compared component by component, and this is the whole of
-# `eq_node`: same op, same srcs, same arg, same tag is the same node.
 def key_same(p: Node, q: Node) -> Bool: eq_node(p, q)
 
 def t_key_eq() -> Bool:
@@ -3392,7 +3406,6 @@ def t_key_eq() -> Bool:
     Bool.not(key_same(Node{OpsADD{}, [1, 2], ANone{}, TNone{}}, Node{OpsADD{}, [1, 3], ANone{}, TNone{}}))),
     Bool.not(key_same(Node{OpsADD{}, [1, 2], ANone{}, TNone{}}, Node{OpsADD{}, [1, 2], ANone{}, TStr{"t"}})))
 
-# --- eq_dt, and the hash-consing that DEPENDS on it -----------------------------
 # dtype.py:59-62 is the oracle and it is an IDENTITY: `DType` is
 def t_eq_dt() -> Bool:
   Bool.and(Bool.and(eq_dt(S.void(), S.void()), eq_dt(S.weakint(), S.weakint())),
@@ -3417,15 +3430,11 @@ def g_cast_twice(+dt: S.Dt) -> U32:
 def t_weakfloat_interns() -> Bool:
   Bool.and(U32.is_eq(g_cast_twice(S.weakfloat()), 3), U32.is_eq(g_cast_twice(S.half()), 3))
 
-# --- eq_addr, and the hash-consing that DEPENDS on it -------------------------
-# The whole 4x4, in declaration order, against an oracle that is an IDENTITY:
 # dtype.py:51-54's `AddrSpace` is an `IntEnum` with four members and no
 def t_eq_addr() -> Bool:
   Bool.and(Bool.and(Bool.and(Bool.and(eq_addr(S.AGlobal{}, S.AGlobal{}), Bool.not(eq_addr(S.AGlobal{}, S.ALocal{}))), Bool.and(Bool.not(eq_addr(S.AGlobal{}, S.AReg{})), Bool.not(eq_addr(S.AGlobal{}, S.Aalu{})))), Bool.and(Bool.and(Bool.not(eq_addr(S.ALocal{}, S.AGlobal{})), eq_addr(S.ALocal{}, S.ALocal{})), Bool.and(Bool.not(eq_addr(S.ALocal{}, S.AReg{})), Bool.not(eq_addr(S.ALocal{}, S.Aalu{}))))),
     Bool.and(Bool.and(Bool.and(Bool.not(eq_addr(S.AReg{}, S.AGlobal{})), Bool.not(eq_addr(S.AReg{}, S.ALocal{}))), Bool.and(eq_addr(S.AReg{}, S.AReg{}), Bool.not(eq_addr(S.AReg{}, S.Aalu{})))), Bool.and(Bool.and(Bool.not(eq_addr(S.Aalu{}, S.AGlobal{})), Bool.not(eq_addr(S.Aalu{}, S.ALocal{}))), Bool.and(Bool.not(eq_addr(S.Aalu{}, S.AReg{})), eq_addr(S.Aalu{}, S.Aalu{})))))
 
-# THE DAMAGE, not just the predicate -- the shape of `weakfloat_interns` above,
-# because `eq_addr` is reached from `intern.find` the same way `eq_dt` is.
 # `ParamArg.addrspace` is the seventh field and is a BARE `S.Addr` (ops.py:23-36
 def g_param_addr(slot: U32, as: S.Addr) -> ParamArg:
   ParamArg{slot, S.uint32(), None{}, None{}, None{}, as, None{}, False{}, None{}, None{}, False{}, None{}}
@@ -3525,8 +3534,6 @@ def pat_base_op() -> Pat:
 def t_early_reject() -> Bool:
   t_early_reject.of(UPat.early_reject(pat_nth(UPat.f(pat_base_op(), 0, OpsADD{}), 1)))
 
-# THE REGRESSION ROW for the `pm_ler` bug. `ler` is `{u.op for u in uop.src}`, so
-# its LENGTH must equal the node's src count -- and FOUR srcs is the case that
 # matters, because spec.py:201's reject set is four ops and the broken version
 def g_ler.put(+leaf: Arena, four: Arena) -> Found:
   Found{four, 1}
@@ -3552,7 +3559,6 @@ def Rng.srcops.go(+ar: Arena, xs: List<&2, U32>, +acc: String, +first: Bool) -> 
       Rng.srcops.go(ar, t, Bool.pick(String, first, acc ++ Ops.name(Arena.op(ar, h)),
         acc ++ " " ++ Ops.name(Arena.op(ar, h))), False{})
 
-# `-` for a node with no srcs, matching CPython's own `-` for an empty join. `+first`
 # `+first` starts FALSE and not TRUE, because `seeded` has ALREADY put the head's name
 def Rng.srcops.seeded(+ar: Arena, xs: List<&2, U32>) -> String:
   match xs:
@@ -3569,7 +3575,6 @@ def Rng.sig(+ar: Arena, +self: U32) -> String:
     Rng.srcops(ar, self)])
 
 # Bend has no assertion form, so `main` PRINTS each answer and the gate is that both
-# lanes print the same lines. A `False{}` anywhere is the failure.
 def row(nm: String, b: Bool) -> IO(Unit):
   IO.print(String.concat([nm, "=", Bool.show(b)]))
 
@@ -3583,14 +3588,15 @@ def dt_name(d: S.Dt) -> String:
     case S.Dt{pri, bits, cls, nm}: nm
 
 # blob -- the intern key's bytes half. ops.py:201, spec.py:96, ops.py:365.
+# so `eq_arg.ABlob` compared a summary. Two DIFFERENT blobs of the SAME length were
+# `b"bbbb"` -- EQUAL LENGTH, UNEQUAL CONTENT. A fixture of DIFFERENT lengths is
 def t_const_bool_vs_int_splits() -> Bool:
   +u = UOp.new(Arena.empty(), OpsCONST{}, Nil{}, APy{CBool{True{}}}, TNone{})
   +v = UOp.new(Found.ar(u), OpsCONST{}, Nil{}, APy{CInt{H.i64_of_i32(1)}}, TNone{})
   Bool.not(U32.is_eq(Found.i(u), Found.i(v)))
 
-# THE NESTED LANE, and it is the SECOND instance of the same over-split. A CONST's arg IS
-# the key's `arg` element, so `type(arg)` splits `True` from `1` and `eq_const` must.
 # `ParamArg.val` is a `PyConst` NESTED inside `arg` (ops.py:42, `PyConst = float|int|bool`
+# at dtype.py:38), `type(arg)` is `ParamArg` on both sides, and the same two values are ONE
 def pa_with(v: Maybe<&2, Const>) -> Arg:
   AParam{ParamArg{0, S.int32(), None{}, None{}, None{}, S.AGlobal{}, None{}, False{}, None{},
                   None{}, False{}, v}}
@@ -3604,13 +3610,12 @@ def pynest_same(v1: Maybe<&2, Const>, v2: Maybe<&2, Const>) -> Bool:
 def t_pynest_bool_vs_int_interns() -> Bool: pynest_same(Some{CBool{True{}}}, Some{CInt{H.i64_of_i32(1)}})
 
 # THE TWO DISTINCTNESS CONTROLS, and without them a comparator answering True for every
-# pair would satisfy the row above alone.
 def t_pynest_int_distinct_interns() -> Bool: pynest_same(Some{CInt{H.i64_of_i32(1)}}, Some{CInt{H.i64_of_i32(2)}})
 
 def t_pynest_none_vs_zero_interns() -> Bool: pynest_same(None{}, Some{CInt{H.i64_of_i32(0)}})
 
-# and the one that keeps the comparator from being "cross bool against every number":
 # `ConstFloat.__hash__` is `hash(self.bits)` (dtype.py:21) and
+# DIFFERENT dict buckets upstream and are never compared at all. This row reads FALSE and
 def t_pynest_cfloat_vs_int_interns() -> Bool:
   pynest_same(Some{CFloat{1.0}}, Some{CInt{H.i64_of_i32(1)}})
 
@@ -3624,15 +3629,11 @@ def ax_names_str.go(xs: List<&2, AxisType>) -> List<&2, String>:
     case Nil{}: Nil{}
     case a <> t: List.append(&2, String, [AxisType.name(a)], ax_names_str.go(t))
 
-# --- THE AXIS CPYTHON LANE. Row order matches `.agents/slop/ops-oracle.py` EXACTLY and
-# --- the gate is a byte diff, so a row added on one side and not the other is a diff and
-# --- not a silent gap.
 # THE GATE for the ops.py:501-1928 block above. The CPython lane is
 
 def s5.pa(slot: U32) -> ParamArg: ParamArg.of(slot, S.int32())
 
 # The nine fixture indices, as a `Data` record so the row table reads them by name
-# and a fixture cannot be swapped for another without the row changing.
 type S5 is Data: S5{c: U32, b: U32, p: U32, a: U32, r1: U32, r2: U32, us: U32, bc: U32, af: U32}
 
 # The nine `S5` field readers. Bend has no `x.field` sugar (bend2-constraints
@@ -3745,7 +3746,6 @@ def UOp.is_invalid(+ar: Arena, +self: U32) -> Bool:
   UOp.is_invalid.of(Arena.op(ar, self), Arena.arg(ar, self))
 
 # `invalid` -- ops.py:663. `UOp.const(Invalid)`: a CONST whose `APy` payload is the
-# `CInvalid` arm, the ONE place `Const` holds something that is not a number.
 def UOp.invalid(ar: Arena) -> Found:
   UOp.const(ar, CInvalid{})
 
@@ -3764,6 +3764,7 @@ def UOp.cconst(+ar: Arena, v: Const, dt: S.Dt) -> Found:
   UOp.new(Found.ar(c), OpsCAST{}, [Found.i(c)], ADt{dt}, TNone{})
 
 # `ssimplify` -- ops.py:92. TWO ARMS AND A CAST:
+# a convenience. `simplify` is a documented wall in this file (`ops.py:511`, "* uop evaluation
 def cval_arg(a: Arg) -> Maybe<&1, Const>:
   match a:
     case APy{CBool{b}}: Some{CBool{b}}
@@ -3772,7 +3773,6 @@ def cval_arg(a: Arg) -> Maybe<&1, Const>:
     case _: None{}
 
 # THE SCRUTINEE IN ITS OWN DEF, because a match may not scrutinise a COMPUTED value -- the third
-# one DEF, not two, and mutual recursion is why. The obvious shape has the CAST arm ask `ssimplify_of`
 def ssimplify_of(op: Op, +ar: Arena, +i: U32) -> Maybe<&1, Const>:
   match op:
     case OpsCONST{}: cval_arg(Arena.arg(ar, i))
@@ -3784,7 +3784,6 @@ def UOp.ssimplify_val(+ar: Arena, +i: U32) -> Maybe<&1, Const>:
   ssimplify_of(Arena.op(ar, i), ar, i)
 
 # THE THIRD ARM, as its own Bool, because `None{}` cannot distinguish "a node that is not a value"
-# from "a value I failed to read" -- and those are opposite bugs.
 def UOp.ssimplify_is_val(+ar: Arena, +i: U32) -> Bool:
   Bool.or(eq_op(Arena.op(ar, i), OpsCONST{}),
           Bool.and(eq_op(Arena.op(ar, i), OpsCAST{}),
@@ -3803,6 +3802,7 @@ def UOp.pop_const_hits(+ar: Arena, +i: U32, op: Op) -> Bool:
            eq_op(Arena.op(ar, Arena.src(ar, i, 1)), OpsCONST{}))
 
 # `UOp.const_factor` -- ops.py:1048, "largest known int that divides self".
+# recursive. that is TRUE of the obvious spelling and FALSE of the arms: a stack or ADD node's
 def cf.cv.c(c: Const) -> H.I64:
   match c:
     case CInt{i}: i
@@ -3842,8 +3842,6 @@ def cf.defs.op(+ar: Arena, +i: U32, d: Bool) -> H.I64:
     case True{} : cf.defs(Arena.arg(ar, i))
     case False{}: H.i64_of_i32(1)
 
-# a stack or ADD contributes the gcd identity and not 1, and the difference is the whole rule:
-# their arm is `gcd(children)`, so their own term must be 0 -- `gcd(0, x)` is `x` while
 # `gcd(1, x)` is 1. MEASURED on the probe: `add_m6_m4` answered 1 for want of this arm, and 2 is
 def cf.local.go(op: Op, arg: Arg, +ar: Arena, +i: U32) -> H.I64:
   match op:
@@ -3869,7 +3867,6 @@ def cf.next(nxt: Bool, +rest: List<&2, U32>, +ar: Arena, +h: U32) -> List<&2, U3
     case False{}: rest
 
 # THE WORKLIST. Fuel, not the list, is the decreasing argument: a STACK's srcs are PUSHED, so
-# the list can grow and only fuel bounds the walk.
 def cf.walk(fuel: Nat, +ar: Arena, todo: List<&2, U32>, out: List<&2, U32>) -> List<&2, U32>:
   match fuel todo:
     case 0n Nil{}: out
@@ -3941,14 +3938,11 @@ def ctr_bump.pick(+same: Bool, +hit: List<&2, Ctr>, +miss: List<&2, Ctr>) -> Lis
     case True{}: hit
     case False{}: miss
 
-# and the bump extends the given counter and does not rebuild it -- measured: the first
-# spelling started at `Nil{}` and so the result was a counter of one key no matter how many
 # NODES WERE COUNTED, AND `t_ctr_bump` READ `False`.
 def ctr_bump.end(+found: Bool, +acc: List<&2, Ctr>, +k: U32) -> List<&2, Ctr>:
   ctr_bump.pick(found, acc, List.append(&2, Ctr, acc, [Ctr{k, 1}]))
 
 # the hit: the key matches, so the old record is dropped and the bumped one is put
-# in its place; and it does not, so the record is copied.
 def ctr_bump.hit(+c: Ctr, +k: U32, +acc: List<&2, Ctr>) -> List<&2, Ctr>:
   ctr_bump.pick(ctr_bump.same(c, k),
                 ctr_bump.hit2(c, k, acc),
@@ -3972,7 +3966,6 @@ def ctr_of.go(+l: List<&2, U32>, +acc: List<&2, Ctr>) -> List<&2, Ctr>:
 def ctr_of(+l: List<&2, U32>) -> List<&2, Ctr>: ctr_of.go(l, Nil{})
 
 # the set: one key's count, replaced. the list is short, so a linear scan is the scan.
-# and it is an accumulator and not an in-place replacement -- measured 2026-11-08: the
 def ctr_find(+l: List<&2, Ctr>, +k: U32) -> U32: ctr_find.go(l, k, 0)
 
 # the minimum: the multiset intersection's count is the smaller of the two.
@@ -4015,7 +4008,6 @@ def ctr_inter.min.go(+ls: List<&2, List<&2, Ctr>>, +k: U32, +acc: U32, +seen: Bo
     case l <> t: ctr_inter.min.go(t, k, ctr_inter.min.hit(l, k, acc, seen), True{})
 
 # the count of `k` in one counter, and a missing one is 0, which is what
-# `operator.and_` GIVES WHEN A KEY IS ABSENT.
 def ctr_inter.add2(zero: Bool, +k: U32, +n: U32, +acc: List<&2, Ctr>) -> List<&2, Ctr>:
   match zero:
     case True{}: acc
@@ -4032,16 +4024,12 @@ def ctr_inter.go(+first: List<&2, Ctr>, +ls: List<&2, List<&2, Ctr>>, +acc: List
     case Nil{}: acc
     case c <> t: ctr_inter.go(t, ls, ctr_inter.put(c, ls, acc))
 
-# and the key is read once, in a helper, because `Ctr.k(c)` twice is two consumptions --
 # MEASURED 2026-11-08: "c (consumed more than once)".
 def ctr_inter(+ls: List<&2, List<&2, Ctr>>) -> List<&2, Ctr>:
   match ls:
     case Nil{}: Nil{}
     case first <> t: ctr_inter.go(first, ls, Nil{})
 
-# the counter's own tests. `ops.bend` carries 55 `t_*` tests and the project rule is that
-# and the three claims are not change-detectors, and here is why:
-#   t_ctr_bump     the count of each key in a list of nodes. Catches a port that counts
 #                  DISTINCT KEYS INSTEAD OF OCCURRENCES, which is the difference between a
 def t_ctr_bump() -> Bool:
   +c = ctr_of([1, 2, 3, 2])
@@ -4057,7 +4045,6 @@ def t_ctr_find() -> Bool:
       U32.is_eq(ctr_find(c, 4), 0)))
 
 # the multiset intersection: `[1,1,2]` and `[1,2,2]` give the key 1 with count 1 (the
-# minimum) and the key 2 with count 1 -- and not 2, which is a union.
 def t_ctr_inter() -> Bool:
   +i = ctr_inter([ctr_of([1, 1, 2]), ctr_of([1, 2, 2])])
   Bool.and(U32.is_eq(ctr_find(i, 1), 1),
@@ -4192,7 +4179,6 @@ def UOp.pop_const_node.hit3(+ar: Arena, +i: U32, +op: Op, +self: U32, two: Bool)
     case False{}: self
 
 # and the node half is the first SRC of a `MUL` whose second SRC is a CONST, and
-# ANYTHING ELSE IS THE NODE ITSELF.
 def UOp.pop_const_node(+ar: Arena, +i: U32, +op: Op) -> U32:
   UOp.pop_const_node.hit3(ar, i, op, i, U32.is_eq(Arena.nsrc(ar, i), 2))
 
@@ -4211,12 +4197,10 @@ def UOp.gcd.count.go(+ar: Arena, +l: List<&2, U32>, +acc: List<&2, List<&2, Ctr>
     case nh <> nt : UOp.gcd.count.go(ar, nt, UOp.gcd.count.step(ar, nh, acc))
 
 # and the adder: the HEAD's counter is appended to the state -- and it answers the new
-# state, which is what the recursion passes on.
 def UOp.gcd.count(+ar: Arena, +uops: List<&2, U32>) -> List<&2, List<&2, Ctr>>:
   UOp.gcd.count.go(ar, uops, Nil{})
 
 # and the terms are the popped nodes -- `terms, factors = zip(*[u.pop_const(Ops.MUL) for
-# u in uops])` -- SO A TERM IS A `MUL` WITH ITS CONSTANT STRIPPED.
 def UOp.gcd.terms.go(+ar: Arena, +uops: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
   match uops:
     case Nil{}: acc
@@ -4226,14 +4210,12 @@ def UOp.gcd.terms(+ar: Arena, +uops: List<&2, U32>) -> List<&2, U32>:
   UOp.gcd.terms.go(ar, uops, Nil{})
 
 # one factor: the popped constant, or the identity 1 -- and the identity is what
-# `identity_element(MUL, dt)` IS.
 def UOp.gcd.isempty(+c: List<&2, Ctr>) -> Bool:
   match c:
     case Nil{}: True{}
     case _ <> _ : False{}
 
 # and the constant factors are `u.const_factor()` for every `u`, which is the port's own
-# FUEL-BOUNDED FOLD.
 def UOp.gcd.cfactors.go(+fuel: Nat, +ar: Arena, +uops: List<&2, U32>, +acc: List<&2, H.I64>) -> List<&2, H.I64>:
   match uops:
     case Nil{}: acc
@@ -4243,7 +4225,6 @@ def UOp.gcd.cfactors(+fuel: Nat, +ar: Arena, +uops: List<&2, U32>) -> List<&2, H
   UOp.gcd.cfactors.go(fuel, ar, uops, Nil{})
 
 # and the gcd of a list of factors is a FOLD over `H.gcd` -- which is two I64s -- and the
-# FIRST FACTOR IS THE START.
 def UOp.gcd.gcd.go(+fs: List<&2, H.I64>, +acc: H.I64) -> H.I64:
   match fs:
     case Nil{}: acc
@@ -4276,14 +4257,8 @@ def UOp.gcd.const(+ar: Arena, +uops: List<&2, U32>) -> Found:
 def UOp.gcd.answer.mul2(+made: Found, +h: U32) -> Found:
   UOp.alu(Found.ar(made), OpsMUL{}, [Found.i(made), h])
 
-# the counter's own tests, and they are CPYTHON-confirmed against CPYTHON's own
-# and the claims are not change-detectors:
-#   t_gcd_const   THE GCD OF TWO UNRELATED VARIABLES IS 1 -- A CONST. Catches a port that
-#                  returns the wrong node shape.
-#   t_gcd_shared  the gcd of `x*z` and `x*z` is the shared factor `x` times the gcd of
-#                  the constants -- and the CONST is stripped by `pop_const`, which is
-#                  what makes the counter `{x:1}` and not `{x:1, 3:1}`.
 # `UOp.divide_exact` -- ops.py:1038-1047.
+# "WE AREN'T SURE" ANSWER AND NOT AN ERROR.
 type Ds is Data:
   Ds{ok: Bool, es: List<&2, U32>}
 
@@ -4293,7 +4268,6 @@ def UOp.gcd.answer.mul(+es: List<&2, U32>, +made: Found) -> Found:
     case h <> t: UOp.gcd.answer.mul(t, UOp.gcd.answer.mul2(made, h))
 
 # and the adder: the state times the HEAD -- and it answers the new state, and it is not
-# IN THE RECURSION.
 def Ds.ok(+d: Ds) -> Bool:
   match d:
     case Ds{ok, es}: ok
@@ -4302,9 +4276,6 @@ def Ds.es(+d: Ds) -> List<&2, U32>:
   match d:
     case Ds{ok, es}: es
 
-# and the FOLD over the numerator's counter -- and the state is passed once and the
-# and the denominator's counter is the FOLD's other state -- and it is passed once per
-# step too -- and the two answers come out of one FOLD, which is what makes `den` a
 # SINGLE CONSUMPTION -- MEASURED 2026-11-09: "expected : den / observed : den (consumed more
 def UOp.divide_exact.ge1(+h: Ctr, +den: List<&2, Ctr>) -> Bool:
   Bool.not(U32.is_gt(ctr_find(den, Ctr.k(h)), Ctr.n(h)))
@@ -4324,20 +4295,17 @@ def UOp.divide_exact.fold.elems(+h: Ctr, +den: List<&2, Ctr>) -> List<&2, U32>:
                                                   U32.is_gt(ctr_find(den, Ctr.k(h)), Ctr.n(h))))
 
 # and the difference of two counts, and it cannot go negative because the FOLD has already
-# checked that every key of the divisor is present at least as many times.
 def UOp.divide_exact.fold.add(+h: Ctr, +den: List<&2, Ctr>, +st: Ds) -> Ds:
   Ds{Bool.and(Ds.ok(st), UOp.divide_exact.ge1(h, den)),
      List.concat(&2, U32, [Ds.es(st), UOp.divide_exact.fold.elems(h, den)])}
 
 # and one key's test: the numerator has at least as many of it as the divisor -- and
-# `ctr_find` answers zero for a key that is not there, which is exactly the "missing" case.
 def UOp.divide_exact.fold.go(+c: List<&2, Ctr>, +den: List<&2, Ctr>, +st: Ds) -> Ds:
   match c:
     case Nil{}: st
     case h <> t: UOp.divide_exact.fold.go(t, den, UOp.divide_exact.fold.add(h, den, st))
 
 # and the adder: the key's contribution and the "non-negative" test -- and both read
-# the denominator's counter, once each, in two defs.
 def Dq.ok(+d: Dq) -> Bool:
   match d:
     case Dq{ok, f}: ok
@@ -4347,7 +4315,6 @@ def Dq.f(+d: Dq) -> Found:
     case Dq{ok, f}: f
 
 # and the "we aren't sure" answer: a `Dv`-shaped record with `ok` FALSE -- and the INDEX is
-# 0 BECAUSE THERE IS NO NODE.
 def Dq.no(+ar: Arena) -> Dq:
   Dq{False{}, Found{ar, 0}}
 
@@ -4357,8 +4324,6 @@ def UOp.divide_exact.add(+ar: Arena, +da: Dq, +db: Dq, +ok: Bool) -> Dq:
     case True{}: Dq{True{}, UOp.alu(Found.ar(Dq.f(db)), OpsADD{}, [Found.i(Dq.f(da)), Found.i(Dq.f(db))])}
     case False{}: Dq.no(ar)
 
-# and the CONST's value: and it is the port's own `cf.cv`, which answers the CONST's value
-# or the identity `1` -- and that is upstream's `identity_element(MUL, dt)`, which is
 # 1 (`ops.py:81`: `{Ops.ADD:0, Ops.MUL:1, Ops.MAX:dt.min}[op]`). -- MEASURED 2026-11-09:
 def UOp.divide_exact.cval(+ar: Arena, +v: U32) -> H.I64:
   cf.cv(UOp.pop_const_val(ar, v, OpsMUL{}))
@@ -4392,7 +4357,6 @@ def UOp.divide_exact.i(+m: Found) -> U32:
   Found.i(m)
 
 # and the elements of the counter, which is a list of node indices -- and it is the same
-# shape as the product, so the product is the elements.
 def UOp.divide_exact.mul8(+m: Found, +nh: U32) -> Found:
   UOp.alu(UOp.divide_exact.ar(m), OpsMUL{}, [UOp.divide_exact.i(m), nh])
 
@@ -4403,7 +4367,6 @@ def UOp.divide_exact.mul7(+t: List<&2, U32>, +m: Found, +h: U32) -> Dq:
     case nh <> nt :
       UOp.divide_exact.mul7(nt, UOp.divide_exact.mul8(m, h), nh)
 
-# and the new node: the state times the HEAD -- and the state's two fields are read once
 # EACH, IN TWO DEFS -- MEASURED 2026-11-09: "expected : a call smaller than
 def UOp.divide_exact.mul6(+ar: Arena, +start: Found, +es: List<&2, U32>) -> Dq:
   match es:
@@ -4432,14 +4395,12 @@ def UOp.divide_exact.mul3(+ar: Arena, +self: U32, +v: U32, +fac: U32, +div_fac: 
                         ctr_of(UOp.split_uop(Arena.budget(ar), ar, div_fac, OpsMUL{})))
 
 # and the second condition: the counts are non-negative -- and it is a parameter and
-# NOT A COMPUTED VALUE.
 def UOp.divide_exact.mul2(+ar: Arena, +self: U32, +v: U32, fac: U32, div_fac: U32, mod0: Bool,
                           start: Found) -> Dq:
   match mod0:
     case True{}: UOp.divide_exact.mul3(ar, self, v, fac, div_fac, start)
     case False{}: Dq.no(ar)
 
-# AND THE START: `self.const_like(const//div_const)` -- AND `const_like` IS THE
 # UNSHAPED `UOp.const(b, dt)` -- MEASURED 2026-11-07 ON CPYTHON -- AND THE DIVISION IS
 def UOp.divide_exact.mul(+ar: Arena, +self: U32, +v: U32) -> Dq:
   UOp.divide_exact.mul2(ar, self, v,
@@ -4449,7 +4410,6 @@ def UOp.divide_exact.mul(+ar: Arena, +self: U32, +v: U32) -> Dq:
                                               H.i64_is_zero(UOp.divide_exact.cval(ar, v))),
                         UOp.divide_exact.start(ar, self, v))
 
-# and the first condition: `const % div_const == 0` -- and it is a parameter and not a
 # COMPUTED VALUE -- MEASURED 2026-11-09: "a parameter or field scrutinee (a match cannot
 def UOp.divide_exact.op(fuel: Nat, op: Op, +ar: Arena, +v: U32, +self: U32) -> Dq:
   match fuel:
@@ -4479,11 +4439,9 @@ def UOp.divide_exact.one(same: Bool, +ar: Arena, +self: U32, +v: U32) -> Dq:
     case False{}: UOp.divide_exact.cst(eq_op(Arena.op(ar, v), OpsCONST{}), ar, self, v)
 
 # and the "v is a CONST" arm: `self.divides(v.val)` -- and the port's own `UOp.divides`
-# answers a `Dv{ok, f, i}`, so a `Dv` that is not ok is the "we aren't sure" answer.
 def UOp.divide_exact(+ar: Arena, +self: U32, +v: U32) -> Dq:
   UOp.divide_exact.one(U32.is_eq(self, v), ar, self, v)
 
-# and the "self is v" arm: `self.const_like(1)` -- and `const_like(1)` is the unshaped
 # `UOp.const(1, dt)`, MEASURED 2026-11-07 ON CPYTHON.
 def UOp.gcd.prod.elems(+c: List<&2, Ctr>) -> List<&2, U32>:
   UOp.gcd.prod(c)
@@ -4495,14 +4453,13 @@ def UOp.gcd.answer(+ar: Arena, +uops: List<&2, U32>) -> Found:
       +c = UOp.const(ar, CInt{UOp.gcd.gcd(UOp.gcd.cfactors(Arena.budget(ar), ar, uops))})
       UOp.gcd.answer.mul(UOp.gcd.prod.elems(ctr_inter(UOp.gcd.count(ar, UOp.gcd.terms(ar, uops)))), c)
 
-# and the FOLD of `MUL`s: the product of the CONST and the counter's elements -- and the
+# 'UOp.gcd.answer.mul3']` THREE TIMES, AND THE PORT's OWN `merge_dicts.go` is the shape
 def UOp.gcd.mk2(+ar: Arena, +uops: List<&2, U32>, empty: Bool) -> Found:
   match empty:
     case True{}: UOp.gcd.const(ar, uops)
     case False{}: UOp.gcd.answer(ar, uops)
 
 # and the constant answer: `uops[0].const_like(gcd(*factors))` -- and the port spells the
-# UNSHAPED `const_like`, WHICH IS `UOp.const(b, dt)`.
 def UOp.gcd.mk(+ar: Arena, +uops: List<&2, U32>) -> Found:
   UOp.gcd.mk2(ar, uops, UOp.gcd.isempty(ctr_inter(UOp.gcd.count(ar, UOp.gcd.terms(ar, uops)))))
 
@@ -4511,8 +4468,6 @@ def UOp.gcd(+ar: Arena, +uops: List<&2, U32>) -> Found:
     case Nil{}: Found{ar, 0}
     case h <> t: UOp.gcd.mk(ar, uops)
 
-# and the two arms: the count is empty and it is not -- and the comparison is a
-# parameter and not a computed value (measured 2026-11-08).
 # `index` -- ops.py:578. `UOp(Ops.INDEX, src=(self,)+tuple(new_srcs))`, and above it
 def UOp.index.isconst(ar: Arena, k: U32) -> Bool:
   eq_op(Arena.op(ar, k), OpsCONST{})
@@ -4527,6 +4482,7 @@ def UOp.index.slot(+ar: Arena, self: U32, k: U32) -> U32:
   Arena.src(ar, self, UOp.index.slot.go(Arena.arg(ar, k)))
 
 # THE PICK, and it is where the two answers have DIFFERENT ARENAS: the fast path
+# SAME node. Here they are DIFFERENT nodes, so the `Bool` decides and one is built.
 def UOp.index.pick(hit: Bool, +ar: Arena, self: U32, k: U32) -> Found:
   match hit:
     case True{}: Found{ar, UOp.index.slot(ar, self, k)}
@@ -4537,7 +4493,6 @@ def UOp.index.guard(+ar: Arena, self: U32, k: U32) -> Bool:
   Bool.and(eq_op(Arena.op(ar, self), OpsSTACK{}), UOp.index.isconst(ar, k))
 
 # The ONE-src arm, the only one the guard can fire in. `self` and `k` are `+` here
-# because `UOp.index.pick` reads them a second time.
 def UOp.index.one(+ar: Arena, +self: U32, +k: U32) -> Found:
   UOp.index.pick(UOp.index.guard(ar, self, k), ar, self, k)
 
@@ -4555,7 +4510,6 @@ def UOp.index(ar: Arena, self: U32, srcs: List<&2, U32>) -> Found:
   UOp.index.go(ar, self, srcs)
 
 # `store` -- ops.py:613. `srcs = (self, self.const_like(src) if not isinstance(src,
-# `const_like(src)` is the wall: it is `UOp.const(b, self.dtype)` and then an
 def UOp.store.srcs(+self: U32, +val: U32, gate: Maybe<&2, U32>) -> List<&2, U32>:
   match gate:
     case Some{g}: [self, val, g]
@@ -4589,10 +4543,6 @@ def sg.ctor(arg: Arg) -> String:
     case AWmma{dims, dt, threads, tc}: String.concat(["wmma:", U32.show(threads), "/", dt_name(dt)])
     case _: "other"
 
-# THE INDEX ROW. Every fixture's index is its POSITION in the literal node list
-# above and this prints the op name of each in that order, so a miscount is a
-# visible row rather than a silent re-labelling of twenty-three rows. The
-# arithmetic being easy is exactly why it needs a row.
 # `ufix` -- ops.py:606. THREE rows and the third is the one the def exists for:
 def UOp.device_range_src.dn(ar: Arena, +tags: List<&2, U32>) -> DRng:
   +c = UOp.const(ar, CInt{H.i64_of_i32(U32.from_nat(List.length(&2, U32, tags)))})
@@ -4615,7 +4565,6 @@ def UOp.copy_to_device(+ar: Arena, +self: U32, k: Maybe<&2, U32>, +dev: S.Dev) -
   UOp.new(DRng.ar(d), OpsCOPY{}, List.append(&2, U32, [Found.i(f)], DRng.ys(d)), ADev{dev}, TNone{})
 
 # `getaddr` -- ops.py:844. `if self.without_after.op not in {BUFFER, ALLOC, SHRINK,
-# The nine-op test is a `match` with a `case _:` arm, which is the shape
 def UOp.getaddr.op(op: Op) -> Bool:
   match op:
     case OpsBUFFER{}: True{}
@@ -4642,14 +4591,8 @@ def UOp.getaddr(fuel: Nat, +ar: Arena, +self: U32, +dev: S.Dev) -> Found:
   UOp.getaddr.go(UOp.getaddr.peel(fuel, ar, self), ar, self,
     UOp.new(ar, OpsGETADDR{}, [self], ADev{dev}, TNone{}))
 
-# `device or to_tuple(self.device)[0]` IS THE DEVICE AND IS A PARAMETER, not a
-# fold. Python's default reads `self.device`, which is `uop/fold.bend`'s
-# `UOp.device(ar, tb, i)` over a Table this file has no business building, so `dev`
-# is what the caller resolved. That is this block's only signature change and it
-# is stated here rather than left to be discovered. The discarded GETADDR in the
-# `case False{}` arm grows the arena and is thrown away, which is what `UOp.after`
-# and `UOp.broadcast` above already do.
 # ==== ops.py:1030  `expr`, the one Variable-lattice def this arena can read ====
+# `expr` -- ops.py:1030. `assert self.op in {Ops.PARAM, Ops.BUFFER}; return
 def UOp.expr.go(arg: Arg) -> Maybe<&2, String>:
   match arg:
     case AParam{pa}:
@@ -4661,6 +4604,16 @@ def UOp.expr(+ar: Arena, +self: U32) -> Maybe<&2, String>:
   UOp.expr.go(Arena.arg(ar, self))
 
 # DONE(p3) ops.py:1048  def const_factor
+#   be written that way, because its recursion is over a DIFFERENT node per step
+#   DONE  ops.py:1069 `divides`   -- `UOp.divides.op` (:7951) and `UOp.divides` (:7972),
+#   DONE  ops.py:1082 `pop_const` -- `UOp.pop_const_val` (:7738) / `UOp.pop_const_hits`
+#   TODO  ops.py:1073 `gcd`
+#   TODO  ops.py:1079 `divide_exact`
+# TODO(p3) ops.py:1073  def gcd
+# TODO(p3) ops.py:1079  def divide_exact
+#   `__floordiv__`. `const_like` is ops.py:572 and is NOT ported (:5441): it is
+# ==== ops.py:1015  `UOp.variable` =========================================
+# three siblings had each invented one. MEASURED: `variable("i",0,10).arg.slot` is
 def UOp.variable.pa.of(base: ParamArg, nm: String, r: PyRange, mo: U32) -> ParamArg:
   match base:
     case ParamArg{slot, dtype, vmin_vmax, multiple_of, _n, addrspace, device, volatile, image, buffer, bind_on_realize, val}:
@@ -4673,19 +4626,8 @@ def UOp.variable.pa(nm: String, lo: H.I64, hi: H.I64, mo: U32, dt: S.Dt) -> Para
 def UOp.variable(+ar: Arena, nm: String, lo: H.I64, hi: H.I64, mo: U32, dt: S.Dt) -> Found:
   UOp.new(ar, OpsPARAM{}, Nil{}, AParam{UOp.variable.pa(nm, lo, hi, mo, dt)}, TNone{})
 
-# the three `Map` readers take their quantifier in three different places, and
-# getting it wrong is a `expected : Map<&2, H.I64> / observed: VarVals` rather than a
-# clean arity error, because the stray value lands in the next parameter.
-#   Map.set(a, -V: Kind(a), m, key, x)  -- quantifier SECOND, after the linearity
-#   Map.has(-a: Quant, -V: Kind(a), m, key)
-#   Map.get(-V: Data, d, m, key)        -- NO linearity parameter at all
-# `uop/render.bend:989 symbol=range_ids.of` and `:1017` already spell all three correctly; this cost three
-# compile rounds to find, and the first of them I had recorded as a LANGUAGE gap.
-# `Map.set` puts its QUANTIFIER SECOND (`Map.set(a, -V: Kind(a), m, key, x)`) and
-# the three `Map` readers in the tree disagree about that -- `Map.has` takes it
-# first, `Map.get` has NO linearity parameter. A stray `&2` lands in the next
-# parameter's slot and the error names a type rather than an arity.
 # `ProgramInfo.launch_dims` -- ops.py:1352 -- AND `ProgramInfo.from_sink`
+# -- ops.py:1358. the two methods upstream's `ProgramInfo` has at the PIN.
 def fs.arg(ar: Arena, u: U32) -> Arg:
   Arena.arg(ar, u)
 
@@ -4702,7 +4644,6 @@ def PSlot.le(a: PSlot, b: PSlot) -> Bool:
     case PSlot{slot, node} PSlot{s2, n2}: U32.is_le(slot, s2)
 
 # A PARAM's SLOT and whether it is an ALU one -- the two facts `from_sink` asks
-# of a PARAM.
 type PInfo is Data:
   PInfo{slot: U32, alu: Bool}
 
@@ -4723,7 +4664,6 @@ type Sz is Data:
   Sz{gs: List<&2, H.I64>, ls: List<&2, H.I64>}
 
 # `outs` AND `ins` TOGETHER, because upstream's default (`if not outs and not
-# ins: outs = ins = _globals`) sets BOTH at once.
 type OI is Data:
   OI{o: List<&2, U32>, i: List<&2, U32>}
 
@@ -4765,9 +4705,8 @@ def fs.buf_slot(fuel: Nat, op: Op, +ar: Arena, +s: U32) -> Maybe<&2, U32>:
 def fs.buf_slot.of(+ar: Arena, +s: U32) -> Maybe<&2, U32>:
   fs.buf_slot(Arena.budget(ar), fs.op(ar, s), ar, s)
 
-# `(idx:=u.src[0]).op in (Ops.INDEX, Ops.SHRINK) or (u.src[0].op is Ops.CAST
-# and (idx:=u.src[0].src[0]).op is Ops.INDEX)` -- the index node under a STORE
 # or a LOAD. THE CAST ARM IS A SEPARATE DEF because it reads a DIFFERENT node.
+# STORE'S OWN FIRST SRC -- AND NOT `u`:
 def fs.idx.cast.of(op: Op, +ar: Arena, +u: U32) -> Maybe<&2, U32>:
   match op:
     case OpsINDEX{}: Some{Arena.src0(ar, Arena.src0(ar, u))}
@@ -4787,7 +4726,6 @@ def fs.idx(+ar: Arena, +u: U32) -> Maybe<&2, U32>:
   fs.idx.of(fs.op(ar, Arena.src0(ar, u)), ar, u)
 
 # `u.arg[0] == 'l'` -- the FIRST character of a SPECIAL's name. 'l' is ASCII
-# 108 and `Char.to_u32` answers the byte.
 def fs.sp.local.of(cs: List<&2, Char>) -> Bool:
   match cs:
     case Nil{}: False{}
@@ -4878,7 +4816,6 @@ def fs.io_slot(+ar: Arena, +u: U32) -> Maybe<&2, U32>:
     Maybe.bind(&2, U32, U32, fs.buf_slot.of(ar, Arena.src0(ar, idx)), slot =>
       Some{slot}))
 
-# A STORE RECORDS AN `out` AND A LOAD RECORDS AN `in` -- upstream's
 # `(outs if u.op is Ops.STORE else ins).append(buf.arg.slot)` (ops.py:1368). The
 def fs.io.put(is_store: Bool, slot: U32, params: List<&2, PSlot>, globals: List<&2, U32>, outs: List<&2, U32>, ins: List<&2, U32>) -> FS:
   match is_store:
@@ -4894,7 +4831,6 @@ def fs.io.maybe(+ar: Arena, +u: U32, acc: FS) -> Maybe<&2, FS>:
 def fs.io(ar: Arena, u: U32, +acc: FS) -> FS:
   Maybe.default(&2, FS, fs.io.maybe(ar, u, acc), acc)
 
-# the `if`s of upstream's LOOP, in order, as a chain of defs: a def holds one
 # `match`, and each test is on a DIFFERENT node. THE SPECIAL ARM IS IN THE
 def fs.step.io.of(is_io: Bool, +ar: Arena, +u: U32, +acc: FS) -> Maybe<&2, FS>:
   match is_io:
@@ -4919,8 +4855,6 @@ def fs.go(+ar: Arena, todo: List<&2, U32>, +acc: FS) -> Maybe<&2, FS>:
     case u <> t:
       Maybe.bind(&2, FS, FS, fs.step(ar, u, acc), a2 => fs.go(ar, t, a2))
 
-# THE SIZE FOLD -- upstream's SPECIAL arm, over the same toposort.
-# THE SIZE FOLD -- upstream's SPECIAL arm, over the same toposort. IT IS ONE
 # DEF AND NOT TWO because the step CONTINUES THE FOLD, and a def that calls
 def fs.sz.go(+ar: Arena, todo: List<&2, U32>, +sz: Sz) -> Maybe<&2, Sz>:
   match todo:
@@ -4929,7 +4863,6 @@ def fs.sz.go(+ar: Arena, todo: List<&2, U32>, +sz: Sz) -> Maybe<&2, Sz>:
       Maybe.bind(&2, Sz, Sz, fs.sp.step(ar, u, sz), s2 => fs.sz.go(ar, t, s2))
 
 # `sorted(dedup(...))` -- the three slot lists. `H.dedup_u32` IS upstream's
-# `dedup` (`list(dict.fromkeys(x))`: first occurrence wins, order retained).
 def fs.slots(xs: List<&2, U32>) -> List<&2, U32>:
   List.sort(U32, U32.is_le, H.dedup_u32(xs))
 
@@ -4942,7 +4875,6 @@ def fs.nodes(xs: List<&2, PSlot>) -> List<&2, U32>:
 def fs.params(xs: List<&2, PSlot>) -> List<&2, U32>:
   fs.nodes(List.sort(PSlot, PSlot.le, xs))
 
-# `if not outs and not ins: outs = ins = _globals` -- upstream's default when
 # AND NOT IS THE WHOLE OF THIS DEF, and it was `Bool.or` for one run and
 def fs.oi(+globals: List<&2, U32>, +outs: List<&2, U32>, +ins: List<&2, U32>) -> OI:
   Bool.pick(OI, Bool.and(List.is_empty(&2, U32, outs), List.is_empty(&2, U32, ins)),
@@ -4981,7 +4913,6 @@ def fs.i64_dec(+x: H.I64) -> String:
   fs.i64_dec.of(H.hi32(x), H.lo32(x))
 
 # the gcd of two unrelated variables is 1 -- a CONST with no srcs.
-# and the arena must be threaded between the two variables -- measured 2026-11-08:
 def t_gcd_const() -> Bool:
   +ar0 = Arena.empty()
   +fx = UOp.variable(ar0, "x", H.i64_of_i32(0), H.i64_of_i32(4), 1, S.weakint())
@@ -4993,7 +4924,6 @@ def t_gcd_const() -> Bool:
   Bool.and(eq_op(Arena.op(ga, Found.i(g)), OpsCONST{}), U32.is_eq(Arena.nsrc(ga, Found.i(g)), 0))
 
 # the gcd of `x*z` and `x*z` is the shared factor -- and the constant is stripped by
-# `pop_const`, which is what makes the counter `{x:1}` and not `{x:1, 3:1}`.
 def t_gcd_shared() -> Bool:
   +ar0 = Arena.empty()
   +fx = UOp.variable(ar0, "x", H.i64_of_i32(0), H.i64_of_i32(4), 1, S.weakint())
@@ -5006,12 +4936,8 @@ def t_gcd_shared() -> Bool:
   +ga = Found.ar(g)
   eq_op(Arena.op(ga, Found.i(g)), OpsMUL{})
 
-# the top-level `arg` lane -- and it is the lane that replaces the three `tag_*` rows
-# and the replacement is a measurement, not a whim: measured 2026-11-08, upstream deleted
-# `UOp.tag` IN `fb518b44e` ("delete UOp.tag [pr] (#18954)", 2026-10-21) AND
-# `git merge-base --is-ancestor fb518b44e f5ac54685074` ANSWERS YES -- SO AT THE PIN THERE IS
-# no `tag` slot, and `rg '\btag\b' tinygrad/uop/ops.py` finds nothing. the PIN's key is
 # `(op, src, arg, type(arg))` (`ops.py:194`), so `type(arg)` is the only thing that splits the
+# AND CPYTHON's OWN ANSWERS, MEASURED AT THE PIN: `arg=True` vs `arg=1` is False (the
 def arg_same(a1: Arg, a2: Arg) -> Bool:
   +u = UOp.new(Arena.empty(), OpsSINK{}, Nil{}, a1, TNone{})
   +v = UOp.new(Found.ar(u), OpsSINK{}, Nil{}, a2, TNone{})
@@ -5026,7 +4952,6 @@ def t_arg_none_vs_int_splits() -> Bool:
   Bool.not(arg_same(ANone{}, APy{CInt{H.i64_of_i32(0)}}))
 
 # and the control that the comparator is not "cross every TYPE against every other": two
-# `int`s with the same value ARE ONE NODE.
 def t_arg_int_same_interns() -> Bool:
   arg_same(APy{CInt{H.i64_of_i32(1)}}, APy{CInt{H.i64_of_i32(1)}})
 
@@ -5050,7 +4975,6 @@ def t_de_const_none() -> Bool:
   Bool.not(Dq.ok(d))
 
 # the `x*y DIVIDED BY y` answer is a MUL -- and the constant is stripped by
-# `pop_const`, which is what makes the counter `{x:1}` and not `{x:1, 2:1}`.
 def t_de_mul() -> Bool:
   +ar0 = Arena.empty()
   +fx = UOp.variable(ar0, "x", H.i64_of_i32(0), H.i64_of_i32(4), 1, S.weakint())
@@ -5069,7 +4993,6 @@ def t_de_mul() -> Bool:
                              Cmp.is_eq(H.i64_cmp(UOp.divide_exact.constval(ga, left), H.i64_of_i32(1))))))
 
 # the `x*2 DIVIDED BY x` answer is the constant -- a CONST with no srcs -- and that is
-# THE `pop_const` CONST HALF COMING OUT ALONE.
 def t_de_const_out() -> Bool:
   +ar0 = Arena.empty()
   +fx = UOp.variable(ar0, "x", H.i64_of_i32(0), H.i64_of_i32(4), 1, S.weakint())

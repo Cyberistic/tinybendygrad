@@ -223,23 +223,6 @@ def nan_uint(+dt: S.Dt) -> S.Dt: nan_uint.of(nan_bs(dt))
 # upstream's comment ON IT. TWO FACTS AND THE SECOND IS A GOTCHA:
 #   * THE RMW LOADS **THE VERY INDEX BEING STORED TO**. IT IS NOT A LOAD OF
 #     THE WHOLE BUFFER AND NOT A LOAD OF SOMETHING ELSE: THE READ-MODIFY-
-#     WRITE IS OF ONE **WORD**, AND THE WORD IS THE ONE THE STORE HITS.
-#     SO THE PATTERN IS Pinned TO THE `Ops.LOAD` THAT `packed_store` ITSELF
-#     EMITTED, AND THE `& UPat.var("wmask")` BINDS THE MASK THAT COMES WITH
-#     IT.
-#   * "A GATED STORE LOADS WITH 3 SRCS." A GATED LOAD -- ONE WITH AN `alt`
-#     AND A `gate` -- HAS **THREE** SRCS WHERE AN UNGATED ONE HAS ONE. SO
-#     THE PATTERN'S `allow_any_len=True` IS NOT COSMETIC: WITHOUT IT THE
-#     PATTERN WOULD MATCH ONLY THE UNGATED SHAPE AND EVERY GATED PACKED
-#     STORE WOULD FALL THROUGH TO THE PLAIN STORE RULE AND LOSE THE
-#     ATOMIC.
-#
-# `allow_any_len` is a LENGTH CLAUSE, not a repetition: the LOAD may carry any
-# number of srcs and only src[0] is constrained, and the CAST is exact-length-1
-# (`allow_any_len` is absent). The trailing `& UPat.var("wmask")` is the table's
-# BIND, not a guard, so it is not part of the predicate -- and that is
-# load-bearing in the other direction too: `string_rewrite`'s store rule takes
-# the mask as a SECOND binder, so the same LOAD matches with or without it.
 
 def prw_is(ar: O.Arena, u: U32) -> Bool: O.eq_op(O.Arena.op(ar, u), O.OpsLOAD{})
 
@@ -367,12 +350,6 @@ def code_for_op.of(+op: O.Op, +a: String, +b: String, +c: String) -> String:
 # **THERE** AND NOT AT THE POINT OF USE.
 #
 # AND THE TWO FORMS ARE NOT THE SAME EXPRESSION BECAUSE THE SIGNED ONE IS
-# NOT A MASK: A SIGNED `i8` IS NOT `x & 0xFF` -- THAT WOULD BE A `u8`. IT
-# IS `((x & 0xFF) ^ 0x80) - 0x80`, WHICH IS "RE-INTERPRET THE 8 BITS AS
-# SIGNED". THE PORT'S `render_cast.cls` SPELLS THAT AS `((ret & M) ^ H) - H`
-# WITH `H = 2^(bits-1)`, AND THE SUBTRACTION IS BY A **BARE INTEGER** AND
-# NOT BY `Hu` BECAUSE WGSL'S `i32` AND `u32` ARE DISTINCT TYPES AND THE
-# EXPRESSION IS A SIGNED ONE.
 def rc_mask(+bits: U32) -> U32: U32.sub(U32.shln(1, U32.to_nat(bits)), 1)
 
 def rc_half(+bits: U32) -> U32: U32.shln(1, U32.to_nat(U32.sub(bits, 1)))
@@ -385,10 +362,6 @@ def render_cast.cls(cls: S.Cls, +bits: U32, ret: String) -> String:
     case _         : ret
 
 # `u.dtype in (dtypes.u8, dtypes.u16)` and `in (dtypes.i8,
-# dtypes.i16)` are BOTH-WIDTH tests, and both narrow forms are the same
-# expression, so the test is `itemsize < 4 and not float` -- which is
-# `is_packed`'s first two clauses and NOT its third: a REG uint8 casts this way
-# too. Reusing the name would be a lie, so this is its own test.
 def rc_narrow(+dt: S.Dt) -> Bool:
   Bool.and(Bool.and(U32.is_lt(S.Dt.itemsize(dt), 4), S.Dt.is_int(dt)),
     Bool.or(U32.is_eq(S.Dt.bits(dt), 8), U32.is_eq(S.Dt.bits(dt), 16)))
@@ -642,13 +615,6 @@ def render_kernel(+fn: String, +kernel: List<&2, String>, +bufs: List<&2, Buf>, 
   rk_body(fn, rk_partition(kernel), bufs, sc)
 
 # :121 supported_dtypes -- `{bool, char, uchar, short, ushort, int32, uint32,
-# float, *((half,) if "shader-f16" in self.target.arch else ())}`.
-#
-# `self.target.arch` is a STRING here and the test is a SUBSTRING test, not an
-# equality, so `arch` is a parameter: `"shader-f16" in arch` is the whole of
-# what `Target` contributes to this method. The set is a list -- Python's set
-# has no order and neither does this, so the gate compares it SORTED and the
-# sort is a gate detail, not a claim.
 
 def sd_go(a: Bool, +ds: List<&2, S.Dt>) -> List<&2, S.Dt>:
   Bool.pick(List<&2, S.Dt>, a, List.append(&2, S.Dt, ds, [S.half()]), ds)

@@ -221,6 +221,7 @@ def q.docker_flags(+fs: String, +root: String) -> List<&2, String>:
 #   if not handle or (data := (hc.executable if hc.type == CL_HANDLE_LINKED
 #
 # So a NULL handle gets the bare message and a handle with a non-zero error code
+# gets the message AND the build log, and in BOTH cases the instance is
 
 def q.handle_linked() -> U32: 2          # CL_HANDLE_LINKED
 

@@ -522,7 +522,7 @@ def P_BYTES3() -> List<&2, U32>: [0, 0, 0]
 def P_BYTES4() -> List<&2, U32>: []
 
 # the `PTXCompiler.compile` fixture: one `VERSION` and two `TARGET`s, so a
-# replace-one instead of a replace-all shows
+# replace-one instead of a replace-all shows.
 def P_SRC() -> String: String.join([".version TARGET", ".version VERSION", ".target TARGET"], ";")
 
 # THE GATE. Every `cu_` row is a row of `.agents/slop/ext_oracle.py` section

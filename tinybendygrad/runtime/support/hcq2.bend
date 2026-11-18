@@ -814,7 +814,7 @@ def E.r(x: E) -> U32:
 #   TIMESTAMP  :266     a = the slot index
 #   STORE      :271     a = the queue-signal slot, b = tag + 1
 #   BUMP       :278     a = TIMELINE_MARK, b = the device id, c = 1
-#   CALL                a = the batch tag
+#   CALL                a = the batch tag.
 def I_BARRIER() -> U32: 1
 def I_WAIT() -> U32: 2
 def I_TIMESTAMP() -> U32: 3

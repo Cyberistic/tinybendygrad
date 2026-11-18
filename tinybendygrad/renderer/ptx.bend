@@ -105,9 +105,6 @@
 #     READING A's DTYPE TWICE IS A WAY OF SAYING "THEY ARE THE SAME" AND
 #     NOT A TYPO. BUT IT IS A **COUNT** THAT DEPENDS ON A DIFFERENT NODE
 #     THAN THE COUNT IT SAYS, AND A PORT THAT READ `src[1]`'S DTYPE FOR
-#     THE SECOND LIST WOULD AGREE WITH UPSTREAM ON EVERY LEGAL GRAPH AND
-#     DISAGREE ON AN ILLEGAL ONE.
-#
 
 # THE GATE. 281 rows, all STRINGS, and `py=` is a LITERAL, never an expression:
 #   .venv/bin/python gates/ptx_render_census-oracle.py > /tmp/s3py.rows
@@ -495,13 +492,6 @@ def Wt.want(+w: Wt) -> String:
     case Wt{nm, want}: want
 
 # the computed side, one entry per row -- a list, not one concatenated string,
-# because `zip.of` reads the computed value by index and a string would be
-# indexed by CHARACTER.
-#
-# `r[i]` for every step the walk gave a register to, in the FIXTURE'S OWN order.
-# A skipped uop (NOOP/CONST/SINK) contributes no row, and that ABSENCE is
-# a claim: `f14_skips` has two skipped steps at indices 0..1 and its first `r`
-# row is `[3]`.
 def r_go.put(+r: Rg, i: U32, +s: Wk) -> List<&2, String>:
   Bool.pick(List<&2, String>, has_rg(r), [rgl.of(r)], Nil{})
 

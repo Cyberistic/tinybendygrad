@@ -155,14 +155,6 @@ def FMT_RNG_HI() -> U32: 256
 #     IT. `FMT_NEG_BASE` IS 192 FOR THAT REASON.
 #   * 240..248 IS NINE **FLOAT** CONSTANTS AND 248 IS `1/(2*PI)` -- WHICH IS
 #     NOT IN `_FLOAT_ENC` AT ALL. `_FLOAT_ENC` (dsl.py:151) HAS EIGHT ENTRIES,
-#     240..247, AND 248 IS THE NINTH, `INV_2PI`, WHICH IS IN `_NAMES` BUT NOT
-#     ENCODABLE AS A FIELD VALUE. SO `FMT_RNG_LO`/`FMT_RNG_HI` SPAN NINE
-#     OFFSETS AND `float_enc` SPANS EIGHT, AND THE DIFFERENCE IS 248.
-#
-# WHICH IS WHY THE PORT CARRIES BOTH: `FMT_RNG_LO`/`FMT_RNG_HI` ARE THE
-# PRINTED REGION AND `float_enc` BELOW IS THE ENCODABLE SUBSET, AND A READER
-# THAT ASSUMED THEY WERE THE SAME RANGE WOULD ENCODE `INV_2PI` AS A FIELD
-# VALUE IT CANNOT HOLD.
 
 def BRACKET_MULTI() -> U32: 1   # sz > 1
 
@@ -931,9 +923,6 @@ def typed_encode(k: Nat, +vf: Vf) -> Res:
 # FOLWS IS A NAME THE OPERAND INFO ACTUALLY HAS, BECAUSE A FIELD GENUINELY
 # NAMED `vdst` OR `vdata` MUST NOT BECOME `dst` OR `data`. THE PORT'S
 # `canon_fwd` / `canon_in` TABLES (THE EVEN FOLD AT dsl.py:261-268) ARE THE
-# SAME IDEA WRITTEN ONCE: `src0`/`vsrc0`/`ssrc0` ALL FOLD TO `s0`, `vdst`/
-# `sdst`/`sdata` ALL FOLD TO `d`, AND `data`/`vdata`/`data0`/`vsrc` ALL FOLD
-# TO `data`.
 
 def fld_encode.k(k: Nat, +vf: Vf) -> Res:
   match k:
@@ -1028,12 +1017,6 @@ def mfma_b_of(cbsz: U32) -> U32: mfma_regs(cbsz)
 def num_srcs.a0(+has_s0: Bool) -> U32: Bool.pick(U32, has_s0, NSRC_ONE(), NSRC_ZERO())
 
 # `_variant_suffix` (:423-437). 255 -> _LIT, 249 -> _SDWA or _DPP8 by arch,
-# 250 -> _DPP16, anything else None -- and the FIRST SrcField with one of those
-# offsets wins, so the walk is a scan and not a test of the last field.
-# The suffix is a STRING or nothing, and "nothing" is `None{}` -- one `Maybe`
-# over `Maybe<&2, String>` rather than a new type. An EMPTY string is not the
-# same as None and the gate pins both, because a caller that prints the suffix
-# would print "" for a variant and nothing for a plain instruction.
 
 def num_srcs.a1(+has_s1: Bool, +has_s0: Bool) -> U32:
   match has_s1:

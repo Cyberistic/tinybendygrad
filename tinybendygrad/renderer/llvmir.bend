@@ -87,10 +87,6 @@ def lt.pri(+d: S.Dt) -> U32:
 def ivol(is_param: Bool, vol: Bool) -> Bool: Bool.and(is_param, vol)
 
 # `volatile ` with a TRAILING space and nothing when False: llvmir.py:90, :95,
-# :98 all spell `{'volatile ' if ... else ''}` inside a longer literal, so the
-# space belongs to the FRAGMENT, and the one space before the comma in a load
-# line is the fragment's, not the literal's. `br3 load vol True` and
-# `br3 load vol False` are the pair that pins it.
 def volsp(vol: Bool) -> String: Bool.pick(String, vol, "volatile ", "")
 
 def r_iv(+nm: String, is_param: Bool, vol: Bool) -> String:
@@ -396,8 +392,6 @@ def amd1.line(+op: O.Op, +d: S.Dt, +od: S.Dt, +xn: String, +s: String) -> String
 # SHAPE -- `llvm_intrinsics` (llvmir.py:79) MAPS LOG2 AND EXP2 FOR EVERY
 # DTYPE, AND `lt.of(od)` IS THE OUTPUT TYPE -- SO THE ROWS ARE ABOUT THE
 # SPELLING AND NOT ABOUT WHAT THE AMD BACKEND ACCEPTS. THE REWRITE THAT
-# MAKES THE DOUBLE CASE REAL IS `extra_matcher`'s, AND `extra_matcher` IS A
-# `PatternMatcher` -- A WALL, NAMED AT THE TOP OF THIS FILE.
 def amd3.line(+xn: String, +s: String, +bf8: U32) -> String:
   String.concat(["  ", xn, " = call i8 @f32_to_fp8(float  ", s, ", i1 ", U32.show(bf8), ")"])
 
@@ -469,11 +463,6 @@ def prod.go(+ws: List<&2, U32>, +acc: U32) -> U32:
 def prod(+ws: List<&2, U32>) -> U32: prod.go(ws, 1)
 
 # `ftr amd prod <lab>` is the DERIVED work-group size on its own -- the arithmetic,
-# nine rows -- and `ftr amd <lab>` is the JOINED ATTRIBUTE STRING it is
-# interpolated into. Both exist because a reader can get the NUMBER right while
-# dropping one of the five attributes, and that reader moves the second and NONE
-# of the nine. M69 in the mutation table is the shape of that bug: dropping the
-# leading `1,` moves the joined rows alone.
 def ftr.amd(+wg: U32) -> String:
   String.concat(["attributes #0 = { alwaysinline nounwind \"no-builtins\" \"amdgpu-flat-work-group-size\"=\"1,",
     U32.show(wg), "\" \"no-trapping-math\"=\"true\" }"])
@@ -492,7 +481,6 @@ def r_ftrp(+i: U32) -> String:
 # 'gfx1201'}`. The `:` matters and so does the `split`: `gfx1200:xnack-` is True
 # and `gfx1200x` is False, and a `starts_with("gfx1200")` reader gets the second
 # right and the third WRONG -- which is why `is_rdna4 gfx12001` and
-# `is_rdna4 gfx1200x` are rows and not one.
 def rd4.split(+arch: String) -> String: nth_s(String.split(arch, Char.from_u32(58)), 0)
 
 def rd4.is_g1(+a: String) -> Bool: String.eq(a, "gfx1200")

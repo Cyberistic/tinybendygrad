@@ -456,6 +456,9 @@ def PLACEHOLDER_IX() -> U32: 0
 #   CALL_NEWQUEUE    the max command buffer count        CALL_NEWBUFFER the size
 #
 # THE `arg` OF A MSGSEND, and this is the table the order rows are checked
+# against: commandBuffer 0, computeCommandEncoder 0, waitForFence: the fence
+# handle, useResources:count:usage: the buffer COUNT, executeCommandsInBuffer-
+# withRange: the range LENGTH, the dispatch pair the `zero` word index, the
 
 def CALL_CGS_CREATE() -> U32: 0
 def CALL_CGS_BUILD() -> U32: 1
@@ -517,9 +520,6 @@ def Call.arg(c: Call) -> U32:
 # The trace. `next` mints the handle ids, so 0 is reserved for `None` -- which
 # is what lets `Dev.resid` be a plain `U32` and `residency.value is not None`
 # be `resid != 0` without a `Maybe` field (a `Data` record may not hold one).
-# `refused` is THE RAISE: once a refusal has happened `Tr.emit` records
-# nothing, so a refusal shows up in the trace as a TRUNCATION and no step below
-# needs a guard of its own.
 type Tr is Data:
   Tr{calls: List<&2, Call>, next: U32, refused: Bool}
 
@@ -1150,8 +1150,6 @@ def fam_scan.go(n: Nat, +sup: List<&2, U32>, +f: String, es: List<&2, D.AEnt>, g
 # `sup` is the list of SUPPORTED family ids rather than a bitmask, because the
 # ids are sparse (1001..1010, 2001, 2002, 3001..3003, 4001, 4002, 5001, 5002)
 # and a mask would spend seventeen bits on seventeen rows that are ten wide.
-# There are at most ten supported families, so the membership test is ten
-# comparisons and it happens once per init.
 def check_family(sup: List<&2, U32>, f: String) -> U32:
   fam_scan.go(List.length(&2, D.AEnt, families()), sup, f, families(), 0)
 
@@ -1580,6 +1578,9 @@ def MtlSize.d(s: MtlSize) -> U32:
 # device submits the six numbers that dispatch reads.
 #
 # `Maybe.default` rather than a `match`, because a `match` may not scrutinise
+# `List.get` and a `Some{g}` binder is affine -- the escape is device.bend's
+# `bar_at`, and it is here for the same reason: THREE reads of one list, each
+# its own call, and no scrutinee.
 def mtl_size.at(+i: U32, +ds: List<&2, U32>) -> MtlSize:
   MtlSize{Maybe.default(&2, U32, List.get(&2, U32, ds, U32.to_nat(i)), 0),
           Maybe.default(&2, U32, List.get(&2, U32, ds, Nat.add(U32.to_nat(i), 1n)), 0),
@@ -2169,12 +2170,6 @@ def sync_count(+size: U32) -> U32:
 
 # `range(5, size, 4)` as a LIST, so the gate can diff the actual indices and not
 # only their count. `mt_sync_idx` is that row.
-# NO REVERSE AT THE END, and that is worth a comment because every other fold in
-# this file conses: `List.append(a, A, xs, ys)` is `xs ++ ys`, so an appending
-# fold is already in order and a `List.reverse` reverses it. `mt_sync_idx17` is
-# the row -- a fold that conses and reverses, and a fold that appends, disagree
-# ONLY on lists of two or more, and `mt_sync_idx5` is the one-element fixture
-# that is blind to it.
 def sync_range.go(nat: Nat, +at: U32, acc: List<&2, U32>) -> List<&2, U32>:
   match nat:
     case 0n: acc

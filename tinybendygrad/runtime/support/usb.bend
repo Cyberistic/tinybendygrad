@@ -101,12 +101,6 @@ type Ent is Data:
 # stored two's-complement and PRINTED signed by `show_i32`: `usb.py` compares
 # against `LIBUSB_ERROR_INTERRUPTED` and the gate has to diff CPython's `-10` and
 # not 4294967286.
-# `autogen/libusb.py`'s `enum_libusb_class_code`
-# `enum_libusb_class_code` binds LIBUSB_CLASS_IMAGE to 6 and then
-# LIBUSB_CLASS_PTP to 6, so the TABLE has one name for 6 and the walrus
-# leaves `LIBUSB_CLASS_IMAGE` a module global that is not a dict value
-# at all. The constant, the table length and the membership test are
-# three separate rows because they are three separate facts.
 def E_CLASSCODE() -> List<&2, Ent>:
   [   Ent{0, "LIBUSB_CLASS_PER_INTERFACE"},
        Ent{1, "LIBUSB_CLASS_AUDIO"},
@@ -304,9 +298,6 @@ def E_SSCAP() -> List<&2, Ent>:
 
 # the two folds, one table each. `enum_nm` is the dict and `enum_val` is its
 # inverse, so both directions come off ONE walk over the same data.
-# value -> name, LAST match wins: `enum_libusb_class_code` gives 6 TWO names and
-# the generated dict keeps the LAST, so a first-wins fold is wrong and the differ
-# says so on `usb_classcode_6_name`.
 def enum_nm.go(n: Nat, +v: U32, es: List<&2, Ent>, hit: String) -> String:
   match n:
     case 0n: hit
@@ -345,6 +336,10 @@ def enum_val(+nm: String, +es: List<&2, Ent>) -> U32:
 # TWO LISTS, ON PURPOSE. `enum_rows.go` MATCHES `r` (the walk) and folds over `es`
 #
 # the cons order is the header's own: the walk goes forward and each entry conses
+# the struct field lists, by name and in order. `usb.py` addresses
+# the ordinal of a field name in a list, and `NOT_FOUND` when absent. :350's
+# the 64-bit address is a pair, on purpose. `struct.pack('<iii', address &
+# the integer arm and the slice arm are separate functions, because :180-182 is
 def enum_rows.go(+tag: String, +es: List<&2, Ent>, r: List<&2, Ent>,
                  +acc: List<&2, String>) -> List<&2, String>:
   match r:
@@ -367,6 +362,11 @@ def enum_rows(+tag: String, +es: List<&2, Ent>) -> List<&2, String>:
 # they are the arguments.
 #
 # Each struct is ONE space-separated String in DECLARATION ORDER, which is what
+# `__annotations__` preserves and what `register_fields` writes out in the same
+# order. A String and not a list of records because a list of records is N
+# constructions whose ORDER a diff of `name=value` lines cannot see, while
+# `String.concat` drops a literal silently -- so the gate diffs these Strings
+# WHOLE against the header's field names. `usb_fld_*` rows print them.
 
 type Fld is Data:
   Fld{ix: U32, name: String}
@@ -1318,6 +1318,12 @@ def cpl_named(+cpl_status: U32) -> Bool:
 # :89 hands it, and the WIDTHS beside each name are `struct.calcsize` of the
 # field's own format.
 #     :89  0x43425355 "USBC", tag, len(data) or 0, 0, 0, len(cdb), cdb
+# ===========================================================================
+# SCOPE, AND WHY IT IS THIS SCOPE. `grep -rl "support/usb" tinybendygrad
+# --include="*.bend"` is EMPTY: no committed file cites this one, so unlike every
+# other unit in this wave it was not scoped for me by a citation. I therefore
+# chose it, and the choice is dictated by the source. `usb.py` is 473 lines in
+# three parts that share almost nothing:
 
 def CDB_FMT() -> String: "<IIIBBB16s"
 def CDB_FIELDS() -> String: "magic tag datalen zero0 zero1 cdblen cdb"
@@ -1679,6 +1685,9 @@ def Tr.has(+cs: List<&2, Call>, +pat: List<&2, Call>) -> Bool:
 # ops_amd.bend records as `TODO(p3) runtime/ops_amd.py:786  symbol=__init__  USB3.list_devices`.
 #
 # THE SELECTION IS A PURE PREDICATE and the trace is the walk: the port compares
+# `(idVendor, idProduct) == (vendor, dev)` from the descriptor fields it has
+# already parsed BY NAME, and only appends REF_DEVICE + BUS_NUMBER +
+# DEV_ADDRESS on a match. `usb_list_match` is that predicate and `usb_enum_order_*`
 
 def list_match(+idVendor: U32, +idProduct: U32, +vendor: U32, +dev: U32) -> Bool:
   Bool.and(U32.is_eq(idVendor, vendor), U32.is_eq(idProduct, dev))
@@ -1765,7 +1774,7 @@ def usb_ctx(debug6: Bool, +t: Tr) -> Tr:
 # inside each other is a counting exercise with no compiler help, and a miscount is
 # a silent change to which call is recorded first; one def per call makes the
 # sequence read top-down and each def independently gateable.
-# :457 `libusb_alloc_transfer(0)` -- the xfer this chunk submits
+# :457 `libusb_alloc_transfer(0)` -- the xfer this chunk submits.
 def usb_chunk.alloc(+t: Tr) -> Tr: Tr.emit(K_ALLOC_XFER(), 0, 0, 0, t)
 
 # :352 `libusb_submit_transfer(xfer.index(0))`
@@ -2006,9 +2015,6 @@ def t_select() -> IO(Unit):
 # refusal at `bad_at = k` leaves a k-call trace. The no-detach open emits 1 OPEN,
 # 2 get_device, 3 get_desc, 4 str_ascii, 5 set_config, 6 claim, 7 set_alt; the
 # detach branch adds 5 KDRV_ACTIVE, 6 DETACH, 7 RESET and shifts the rest by three.
-# A RAW ordinal -- 2 GET_DEVICE in the open, 6 FREE_DEVLIST in the enumeration --
-# cannot refuse at all, so its truncation row is the FULL trace and that is the row
-# that would look like a gate and is not one.
 def t_refuse() -> IO(Unit):
   IO.print(lines_of(
     [s1("usb_open_refuse_1_open", Tr.sym(usb_open(True{}, False{}, Tr.fail_at(Tr.of(), 1)))),

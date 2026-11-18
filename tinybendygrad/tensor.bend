@@ -141,8 +141,6 @@ def tn_alu.of(+ar: O.Arena, uop: U32, +op: O.Op, srcs: List<&2, U32>) -> Tensor:
 # THE ARENA RULE, in one spelling. `Arena` is an immutable `Data` value, so a `Found`
 # SNAPSHOTS the arena it was built in and an index is legal only in an arena DESCENDING FROM the
 # one that minted it -- append-only, so a prefix's indices still name the same nodes.
-# `O.Arena.merge` (`ops.bend`, beside `UOp.new`) re-interns `other`'s nodes into `base`, so two
-# SIBLING arenas get a common descendant and `other`'s index is re-minted before it is read.
 def tn_binop(+base: Tensor, +other: Tensor, +op: O.Op) -> Tensor:
   +m = O.Arena.merge(Tensor.ar(base), Tensor.ar(other))
   tn_alu.of(O.Merge.ar(m), Tensor.u(base), op, [O.Merge.at(m, Tensor.u(other))])

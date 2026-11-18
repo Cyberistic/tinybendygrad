@@ -337,7 +337,7 @@ def vv.go2(+parts: List<&2, String>, +acc: List<&2, U32>) -> List<&2, U32>:
 def import_module.vers(+c: String) -> List<&2, U32>: vv.go2(import_module.tail(c), [])
 
 # `v[0]` on the empty tuple is the IndexError that is NOT caught (WALL 4), and
-# it aborts the WHOLE comprehension rather than skipping the child
+# it aborts the WHOLE comprehension rather than skipping the child.
 def import_module.vfirst_ok(+v: List<&2, U32>) -> Bool: Bool.not(List.is_empty(&2, U32, v))
 
 # the fuel is a `Nat` COUNTDOWN beside the two lists, which is
@@ -479,7 +479,7 @@ def t_enc() -> IO(Unit):
     g : Unit <- srow("amd.asic_hdp_6_0_0.enc_rev", U32.show(AMDReg.encode([1, 1], [0, 1])))
     # the SAME value at TWO different fields, which is what the oracle's
     # `encode({n0: v0}) == encode({n1: v0})` asks: 1 at bit 0 against 1 at
-    # bit 1
+    # bit 1.
     h : Unit <- srow("amd.asic_hdp_6_0_0.enc_same", U32.show(Bool.to_u32(U32.is_eq(
       AMDReg.encode([1], [0]), AMDReg.encode([1], [1])))))
     # OVERLAPPING fields: 4 bits at 0 and 4 bits at 2, so the order shows

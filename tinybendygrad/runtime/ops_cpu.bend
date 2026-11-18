@@ -123,8 +123,9 @@
 # 3. `1 << 40` IS NOT A `Nat` LITERAL. MEASURED: a `Nat` literal is capped at
 #    4294967295n, so `nalloc.va`'s base is `Nat.mul(1024n, 1073741824n)` and the step is
 #    `Nat.mul(2n, 2147483648n)`. That costs two lines and is the only reason the NULL
-#    allocator's 64-bit counter is ported rather than declared a wall; `nva_base` and
-#    `nva_step` check the answers.import Base
+#    allocator's 64-bit counter is ported rather than declared a wall; the
+#    multiplication is 1 << 10 * 1 << 30 and 1 << 1 * 1 << 31 and both halves are
+#    under the cap; the ANSWERS are checked by `nva_base` and `nva_step`.
 import ../helpers.bend as H
 import ../device.bend as D
 import ../LAWS/spec.bend as S
@@ -759,8 +760,6 @@ def prog.posix.at(local: Bool, +p: Prog, +lvp: Bool, +elf: Bool, +osx: Bool, +rt
 #                    *data64_le(addr+12), (len(bufs)+len(vals))*2, *bufs)
 #   for v,(off,dt) in zip(vals, TinyELF.iter_sig(self.signature[-len(vals):],
 #                                               len(bufs)*8)):
-#     struct.pack_into(f'<{dt.fmt}', lvp_args, 12+off, v)
-#   self.fxn(addr)
 #
 # So the header is THREE u32s -- the address+12 as a (lo, hi) pair from
 # `data64_le` (helpers.py:81), then `(nbufs+nvals)*2` -- and the vals land at

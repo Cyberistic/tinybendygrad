@@ -1,48 +1,29 @@
 # tinybendygrad/runtime/support/am/ip.bend -- port of tinygrad/runtime/support/am/ip.py
 #
-# THE amdgpu BRING-UP VOCABULARY. `support/am/ip.py` is not a device and it never
-# opens one: it is the EIGHT CLASSES that take a card from reset to a KIQ ring
-# (`AM_SOC`, `AM_GMC`, `AM_SMU`, `AM_GFX`, `AM_IH`, `AM_SDMA`, `AM_PSP`, plus the
-# `AM_IP` base), and what survives the crossing to Bend is DATA:
-#
-#   * the REGISTER FIELD LISTS -- every `.write(...)` / `.update(...)` in the file
-#     names its bitfields, and the ORDER of those names is the register write.
-#     A wrong order is a silently wrong register, which is why this gate is
-#     BY NAME and IN ORDER rather than by count.
-#   * the STRUCT FIELD LISTS: `struct_psp_gfx_rb_frame` (:707) and the four
-#     `union_psp_gfx_commands` members (:728-751) that `_ring_submit` fills.
-#   * the SMU MESSAGE PROTOCOL (:264-273): the three-register C2PMSG triple, its
-#     DEBUG arm, and the order the three writes land in.
-#   * the KIQ `flush_tlb` PM4 PACKET (:108-110), 17 words, built in order.
-#   * the PTE FLAG TABLES (:178-195), four generations, `|` of five constants
-#     and a version-selected MTYPE field.
-#   * the DOORBELL ARITHMETIC: `KIQ + xcc*0x20` (tinygrad/runtime/support/am/ip.py:354 symbol=setup_ring) -- upstream's `doorbell` --, `sDMA_ENGINE0 +
-#     (pipe+queue*4)*0xA` (:592), `(ring_size//4).bit_length()-2` (:367), the
-#     `(regf pair)-1) * 0xA) * 2` s2a entry ladder
-#     (tinygrad/runtime/support/am/ip.py:570-571 -- upstream's `entry` IS the ladder's
-#     index and it is built at :569).
-#   * the VERSION LADDERS -- `ip_ver[am.GC_HWIP] >= (12,0,0)` and its forty-odd
-#     siblings, each a three-part compare or a `[:2]` pair compare.
-#   * every REFUSAL, as a TRUNCATION of the trace (:588 is the only `raise`).
+# WHAT SURVIVES THE CROSSING IS DATA: the REGISTER FIELD LISTS (every
+# `.write(...)` / `.update(...)` names its bitfields, and the ORDER of those
+# names is the register write -- so this gate is BY NAME and IN ORDER rather than
+# by count), the STRUCT FIELD LISTS (`struct_psp_gfx_rb_frame` :707, the four
+# `union_psp_gfx_commands` members :728-751), the SMU MESSAGE PROTOCOL (:264-273),
+# the KIQ `flush_tlb` PM4 PACKET (:108-110), the PTE FLAG TABLES (:178-195), the
+# DOORBELL ARITHMETIC (:354, :367, :570-571, :592), the VERSION LADDERS, and every
+# REFUSAL as a TRUNCATION of the trace (:588 is the only `raise`).
 #
 
 # THE SPLIT, stated once and then obeyed. A def here EITHER builds the argument
 # of one device call (pure, and the gate checks it) OR records that call in the
-# trace (and the gate checks the ORDER and the IDENTITY). There is no third
-# kind. Every seam is a trace tag and nothing else, so ORDER and IDENTITY stay
-# gateable even though none of them is made here. This is the `ops_webgpu.bend`
-# lane and the reason this file is `ALL PROOFS CHECK` with no foreign effect:
-# the seam is `Tr.emit`, not a `def ... -> IO(R)` over two `import "./x.c"`.
+# trace (and the gate checks the ORDER and the IDENTITY). Every seam is a trace
+# tag and nothing else, so ORDER and IDENTITY stay gateable even though none of
+# them is made here. The seam is `Tr.emit`, not a `def ... -> IO(R)` over two
+# `import "./x.c"`, and that is why this file is `ALL PROOFS CHECK` with no
+# foreign effect.
 #
 
-# every constant and every struct field below was read out of CPYTHON, never
-# typed. The oracle is `.agents/slop/ip_oracle.py`; it prints the SAME rows by
-# importing `tinygrad/runtime/support/am/ip.py` (which imports with NO device
-# present), by walking the `am` autogen enums, by PROBING each
-# `SOC15_*_FROM_IH_ENTRY` extractor one bit at a time to recover its mask and
-# shift, and by reading the `register_fields` lists out of `autogen/am/am.py`.
-# A `py=` expectation that is a def of the thing under test is not an
-# expectation, so there are none.
+# THE ORACLE. `.agents/slop/ip_oracle.py` prints the SAME rows by importing
+# `tinygrad/runtime/support/am/ip.py` (which imports with NO device present), by
+# walking the `am` autogen enums, by PROBING each `SOC15_*_FROM_IH_ENTRY`
+# extractor one bit at a time to recover its mask and shift, and by reading the
+# `register_fields` lists out of `autogen/am/am.py`.
 #
 # status: stage 4, final. the gate prints 447 rows; the interpreted and the
 #   native lane are identical, and the CPYTHON oracle disagrees on 0 of 444 row
@@ -76,15 +57,14 @@
 #   WALL 5  thirteen `wait_cond` polls and six `time.sleep`s             :113 :117 :121 :219 :222 :271 :284 :346 :393 :417 :450 :584 :640 :656 :692 :695 :702 :704 :717
 #   WALL 6  the memory manager: `mm.palloc`, `mm.map_range`, `paddrs`    :278 :331
 #
-# the cross-file contract. wall 1 is the seam's, and `ops_amd.bend`'s wall 2
+# THE CROSS-FILE CONTRACT. Wall 1 is the seam's, and `ops_amd.bend`'s wall 2
 # (its lines 173-178) says the same thing about `regCOMPUTE_*`: the port carries
 # their USE -- which register, with which field names, in which order -- and not
-# their OFFSETS, which belong to `autogen/am/regs/*`, PER ARCH. This file and that
-# one AGREE and neither contradicts the other. They share NO register table and NO
-# constant: MEASURED, `ops_amd.bend` cites `am/ip` nowhere. Their one overlapping
-# FUNCTION is `setup_ring`, which `ops_amd.bend` lists as a wall from
-# `ops_amd.py:772`'s point of view (:181) and this file ports as a seven-call
-# trace. So the seam is named twice and built once, which is the intent.
+# their OFFSETS, which belong to `autogen/am/regs/*`, PER ARCH. MEASURED,
+# `ops_amd.bend` cites `am/ip` nowhere. Their one overlapping FUNCTION is
+# `setup_ring`, which `ops_amd.bend` lists as a wall from `ops_amd.py:772`'s
+# point of view (:181) and this file ports as a seven-call trace. So the seam is
+# named twice and built once, which is the intent.
 
 import Base
 import ../../../helpers.bend as H
@@ -789,7 +769,7 @@ def pte.of(+pte_lv: U32, +is_table: U32, +frag: U32, +uncached: U32,
 #   >= (12,0,0)   pte & AMDGPU_PDE_PTE_GFX12   (2**63)
 #   >= (10,0,0)   pte & AMDGPU_PDE_PTE         (2**54)
 #   else          pte & AMDGPU_PDE_PTE   if pte_lv != PDB0
-#                 not (pte & AMDGPU_PTE_TF)  if pte_lv == PDB0
+#                 not (pte & AMDGPU_PTE_TF)  if pte_lv == PDB0.
 def pte.huge.not_tf(+pte: H.I64) -> H.I64:
   Bool.pick(H.I64, U32.is_zero(U32.and(H.lo32(pte), pte.tf_mask())), i64_lit(0, 1), i64_lit(0, 0))
 
@@ -1274,10 +1254,6 @@ def ih.word(+entry: List<&2, U32>, start: Nat) -> U32:
 # `getbits(value, start, end)` is `helpers.bend`'s and the port uses it, so the
 # four CONTEXT_IDs come out of it for free -- they are a full 32-bit window at
 # four different starts and nothing else.
-# `helpers.getbits(value, start, end)` is `(value >> start) & ((1 << (end - start
-# + 1)) - 1)` with `start <= end`, so the table's `lo:hi` pair goes in AS IS.
-# Deriving a "32 - (hi - lo)" shift from them -- which is what a port that
-# mistakes `getbits` for a width does -- reverses the field on every row.
 def ih.getbits(entry: List<&2, U32>, +start: Nat, +end: Nat) -> U32:
   H.getbits(ih.word(entry, start), Nat.mod(start, 32n), Nat.mod(end, 32n))
 
@@ -1970,10 +1946,6 @@ def mqd.pq_control(+kiq: U32, +aql: U32, queue_size: U32, no_update_rptr: U32) -
 # ENCODED WORDS are the OR of the values and the positions. `mqd.pq.bits` is
 # that OR and the two constants are what CPython's `encode` produced for the
 # fixture, which is what makes them a row and not a restatement.
-# `bit_list` holds MASKS (`1 << bit`) and `U32.shln` wants the INDEX, so the
-# mask is LOGGED here. Passing the mask straight to `shln` saturates to zero for
-# every bit above 31 and the whole encoded word collapses -- which is what
-# `amp_mqd_pqbits_kiq` is the row for.
 def mqd.pq.bit_at(+bits: List<&2, U32>, k: Nat) -> Nat:
   U32.log2(Maybe.default(&2, U32, List.get(&2, U32, bits, k), 1))
 

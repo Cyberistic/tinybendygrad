@@ -75,9 +75,6 @@
 #
 # THE emitted text is a gate, NOT a boolean. `String.concat` drops a literal
 # silently, so a boolean about a string can be true while the string is wrong.
-# `bend_encode_*` rows print the packet's own lines, and `emit.diff` prints the
-# whole packet. Those rows are TEXT; the diff against CPython's packet is the
-# check, and it is line for line.
 #
 # THE THREE WALLS.
 #
@@ -88,8 +85,6 @@
 #    Python carries, and it means a wrong enum ordinal cannot produce a
 #    silently wrong packet. The six ops with an arg are named by
 #    `arg_kind(op)`.
-#    The cost is stated rather than hidden: `Ops`-NUMBERED traces elsewhere in
-#    this repo cannot be compared with these.
 #
 # 2. THE FLOAT CONST's `struct.pack('<f', u.arg).hex()` (:118). Bend's F32 has
 #    no `to_bits` and no bitcast (`references/bend/bend2/base.bend` exports
@@ -296,7 +291,7 @@ def kind.of(+op: String) -> U32:
 # `KeyError: 'LOCAL'` -- MEASURED in CPython, not reasoned about. The `l` letter
 # is therefore UNREACHABLE, and a port that spelled it would be spelling
 # something the Python does not do. `bend_arg_local_param` records the KeyError.
-#   0 = a, 1 = g, 2 = r, 3 = the KeyError
+#   0 = a, 1 = g, 2 = r, 3 = the KeyError.
 def letter.of(+addr: String) -> U32:
   Bool.pick(U32, String.eq(addr, "ALU"), 0,
     Bool.pick(U32, String.eq(addr, "GLOBAL"), 1,

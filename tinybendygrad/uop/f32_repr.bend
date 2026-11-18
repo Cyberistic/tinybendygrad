@@ -1,16 +1,13 @@
 # f32_repr.bend -- `repr(float)` FOR AN F32, COMPUTED EXACTLY.
-#
 
-# WHY THIS FILE EXISTS.
-# `F32.show` is the shortest decimal that reads back as the same F32, and CPython's `repr` of the
-# f64 an F32 widens to is a LONGER string for every value that is not exactly a short decimal.
 # cstyle.py:27 is `f"{c.val}f"`, i.e. `repr`, so the two disagree on the bytes of a rendered
+# constant. MEASURED on `exp(x)`, whose multiplier is log2e:
+#     bottom of the f64's 52. MEASURED: 3.598600411231027e16 is exactly the bound and CPython
 
 import Base
 import ./../helpers.bend as H
 
 # 64-bit exponents. Base has U32, Nat and F32; an exponent needs a sign, and helpers.bend
-# already carries the two-word I64 with add, sub, compare, negate and abs.
 
 def i64u(+x: U32) -> H.I64: H.i64_of_i32(x)
 def i64n(+n: U32) -> H.I64: H.i64_neg(True{}, H.i64_of_i32(n))
@@ -36,7 +33,6 @@ def ds_str(+ds: List<&2, U32>) -> String:
   String.from_list(List.reverse(&2, Char, ds_str.go(ds, Nil{})))
 
 # the bignum: multiply by a small constant, add or subtract one, and count bits.
-# the carry of a multiplication travels toward the most significant end, so the digits are
 
 def big_mul.put(z: Bool, +c: U32, +acc: List<&2, U32>) -> List<&2, U32>:
   match z:
@@ -75,7 +71,6 @@ def big_add1(+ds: List<&2, U32>) -> List<&2, U32>:
   List.reverse(&2, U32, add1.go(List.reverse(&2, U32, ds), 1))
 
 # `h + 10 - borrow` then `mod 10` is `(h - borrow)` mod 10, and the borrow survives exactly when
-# that sum is still a single digit, i.e. when `h` was 0.
 def sub1.go(ds: List<&2, U32>, +brw: U32) -> List<&2, U32>:
   match ds:
     case Nil{}: Nil{}
@@ -87,7 +82,6 @@ def big_sub1(+ds: List<&2, U32>) -> List<&2, U32>:
   List.reverse(&2, U32, sub1.go(List.reverse(&2, U32, ds), 1))
 
 # `m.bit_length()` -- how many bits the significand needs, which is what places its least
-# significant bit relative to the value's exponent
 def blen.go(f: Nat, +x: U32, +n: U32) -> U32:
   match f:
     case 0n: n
@@ -117,7 +111,6 @@ def dec2(+m: U32, +e: H.I64) -> Scaled:
   scale(ds_of(U32.show(m)), e)
 
 # THE ROUNDING BOUNDS. x + s*half_ulp = (m * 2^(step-b) + s) * 2^(e+b-step); `plus` says whether
-# s is +1, and `step` is 55 instead of 54 on the low side of a power of two.
 
 def bound.num(+plus: Bool, +num: List<&2, U32>) -> List<&2, U32>:
   match plus:
@@ -140,7 +133,6 @@ def bound(+m: U32, +e: H.I64, +plus: Bool, +step: U32) -> Scaled:
   bound.scale(plus, bound.num(plus, num), H.i64_sub(H.i64_add(e, i64u(b)), i64u(step)))
 
 # an unsigned decimal with the point moved: value = digits * 10^exp, digits most significant
-# first. Two of them compare by where their most significant digit lands and then digit by digit.
 
 def shead(+s: String) -> Char:
   match s:
@@ -191,12 +183,10 @@ def str_cmp.go(+a: String, +b: String, +acc: Cmp) -> Cmp:
 def str_cmp(+a: String, +b: String) -> Cmp: str_cmp.go(a, b, EQ{})
 
 # where the most significant digit sits, as an exponent: `len + exp` is negative for a value
-# below 1, which is why this is an I64 and not a length
 def dec_pos(+s: String, +e: H.I64) -> H.I64:
   H.i64_add(i64u(U32.from_nat(String.length(s))), e)
 
 # the two most significant positions decide first; equal ones are compared digit by digit, and a
-# shorter digit string is padded with zeros because the digits after it are all zero by VALUE
 def dec_cmp.ord(h: Cmp, +a: String, +b: String) -> Cmp:
   match h:
     case LT{}: LT{}
@@ -208,7 +198,6 @@ def dec_cmp(+a: String, +ae: H.I64, +b: String, +be: H.I64) -> Cmp:
   dec_cmp.ord(H.i64_cmp(dec_pos(a, ae), dec_pos(b, be)), a, b)
 
 # FORMATTING. `dp` is the position of the decimal point: value = 0.<digits> * 10^dp, so
-# `len(digits) + exp`. Python uses fixed notation for -4 < dp <= 16 and scientific otherwise.
 
 def dp_of(+d: String, +e: H.I64) -> H.I64:
   H.i64_add(e, i64u(U32.from_nat(String.length(d))))
@@ -322,7 +311,6 @@ def pick_one(+d: String, +e: H.I64, +c: Ctx) -> Maybe<&2, String>:
   pick_one.go(inside(d, e, c), d, e, c)
 
 # add one to a decimal string: a carry out of the top digit makes it "100..0", which is one
-# digit longer, and `step.long` reads that length to decide whether the exponent moves
 def inc_head(+h: String) -> String: ds_str(big_add1(ds_of(h)))
 
 def cut(+up: String, +p: Nat) -> String: String.take(up, p)
@@ -333,7 +321,6 @@ def cut_e(carried: Bool, +ce: H.I64) -> H.I64:
     case False{}: ce
 
 # WHICH NEIGHBOUR IS CLOSER: the digit just past the cut decides, and an exact half is a
-# half-to-even tie -- `pref.eq` is that case and nothing else reaches it
 def pref.eq(tie: Bool, +last: U32) -> Bool:
   match tie:
     case False{}: True{}
@@ -418,7 +405,6 @@ type ME is Data:
   ME{+m: U32, +e: H.I64}
 
 # `m & -m` IS the lowest set bit, so its bit length minus one is the number of trailing zeros --
-# which is why this needs no looping def: the count is a property of the word, not of a walk.
 def tz(+m: U32) -> Nat: Nat.sub(U32.to_nat(blen(U32.and(m, U32.sub(0, m)))), 1n)
 
 def strip(+m: U32, +e: H.I64) -> ME:

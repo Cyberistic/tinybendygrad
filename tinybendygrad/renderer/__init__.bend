@@ -133,18 +133,6 @@ def with_storage.at(+f: O.Found, dt: S.Dt) -> O.Found:
 # the BUFFER ALONE, not by `(buffer, op)`, so a buffer both READ and WRITTEN
 # contributes ONE count where CPython contributes TWO). THAT DEPARTURE IS
 # A DIFFERENT HALF OF THE SAME LINE: THE PORT DROPS THE `op` FROM THE KEY,
-# WHICH IS WHY THE PORT'S `mem` IS A SUM OVER BUFFERS AND WHY THE CAP, WHICH
-# IS PER-`(buffer, op)`, IS NOT THE PORT'S CAP.
-#
-# `ignore_indexing` additionally removes the INDEX/SHRINK subtrees from `flops`,
-# and that needs a MULTI-ROOT toposort, which `UOp.toposort` (one root) does not
-# provide; the two INDEX arms of `from_uops` are therefore the `TODO(p3)` below
-# and `ignore_indexing` is a NO-OP here, which is visible: a kernel with INDEX
-# nodes over ALU nodes reports the ALU flops CPython would exclude.
-#
-# `is_alu` is `GroupOp.ALU`, which in ops.bend is a set of EIGHTEEN constructors.
-# It is spelled as the match rather than a membership test because `GroupOp` is
-# not a value here.
 def is_alu(op: O.Op) -> Bool:
   match op:
     case O.OpsADD{}: True{}

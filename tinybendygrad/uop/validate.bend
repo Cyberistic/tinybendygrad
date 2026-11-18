@@ -1,13 +1,11 @@
-# validate.bend -- tinygrad/uop/validate.py.
-# The brief called `validate.py` "the SPEC gate: it is what turns 'the graph is
-# well-formed' into a decidable predicate, and it is the only place a malformed
-# UOp is caught before it reaches codegen". THAT IS `uop/spec.py`
-# (`type_verify`, which raises `RuntimeError(f"UOp verification failed at {i} on
-# {u.op} ...")`). `validate.py` is a different thing: it is the z3 out-of-bounds
 # index checker, entered from `spec.py:27` as the LAST step of
 
-# VIOLATIONS AS A LIST, NOT A Bool. The brief asked which to choose and why. The
 # answer is a LIST, and it is not a preference -- it is three MEASURED facts
+#     (validate.py:97-100). The two branches print DIFFERENT text --
+#     is `O.Ops.name`. MEASURED: `UOp(Ops.STACK, src=(const 2, const 3))` gives
+# `_min_max` BLOCKS MORE THAN ITSELF. `spec.py:22` reads `idx.vmin` and
+#     u.axis_id)` (ops.py:97) -- it reads the axis ID and NOT the axis TYPE.
+#     `AssertionError: UOp failed to rewrite to z3!`. MEASURED for
 
 import Base
 import ./../helpers.bend as H
@@ -47,7 +45,6 @@ type Sol is Data:
   Sol{cs: List<&2, Z>, es: List<&2, Bind>, ms: List<&2, MRng>}
 
 # `x.vmin` / `x.vmax`, two's complement, as a `Data` pair because a `U32` read
-# two hand-written readers. a locally-declared record has no projection syntax
 type MM is Data: MM{lo: U32, hi: U32}
 
 type ZAt is Data: ZAt{hit: Bool, t: Z, v: String}
@@ -55,7 +52,6 @@ type ZAt is Data: ZAt{hit: Bool, t: Z, v: String}
 type Ren is Data: Ren{s: Sol, a: ZAt}
 
 # `S.Dt.min` is a `Maybe` (no U32 limit past 32 bits) and `itemsize` is a
-# `U32`, and both are read more than once, so they travel as one record.
 type DtMin is Data: DtMin{got: Bool, v: U32, isz: U32}
 
 # THE TABLE, IN RULE ORDER. First-wins IS the list order, so the order is
@@ -67,8 +63,6 @@ type VTopo is Data: VTopo{cache: List<&2, U32>, stack: List<&2, VFr>}
 
 type Vz is Data: Vz{s: Sol, vs: List<&2, String>}
 
-# `z3_xor`: a Bool XOR wins, then `b == -1`, then `a == -1`, then the
-# bit-blast. The ORDER is load-bearing: `b` is tested before `a`, and `-1` is
 # 4294967295 in a U32. MEASURED: `r ^ -1` is `-(r+1)`.
 type Wv is Data: Wv{got: Bool, w: U32}
 
@@ -91,7 +85,6 @@ def z_i(+v: U32) -> String:
             String.concat(["-", U32.show(U32.sub(0, v))]))
 
 # `x.dtype == dtypes.bool` -- whether a node's value is a Bool rather than an
-# Int. Only `ZIf` has to look at a child.
 def Z.is_b(t: Z) -> Bool:
   match t:
     case ZSym{nm, b}: b
@@ -124,8 +117,9 @@ def Z.is_num(t: Z) -> Bool:
 def Z.is_num2(+a: Z, +b: Z) -> Bool:
   Bool.and(Z.is_num(b), Bool.not(Z.is_num(a)))
 
-# `a < b` AS z3 CANONICALISES IT. This is the ONLY comparison rewrite in the ported surface,
 # and it has exactly two callers: `z3_alu[MAX]`'s `z3.If(a<b, b, a)` (validate.py:47) and
+# `python_alu[CMPLT]`'s `operator.lt` (ops.py:1428). Both are handed whatever the renderer
+# rewrites `a < n` to `n > a` in that case and ONLY in that case. MEASURED, sexpr included,
 def z3_lt(+a: Z, +b: Z) -> Z:
   Bool.pick(Z, Z.is_num2(a, b), ZGt{b, a}, ZLt{a, b})
 
@@ -144,10 +138,11 @@ def ZBv.str(k: U32, w: U32, a: String, b: String) -> String:
   +core = String.concat(["BV2Int(", base, ")"])
   String.concat(["If(", base, " < 0, ", core, " - ", U32.show(U32.shln(1, U32.to_nat(w))), ", ", core, ")"])
 
-# THE COMPARISON PRINTER. There are THREE orientation facts and they are all in the
-#   1. PYTHON REFLECTION. A Python `int` on the LEFT tries `int.__le__(ArithRef)`, gets
-#      NotImplemented, and evaluates the reflected `ArithRef.__ge__`, which builds
 #      `GE(right, left)`. validate.py:51's `(vmin <= s)` has a Python `int` `vmin`, so the
+#      AST is `s >= vmin`. MEASURED: `str(0 <= i)` = `'i >= 0'`, `str(i <= 0)` = `'i <= 0'`.
+#      n` becomes `n flip(a)` when `n` is a numeral and `a` is not. MEASURED:
+# DIFFERENT FUNCTIONS. A dropped paren in a printer is not a formatting defect, which is why
+# though they share a precedence, because MEASURED `a + (b - c)` prints `a + b - c` (no parens)
 def Z.cls(t: Z) -> U32:
   match t:
     case ZAdd{a, b}: 1
@@ -169,7 +164,6 @@ def Z.par.sub(pc: U32, right: Bool, addsub: Bool) -> Bool:
   Bool.and(right, addsub)
 
 # three arms and not five, because `*`, `/` and `%` all ask the same question -- "is the child
-# binary" -- and only `-` needs its own question. `+` never parenthesises.
 def Z.par(+pc: U32, right: Bool, loose: Bool, addsub: Bool) -> Bool:
   Bool.pick(Bool, U32.is_eq(pc, 1), False{},
     Bool.pick(Bool, U32.is_eq(pc, 4), Z.par.sub(pc, right, addsub), loose))
@@ -215,11 +209,6 @@ def Z.str(t: Z) -> String:
     case ZFresh{nm}: nm
     case ZBv{k, w, a, b}: ZBv.str(k, w, Z.str(a), Z.str(b))
 
-# `str(solver)` -- the assertion list, which is the PORTABLE half of validate.py's
-# `sep` IS THE WHOLE FIX and it replaced a `Bool` flag that was reading the list it was
-# building: the flag made the FIRST element take the `acc` arm, so the head of every
-# assertion list was DROPPED (`dv_var` printed `[, i]`, `dv_const_ok` printed `[]` where
-# CPython prints `[True]`). A separator cannot drop an element, and it is one parameter
 # shorter. MEASURED against CPython's `str(solver)` for all 16 fixtures; see
 def cs_str.go(+cs: List<&2, Z>, +acc: String, sep: String) -> String:
   match cs:
@@ -262,6 +251,7 @@ def Sol.find(+s: Sol, u: U32) -> Maybe<&1, Z>:
   Sol.find.go(Sol.es(s), u)
 
 # `z3map[u] = z3_rewritten` -- validate.py:88. THE MAP ONLY: CPython's `z3map` is a
+# was defect D4, and MEASURED against CPython it is the whole of `dv_var`'s `[, i]` field --
 def Sol.put(+s: Sol, u: U32, +t: Z) -> Sol:
   Sol{Sol.cs(s), List.append(&2, Bind, Sol.es(s), [Bind{u, t}]), Sol.ms(s)}
 
@@ -301,9 +291,8 @@ def vz_lo(i: H.I64) -> U32:
   match i:
     case H.I64{hi, lo}: lo
 
-# `x.val` FOR A CONST, and the value is `1`/`0` for a BOOL, not just an int.
-# ⚠ `O.CBool` was missing here and it cost the positive row its `True`. Rule 7 is
 # `z3.BoolVal(x.val)` if `x.dtype == dtypes.bool` else `z3.IntVal(x.val)` (validate.py:75), and
+# gate of every fixture IS one (`UOp.const(True)`). MEASURED with `.agents/slop/mask-probe.bend`
 def vz_cbool(b: Bool) -> U32:
   Bool.pick(U32, b, 1, 0)
 
@@ -319,7 +308,6 @@ def vz_cval.go(a: O.Arg) -> Maybe<&1, U32>:
     case _: None{}
 
 # `x.val` for `Ops.CONST` -- `z3.IntVal(x.val)`. `APy` is the only Arg that
-# the `.go` split is not optional and not a style choice: `match o.Arena.arg(ar,
 def vz_cval(ar: O.Arena, i: U32) -> Maybe<&1, U32>:
   vz_cval.go(O.Arena.arg(ar, i))
 
@@ -342,6 +330,7 @@ def vz_max0(+v: U32) -> U32:
   Bool.pick(U32, U32.is_eq(U32.and(v, 2147483648), 0), v, 0)
 
 # `range_str` (ops.py:95): the axis IDS joined by `_`, negatives as `m<n>`.
+# symbol `r` where CPython prints `r0` (defect D3). MEASURED against `range_str` itself:
 def rs_one(+v: U32) -> String:
   Bool.pick(String, U32.is_eq(U32.and(v, 2147483648), 0), U32.show(v),
             String.concat(["m", U32.show(U32.sub(0, v))]))
@@ -353,7 +342,6 @@ def rs_ids.go(+ids: List<&2, U32>, +acc: String, sep: String) -> String:
 
 def zat.miss(v: String) -> ZAt:
   # a `Some{v}` with an unused binder is REFUSED, so a miss carries `ZLit` zero
-  # rather than a named dummy (rule 14, re-measured on `Maybe`).
   ZAt{False{}, ZLit{0, False{}}, v}
 
 def zat.hit(t: Z) -> ZAt:
@@ -399,8 +387,8 @@ def zall(+a: ZAt, +b: ZAt) -> Bool:
 def zwhy(+a: ZAt, +b: ZAt) -> String:
   Bool.pick(String, ZAt.hit(a), ZAt.v(b), ZAt.v(a))
 
-# `z3_cdiv(a,b) = If(a<0, If(0<b, (a+(b-1))/b, (a-(b+1))/b), a/b)`
 # IDIV IS TRUNCATED, Z3 IS EUCLIDEAN. validate.py:11 -- z3 floors when the
+# `ArithRef.__gt__(0)`. MEASURED: `str(0 < i)` is `i > 0` and `str(IntVal(0) < i)` is
 def z3_cdiv(+a: Z, +b: Z) -> Z:
   ZIf{ZLt{a, ZLit{0, False{}}},
        ZIf{ZGt{b, ZLit{0, False{}}}, ZDiv{ZAdd{a, ZSub{b, ZLit{1, False{}}}}, b},
@@ -411,7 +399,6 @@ def z3_floordiv(+a: Z, +b: Z) -> Z:
   ZIf{ZGt{b, ZLit{0, False{}}}, ZDiv{a, b}, ZDiv{ZNeg{a}, ZNeg{b}}}
 
 # `m > 0 and m & (m-1) == 0` -- "m is a power of two", the test `z3_and` uses twice.
-# ⚠ `m > 0` IS `m != 0` OVER EVERY INTEGER, and this is a THEOREM rather than a re-reading:
 def pow2(+m: U32) -> Bool:
   Bool.and(Bool.not(U32.is_zero(m)), U32.is_eq(U32.and(m, U32.sub(m, 1)), 0))
 
@@ -450,7 +437,6 @@ def z3_shift.factor(i: U32) -> U32:
   z3_pow(z3_pow(i))
 
 # `z3.If(b < 0, z3.FreshInt("invalid_shift", ctx), a)` -- the tail does not
-# depend on the loop, so the `0n` arm is the whole finish.
 def z3_shift.fin(a: Z, b: Z) -> Z:
   ZIf{ZLt{b, ZLit{0, False{}}}, ZFresh{"invalid_shift"}, a}
 
@@ -475,10 +461,6 @@ def vz_dt.of(m: Maybe<&2, S.Dt>) -> S.Dt:
     case Some{d}: d
     case None{}: S.void()
 
-# `solver.add((vmin <= s) & (s <= vmax))`, answer `s`. ONE add of an `And`, and
-# ⚠ it is `ZGe` and not `ZLe` on the left, and that is the root cause of the old D1 and D2.
-# `vmin` at both call sites is a PYTHON `int`, so `vmin <= s` REFLECTS: Python tries
-# `int.__le__(ArithRef)`, gets NotImplemented, and evaluates `ArithRef.__ge__` instead, so the
 # AST holds `s >= vmin`. MEASURED in one process, one context: `str(0 <= i)` is `i >= 0` and
 def create_bounded(+s: Sol, +nm: String, vmin: Z, vmax: Z) -> Ren:
   +sym: Z = ZSym{nm, False{}}
@@ -503,7 +485,6 @@ def cv_arg_name.put(m: Maybe<&2, String>) -> String:
     case Some{n}: n
     case None{}: "null"
 
-# `z3_cast` -- line 57. "z3 does not model widths: a cast only converts between
 # bool and int", so a float cast is the IDENTITY. MEASURED: the CAST in
 def z3_cast(+sb: Bool, +db: Bool, +t: Z) -> Z:
   Bool.pick(Z, Bool.pick(Bool, sb, db, Bool.not(db)), t, ZNeZ{t})
@@ -529,7 +510,6 @@ def ren_5.dmin.go(m: Maybe<&2, U32>, +isz: U32) -> DtMin:
     case None{}: DtMin{False{}, 0, isz}
 
 # `m.v` and `m.isz` are READERS, not projections -- rule 27, and this is the
-# second record in the file to need them.
 def DtMin.v(m: DtMin) -> U32:
   match m:
     case DtMin{got, v, isz}: v
@@ -553,7 +533,6 @@ def ren_5.why.str(+m: DtMin, +xv: String) -> String:
     String.concat(["rule 5: a ", U32.show(DtMin.isz(m)), "-byte dtype has no U32 min; ", xv]))
 
 # rule 6 -- `UPat(Ops.CONST, arg=Invalid)` -> `z3.Int("Invalid")`. A FREE symbol
-# and NOT added to the solver: `Invalid` is a value with no constraint.
 def ren_6(+ar: O.Arena, +s: Sol, +self: U32) -> Ren:
   Ren{s, zat.hit(ZSym{"Invalid", False{}})}
 
@@ -565,18 +544,6 @@ def ren_7.put(m: Maybe<&1, U32>, is_bool: Bool, +s: Sol) -> Ren:
 def ren_8.put(+x: ZAt, +sb: Bool, +db: Bool, +s: Sol) -> Ren:
   Bool.pick(Ren, ZAt.hit(x), Ren{s, zat.hit(z3_cast(sb, db, ZAt.t(x)))}, Ren{s, x})
 
-# `k` is 1 TRUNCMOD, 2 TRUNCDIV/DIV, 3 MOD -- `ren_9.go`'s tag for the four `z3_alu`
-# entries that combine `a` with `cdiv`/`floordiv`. The LAST arm is MOD, so a tag this
-# ladder does not know becomes MOD rather than an error; `dv_max` is the row that caught
-# `Ops.MAX` arriving as `k = 0` and being silently floormodded.
-# `k` is 1 TRUNCMOD, 2 TRUNCDIV/DIV, 3 MOD -- `ren_9.go`'s tag for the four `z3_alu`
-# entries that combine `a` with `cdiv`/`floordiv`. The LAST arm is MOD, so a tag this
-# ladder does not know becomes MOD rather than an error; `dv_max` is the row that caught
-# `Ops.MAX` arriving as `k = 0` and being silently floormodded.
-# `k` is 1 TRUNCMOD, 2 DIV, 3 MOD, 4 TRUNCDIV -- and the LAST arm is MOD, so an
-# unrecognised tag is silently floormodded. That default is what let `Ops.MAX` arrive as `k = 0`
-# and be rendered as MOD (`ren_9.mx.mk` below, and `dv_max` is the row).
-# ⚠ `Ops.TRUNCDIV` was `k = 2`, i.e. `z3_floordiv`, and that is a different function. `z3_cdiv`
 # (validate.py:12) truncates toward zero and only its `a < 0` arm differs from `z3_floordiv`'s
 def ren_9.b2.mk(+k: U32, +a: Z, +b: Z) -> Z:
   Bool.pick(Z, U32.is_eq(k, 2), z3_floordiv(a, b),
@@ -584,8 +551,6 @@ def ren_9.b2.mk(+k: U32, +a: Z, +b: Z) -> Z:
       Bool.pick(Z, U32.is_eq(k, 4), z3_cdiv(a, b),
                                    ZSub{a, ZMul{z3_floordiv(a, b), b}})))
 
-# ⚠ a real defect was here and no row covered it. `Ops.MAX` was reaching this ladder as `k =
-# 0`, which is neither 2 (DIV) nor 1 (TRUNCMOD), so it fell through to the MOD arm:
 # `validate.py:47`'s `Ops.MAX: lambda _,a,b: z3.If(a<b, b, a)` was rendered as
 def ren_9.mx.mk(+a: Z, +b: Z) -> Z:
   ZIf{z3_lt(a, b), b, a}
@@ -624,9 +589,8 @@ def z3_alu_ops() -> List<&2, O.Op>:
   [O.OpsTRUNCMOD{}, O.OpsTRUNCDIV{}, O.OpsDIV{}, O.OpsMOD{}, O.OpsWHERE{},
    O.OpsMAX{}, O.OpsAND{}, O.OpsOR{}, O.OpsXOR{}, O.OpsSHL{}, O.OpsSHR{}]
 
-# the six terms the integer `python_alu` arms produce. `k` is 1 ADD, 2 SUB,
-# 3 MUL, 4 CMPLT, 5 CMPNE, 6 CMPEQ.
 # k = 4 IS `z3_lt` AND NOT `ZLt`: `python_alu[CMPLT]` is `operator.lt`, and `operator.lt` on a
+# z3 NUMERAL right operand is what z3 canonicalises. MEASURED, and `dv_where` is the only row
 def ren_10.mk(+k: U32, +a: Z, +b: Z) -> Z:
   Bool.pick(Z, U32.is_eq(k, 1), ZAdd{a, b},
     Bool.pick(Z, U32.is_eq(k, 2), ZSub{a, b},
@@ -721,19 +685,14 @@ def vz_zat(m: Maybe<&1, Z>, i: U32, n: U32) -> Z:
     case Some{t}: t
     case None{}: ZSym{String.concat(["dv_mask_missing@", U32.show(i), "/n=", U32.show(n)]), False{}}
 
-# `solver.model()` -- NOT PORTED. It is a solver output and the header calls the
-# solver the wall; a model cannot be rendered without solving.
 # WALL(p3) validate.py:99  the `{solver.model()}` tail of the sat message. -- BLOCKED: needs `solver.model()`, a Z3 SOLVER OUTPUT on the `z3.sat` branch of the out-of-bounds report (`validate.py:98`). The port has no Z3, and a model cannot be rendered without solving -- which the file says two lines above, so this line is the marker for a documented wall rather than a new gap.
 def vd_model() -> String:
   "solver.model() is not ported"
 
-# `solver.reason_unknown()` -- the same shape, the other non-unsat branch.
 # WALL(p3) validate.py:100  the `{solver.reason_unknown()}` tail. -- BLOCKED: needs `solver.reason_unknown()` on the `z3.unknown` branch -- the same shape as `:99`, the other non-unsat arm.
 def vd_reason() -> String:
   "solver.reason_unknown() is not ported"
 
-# `assert all(u in z3map for u in uops), "UOp failed to rewrite to z3!"` --
-# line 89. Reachable whenever the GATE emptied the list, which is what a float
 # index does: MEASURED, `UOp.variable("w",0,15).sin()` has a gated toposort of
 def vz_rewrite_failed(idx: U32, gate: U32, +acc: Vz) -> Bool:
   Bool.or(U32.is_zero(idx), U32.is_zero(gate))
@@ -741,7 +700,6 @@ def vz_rewrite_failed(idx: U32, gate: U32, +acc: Vz) -> Bool:
 def bv_max4(+p: MM, +q: MM) -> U32:
   bv_max(bv_max(bv_one(MM.hi(p)), bv_one(MM.hi(q))), bv_max(bv_one(MM.lo(p)), bv_one(MM.lo(q))))
 
-# `z3_bv(x, op, a, b) = BV2Int(op(Int2BV(a,w), Int2BV(b,w)), is_signed=True)`.
 # validate.py:14 -- THE WIDTH IS THE NARROWEST ONE THAT FITS BOTH SIDES IN
 def z3_bv(k: U32, w: Maybe<&1, U32>, a: Z, b: Z) -> Maybe<&1, Z>:
   z3_bv.put(k, w, a, b)
@@ -766,15 +724,14 @@ def z3_xor.wv(+w: Wv, +a: Z, +b: Z, k: U32) -> Maybe<&1, Z>:
   Bool.pick(Maybe<&1, Z>, Wv.got(w), z3_xor.wb(k, Wv.w(w), a, b), None{})
 
 # `x ^ -1 = -(x+1)` IS BITWISE NOT. validate.py:20 -- the constant `-1` case
+# Python either, which is why `r | (r << 1)` in test_validate_oob.py:113 is a
 def z3_or(w: Maybe<&1, U32>, +a: Z, +b: Z) -> Maybe<&1, Z>:
   Bool.pick(Maybe<&1, Z>, Z.is_b(a), Some{ZOr{a, b}}, z3_bv(bv_or(), w, a, b))
 
 # FACTOR OUT THE MINIMUM COUNT, THEN THE VARYING BITS. validate.py:35 -- a
-# `a = z3.If(((b-lo) / (1 << i)) % 2 == 1, a / factor if SHR else a * factor, a)`
 def z3_shift.armed(is_shr: Bool, +a: Z, b: Z, lo: U32, +i: U32) -> Z:
   ZIf{z3_shift.cond(b, lo, i), z3_scale(is_shr, a, z3_shift.factor(i)), a}
 
-# `x.dtype in dtypes.ints + (dtypes.bool, dtypes.weakint)` -- the TOPOSORT
 # GATE's dtype half, validate.py:83-84. It is `Dt.is_int or Dt.is_bool` and NOT
 def dt_kept(+d: S.Dt) -> Bool:
   Bool.or(S.Dt.is_int(d), S.Dt.is_bool(d))
@@ -786,7 +743,6 @@ def dt_in_floats(d: S.Dt) -> Bool:
   dt_in_floats.go(S.Dt.cls(d))
 
 # `x.dtype` through the fold. `S.void()` for an unanswerable node, whose class
-# `fx` is matched ONCE and its two fields become two binders. `F.fold.dt(
 def vz_dt(fx: F.Folded, i: U32) -> S.Dt:
   match fx:
     case F.Folded{ar, tb}: vz_dt.of(F.fold.dt(ar, tb, i))
@@ -798,8 +754,6 @@ def create_var.of(is_bool: Bool, +s: Sol, m: Maybe<&1, MM>, +nm: String, miss: S
 def cv_arg_name.of(a: O.Arg) -> String:
   cv_arg_name.put(pa_name(a))
 
-# rule 1 -- `cond.where(x, CONST(Invalid))` is a CONSTRAINT, and the node's own
-# VALUE is `x`, the SECOND src: `ctx[0].add(ctx[1][cond]) or ctx[1][x]`, and
 # `Solver.add` returns None so the `or` answers `x`. MEASURED: `valid` is a
 def ren_1(+ar: O.Arena, +s: Sol, +self: U32) -> Ren:
   ren_1.put(zat.src(ar, s, self, 0, "rule 1 cond"), zat.src(ar, s, self, 1, "rule 1 x"), s)
@@ -824,7 +778,6 @@ def ren_7(+ar: O.Arena, +fx: F.Folded, +s: Sol, +self: U32) -> Ren:
   ren_7.put(vz_cval(ar, self), S.Dt.is_bool(vz_dt(fx, self)), s)
 
 # rule 8 -- a one-src CAST. `z3_cast` collapses to the identity unless the
-# bool-ness changes, so this arm contributes no text of its own for a float.
 def ren_8(+ar: O.Arena, +fx: F.Folded, +s: Sol, +self: U32) -> Ren:
   ren_8.put(zat.src(ar, s, self, 0, "rule 8 x"),
             S.Dt.is_bool(vz_dt(fx, O.Arena.src(ar, self, 0))), S.Dt.is_bool(vz_dt(fx, self)), s)
@@ -890,8 +843,8 @@ def vz_push(ar: O.Arena, +n: U32, +t: VTopo) -> VTopo:
   match t:
     case VTopo{cache, stack}: VTopo{cache, vz_push_srcs(O.Arena.srcs(ar, n), VFr{n, True{}} <> stack)}
 
-# ⚠ `seen` is not CPYTHON's `visited` flag, and that is a real defect this row gates.
 # `ops.py:302` is `if node in cache: continue` -- a THIRD branch, checked on EVERY pop before
+# MEASURED by `.agents/slop/vw-topo-probe.bend` against `.agents/slop/vw-topo-truth.py`, and
 def vz_step.keep(keep: Bool, ar: O.Arena, +n: U32, +rest: List<&2, VFr>, +cache: List<&2, U32>) -> VTopo:
   Bool.pick(VTopo, keep, vz_push(ar, n, VTopo{cache, rest}), VTopo{cache, rest})
 
@@ -908,8 +861,6 @@ def vz_s(acc: Vz) -> Sol:
 def vz_term(+acc: Vz, i: U32) -> String:
   vz_term.of(Sol.find(vz_s(acc), i))
 
-# `z3_bv`'s width: `1 + max(bit_length(vmax(src0)), bit_length(vmax(src1)),
-# bit_length(-vmin(src0)), bit_length(-vmin(src1)))`, and `bit_length` is of the
 # ABSOLUTE value. MEASURED twice: `r & 21` over a RANGE(100) gives 8, and
 def bv_w.tail(p: MM, b: Maybe<&1, MM>) -> Maybe<&1, U32>:
   match b:
@@ -937,7 +888,6 @@ def z3_shift.go(k: Nat, +is_shr: Bool, +a: Z, +b: Z, +lo: U32, +i: U32) -> Z:
 def create_var(+s: Sol, m: Maybe<&1, MM>, is_bool: Bool, nm: String, miss: String) -> Ren:
   create_var.of(is_bool, s, m, nm, miss)
 
-# `x.arg.name` -- a `Maybe`, and CPython passes the `None` straight to
 # `z3.Int(None)`, which prints `null`. That is the MEASURED text for
 def cv_arg_name(ar: O.Arena, i: U32) -> String:
   cv_arg_name.of(O.Arena.arg(ar, i))
@@ -947,7 +897,6 @@ def ren_3_name(+ar: O.Arena, +self: U32, n: U32) -> String:
             cv_name(O.Arena.op(ar, self), n))
 
 # rule 4 -- `(CAST, BITCAST) + Comparison` with a FLOAT `src[0]`, "unknown
-# values are variables bounded by their vmin/vmax: ... and anything from floats".
 def ren_4(+ar: O.Arena, +fx: F.Folded, +s: Sol, +self: U32) -> Ren:
   create_var(s, vz_mm(ar, s, self), S.Dt.is_bool(vz_dt(fx, self)),
              cv_name(O.Arena.op(ar, self), Sol.n(s)), "rule 4 create_var: unknown bounds")
@@ -974,7 +923,6 @@ def ren_t4.put(is_op: Bool, nsrc: U32, +ar: O.Arena, +fx: F.Folded, +self: U32) 
   ren_t4.put2(is_op, U32.is_ge(nsrc, 1), ar, fx, self)
 
 # BOTH ends must be int dtypes, and they are two questions, so they are two defs
-# with the conjunction between them -- `&&` is not an operator here.
 def ren_t5.put(is_op: Bool, nsrc: U32, +ar: O.Arena, +fx: F.Folded, +self: U32) -> Bool:
   Bool.and(Bool.and(Bool.and(is_op, U32.is_eq(nsrc, 1)), dt_in_ints(vz_dt(fx, self))), ren_t5_x(ar, fx, self))
 
@@ -995,7 +943,6 @@ def ren_10.go(op: O.Op, +ar: O.Arena, +s: Sol, +self: U32) -> Ren:
     case _: Ren{s, zat.miss(ren_10.why(O.Ops.name(O.Arena.op(ar, self))))}
 
 # `x.op not in {AFTER, SHRINK, ALLOC, BUFFER} and (x.dtype in dtypes.ints +
-# (bool, weakint) or x.op is Ops.SINK)`
 def vz_keep(+op: O.Op, dt: S.Dt) -> Bool:
   vz_keep.put(vz_not_mem(op), dt_kept(dt), op)
 
@@ -1029,6 +976,8 @@ def vz_one.hit(+acc: Vz, +s: Sol, +a: ZAt, u: U32) -> Vz:
             Vz{s, List.append(&2, String, vz_vs(acc), [ZAt.v(a)])})
 
 # `solver.add(z3_mask)` -- validate.py:95, and it is the reason every CPython constraint list
+# ENDS `, True]`. MEASURED, and the addition is what adds it:
+# missing lookup with the RIGHT index and the WRONG bind count is the signature of a walk that
 def vz_add_mask(+acc: Vz, +m: U32) -> Vz:
   +s: Sol = vz_s(acc)
   Vz{Sol.add(s, vz_zat(Sol.find(s, m), m, Sol.n(s))), vz_vs(acc)}
@@ -1037,7 +986,6 @@ def validate_index_with_z3(sz: U32, +acc: Vz, idx: U32) -> Rep:
   Rep{sz, vz_vs(acc), cs_str(vz_cs(acc)), vz_term(acc, idx)}
 
 # `z3_shift`. `lo = max(0, src[1].vmin)`; divide or multiply by `1<<lo`; then
-# The Python `for i in range(...)` is a `Nat` COUNTDOWN and it is the FIRST
 def z3_shift(+is_shr: Bool, a: Z, b: Z, +lo: U32, steps: U32) -> Z:
   z3_shift.go(U32.to_nat(steps), is_shr, z3_scale(is_shr, a, z3_pow(lo)), b, lo, 0)
 
@@ -1047,7 +995,6 @@ def ren_3(+ar: O.Arena, +fx: F.Folded, +s: Sol, +self: U32) -> Ren:
              ren_3_name(ar, self, Sol.n(s)), "rule 3 create_var: unknown bounds")
 
 # A BITCAST BETWEEN INTS WRAPS. validate.py:72 -- z3 integers are unbounded, so
-# rule 5 -- a BITCAST between INT dtypes wraps into the target range. The
 def ren_5(+ar: O.Arena, +fx: F.Folded, +s: Sol, +self: U32) -> Ren:
   ren_5.put(zat.src(ar, s, self, 0, "rule 5 x"),
             ren_5.dmin(S.Dt.min(vz_dt(fx, self)), S.Dt.itemsize(vz_dt(fx, self))), s)
@@ -1069,7 +1016,6 @@ def ren_t3(+ar: O.Arena, +self: U32) -> Bool:
   ren_t3.put(O.Arena.op(ar, self))
 
 # rule 4 -- `UPat((Ops.CAST, Ops.BITCAST) + tuple(GroupOp.Comparison),
-# src=UPat(dtype=dtypes.floats), name="x")`
 def ren_t4(+ar: O.Arena, +fx: F.Folded, +self: U32) -> Bool:
   ren_t4.put(ren_t4_op(O.Arena.op(ar, self)), O.Arena.nsrc(ar, self), ar, fx, self)
 
@@ -1077,9 +1023,6 @@ def ren_t4(+ar: O.Arena, +fx: F.Folded, +self: U32) -> Bool:
 def ren_t5(+ar: O.Arena, +fx: F.Folded, +self: U32) -> Bool:
   ren_t5.put(ren_t4_op(O.Arena.op(ar, self)), O.Arena.nsrc(ar, self), ar, fx, self)
 
-# rule 10 -- `GroupOp.ALU` minus `z3_alu`, i.e. `python_alu`. The integer ops
-# are `operator.*` and are one `Z` constructor each. The FLOAT ops
-# (LOG2/EXP2/sqrt/recip/sin/pow/trunc) and fdiv are not ported: they are
 # `math.*` on a SYMBOLIC z3 value, which CPython itself cannot do -- MEASURED,
 def ren_10(+ar: O.Arena, +s: Sol, +self: U32) -> Ren:
   ren_10.go(O.Arena.op(ar, self), ar, s, self)
@@ -1111,7 +1054,6 @@ def ren_9.sh.ok2(is_shr: Bool, +a: ZAt, +b: ZAt, r: MM, +s: Sol) -> Ren:
   ren_9.sh.term(is_shr, zall(a, b), a, b, r, s)
 
 # rule 1's shape -- `UPat.var("cond").where(UPat.var("x"), UPat(Ops.CONST,
-# arg=Invalid))`. A WHERE is 3-src, so the third src is the `Invalid` CONST.
 def ren_t1(+ar: O.Arena, +self: U32) -> Bool:
   ren_t1.put(O.Arena.op(ar, self), O.Arena.nsrc(ar, self), ar, self)
 
@@ -1125,7 +1067,6 @@ def ren_9.sh.ok(is_shr: Bool, +a: ZAt, +b: ZAt, r: MM, +s: Sol) -> Ren:
   ren_9.sh.ok2(is_shr, a, b, r, s)
 
 # `lo` and the loop count both come from `src[1]`, so the `Maybe` is matched
-# ONCE and its two fields become two binders.
 def ren_9.sh.go(is_shr: Bool, +a: ZAt, +b: ZAt, m: Maybe<&1, MM>, +s: Sol) -> Ren:
   match m:
     case Some{+r}: ren_9.sh.ok(is_shr, a, b, r, s)
@@ -1135,7 +1076,6 @@ def ren_9.sh.put(is_shr: Bool, +a: ZAt, +b: ZAt, m: Maybe<&1, MM>, +s: Sol) -> R
   ren_9.sh.go(is_shr, a, b, m, s)
 
 # `z3_shift`: `lo` and the loop count both come from `src[1]`, and one missing
-# bound is one violation.
 def ren_9.sh(is_shr: Bool, +ar: O.Arena, +s: Sol, +self: U32) -> Ren:
   ren_9.sh.put(is_shr, zat.src(ar, s, self, 0, "rule 9 a"), zat.src(ar, s, self, 1, "rule 9 b"),
                vz_mm(ar, s, O.Arena.src(ar, self, 1)), s)
@@ -1176,7 +1116,6 @@ def z3_and.pw9(nb: Bool, m: Maybe<&1, U32>, +a: Z, +b: Z) -> Maybe<&1, Z>:
   z3_and.pw5(nb, wv(m), Z.num(b), a)
 
 # `if isinstance(a, z3.IntNumRef): a, b = b, a` -- then `b` is the literal.
-# a `Wv` back to a `Maybe`, so the two swapped arms can each read it once
 def wv0(w: Wv) -> Maybe<&1, U32>:
   wv0.go(w)
 
@@ -1187,7 +1126,6 @@ def z3_and.of(ab: Bool, na: Bool, nb: Bool, m: Maybe<&1, U32>, +a: Z, +b: Z) -> 
   Bool.pick(Maybe<&1, Z>, ab, Some{ZAnd{a, b}}, z3_and.sw(na, nb, wv(m), a, b))
 
 # MASKING IS ARITHMETIC WHEN THE MASK IS A POWER OF TWO. validate.py:28 --
-# `z3_and`: a Bool AND wins, then SWAP so that `b` is the literal, then
 def z3_and(m: Maybe<&1, U32>, +a: Z, +b: Z) -> Maybe<&1, Z>:
   z3_and.of(Z.is_b(a), Z.is_num(a), Z.is_num(b), m, a, b)
 
@@ -1275,12 +1213,6 @@ def vs_str(vs: List<&2, String>) -> String:
 def n_vs(vs: List<&2, String>) -> U32:
   U32.from_nat(List.length(&2, String, vs))
 
-# the row shape, and it is `name=value` because that is what the gate reads.
-# `.agents/slop/rebase-gate.py`'s `rows()` splits on the FIRST `=`, so `dv_and21 | ... | ...`
-# six rows per fixture, not one, because a blob row is red on any fixture with more than one
-#   nm          the whole row
-# `_nb` is a declared ENCODING on both sides, not a second question. On the oracle side it
-# strips `!<digits>` from a FreshInt name; on the port side the term has no such suffix to
 # strip. z3's counter is PER-CONTEXT (MEASURED: `aaa!4` then `bbb!5` in one context, and a
 def row(+r: Rep) -> String:
   String.concat([Rep.cs(r), " | ", Rep.term(r), " | ", vs_str(Rep.vs(r)), " | ",
@@ -1290,8 +1222,6 @@ def row(+r: Rep) -> String:
 def dv.of.cs(+nm: String, +r: Rep) -> String:
   String.concat([nm, "_cs = ", Rep.cs(r), "\n"])
 
-# ⚠ a third encoding, `_term_ns` (the wrap deleted with nothing in its place), was built and then
-# REMOVED, and the reason is worth more than the rows. It was an attempt to normalise z3's line wrap
 # SOUNDLY, and MEASURED it is an ARTEFACT GENERATOR in the opposite direction from `_term`: z3 wraps
 def dv.of.term(+nm: String, +r: Rep) -> String:
   String.concat([nm, "_term = ", Rep.term(r), "\n", nm, "_term_nb = ", Rep.term(r), "\n"])
@@ -1308,7 +1238,6 @@ def dv.of(+nm: String, +acc: Vz, idx: U32) -> String:
                  dv.of.count(nm, r), dv.of.msg(nm, r)])
 
 # `UOp.variable(name, vmin, vmax)` -- ops.py:669. The node is a PARAM, so
-# `ParamArg` HAS THIRTEEN FIELDS and a record literal must name every one of
 def fx_var(+ar: O.Arena, slot: U32, nm: String, dtype: S.Dt) -> O.Found:
   O.UOp.new.param(ar, O.OpsPARAM{}, None{}, O.AParam{O.ParamArg{slot, dtype, None{}, None{}, Some{nm}, S.AGlobal{}, None{}, False{}, None{}, None{}, False{}, None{}}}, O.TNone{})
 
@@ -1325,8 +1254,6 @@ def fx_const_bool(ar: O.Arena, b: Bool) -> O.Found:
 def fx_const_invalid(ar: O.Arena) -> O.Found:
   O.UOp.const(ar, O.CInvalid{})
 
-# `UOp.range(n, 0, AxisType)` -- the end is a CONST and `ids` is the axis-id
-# tuple `range_str` reads. CPython's `range_str` is the AXIS IDS and NOT the axis
 # type (ops.py:97), which is why `dv_range_global` and `dv_range_loop` must print
 def fx_range(+ar: O.Arena, n: U32, ids: List<&2, U32>, at: O.AxisType) -> O.Found:
   +e = fx_const(ar, n)
@@ -1409,32 +1336,16 @@ def uops_to_z3.of(+ar: O.Arena, ms: List<&2, MRng>, snk: O.Found) -> Vz:
                                 VTopo{Nil{}, [VFr{O.Found.i(snk), False{}}]}), ar, Nil{}),
          ar, F.folded(ar), vz_seed(ms))
 
-# `gate` RIDES THROUGH TO THE `.sink` ARM so the `Sol.add` sees the arena the walk ran
-# against -- `vz_add_mask` reads `vz_s(acc)` for the term, and the term only exists there.
-# `gate` IS BOUND TO A `let` BECAUSE IT IS READ TWICE, and a `let` is shared where a
 # parameter is not: `[idx, gate]` CONSUMES the name. MEASURED -- with the name passed
 def uops_to_z3.sink(+ar: O.Arena, ms: List<&2, MRng>, idx: U32, gate: U32) -> Vz:
   +gt: U32 = gate
   +snk: O.Found = O.UOp.sink(ar, [idx, gt])
   vz_add_mask(uops_to_z3.of(O.Found.ar(snk), ms, snk), gt)
 
-# `UOp.sink(*uops)` GROWS the arena, so the fold is taken AFTER it -- a `Folded`
-# `ms` is `UOp._min_max`, which `fold.bend` does not have (P3). It is a
-# PARAMETER here and the fixture supplies it; CPython's `UOp.variable(name, lo,
-# hi)` sets `_min_max` explicitly, so both sides carry the same literals -- and
-# they are CHECKED, because the bounds appear in the constraint text.
-# the sink is bound to a `let` and the arena is read off it. `O.UOp.sink` grows
-# the arena, so `uops_to_z3.of(ar, ms, O.UOp.sink(ar, [idx, gate]))` hands `.of`
-# the PRE-SINK store and a SINK index that is not in it -- and the whole toposort
 # comes back empty. MEASURED: that spelling prints `[] |  |  | 0` on every row,
 def uops_to_z3(+ar: O.Arena, +ms: List<&2, MRng>, idx: U32, gate: U32) -> Vz:
   uops_to_z3.sink(ar, ms, idx, gate)
 
-# ⚠ the arena is `Found.ar(g)`, not `Found.ar(t)`, and that is a third aliasing defect in
-# THIS FILE'S FIXTURE FAMILY -- the same class as `dv_and.mm`'s, one level up.
-# `t` is interned first and `g = fx_const_bool(Found.ar(t), ...)` is interned SECOND, so
-# `Found.ar(t)` is the store BEFORE `g` exists in it. Handing that store to `uops_to_z3` grows
-# it with a SINK whose src[1] is an index `g` was never given, and the walk reads a node that
 # is not the gate. MEASURED: `dv_mask_missing@5` with `Sol.n == 4` on a 5-node walk -- the
 def dv2(nm: String, +t: O.Found, +g: O.Found, ms: List<&2, MRng>) -> String:
   dv.of(nm, uops_to_z3(O.Found.ar(g), ms, O.Found.i(t), O.Found.i(g)), O.Found.i(t))
@@ -1454,18 +1365,12 @@ def dv_range.of(+ar: O.Arena, at: O.AxisType, ids: List<&2, U32>, nm: String) ->
   +g = fx_const_bool(O.Found.ar(t), True{})
   dv2(nm, t, g, Nil{})
 
-# `O.Found.ar(t)`, NOT `ar`. `dv_bin` MINTS, so `t` was interned into the arena it RETURNED
-# and `ar` is the one that went in; `dv_and.mm2` then read `Arena.src(ar, Found.i(t), 0)`,
 # an index the arena never interned. MEASURED by `.agents/slop/arena-validate-probe.bend`:
 def dv_shr2.of(+ar: O.Arena, nm: String) -> String:
   +t = dv_bin(ar, O.OpsSHR{}, 64, 2)
   +g = fx_const_bool(O.Found.ar(t), True{})
   dv2(nm, t, g, dv_and.mm2(O.Found.ar(t), t))
 
-# ⚠ the row that names the duplicated node, and it is a walk rather than a count because a
-# count cannot name the site that duplicated. `dv_where`'s blob row said `And(v >= 0, v <= 15)`
-# TWICE, which names a repeated TERM and not a repeated OP -- three units saw that blob and none
-# localised it, because a repeated term is the same shape as a legitimately repeated one. This
 # row is `ops.py:83-84`'s `lst` as an op SEQUENCE, so before the fix it read
 def vz_ops.go(+xs: List<&2, U32>, +ar: O.Arena, acc: String) -> String:
   match xs:
@@ -1477,14 +1382,12 @@ def vz_walk_ops(nm: String, +ar: O.Arena, idx: U32, gate: U32) -> String:
   +a: O.Arena = O.Found.ar(snk)
   +b: String = nm
   # LEADING newline, because `dv.of.msg` is the last field row and carries no trailing one --
-  # without it this row is appended onto `dv_where_msg`, and the two are then ONE row.
   String.concat(["\n", b, "_walk = ",
                  vz_ops.go(vz_drop_sink(vz_topo(O.Arena.budget(a), a, F.folded(a),
                                                 VTopo{Nil{}, [VFr{O.Found.i(snk), False{}}]}), a, Nil{}), a, "")])
 
 def dv_where.of(+ar: O.Arena, nm: String) -> String:
   # `+b` is a LET because the two `String.concat` arguments both read `nm` and a parameter may
-  # not be read twice (measured: "consumed more than once").
   +b: String = nm
   +v = fx_var(ar, 0, "v", S.int32())
   +c8 = fx_const(O.Found.ar(v), 8)
@@ -1525,7 +1428,6 @@ def dv_rank_shr1.of(+ar: O.Arena, nm: String) -> String:
   +g = fx_const_bool(O.Found.ar(t), True{})
   dv2(nm, t, g, Nil{})
 
-# `arg` was `ANone{}`, and CPython's `dtype_from_uop` ASSERTS `CAST/BITCAST arg must be DType,
 # `src = (r, r)` -- `r` REACHABLE TWICE, and through a DIFFERENT shape than `dv_where` (both of
 def dv_bad_dtype_bitcast.of(+ar: O.Arena, nm: String) -> String:
   +b: String = nm
@@ -1538,14 +1440,10 @@ def dv_bad_dtype_bitcast.of(+ar: O.Arena, nm: String) -> String:
 def dv_const_ok() -> String:
   dv_const_ok.of(O.Arena.empty(), "dv_const_ok")
 
-# --- A BOUNDED VARIABLE. `create_var`'s name is `x.arg.name`, so the symbol is
-# `i` and NOT `param2` -- which is what makes the counter arm (`index2`, `load3`)
 # and the `arg.name` arm two DIFFERENT rows rather than one.
 def dv_var() -> String:
   dv_var.of(O.Arena.empty(), "dv_var", 0, 15)
 
-# --- A NEGATIVE LOWER BOUND, `UOp.variable("i", -5, 10)`. `z_i` prints `-5` and
-# not `4294967291`, and a negative lower bound is where a two's-complement literal
 # meets z3's numeral-hoisting printer: MEASURED, `And(i >= -5, i <= 10)`.
 def dv_var_neg() -> String:
   dv_var.of(O.Arena.empty(), "dv_var_neg", 4294967291, 10)
@@ -1561,18 +1459,16 @@ def dv_shr2() -> String:
 def dv_where() -> String:
   dv_where.of(O.Arena.empty(), "dv_where")
 
-# --- THE `Invalid` CONST. Rules 6 and 7 BOTH claim `Ops.CONST` and give
 # DIFFERENT answers -- a free `Invalid` symbol against the value as a literal --
 def dv_const_invalid() -> String:
   dv_const_invalid.of(O.Arena.empty(), "dv_const_invalid")
 
-# --- THE VIOLATION TEXT. `Ops.STACK` is int-typed so the toposort gate KEEPS it
-# and NO rule claims it, which is the one shape that reaches `uops_to_z3:87`.
 # MEASURED: `NotImplementedError: Ops.STACK is not supported by z3`, and
 def dv_unsup_stack() -> String:
   dv_unsup_stack.of(O.Arena.empty(), "dv_unsup_stack")
 
 # --- THE COUNT ROW. CPython STOPS at the first unsupported op; this collects
+# MEASURED, and the first guess was wrong: `Ops.BINARY` is NOT in `z3_alu`/`python_alu`
 def dv_unsup_two() -> String:
   dv_unsup_two.of(O.Arena.empty(), "dv_unsup_two")
 
@@ -1580,14 +1476,14 @@ def dv_unsup_two() -> String:
 def dv_rank_shr1() -> String:
   dv_rank_shr1.of(O.Arena.empty(), "dv_rank_shr1")
 
-# --- a wrong arity and dtype on an ARG. `Ops.BITCAST` with two srcs and an int
-# dtype: `src=(UPat.var("x", dtypes.ints),)` is a ONE-tuple, so rule 5's shape
-# test fails on arity, rules 9 and 10 do not claim BITCAST, and the op is
 # unsupported -- a DIFFERENT text from `dv_rank_shr1` for a different op.
 def dv_bad_dtype_bitcast() -> String:
   dv_bad_dtype_bitcast.of(O.Arena.empty(), "dv_bad_dtype_bitcast")
 
 # THE SAME STALE ARENA AS `dv_shr2.of`, and this one sits behind the `dv_and*` rows.
+# anywhere in `.agents/slop/`. A hand-derivation of `validate.py:16` gives `w=8` -> bound 128,
+#   * CALLED, `validate.py:16` on CPython's own `_min_max` gives `w = 8`, and the literal z3
+#   * The `128` in that old text is the width of a DIFFERENT NODE: `w = 7`, and `w = 7` is what
 def dv_and.put(+ar: O.Arena, nm: String, k: U32) -> String:
   +t = dv_bin(ar, O.OpsAND{}, 100, k)
   +g = fx_const_bool(O.Found.ar(t), True{})
@@ -1596,7 +1492,6 @@ def dv_and.put(+ar: O.Arena, nm: String, k: U32) -> String:
 def dv_and.of(+ar: O.Arena, nm: String, k: U32) -> String:
   dv_and.put(ar, nm, k)
 
-# --- `Ops.MAX`, and this row exists because a defect had no row.
 # `validate.py:47` is `Ops.MAX: lambda _,a,b: z3.If(a<b, b, a)`, and `Ops.MAX` is one of the
 def dv_max.of(+ar: O.Arena, nm: String) -> String:
   +t = dv_bin(ar, O.OpsMAX{}, 100, 21)
@@ -1604,14 +1499,12 @@ def dv_max.of(+ar: O.Arena, nm: String) -> String:
   dv2(nm, t, g, dv_and.mm(O.Found.ar(t), t))
 
 # --- THE `z3_bv` WIDTH AS ITS OWN ROW. `validate.py:16` is the width, and the `- 1` -> `- 256`
+# `w_*_off`, which call `validate.py:16`'s expression on CPython's own `UOp._min_max`.
 def dv_alu.of(op: O.Op, k: U32, nm: String) -> String:
   +t = dv_bin(O.Arena.empty(), op, 100, k)
   +g = fx_const_bool(O.Found.ar(t), True{})
   dv2(nm, t, g, dv_and.mm(O.Found.ar(t), t))
 
-# `RANGE(100) op CONST(4)` for the four arms whose TAG decides the answer. `Ops.MAX` proved a tag
-# can be wrong with no error anywhere, so each of the four `k`-tagged builders gets its own row
-# rather than sharing one with a comment.
 # --- `Ops.TRUNCDIV` (validate.py:45), and the only row reaching `z3_cdiv` at all -- including its
 def dv_cdiv4() -> String:
   dv_alu.of(O.OpsTRUNCDIV{}, 4, "dv_cdiv4")
@@ -1625,11 +1518,9 @@ def dv_floordiv4() -> String:
   dv_alu.of(O.OpsDIV{}, 4, "dv_floordiv4")
 
 # --- `Ops.MOD`: `a - z3_floordiv(a,b)*b`. This is the `k = 3` arm `Ops.MAX` was silently
-# falling into, so this row is what makes that confusion impossible to repeat.
 def dv_floormod4() -> String:
   dv_alu.of(O.OpsMOD{}, 4, "dv_floormod4")
 
-# --- `z3_or`'s bit-blast, and the THIRD caller of `z3_bv` after AND and XOR. No constant case in
 # Python either, which is why `r | (r << 1)` in test_validate_oob.py:113 is a BV expression.
 def dv_or21() -> String:
   dv_alu.of(O.OpsOR{}, 21, "dv_or21")
@@ -1673,13 +1564,12 @@ def dv_and15() -> String:
 def dv_and_neg4() -> String:
   dv_and.of(O.Arena.empty(), "dv_and_neg4", 4294967292)
 
-# --- `z3_and`'s BIT-BLAST fallback, the ONLY path through `z3_bv` and so the only
 # row that sees the WIDTH. MEASURED: `r & 21` over a RANGE(100) picks width 8,
 def dv_and21() -> String:
   dv_and.of(O.Arena.empty(), "dv_and21", 21)
 
-# THE WIDTH ROWS, one per `dv_and*` fixture, because the width is a NUMBER and a number is the
 # only thing here that can be adjudicated on its own. `validate.py:16` in full:
+# and the printed literal inside z3's signed `BV2Int` expansion is `2w`. MEASURED by CALLING
 def bv_w.of21() -> U32:
   dv_w(O.OpsAND{}, O.Arena.empty(), 100, 21)
 
@@ -1690,6 +1580,13 @@ def bv_w.ofneg() -> U32:
   dv_w(O.OpsAND{}, O.Arena.empty(), 100, 4294967292)
 
 # `c2d` -- `copy_to_device`'s REFUSALS, ops.py:759/761/763, AS GATE ROWS.
+#   ops.py:759  `if is_disk_device(device): raise RuntimeError("COPY to DISK is not allowed;
+#   ops.py:761  `assert arg is None or isinstance(self.device, tuple)` a BARE `assert`,
+#   ops.py:763  `if inp.dtype in dtypes.weaks: raise RuntimeError(...)` a `raise`, WITH a message
+#   ops.py:892  `assert isinstance(self.src[0].device, tuple), f"mselect must be on tuple
+# port's fixture was `s5.ga.arena()`'s node 4 and the oracle's was `ops-501-oracle.py:164`'s
+# `multi` -- two DIFFERENT nodes differing in op, slot, size and device. `sig()` prints the op
+#   * `arg=0` REFUSES on a scalar device, so ops.py:761 tests `is None` and not truth. The
 def c2d_pa(slot: U32, dt: S.Dt) -> O.ParamArg: O.ParamArg.of(slot, dt)
 
 # THE TUPLE-DEVICE SPELLING, `ParamArg(1, dtypes.int32, None, None, None, None, None, ('CPU',
@@ -1704,12 +1601,9 @@ def c2d_buft(+ar: O.Arena, slot: U32, dt: S.Dt) -> O.Found:
   O.UOp.new.param(ar, O.OpsBUFFER{}, Some{1}, O.AParam{c2d_pat(slot, dt)}, O.TNone{})
 
 # node 4 of `s5.ga.arena()` -- uop/ops.bend:7034 -- `Node{OpsSHRINK{}, [1], ATuple{Nil{}}}`. Built
-# here over a `c2d_buf` so the arena is this file's own and no index is inherited.
 def c2d_shr(+ar: O.Arena, src: U32) -> O.Found:
   O.UOp.new(ar, O.OpsSHRINK{}, [src], O.ATuple{Nil{}}, O.TNone{})
 
-# THE OUTCOME VOCABULARY. Two values, and the refusal CLASS is inside the value rather than in
-# a row of its own so it cannot be dropped from a comparison: `AssertionError` from a bare
 # `assert` is a DIFFERENT upstream behaviour from `RuntimeError` from a `raise`, and a row that
 def c2d_sig(+f: O.Found) -> String: O.s5.minted.go(O.Found.ar(f), f)
 
@@ -1729,7 +1623,6 @@ def c2d_arg_is_param(a: O.Arg) -> Bool:
     case _: False{}
 
 # `O.ParamArg.slot` on node 4's src0 -- `s5.pa(1)`, uop/ops.bend:1480 symbol=ParamArg.slot. `ops-501-oracle.py:164`'s
-# `multi` is `ParamArg(3, ...)`, so this is one of the four differences `sig()` cannot see.
 def c2d_arg_slot(a: O.Arg) -> U32:
   match a:
     case O.AParam{pa}: O.ParamArg.slot(pa)
@@ -1740,8 +1633,6 @@ def c2d_u32_is_none(m: Maybe<&2, U32>) -> Bool:
     case None{}: True{}
     case _: False{}
 
-# `ParamArg.size is None` -- and after `72f98ffe0` that is `src[0]` being the empty
-# STACK rather than a CONST. `s5.pa` builds the size-less half (ops.bend:1363) and
 # `ops-501-oracle.py:61` sets 9. The second of the four differences. `sp0` IS the
 def c2d_arg_size_is_none(a: O.Arg) -> Bool:
   match a:
@@ -1829,13 +1720,11 @@ def c2d_761_tupledev() -> String:
   c2d_row("c2d_761 tupledev", c2d_built(f))
 
 # `Some{0}` REFUSES: `arg is None` is an IDENTITY test, so a falsy index is still an index.
-# `k` is `Maybe<&2, U32>`, and a guard written as "no shard index means no shard" builds this.
 def c2d_761_argzero() -> String:
   +f = O.UOp.copy_to_device(O.s5.ga.arena(), 4, Some{0}, O.s5.dn(2))
   c2d_row("c2d_761 argzero", c2d_built(f))
 
 # The fourth quadrant on the BUFFER rather than the SHRINK, so a guard that keys on the OP as
-# well as the device is separated from one that does not.
 def c2d_761_scalardevargone() -> String:
   +b = c2d_buf(O.Arena.empty(), 1, S.int32())
   +f = O.UOp.copy_to_device(O.Found.ar(b), O.Found.i(b), Some{1}, O.s5.dn(2))
@@ -1903,6 +1792,7 @@ def c2d_763_rows() -> String:
                  c2d_763_void(), c2d_763_weakint(), c2d_763_weakfloat()])
 
 # ---------------------------------------------------------------- ops.py:892, THE OTHER assert
+# assert at ops.py:892 fires on the first `.device` READ, not at construction, so
 def c2d_892_construct() -> String:
   +b = c2d_buf(O.Arena.empty(), 1, S.int32())
   +s = c2d_shr(O.Found.ar(b), O.Found.i(b))

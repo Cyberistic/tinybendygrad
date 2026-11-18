@@ -63,6 +63,8 @@ def NTIMESTAMP() -> U32: 4
 #   1. the tuple is (op, *args, 0, 0, 0) -- THREE trailing zeros, so a command
 #
 # (1) is `nr.pads` and (2) is `nr.words`, and they are separate because they are
+# separate facts: a port that padded correctly and emitted five words would pass
+# `nr_pads_*` and fail `nr_words`.
 def nr.nargs(op: U32) -> U32:
   match op:
     case 4: 1
@@ -755,7 +757,7 @@ def t_queue() -> IO(Unit):
     C.srow("nr_copy_dev", nr.copy_dev("PYTHON"))
     C.srow("nr_copy_name", nr.copy_name("PYTHON", "NULL:1"))
     # the WORDS of the measured stream, one row per position, so a port that
-    # padded correctly and filled the pad with something else is caught
+    # padded correctly and filled the pad with something else is caught.
     C.lrow("nr_words_exec_all", nr.exec(60, 2, 1))
     C.lrow("nr_words_copy_all", nr.copy(21, 22, 0))
     C.lrow("nr_words_wait_all", nr.wait(11, 12, False{}))
@@ -1141,3 +1143,4 @@ def main() -> IO(Unit):
 #   M107    1  nr.zero_table: `randn` marked as NOT all-zero (M86 does `rand`)
 #   M108    1  nprog.writes: nothing is stamped
 #   M109    3  nprog.stamp_val: nanoseconds, not microseconds -- and the other way
+#

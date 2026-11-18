@@ -41,12 +41,6 @@ import ./spec.bend as S
 #   and `Sp.shape(x)` is a CALL. A `match` may not scrutinise a call (see
 #   `.agents/slop/notes/bend2-constraints.md` around line 4352, and rule 1.2's
 #   note on scrutinees), so those terms never reduce however deep the tree is.
-#   That is why each law closed by induction closes through a HELPER whose
-#   parameter is the shape -- `zip_maybe_idem`, `stack_numel_go` -- and not in
-#   the law body: the law's binder is symbolic and a helper's is not.
-#   `PORTING.md`, cited here before, DOES NOT EXIST in this repo: it is prep-work
-#   item 3 of `.agents/slop/plans/00-master-plan.md` and was never written. Four
-#   other files cite it too.
 #
 #   Under the old fuel budget every law was stuck for a second reason as well:
 #   the fold computed `2*depth+1` and matched on it, so a symbolic depth never
@@ -381,10 +375,6 @@ def L.flip_preserves_numel(t, flags):
 # tinyspec Reshape: "prod s_k = prod s'_k". The arm is `Some{Shape.of(dst)}`, so
 # the subject's count is `prod dst` -- which is the premise, verbatim. There is
 # no derivation to add: the spec's constraint IS the goal once the fold runs.
-# THE PICK of two concrete dims, which is the BROADCAST's per-axis rule: the
-# spec says "each axis must be equal or 1", and `pick_dim` is the port's rule for
-# it -- `pick_dim(a, 1)` is `a`, `pick_dim(1, b)` is `b`, and `pick_dim(a, a)` is
-# `a`.
 #
 # AND THESE ARE THE THREE CASES OF `pick_dim` ITSELF, read as a MATCH on the
 # count -- so the proof is the reduction and not a derivation.
@@ -575,8 +565,6 @@ def L.pad_shrink_round_trip(t, off, size, premise):
 # The premise is NOT used, and that is the point: the law holds for every `bs`,
 # including those where the premise has no witness at all (a shapeless head). The
 # old note here claimed the premise was needed to open `on_shape`; it never was.
-# `stack_numel_go` is the identity that makes it unnecessary, so the law body is
-# that helper at `k = 1n + length(rest)`.
 def L.stack_numel_is_the_leading_axis_times_the_operands(t, rest, bs, premise):
   stack_numel_go(Nat.add(List.length(&2, S.Sp, rest), 1n), S.Sp.shape(t))
 
@@ -843,7 +831,6 @@ def L.truncmod_is_elementwise(a, b, premise):
 # the law cannot fail whatever the fold says. It is kept and proven because the
 # spec states the constraint, but it pins no behaviour. Making it bite would
 # need a law about the Store's own shape, not a restatement of its hypothesis.
-# tinyspec's elementwise column: "all inputs same shape, output same shape".
 #
 # Each of the three is the SAME two steps -- rewrite `b`'s shape into `a`'s with
 # the premise, then `zip_max(s, s) == s` lifted through `Shape.of` and `Some` --
@@ -884,10 +871,6 @@ def reduce_of(m: Maybe<&2, S.Shape>) -> Maybe<&2, S.Shape>:
 #
 #   # gather: out[i] = T[idx[i]]. one-hot mask along gather axis, then reduce
 #   def gather(T, idx):
-#     K = T.shape[0]
-#     pos = arange(K).reshape(K, 1)                     # (K, 1)
-#     mask = (pos == idx.reshape(1, -1)).cast(T.dtype)  # (K, D)
-#     return (T.reshape(K, 1) * mask).sum(0)            # (D,)
 #
 # AND THE PROOF IS ONE `%` USE AND A CHAIN, and a `%` use REWRITES THE GOAL
 # -- MEASURED, SEE `.agents/slop/loc/bend-proof-rules.md`: the fit check is
@@ -940,14 +923,6 @@ def L.gemm_broadcasts_to_the_three_axis_shape(m, k, n, ma, mb, same):
   #
   # AND EACH AXIS IS ONE CONGRUENCE, and each congruence's FUNCTION fixes
   # everything EXCEPT the axis it rewrites:
-  #   * the FIRST axis -- `cons_tail` appends a fixed tail, so the ARGUMENT is
-  #     the head and the tail is the last two axes;
-  #   * the MIDDLE axis -- `cons_mid` fixes the head and the tail, so the
-  #     argument is the middle;
-  #   * the LAST axis -- `cons_at` fixes a prefix and a suffix, so the argument
-  #     is the last.
-  # AND THE THREE ARE CHAINED with two `Equal.trans` steps, and the whole list
-  # is then lifted through `Shape.of` and `Some`.
   #
   # AND THE THREE DIMS ARE BOUND WITH `+`, because each is READ MORE THAN ONCE
   # -- once in the goal, once in its lemma and once in the lists -- and a value
@@ -1020,7 +995,6 @@ def L.store_matches_its_buffer(buf, val, gate, premise):
 # DEFINED in terms of the primitives above it, so each is reflexive. No depth
 # binder, then or now: none of these laws mentions shape_of, dtype_of or
 # numel_of.
-# tinyspec.tex:192  Neg = Mul(A, -1)
 def L.neg_is_mul_by_minus_one(a):
   {==}
 
@@ -1071,7 +1045,6 @@ def L.mulacc_is_add_of_mul(a, b, c):
 # on a fuel it had computed as `2*depth+1` and its `case 2n+p:` arm was dead
 # behind `case 1n+p:`, so every one of these compared None with Some{bool} or
 # with None. The fold now reaches its own arm on the first call.
-# tinyspec.tex:269  CmpLt, CmpNe: bool
 def L.comparison_is_bool(a, b):
   {==}
 

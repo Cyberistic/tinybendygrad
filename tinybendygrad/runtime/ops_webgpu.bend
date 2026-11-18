@@ -296,6 +296,8 @@ type Slot is Data:
 # and the right number of times, which is the part the structure owns.
 #
 # `depth` is the open wgpuDevicePushErrorScope count and `bad_at` is the pop
+# against; it is not reset by `Tr.reset`, so one fixture numbering covers a whole
+# one program call's state: the shader module (:63), the entry point (:54), the
 type Tr is Data:
   Tr{calls: List<&2, Call>, next: U32, depth: U32, bad_at: U32, popn: U32,
      refused: Bool}
@@ -328,6 +330,8 @@ type Pass is Data:
 # the raise. `Tr.emit`, `Tr.push` AND `Tr.pop` all record nothing once a pop has
 #
 # The failing pop is still recorded, and that is not a special case: it sets
+# an empty trace that keeps `bad_at` and `popn`, so a gate can read one program
+# the id the next emit mints, i.e. what the seam's call returns. Read before the
 
 def Tr.of() -> Tr: Tr{Nil{}, 0, 0, 0, 0, False{}}
 
@@ -480,6 +484,7 @@ def Tr.has.step(m: Maybe<&2, Call>, +c: Call, at: Nat) -> Nat:
 # entries and returned True{} without ever looking at `at`, so a reversed pattern
 # matched and so did a pattern element that never occurs. measured, and the row
 # that caught it is `wg_has_rejects` below -- the five order rows were decorative
+# until it was fixed.
 def Tr.has.go(n: Nat, +patlen: Nat, cs: List<&2, Call>, +pat: List<&2, Call>,
               +at: Nat) -> Bool:
   match n:

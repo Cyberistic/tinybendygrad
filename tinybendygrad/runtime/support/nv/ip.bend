@@ -1131,6 +1131,7 @@ def tr.put(+t: Tr, +calls: List<&2, Cx>, n: U32) -> Tr:
 # ONE word of the image, by INDEX. The image is
 #
 # `elemCount` is at [10] and not [11]. `ip_rp_0_w10` is 1 for the seven requests
+# and `ip_rp_0_w11` is 0, read off CPython's `bytes(phdr)`; this comment said the
 def tr.go(+xs: List<&2, Cx>, +first: Bool) -> String:
   match xs:
     case Nil{}: ""

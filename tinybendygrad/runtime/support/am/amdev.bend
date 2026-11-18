@@ -216,7 +216,7 @@ def PALLOC_BIG() -> U32: 2097152
 # `onnames` is `names` FILTERED to the scalars, in order, and `offs` rises
 # strictly: that is what says the layout is packed in declaration order, and
 # an INVERTED list breaks it while a field COUNT would not.
-# :33 :47 :57 :68 :86 :91 -- load_fw's version probe and every image's first member
+# :33 :47 :57 :68 :86 :91 -- load_fw's version probe and every image's first member.
 def sf.common_firmware_header.names() -> List<&2, String>: ["size_bytes", "header_size_bytes", "header_version_major", "header_version_minor", "ip_version_major", "ip_version_minor", "ucode_version", "ucode_size_bytes", "ucode_array_offset_bytes", "crc32"]
 def sf.common_firmware_header.offs() -> List<&2, U32>: [0, 4, 8, 10, 12, 14, 16, 20, 24, 28]
 def sf.common_firmware_header.onnames() -> List<&2, String>: ["size_bytes", "header_size_bytes", "header_version_major", "header_version_minor", "ip_version_major", "ip_version_minor", "ucode_version", "ucode_size_bytes", "ucode_array_offset_bytes", "crc32"]
@@ -457,6 +457,9 @@ def v.reserved(maj: U32, min: U32, rev: U32) -> U32:
 # FOUR FIELDS, not ip.bend's two. A `read_config` is (op, addr, WIDTH) and a
 #
 # THE RAISE. `Tr.emit` records NOTHING once a refusal has fired, so a refusal
+# shows up in the trace as a TRUNCATION and no step below needs a guard of its
+# own. `Tr.refuse` is idempotent after the first, and `nth`/`at` let one fixture
+# numbering reach EVERY refusal site in turn.
 
 type Call is Data:
   Call{k: U32, a: U32, b: U32, c: U32}
@@ -699,6 +702,7 @@ def Tr.seq(+cs: List<&2, Call>, +pat: List<&2, Call>) -> Bool:
 #   cap, seen = self.pci_dev.read_config(0x34, 1) & 0xfc, set()
 #
 # The values `read_config` answers are the SEAM's, so the fixture supplies them as
+# two parallel lists: `links` is what `read_config(cap, 1)` says and `nexts` is
 def aspm.seen.go(n: Nat, +c: U32, cs: List<&2, U32>, hit: Bool) -> Bool:
   match n:
     case 0n: hit
@@ -1012,6 +1016,7 @@ def rlcg.access(addr: U32, val: U32, read: Bool, t: Tr) -> Tr:
 #   live_sdma = {k for k in regs_offset[SDMA0_HWIP] if k not in harvested[SDMA0_HWIP]}
 #
 # The mask is a SUM of `1 << (i & 3)` over the LIVE instances in the group, so
+# three numbers {0xf, 0x3, 0xc} decide liveness: all four, the low pair, or the
 def aid.slot(i: U32) -> U32: U32.and(i, 3)
 def aid.of(i: U32) -> U32: U32.shrn(i, 2n)
 

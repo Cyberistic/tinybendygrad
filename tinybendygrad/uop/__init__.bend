@@ -1,9 +1,13 @@
-# __init__.bend -- tinygrad/uop/__init__.py.
-# this file is one DEF and three gate rows, and that is the finding.
-# `__init__.py` is 135 lines and has three pieces: the `FastEnum` wrapper (6
-#   * `Ops` is `ops.bend`'s `type Op is Data` (uop/ops.bend:170 symbol=Op), with the members
-#     in `__init__.py`'s declaration order, which is load-bearing --
 #     `__init__.py:12` says "the order of these Ops controls the order of the
+# SO WHAT IS LEFT IS `GroupOp.All` (`__init__.py:134`, `All = set(Ops)`), the one
+#     schedule/rangeify.py:47    UPat(GroupOp.All, name="b")
+#     schedule/indexing.py:144    UPat(GroupOp.All, name="x")
+#     schedule/prepare.py:264     UPat(GroupOp.All-{Ops.SINK}, name="x")
+#     codegen/decomp/dtype.py:150 UPat(GroupOp.All, name="x")
+#     codegen/decomp/dtype.py:185 UPat(GroupOp.All-{Ops.LOAD, Ops.STACK}, ...)
+#     codegen/decomp/dtype.py:220 UPat(GroupOp.All, (*fp8s, ...), name="x")
+#     uop/render.py:71, :122     UPat(GroupOp.All, name=...)
+#     uop/spec.py:207, :208      UPat(GroupOp.All, name="x")
 
 import Base
 import ./ops.bend as O

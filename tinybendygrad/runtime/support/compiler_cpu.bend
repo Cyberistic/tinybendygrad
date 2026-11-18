@@ -168,7 +168,7 @@ def ClangCompiler.arm64_args(+cpu: String, +feats: List<&2, String>) -> List<&2,
     List.append(&2, String, [cpu], af.go(feats, [])), "+")])]
 
 # :13 the comment as a row: x18 is the reserved register that is clobbered on
-# context switch in macos and holds the TEB pointer on windows/arm
+# context switch in macos and holds the TEB pointer on windows/arm.
 def ClangCompiler.arm64_fixed() -> String: "-ffixed-x18"
 
 # :14  riscv64. `native` becomes `rv64g` and the features are joined RAW -- no
@@ -210,7 +210,7 @@ def ClangCompiler.args(+arch: List<&2, String>) -> List<&2, String>:
 
 # the element COUNT of the built list -- which is the thing a dropped feature
 # or a mis-spliced arm changes and which `ClangCompiler.arm_n` (the arm INDEX)
-# cannot see
+# cannot see.
 def ClangCompiler.args_n(+arch: List<&2, String>) -> U32:
   U32.from_nat(List.length(&2, String, ClangCompiler.args(arch)))
 
@@ -317,7 +317,7 @@ def X86Compiler.hex_ok(+s: String) -> Bool:
   Bool.and(U32.is_eq(X86Compiler.hex_bad(s), 4294967295), U32.is_even(X86Compiler.hex_digs(s)))
 
 # the position CPython's ValueError names: the first bad character, or the
-# digit COUNT when the count is odd
+# digit COUNT when the count is odd.
 def X86Compiler.bad_pos(+s: String) -> U32:
   Bool.pick(U32, U32.is_eq(X86Compiler.hex_bad(s), 4294967295),
     X86Compiler.hex_digs(s), X86Compiler.hex_bad(s))
@@ -344,7 +344,7 @@ def HEX_OF(+s: String) -> String:
   Bool.pick(String, X86Compiler.hex_ok(s), X86Compiler.hex_str(s), X86Compiler.hex_err(s))
 
 # the outcome of `__init__`, as a STRING so that a refusal and an absence are
-# never the same row: "ok", the assert, or the unsupported-arch RuntimeError
+# never the same row: "ok", the assert, or the unsupported-arch RuntimeError.
 def R.kind(+ge2: Bool, +supported: Bool, +amsg: String, +umsg: String) -> String:
   Bool.pick(String, Bool.not(ge2), amsg, Bool.pick(String, Bool.not(supported), umsg, "ok"))
 

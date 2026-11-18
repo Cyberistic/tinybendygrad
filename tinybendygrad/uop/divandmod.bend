@@ -1,10 +1,5 @@
-# divandmod.bend -- tinygrad/uop/divandmod.py.
-# `div_and_mod_symbolic` is a three-entry `PatternMatcher`: two fast inline rules
-# the walls are half stale, and measured (2026-11-06). the header used to say "the one
-#   * `divides` -- the port has it (`ops.bend:7656`), a full recursion over ADD/MUL/CONST
-#     carrying a `Dv`, and it answers the same as upstream's on four measured cases.
-#   * `_min_max` -- THE PORT HAS `F.UOp.vmin`/`F.UOp.vmax` (`fold.bend:5344`/`5402`) AND THEY
 #     MATCH UPSTREAM'S ON FIVE MEASURED CASES.
+#    over BOTH ORDERS -- `UPat.alu` (ops.py:1533) passes `list(asrc)` for an op in
 
 import Base
 import ./../helpers.bend as H
@@ -12,8 +7,6 @@ import ./../LAWS/spec.bend as S
 import ./ops.bend as O
 import ./fold.bend as F
 
-# THE ACCUMULATOR. These rules GROW the arena, so the answer is the arena AND a
-# node index AND whether anything fired. A `Maybe` cannot be a FOLD'S ACCUMULATOR (it is
 # affine), and it is NOT true that it cannot be a `Data` field -- MEASURED, 20 in-tree
 type Hit is Data:
   Hit{ar: O.Arena, i: U32, on: U32}
@@ -48,7 +41,6 @@ def dm_val(ar: O.Arena, u: U32) -> Maybe<&2, U32>:
   dm_val.arg(O.Arena.arg(ar, u))
 
 # `Some -> True`, and the value with a 0 for the `None` case. Two leaves, so the
-# call sites below do not each re-match a `Maybe`.
 def dm_has.go(v: U32) -> Bool:
   match v:
     case _: True{}
@@ -73,7 +65,6 @@ def dm_floordiv.exact(exact: Bool, q: U32) -> U32:
     case False{}: U32.add(q, 1)
 
 # truncate toward zero, then step down one more ONLY when the signs differ and
-# the division was inexact -- which is Python's `//` and nowhere else.
 def dm_floordiv.trunc(neg: Bool, exact: Bool, q: U32) -> U32:
   match neg:
     case True{}: H.i32_neg(dm_floordiv.exact(exact, q))
@@ -104,7 +95,6 @@ def dm_isn2(ar: O.Arena, u: U32) -> Bool:
   U32.is_eq(O.Arena.nsrc(ar, u), 2)
 
 # `x//c` as a SHAPE: a DIV whose divisor is a CONST. Rule 0's
-# `UPat.var("x")//UPat.cvar("c")`, with the name bindings left to `dm_which`.
 def dm_is_quot(+ar: O.Arena, +s: U32) -> Bool:
   Bool.and(O.op_is(ar, s, O.OpsDIV{}), dm_has(dm_val(ar, O.Arena.src(ar, s, 1))))
 
@@ -156,6 +146,7 @@ def dm_zero(+ar: O.Arena, +d: U32) -> Bool:
   dm_zero.op(O.Arena.op(ar, O.Arena.src(ar, d, 1)), O.Arena.arg(ar, O.Arena.src(ar, d, 1)))
 
 # `x//y is constant` -- divandmod.py:12, and the arm is EXACT rather than
+# `x - xdiv.vmin*y`, the MOD half of divandmod.py:13.
 def dm_point.sub(ar: O.Arena, x: U32, y: U32, q: U32) -> O.Found:
   +qc = O.UOp.const(ar, O.CInt{H.i64_of_i32(q)})
   +m = O.UOp.alu(O.Found.ar(qc), O.OpsMUL{}, [O.Found.i(qc), y])
@@ -183,6 +174,7 @@ def dm_point(+ar: O.Arena, +d: U32) -> Maybe<&2, O.Found>:
   dm_point.go(ar, d, O.Arena.op(ar, d), dm_val(ar, O.Arena.src0(ar, d)), dm_val(ar, O.Arena.src(ar, d, 1)))
 
 # PARAM // c is irreducible -- divandmod.py:15, and it is the last of the three
+# 1 (ops.py:1013) and `1 % 1 == 0`, so `MOD(param, CONST(1))` rewrites to
 def dm_multiple_of.mod(mult: Maybe<&2, U32>, y: U32) -> Bool:
   match mult:
     case Some{k}: U32.is_zero(dm_floormod(k, y))
@@ -199,12 +191,10 @@ def dm_multiple_of.go(op: O.Op, arg: O.Arg, y: U32) -> Bool:
     case _: False{}
 
 # Python has already RAISED by this line, so the lambda has no `d.val == 0` guard;
-# it is here because it is what keeps `multiple_of % 0` out of the picture.
 def dm_multiple_of(+ar: O.Arena, +d: U32) -> Bool:
   dm_multiple_of.go(O.Arena.op(ar, O.Arena.src0(ar, d)), O.Arena.arg(ar, O.Arena.src0(ar, d)),
                     dm_ival(dm_val(ar, O.Arena.src(ar, d, 1))))
 
-# `d.const_like(0) if d.op is Ops.MOD else None` -- the tail of the lambda on
 # divandmod.py:15. DIV is the `None`, so the ladder below keys on it.
 def dm_multiple_of.hit(ar: O.Arena, op: O.Op) -> Maybe<&2, O.Found>:
   match op:
@@ -220,14 +210,12 @@ def dm_multiple_of.arm(+ar: O.Arena, +d: U32) -> Maybe<&2, O.Found>:
   dm_multiple_of.arm.go(ar, d, dm_multiple_of(ar, d))
 
 # Python's `if ...: return A` twice. A `Maybe<&2, T>` is a `Type`, so it cannot
-# take a `+`; first-wins is a leaf over two parameters instead.
 def dm_first2.go(b: Maybe<&2, O.Found>, c: Maybe<&2, O.Found>) -> Maybe<&2, O.Found>:
   match b:
     case Some{f}: Some{f}
     case None{}: c
 
 # `fold_divmod_general` -- divandmod.py:8-96. The `raise` is line 11 and it comes
-# FIRST, so the zero test gates the other two arms.
 def fold_divmod_general.go(+ar: O.Arena, +d: U32, zero: Bool) -> Maybe<&2, O.Found>:
   match zero:
     case True{}: None{}
@@ -299,12 +287,10 @@ def dm_cval(+ar: O.Arena, +add: U32, which: U32) -> U32:
   dm_ival(dm_val(ar, dm_1.pick(O.Arena.src(ar, add, 1), O.Arena.src0(ar, add), which)))
 
 # the two `is_any` alternatives, resolved: `which` names the CONST side `c` and the
-# other side is `x`, which the Python writes FIRST whatever the input order.
 def dm_1.make(+ar: O.Arena, op: O.Op, d: U32, +add: U32, which: U32, cm: U32, cq: U32) -> O.Found:
   dm_1.finish(ar, op, dm_1.pick(O.Arena.src0(ar, add), O.Arena.src(ar, add, 1), which), d, cm, cq)
 
 # WHICH side of the commutative ADD is the `cvar("c")` CONST. The MIRROR of
-# `dm_which`, and the same three arms: 0 = src0, 1 = src1, 2 = both or neither.
 def dm_cside.go(s0: Bool, s1: Bool) -> U32:
   match s0 s1:
     case True{} False{}: 0
@@ -333,7 +319,6 @@ def dm_1.go(+ar: O.Arena, op: O.Op, +d: U32, +add: U32, +which: U32, weak: Bool,
   dm_1.go2(ar, op, d, add, which, weak, self, dm_ival(dm_val(ar, d)), dm_cval(ar, add, which))
 
 # `UPat.var("x", dtypes.weakint)`: the side of the commutative ADD that is NOT the
-# `cvar("c")` CONST, which is `which`-selected because the pattern is an `is_any`.
 def dm_weak_side(u: U32, ar: O.Arena, tb: F.Table) -> Bool:
   dm_weak.dt(F.fold.dt(ar, tb, u))
 
@@ -410,8 +395,16 @@ def dm_scan(+todo: List<&2, O.PMEntry>, +fx: F.Folded, +self: U32, acc: Hit) -> 
 def div_and_mod_symbolic(+fx: F.Folded, self: U32) -> Hit:
   dm_scan(O.PMEntrys.es(dm_table()), fx, self, miss(F.Folded.ar(fx)))
 
-# THE GATE, and what each row is FOR. `1`/`0` is "a rule fired" / "the scan found
 #   nrules=3       divandmod.py:98-109 is three entries. A COUNT.
+#   rej0=2 rej1=2 rej2=0   the `early_reject` sets, MEASURED against Python:
+#   nroots=26      how many roots the fixture arena holds. THE COUNT ROW: a
+#   zero_r04=1     divandmod.py:11 on a `CONST(0)` divisor. Python RAISES.
+#   on_r13=1 out_r13=CONST(1)          `6//4`, divandmod.py:13's CONST/CONST arm.
+#   out_r17=CONST(0)   divandmod.py:15: `Pp.multiple_of == 4` and `4 % 4 == 0`,
+#   out_r18=CONST(0)   THE DEFAULT ROW: `Pz.multiple_of` is 1 (ops.py:1013) and
+#   out_r19=none   `Pp//4`: divandmod.py:15 returns `None` for DIV.
+#   out_r21=none   `Px%4`: past divandmod.py:15, i.e. behind the wall. Python
+#    ops.py:1013 is load-bearing in a place no code comment mentions.
 
 # THE GATE'S PRINTER. `dm_sh2` prints a node TWO levels deep, and that is not a
 def dm_show.go(neg: Bool, v: U32) -> String:
@@ -450,7 +443,6 @@ def dm_sh1.go(+ar: O.Arena, u: U32, s0: U32, s1: U32, leaf: Bool) -> String:
     case _: String.concat([dm_lab(ar, u), "(", dm_lab(ar, s0), ",", dm_lab(ar, s1), ")"])
 
 # a leaf is a node with no srcs -- a CONST, a PARAM, a SPECIAL. Printing its srcs
-# would print the arena's BOTTOM node, which is what `U32.is_zero(nsrc)` keeps out.
 def dm_sh1.put(+ar: O.Arena, +u: U32, s0: U32, s1: U32) -> String:
   dm_sh1.go(ar, u, s0, s1, U32.is_zero(O.Arena.nsrc(ar, u)))
 
@@ -469,11 +461,6 @@ def dm_sh2.put(+ar: O.Arena, +u: U32, s0: U32, s1: U32) -> String:
 def dm_sh2(+ar: O.Arena, +u: U32) -> String:
   dm_sh2.put(ar, u, O.Arena.src0(ar, u), O.Arena.src(ar, u, 1))
 
-# THE FIXTURES. One arena, and the roots are addressed BY INDEX rather than by a
-# hand-kept record of indices: `Gate.rs` is the list `dm_root` indexes and
-# `nroots` is the count, so a fixture added in the wrong place or a root dropped
-# shows up as a moved row rather than as a silently shorter table. `ParamArg` has
-# thirteen fields in `ops.bend`'s declaration order, so `dm_param` spells them out
 # against ops.py:1015's `ParamArg(-1, dtype, name=name,
 type Gate is Data:
   Gate{ar: O.Arena, rs: List<&2, U32>}
@@ -508,31 +495,6 @@ def dm_param(dt: S.Dt, mult: U32, nm: String) -> O.ParamArg:
 
 # `vmax` is a parameter because the ZERO DIVISOR arm needs a PARAM whose declared
 
-# THE NODE LIST, IN BINDING ORDER. 1-11 are the CONSTs, 12-18 the PARAMs, 19 on
-# ROOTS, in the order `dm_root` indexes them, with the oracle's tree:
-#  r00 t0_a   DIV(ADD(DIV(Px,C(3)),C(5)),C(7))
-#             -> DIV(ADD(Px,MUL(C(5),C(3))),MUL(C(3),C(7)))
-#  r01 t0_b   ... the SWAPPED add; the same answer
-#  r02 t0_c   (x//3 + 10)//7 -> rule 0 AND rule 1 both fire, differently. FIRST-WINS.
-#  r03 t0_neg //-7: rule 0 skips on d.vmin>0 and rule 1 answers -> ADD(...,C(-1))
-#  r04 t0_d0  //0:  Python RAISES ZeroDivisionError. rule 0 skips, rule 1 skips on
-#             d.val==0, rule 2 reports it. `on=0`.
-#  r05 t1_fd  (Px+C(10))//7  -> ADD(DIV(ADD(Px,C(3)),C(7)),C(1))
-#  r06 t1_fm  (Px+C(10))%7   -> MOD(ADD(Px,C(3)),C(7))
-#  r07 t1_same (Px+C(3))//7   -> None: c%d == c
-#  r08 t1_swap C(10)+Px       -> the same as r05: x goes FIRST
-#  r09 t1_d1  //1             -> ADD(DIV(ADD(Px,C(0)),C(1)),C(10))
-#  r10 t1_dn  //-7            -> ADD(DIV(ADD(Px,C(-4)),C(-7)),C(-2)). THE FLOOR ROW.
-#  r11 t1_d0  //0             -> Python RAISES. `on=0`
-#  r12 t1_i   int32 numerator -> None. THE WEAKINT-CONJUNCT ROW.
-#  r13 t2_cst DIV(C(6),C(4))     -> CONST(1)
-#  r14 t2_cst2 MOD(C(6),C(4))    -> SUB(C(6),MUL(C(1),C(4)))   [Python: ADD(MUL(MUL,-1))]
-#  r15 t2_cn  DIV(C(-7),C(4))    -> CONST(-2). THE FLOOR ROW.
-#  r16 t2_cm  MOD(C(-7),C(4))    -> SUB(C(-7),MUL(C(-2),C(4)))
-#  r17 t2_pm  MOD(Pp,C(4))       -> CONST(0): multiple_of 4 % 4 == 0
-#  r18 t2_p1  MOD(Pz,C(1))       -> CONST(0): multiple_of DEFAULTS to 1
-#  r19 t2_pd  DIV(Pp,C(4))       -> None: the lambda returns None for DIV
-#  r20 t2_p3  MOD(Pq,C(4))       -> None: 3 % 4 != 0
 #  r21 t2_var MOD(Px,C(4))       -> None: past divandmod.py:15
 def trees() -> Gate:
   +a = O.Arena.empty()
@@ -603,7 +565,6 @@ def rw(+g: Gate, n: U32) -> Hit:
 def t_on(g: Gate, n: U32) -> U32: Hit.on(rw(g, n))
 
 # `none` is Python's `None`. Otherwise the tree, TWO levels deep -- which is
-# exactly Python's tree for every row this file rewrites, CASTs erased.
 def t_out.go(on: U32, +h: Hit) -> String:
   match on:
     case 0: "none"

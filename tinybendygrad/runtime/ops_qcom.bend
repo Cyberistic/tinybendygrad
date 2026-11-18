@@ -439,10 +439,6 @@ def CTZ_BITS() -> Nat: 32n
 # `(v & -v).bit_length() - 1` is the INDEX of the lowest set bit, so the walk has
 # to STOP at the first one and not merely stop counting -- and those are two
 # different bugs. Two versions of this failed here, both caught by the gate:
-# the arms the other way round (which counts trailing ONES) and then an arm that
-# merely declines to increment (which answers 31 for `ctz(1)`, because the bits
-# ABOVE the lowest set bit go on incrementing). So `done` is a FIELD, not an
-# early exit: Bend has no `break` and a `Bool.pick` cannot gate a self-call.
 type Cz is Data:
   Cz{got: U32, done: Bool}
 
@@ -624,6 +620,7 @@ def FLAG_CACHEMODE() -> String: "KGSL_CACHEMODE"
 #   :272 (CL)    ibo_off, tex_off, samp_off = 2048, 2048 + 0x40*ibo_cnt, 2048 + 0x40*tex_cnt + 0x40*ibo_cnt
 #
 # `tex_off` and `ibo_off` are SWAPPED between them, and the CL branch's middle
+# term counts `ibo_cnt` while the NIR branch's counts `tex_cnt`. The
 def OFF_REG_DESC() -> U32: 52       # 0x34, :282
 def OFF_HAS_CONSTS() -> U32: 176    # 0xb0, :274
 def OFF_CONST_TAB() -> U32: 172     # 0xac, :275
@@ -960,6 +957,7 @@ def pd.parse_full(+bs: List<&2, U32>, +name_len: U32) -> Pd:
 # THERE IS NO EVICTION. Python's `_qcom_program_cache` is a module-level dict
 #
 # THE OTHER NEGATIVE: a cache that reports a hit without a build is only honest
+# if the build is RECORDED. `Tr` exists so that "did this parse the blob again"
 
 def CALL_PARSE() -> U32: 0     # QCOMProgramData(dev, prg.to_elf())   :288
 def CALL_PATCH() -> U32: 1      # patch(buf, [], image)                :291
@@ -1323,7 +1321,7 @@ def PRE_AT() -> List<&2, U32>: [0, 1, 2, 3, 4, 5, 6, 7, 8]
 
 def exec.pre() -> Tr:
   # :128-138 -- marker, SP_UPDATE_CNTL twice, TSIZE, USIZE, MODE_CNTL,
-  # PERFCTR_SHADER_MASK, TPL1_MODE_CNTL, TPL1_DBG_ECO_CNTL, WAIT_FOR_IDLE
+  # PERFCTR_SHADER_MASK, TPL1_MODE_CNTL, TPL1_DBG_ECO_CNTL, WAIT_FOR_IDLE.
   Tr.emit(CALL_CMD7(), CP_WAIT_FOR_IDLE(), exec.pre2(9n, PRE_AT(), Tr.of()))
 
 # :140-143 NDRANGE_0, :145-150 CS_CNTL_0, :153-156 the two CP_LOAD_STATE6_FRAG,

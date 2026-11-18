@@ -160,6 +160,7 @@
 #    the row that pins both numbers.
 #
 # E. THERE is no dtype-TO-SUFFIX table in this file, and the gate should not look
+# THE constants, AND every one of them is a *PLATFORM fact* WITH two cells.
 
 import Base
 import ./../helpers.bend as H
@@ -763,6 +764,9 @@ def dev_file.open.at(+dr: U32, +osx: Bool, +d: Dev) -> Dev:
 # < size: os.ftruncate(fd, size)`.
 #
 # THE `and` SHORT-CIRCUITS, and that is a CALL SEQUENCE question and not a predicate
+# question: `os.fstat` is an ARGUMENT of the second conjunct, so a block device never
+# stats the file at all and the trace has NO `fstat` in it. That is why this is TWO
+# `.at`s and not one -- my first version folded the conjunction into one parameter and
 def dev_file.trunc.go(trunc: Bool, +size: U32, +d: Dev) -> Dev:
   match trunc:
     case True{}:
