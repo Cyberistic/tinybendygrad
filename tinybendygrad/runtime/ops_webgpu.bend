@@ -4,9 +4,9 @@
 # ctypes call into `tinygrad/runtime/autogen/webgpu.py`. In a browser those calls
 # become js-glue ffi, and what survives the crossing is the structure -- device
 # init, buffer upload/download, the per-call object graph, dispatch geometry,
-# and the future-to-synchronous protocol. That structure is what this file
-# ports. Every actual wgpu call is a `# TODO(p3) runtime/ops_webgpu.py:<line>`
-# naming the js import it becomes; nothing here calls wgpu.
+# and the future-to-synchronous protocol. Every actual wgpu call is a
+# `# TODO(p3) runtime/ops_webgpu.py:<line>` naming the js import it becomes;
+# nothing here calls wgpu.
 #
 # the split, stated once and then obeyed. a def here either builds the argument
 # of one wgpu call (pure, and the gate checks it) OR records that call in the

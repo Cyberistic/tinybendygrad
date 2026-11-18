@@ -243,26 +243,10 @@ def cmd_word(+opcode: U32, +slot: U32) -> U32:
 def q.next_phase(+phase: U32, new_tail: U32) -> U32:
   Bool.pick(U32, U32.is_zero(new_tail), U32.xor(phase, 1), phase)
 
-# the sqe's 64-BYTE layout, as a list of its eight 32-bit words.
+# the sqe's 64-BYTE layout, as a list of its sixteen 32-bit words.
 # `struct.pack("<IIQQQQII16x", opcode | slot << 16, nsid, 0, 0, prp1, 0,
 # cdw10, cdw11)`: two 32-bit words, four 64-bit words, two 32-bit words and
-# SIXTEEN PADDING BYTES. SO THE WORD SEQUENCE IS
-#
-#   [0] opcode|slot<<16   [1] nsid   [2] 0 (hi of a 64)   [3] 0 (lo of a 64)
-#   [4] prp1 (hi)         [5] prp1 (lo)                    [6] 0  [7] 0
-#   [8] cdw10             [9] cdw11                        [10..15] padding
-#
-# and the port keeps the 64-bit words as two 32-bit halves, because the
-# prp address is a physical address and is wider than 32 BITS.
-# the prp address's low WORD comes first, because the format is
-# little-endian. `<IIQQQQII16x` packs `prp1` as a sixtyty-four-bit little-
-# endian value, so its low WORD is WORD 6 and its high WORD is WORD 7. the
-# first draft had them the other way round -- high then low -- and the
-# first gate run caught it, because the oracle reads the same bytes back out
-# OF UPSTREAM'S OWN `struct.pack`.
-# the WORD layout is `<IIQQQQII16x`: two 32-bit words, four 64-bit
-# words, two 32-bit words and sixteen padding bytes. the four 64-bit words
-# OCCUPY WORDS 2 THROUGH 9, SO:
+# SIXTEEN PADDING BYTES. The four 64-bit words OCCUPY WORDS 2 THROUGH 9:
 #
 #   [0] opcode|slot<<16   [1] nsid
 #   [2] 0  [3] 0          -- the first 64-bit field
@@ -272,10 +256,16 @@ def q.next_phase(+phase: U32, new_tail: U32) -> U32:
 #   [10] cdw10  [11] cdw11
 #   [12..15] the padding
 #
-# the first draft put cdw10 and cdw11 at words 8 and 9 -- which is
-# WHERE the fourth 64-bit field is -- and the first gate run caught it,
-# because the oracle reads the same bytes back out of upstream's own
-# `struct.pack`.
+# The port keeps the 64-bit words as two 32-bit halves, because the prp address
+# is a physical address and is wider than 32 BITS.
+#
+# TWO BUGS THE FIRST GATE RUN CAUGHT, and the oracle is upstream's own
+# `struct.pack` read back out:
+#   * the first draft had the prp halves the other way round -- high then low.
+#     `<IIQQQQII16x` packs `prp1` as a sixtyty-four-bit little-endian value, so
+#     its low WORD is WORD 4 and its high WORD is WORD 5.
+#   * the first draft put cdw10 and cdw11 at words 8 and 9 -- which is WHERE
+#     the fourth 64-bit field is.
 def sqe_words(opcode: U32, slot: U32, nsid: U32, prp1_hi: U32, prp1_lo: U32,
               cdw10: U32, cdw11: U32) -> List<&2, U32>:
   [cmd_word(opcode, slot), nsid, 0, 0, 0, 0, prp1_lo, prp1_hi,

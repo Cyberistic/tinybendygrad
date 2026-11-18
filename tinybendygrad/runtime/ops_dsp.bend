@@ -1,8 +1,8 @@
 # tinybendygrad/runtime/ops_dsp.bend -- port of tinygrad/runtime/ops_dsp.py
 #
-# THE generic c-BACKEND-FOR-A-DSP wrapper. ops_dsp.py is 292 lines and almost none
-# of them are DSP-specific arithmetic: it is a ClangRenderer subclass that emits a
-# Hexagon `entry` shim, a fastrpc argument packer, an ION/mmap allocator, a clang
+# THE generic c-BACKEND-FOR-A-DSP wrapper. ops_dsp.py is 292 lines and almost
+# none of them are DSP-specific arithmetic: it is a ClangRenderer subclass that emits
+# a Hexagon `entry` shim, a fastrpc argument packer, an ION/mmap allocator, a clang
 # invocation, and a `threading.Thread` that emulates fastrpc's file system on the
 # HOST side so the shell image can be paged in. What survives the crossing is the
 # SHAPE of every one of those, and the shape is what this file ports.

@@ -2,46 +2,31 @@
 # BEND device. `bend-executor PACKET gx gy gz vals...` reads a packet, walks its
 # toposorted uops once per global work item, and writes PACKET.out.
 #
-# STATE OF THIS FILE, MEASURED 2026-10-26. `--check-only` is clean and `-o`
-# builds. `gates/ops_bend_exec-e2e.py` reads `7 match, 0 mismatch-or-refused` --
-# add4, sum4, addi32, addu32, cast, cmp AND a 4x4 matmul -- so the loop, the
-# arena, the wire and the ALU lane are all exercised. The 153-fixture census
+# BUGS THIS FILE FIXED, each reduced to the one sentence and the number that
+# proves it. The 153-fixture census
 # (`gates/ops_python_exec-fixtures.rows`, run through this file's own compiled
-# executor) now leaves 0 rows that disagree with upstream's own
-# interpreter. it left 29, and every one of them was in
-# `gates/ops_python_exec-pins.rows`; the 29 are fixed and the report is
-# `.agents/slop/vslane/REPORT.md`.
+# executor) reads 0 of 365 rows disagreeing with upstream's own interpreter.
 #
-# - the 29 were not one defect and they were not the "vector-STORE lane".
-# measured, with the plants as the control: upstream's `exec_alu` tuple branch
-# (`ops.py:1423`) NEVER FIRES ON THIS POPULATION -- 192899 `exec_alu`
-# calls over 153 fixtures and 0 of them had a tuple operand -- so
-# four causes were: `symbolic.bend`'s `f32_where` (the arms swapped),
-# `symbolic.bend`'s `exec_alu_i32.cmp` (CMPNE WAS `==`), THIS FILE's
-# `Prog.cast.dt` (A FLOAT-TO-INT CAST KEPT THE FLOAT's BIT PATTERN), AND
-# this file's STORE (the value is converted to the BUFFER by upstream and
-# not written as its own BITS). reverting all four reproduces the 29 pre-fix
-# ROWS BYTE FOR BYTE (29 of 29).
-#
-# and a convolution now runs. measured: the port's own conv shape --
-# `x(1,3,32,32) conv2d w(8,3,3,3) padding=1` -> `(1,8,32,32)`, the shape
-# `tinybendygrad/nn/layers.bend`'s five `conv_*` rows use -- agrees with
-# CPython's PYTHON device on all 8192 values, and the SAME PACKET run through
-# upstream's own `PythonProgram.__call__` gives BYTE-IDENTICAL buffers. The
-# report is `.agents/slop/convfix/REPORT.md`.
-#
-# WHAT PASSES: every elementwise fixture, bool_copy, matmul_vec, reshape, flip,
-# shrink, copy_through, mulacc_rowsum, reduce_sum_axis, reduce_rowsum, permute,
-# the loop-carried LOCAL reduction family (argmax, cumsum, localmax, localprod,
-# localsum, localsumsq), the maxpair family, AND conv2d.
-#
-# what does not: nothing in the 153-fixture census -- it is 0 of 365 rows
-# against upstream's own interpreter. WHAT IS STILL OPEN IS NAMED IN
-# `.agents/slop/vslane/REPORT.md` (SECTION 8) AND NONE OF IT IS IN THE CENSUS.
+# - the 29 disagreements it left were not one defect and they were not the
+#   "vector-STORE lane". MEASURED, with the plants as the control: upstream's
+#   `exec_alu` tuple branch (`ops.py:1423`) NEVER FIRES ON THIS POPULATION --
+#   192899 `exec_alu` calls over 153 fixtures and 0 of them had a tuple operand --
+#   so four causes were: `symbolic.bend`'s `f32_where` (the arms swapped),
+#   `symbolic.bend`'s `exec_alu_i32.cmp` (CMPNE WAS `==`), THIS FILE's
+#   `Prog.cast.dt` (A FLOAT-TO-INT CAST KEPT THE FLOAT's BIT PATTERN), AND
+#   this file's STORE (the value is converted to the BUFFER by upstream and
+#   not written as its own BITS). Reverting all four reproduces the 29 pre-fix
+#   ROWS BYTE FOR BYTE (29 of 29).
+# - and a convolution now runs. MEASURED: the port's own conv shape --
+#   `x(1,3,32,32) conv2d w(8,3,3,3) padding=1` -> `(1,8,32,32)`, the shape
+#   `tinybendygrad/nn/layers.bend`'s five `conv_*` rows use -- agrees with
+#   CPython's PYTHON device on all 8192 values, and the SAME PACKET run through
+#   upstream's own `PythonProgram.__call__` gives BYTE-IDENTICAL buffers.
 #
 # `run` is a real interpreter: an arena threaded through a fuel recursion, with a
 # DIE on fuel exhaustion, which is also the "stay turing-incomplete" answer since
 # a RANGE-driven kernel has no static step bound.
+#
 #
 # ops_python.py's own header calls itself "the living definition of uops", and
 # this file ports the ONE function that gives those uops their meaning. The

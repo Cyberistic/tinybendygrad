@@ -217,10 +217,9 @@
 #
 
 
-# STATUS
-#   PORTED:      see WHAT IS PORTED, DEF BY DEF, below.
-#   NOT PORTED:  the seams and the three walls above, each with a Python line.
-#   PYTHON:      tinygrad/runtime/support/nv/ip.py:1-661 (the whole file)
+# STATUS: PORTED -- see WHAT IS PORTED, DEF BY DEF, below. NOT PORTED -- the
+# seams and the three walls above, each with a Python line. PYTHON --
+# tinygrad/runtime/support/nv/ip.py:1-661 (the whole file)
 #
 # WHAT IS PORTED, DEF BY DEF. Every def named here EXISTS; the first draft of this
 # table named forty-eight defs that were never written -- a device-init entry, a
