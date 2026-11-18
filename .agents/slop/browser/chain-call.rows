@@ -5,6 +5,7 @@ chain_lst_n=34
 chain_linear_n=34
 chain_ku_n=34
 chain_lin_ops=9,0,3,9,0,0,9,0,0,0,9,1,6,9,0,0,5,2,9,0,3,0,9,0,3,0,0,0,6,5,2,6,5,7
+chain_ku_sig=9: 0:0 3:1 9: 0:3 3:4 9: 0:6 3:7 9: 1:9 9: 0:11 6:10,10 0:12 5:13,14 2:10,15,14 0:5 0:8 0:17,18 0:16,19 6:16,20 5:21,14 9: 0:23 9: 0:25 0:24 0:26 0:2,27,28 2:10,22 6:29,30 5:31,27,28 7:32
 chain_c_nbytes=351
 chain_c=
 void test(float* restrict data0_20, float* restrict data1_12, float* restrict data2_15) {

@@ -99,6 +99,21 @@ def chain_codes.go(+ar: O.Arena, +xs: List<&2, U32>, acc: List<&2, String>) -> L
 
 def chain_codes(+ar: O.Arena, +xs: List<&2, U32>) -> String: String.join(chain_codes.go(ar, xs, Nil{}), ",")
 
+def chain_u32s.go(+xs: List<&2, U32>, acc: List<&2, String>) -> List<&2, String>:
+  match xs:
+    case Nil{}: acc
+    case x <> t: chain_u32s.go(t, List.append(&2, String, acc, [U32.show(x)]))
+
+def chain_ksig.go(+ks: List<&2, C.KU>, acc: List<&2, String>) -> List<&2, String>:
+  match ks:
+    case Nil{}: acc
+    case k <> t:
+      +opc = U32.show(SCH.gate.code(C.KU.op(k)))
+      chain_ksig.go(t, List.append(&2, String, acc,
+        [String.concat([opc, ":", String.join(chain_u32s.go(C.KU.srcs(k), Nil{}), ",")])]))
+
+def chain_ksig(+ks: List<&2, C.KU>) -> String: String.join(chain_ksig.go(ks, Nil{}), " ")
+
 def chain_rows(+cc: Chain) -> List<&2, String>:
   +ar = chain_ar(cc)
   +k = chain_k(cc)
@@ -125,6 +140,7 @@ def chain_rows(+cc: Chain) -> List<&2, String>:
    String.concat(["chain_linear_n=", U32.show(U32.from_nat(List.length(&2, U32, lin)))]),
    String.concat(["chain_ku_n=", U32.show(U32.from_nat(List.length(&2, C.KU, kus)))]),
    String.concat(["chain_lin_ops=", chain_codes(lar, lst)]),
+   String.concat(["chain_ku_sig=", chain_ksig(kus)]),
    String.concat(["chain_c_nbytes=", U32.show(U32.from_nat(String.length(src)))]),
    String.concat(["chain_c=", src])]
 
