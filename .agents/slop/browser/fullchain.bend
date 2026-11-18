@@ -32,6 +32,7 @@ import ./../../../tinybendygrad/renderer/cstyle.bend as C
 import ./../../../tinybendygrad/uop/ops.bend as O
 import ./../../../tinybendygrad/uop/fold.bend as F
 import ./../../../tinybendygrad/uop/weak.bend as WK
+import ./../../../tinybendygrad/codegen/kernel.bend as KR
 
 # THE SCHEDULED KERNEL, in the port's own two names: the arena and the kernel.
 type Chain is Data:
@@ -91,6 +92,13 @@ def chain_nums.go(+ks: List<&2, C.KU>, +acc: List<&2, String>) -> List<&2, Strin
 
 def chain_kudump(+ks: List<&2, C.KU>) -> String: String.join(chain_nums.go(ks, Nil{}), " ")
 
+def chain_codes.go(+ar: O.Arena, +xs: List<&2, U32>, acc: List<&2, String>) -> List<&2, String>:
+  match xs:
+    case Nil{}: acc
+    case x <> t: chain_codes.go(ar, t, List.append(&2, String, acc, [U32.show(SCH.gate.code(O.Arena.op(ar, x)))]))
+
+def chain_codes(+ar: O.Arena, +xs: List<&2, U32>) -> String: String.join(chain_codes.go(ar, xs, Nil{}), ",")
+
 def chain_rows(+cc: Chain) -> List<&2, String>:
   +ar = chain_ar(cc)
   +k = chain_k(cc)
@@ -100,16 +108,23 @@ def chain_rows(+cc: Chain) -> List<&2, String>:
   +wc = WK.wk_commit(ar, chain_body(ar, k))
   +war = O.Found.ar(wc)
   +wb = O.Found.i(wc)
-  +lst = O.UOp.toposort(O.Arena.budget(war), war, wb)
-  +lin = LIN.linearize(war, lst, Nil{}, wb)
-  +kus = KC.kuconv.convert(F.folded(war), lin)
+  # `pm_reduce_local`'s `lower_reduce`: a REDUCE is not a renderer op upstream either,
+  # and it is the last node the port rendered as UNHANDLED.
+  +lr = KR.lower_reduce_all(war, wb)
+  +ab = KR.alloc_to_buf_all(O.Found.ar(lr), O.Found.i(lr))
+  +lar = O.Found.ar(ab)
+  +lb = O.Found.i(ab)
+  +lst = O.UOp.toposort(O.Arena.budget(lar), lar, lb)
+  +lin = LIN.linearize(lar, lst, Nil{}, lb)
+  +kus = KC.kuconv.convert(F.folded(lar), lin)
   +src = C.render(C.dev_clang(), True{}, kus)
   [String.concat(["chain_kernel_op=", U32.show(SCH.gate.code(SCH.sc_op(ar, k)))]),
    String.concat(["chain_kernel_nsrc=", U32.show(SCH.sc_nsrc(ar, k))]),
-   String.concat(["chain_body=", U32.show(chain_body(ar, k)), " committed=", U32.show(wb)]),
+   String.concat(["chain_body=", U32.show(chain_body(ar, k)), " committed=", U32.show(wb), " reduced=", U32.show(lb)]),
    String.concat(["chain_lst_n=", U32.show(U32.from_nat(List.length(&2, U32, lst)))]),
    String.concat(["chain_linear_n=", U32.show(U32.from_nat(List.length(&2, U32, lin)))]),
    String.concat(["chain_ku_n=", U32.show(U32.from_nat(List.length(&2, C.KU, kus)))]),
+   String.concat(["chain_lin_ops=", chain_codes(lar, lst)]),
    String.concat(["chain_c_nbytes=", U32.show(U32.from_nat(String.length(src)))]),
    String.concat(["chain_c=", src])]
 
