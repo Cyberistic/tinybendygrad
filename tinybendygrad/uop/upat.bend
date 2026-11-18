@@ -1,26 +1,4 @@
 # upat.bend -- tinygrad/uop/upat.py.
-# WHAT THIS FILE IS. ops.bend builds the arena; this file is the COMPILER that
-#     UPat --_get_clause--> a predicate tree --do_process_and--> normalised
-# #  UPat compiled 
-# the predicate tree is a tree, not an arena. Python builds the ir out of
-# `UOp(...)`, so it lands in the same `ucache` as the graph and two equal
-# subtrees are ONE object -- which is what `dedup` and the duplicate-store test
-# in `do_process_and` rely on, and what makes `wrap` spend one `a{n}` per
-# DISTINCT PYLITERAL instead of one per occurrence. Here the node is
-# `C{op, lit, ss}` and equality is `eq_c`, structural. Same answers, but the
-# ucache has to be SPELLED where the sharing was load-bearing, and there were
-# three such places and all three were wrong at first: `wrap` numbered a shared
-# literal twice, `dup` emitted `k` where Python emits `dict_stores[k]`, and
-# `do_process_and` never read `Ds.out` at all. A permutation `src`
-# (`itertools.permutations`, ops.py:1461) visits the same sub-pattern once per
-# THE `(bool, dict)` BECOMES A `String`. `upat_compile` returns a Python closure
-#   * `ctx` (the `dyn_lookup` dict) is a `List<&2, Bind>` THREADED through the
-# `# exec` IS THE ONE OMISSION and it is the LAST step, so everything this file
-# A PYTHON `raise` BECOMES A NODE, uniformly, and it is one node: `marker()`.
-# THE FUEL is one unit per step and it is a BOUND, not an exact count: every
-# `pm_proc` IS A FIXPOINT AND THAT IS LOAD-BEARING. `do_process_and` splices ONE
-# THREE BEND RULES SHAPED THE SHAPE. (1) No mutual recursion: `A` may not call
-# WHERE THE ORDER MOVED. Bend has no forward references, so the field readers
 
 import Base
 import ./../helpers.bend as H

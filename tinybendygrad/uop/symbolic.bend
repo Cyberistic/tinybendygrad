@@ -1947,10 +1947,6 @@ def sym_464(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   sym_464.hit(p_recip2(x, u, p), p, x, u)
 
 # ---- the rules that were missing, in upstream's order ----
-# Every rule below is upstream's, at the pin `5c2bf39d6c4b`, and every one of them was
-# THE ORDER IS UPSTREAM'S, because the table is FIRST-WINS: two rules that both match a
-# A RULE IS TWO DEFS -- `sym_NNN.pat`, the PATTERN's own tests, and `sym_NNN`, the BODY.
-# and the thing that is easy to get wrong: a rule that fires WHERE upstream's does not is a
 
 # `GroupOp.Binary - GroupOp.Comparison` -- SIXTEEN ops, and it is a `pdict` KEY, so
 # a dropped op makes the rule unfireable and a spurious one makes it fire where
