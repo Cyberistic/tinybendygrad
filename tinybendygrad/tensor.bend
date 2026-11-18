@@ -47,15 +47,6 @@ import ./mixin/dtype.bend as D
 # BUFFER, and the multi-dimensional `_rop` cases are on the wall list. `tn_rop_gap`
 # is the row that REPORTS this and it prints False.
 #
-# what i need from the schedule cluster (`tinybendygrad/schedule/`, read-only to
-# me, five files in flight), named so the hand-off is unambiguous:
-#   * `create_linear_with_vars(sink) -> (UOp, var_vals)` -- tensor.py:26. The
-#     return is a pair, so it is a two-field `Data`, and `var_vals` is read by
-#     `realize`.
-#   * `contiguous_mops_to_view(uop, src) -> Maybe<UOp>` -- tensor.py:391.
-#   * `is_store_after(uop) -> Bool` -- tensor.py:392.
-#   * `run_linear(linear, var_vals)` -- tensor.py:223, an effect.
-#   * from `tinybendygrad/engine/`, `capturing` -- tensor.py:277.
 # My gate is built so it needs NONE of them: every row is a graph SHAPE, which is
 # what tensor.py decides, not what the schedule does with it.
 #

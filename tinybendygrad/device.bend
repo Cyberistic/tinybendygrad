@@ -1,36 +1,25 @@
 # device.bend -- tinygrad/device.py. THE DEVICE LAYER: the registry that turns
 # a device STRING into a device, the Buffer that is the data handle, and
 # `Compiled`, the composition of an allocator, a renderer, a compiler and a
-# program. tinygrad's final output depends on which of these is underneath, so
-# this is the file the WebGPU phase hangs off.
-#
-
-# what is ported, and why it is the same amount of code.
+# program.
 #
 # The pure half of this file is DECISION code, and decision code ports: which
 # device string resolves to which class, which of two available devices is the
 # default, how many bytes a buffer is, where a view's offset lands, whether a
 # freed storage is recycled or dropped, what a renderer's environment variable
-# is called. All of that is arithmetic on strings, integers and small records,
-# and all of it is here.
-#
-# The impure half is the SEAM, and the seam is one line long: a Buffer's bytes
-# live in device memory and every way of reaching them is a C call --
-# `mmap`, `cudaMalloc`, `MTLDevice.newBuffer`, `navigator.gpu`, `pickle`.
+# is called. The impure half is the SEAM, and the seam is one line long: a
+# Buffer's bytes live in device memory and every way of reaching them is a C
+# call -- `mmap`, `cudaMalloc`, `MTLDevice.newBuffer`, `navigator.gpu`, `pickle`.
 # tinygrad reaches them with ctypes and `subprocess`; this port reaches them
 # with `import "./<x>.c"`. So `allocate` / `_copyin` / `_copyout` /
-# `as_memoryview` / `numpy` are WALLS, marked `# TODO(p3) device.py:<line>`,
-# and everything around them -- the asserts, the offsets, the counters, the
-# cache keys -- is here so the logic is already right when the C lands.
+# `as_memoryview` / `numpy` are WALLS, marked `# TODO(p3) device.py:<line>`.
 #
-# buffers are (nbytes, content-address) parameters. Python's `Buffer` is an
-# object whose IDENTITY `_base_storage is base._storage` depends on
-# (device.py:111), so a Bend `Buffer` is a slot in a `Bar` arena rather than a
-# value: `Bn` carries the dtype, the size, the byte offset, the base slot and a
-# content address standing in for `_storage`. That is everything the class's
-# decisions read, and it is why `view` can be checked at all.
+# BUFFERS ARE (nbytes, content-address) PARAMETERS. Python's `Buffer` is an object
+# whose IDENTITY `_base_storage is base._storage` depends on (device.py:111), so a
+# Bend `Buffer` is a slot in a `Bar` arena rather than a value: `Bn` carries the
+# dtype, the size, the byte offset, the base slot and a content address standing
+# in for `_storage`.
 #
-
 # ONE FIRST-WINS CLAIM, and it is an ORDER.
 #
 # 1. `_canonicalize` (device.py:28 symbol=_canonicalize) collapses `cpu:0` and `CPU` onto ONE
@@ -46,10 +35,9 @@
 #    is seventh, so with both openable the default is AMD. `first_amd` is that row
 #    and a last-wins fold prints CPU.
 #
-# THE LINK, and it is what REPLACED the rule table at the pin. That table is
-# GONE, from upstream and from this port.
-#
-# Upstream's `tinygrad/device.py` carries TWO members this file did not have:
+# THE LINK REPLACED THE RULE TABLE AT THE PIN, and that table is GONE from
+# upstream and from this port. Upstream's `tinygrad/device.py` carries TWO
+# members this file did not have:
 #
 #   device.py:377   link_bufs:dict[str, Any] = {}
 #   device.py:411   def link_buffer(self, b:UOp) -> Buffer|None: return None
@@ -65,15 +53,12 @@
 # answers one line -- `tinygrad/uop/ops.py:269: def tagstr(self)` -- and
 # `tag` is a FIELD of `UOp.arg` that the MATCHER patterns read
 # (`UPat(Ops.PARAM, tag="timeline")`). It is not a method and it is not on
-# `Compiled`.
-#
-# and neither `link_buffer` nor `link_bufs` mutates a kernel's BUFFER list.
-# `link_buffer` is a PURE QUERY -- a UOp in, a Buffer or None out -- and
-# `link_bufs` is a dict that `|=` mutates. What CHANGES is the ALLOC's
+# `Compiled`. And neither `link_buffer` nor `link_bufs` mutates a kernel's
+# BUFFER list: `link_buffer` is a PURE QUERY -- a UOp in, a Buffer or None out
+# -- and `link_bufs` is a dict that `|=` mutates. What CHANGES is the ALLOC's
 # BINDING, and `bufferize_buf` builds a NEW UOp (`UOp.from_buffer(...)`).
 #
-# the `pm_bufferize` rule table is gone from this port, and upstream is why.
-#
+# THE `pm_bufferize` RULE TABLE IS GONE FROM THIS PORT, AND UPSTREAM IS WHY.
 # At the PREVIOUS vendoring `tinygrad/device.py:375` read
 #   `pm_bufferize:Any = None # one for all devices: each adds the rules of the
 #    placeholders it owns, its tags start with its name`
@@ -113,7 +98,7 @@
 #                   guard -- `bufferize_buf` is called on a PARAM by
 #                   construction and asks about a NAME.
 #
-# two measured facts that survived the table, because they are why the port was
+# TWO MEASURED FACTS THAT SURVIVED THE TABLE, because they are why the port was
 # ALREADY drifting before this removal:
 #   1. Upstream `bdddaad21` ("ccall by symbol", #18521) DELETED the table's
 #      THIRD rule -- the `cfunc_buf` one -- because `ccall` stopped needing a
@@ -122,10 +107,8 @@
 #   2. The port's own `pmb_cfunc` row printed 2, not 3: rule 2 claims the
 #      node first and the scan is first-wins, so the third rule's answer never
 #      reached a printed row even BEFORE upstream deleted it.
-# So the table was a corpse that was already a corpse upstream, and this removal
-# deletes it on both sides at once.
 #
-# two measured BEND constraints this file is built around. Both cost a compile
+# TWO MEASURED BEND CONSTRAINTS THIS FILE IS BUILT AROUND. Both cost a compile
 # cycle each and neither is in bend2-constraints.md yet.
 #
 # A. A LIST OF `Bool` IS AWKWARD TO READ, NOT UNUSABLE. `List<&2, Bool>` is

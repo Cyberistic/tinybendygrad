@@ -2,31 +2,25 @@
 #
 # ONE DATATYPE. `Dt` and its `Cls` tag live in ./LAWS/spec.bend, which is where
 # the spec IR needs them, and this file imports them. dtype.py does not get a
-# second, competing dtype; if the shape of `Dt` is wrong it is fixed there, in
-# one place, and both readers see the fix.
+# second, competing dtype.
 #
-# the lattice is a bitmask, not a match ladder. dtype.py spells least_upper_dtype
-# as `min(set.intersection(*recursive_parents(d) for d in ds))`, with the parent
-# relation as a table of tuples and the closure over it. Bend has no sets and no
-# sets-of-sets, and a 19-way ladder of pairs is 361 cases that would need a
-# checked-in proof that they agree with Python. The twenty dtypes are totally
-# ordered by dtype.py's own `__lt__` (priority, bitsize, name, fmt), so bit i of
-# a mask stands for "rank i is a recursive parent". Then
+# THE LATTICE IS A BITMASK, NOT A MATCH LADDER. dtype.py spells least_upper_dtype
+# as `min(set.intersection(*recursive_parents(d) for d in ds))`; Bend has no sets,
+# and a 19-way ladder of pairs is 361 cases needing a checked-in proof against
+# Python. The twenty dtypes are totally ordered by dtype.py's own `__lt__`
+# (priority, bitsize, name, fmt), so bit i of a mask stands for "rank i is a
+# recursive parent" and
 #
 #     least_upper(a, b) = the lowest set bit of mask(a) & mask(b)
 #
-# which is dtype.py's `min` over the intersection, because the rank order IS
-# `__lt__`. The masks in `promo_mask` are `DType._get_recursive_parents` written
-# down: rank i's bit is set iff rank i is in that set. `void` is rank 19 with an
-# empty mask, so any pair naming it answers `void`, which is the one totalization
-# this file makes -- dtype.py raises KeyError there, because `void` is not in its
-# lattice at all. See NOT PORTED.
+# is dtype.py's `min` over the intersection, because the rank order IS `__lt__`.
+# `void` is rank 19 with an empty mask, so any pair naming it answers `void` --
+# the one totalization this file makes; dtype.py raises KeyError there.
 #
 # VARIADIC. dtype.py's least_upper_dtype takes *ds. Bend has no variadics, so
-# there are two defs: `least_upper` is the binary one and `least_upper_dtypes`
-# folds a list left to right. Python's `min` over an intersection is associative,
-# so the fold and the n-ary call agree exactly -- checked over all 361 pairs and
-# 5000 random 4-ary cases.
+# `least_upper` is binary and `least_upper_dtypes` folds a list left to right.
+# Python's `min` over an intersection is associative, so the fold and the n-ary
+# call agree exactly -- checked over all 361 pairs and 5000 random 4-ary cases.
 #
 # NOT PORTED, one line each. The bottom of this file says why.
 
@@ -37,35 +31,18 @@ import ./base.bend as F
 
 # The twenty dtypes, under tinygrad's ATTRIBUTE names.
 #
-# spec.bend already holds all twenty; these are the names dtype.py code writes
-# (`dtypes.f32`, `dtypes.f16`, ...), which are not always the names the spec IR
-# uses (`single`, `half`). One value, twenty names, no second value.
+# The attribute names are the rust names (tinygrad 793abbb renamed them, keeping
+# the old ones only in a block it labels `# legacy dtype aliases`), so this list
+# spells `i8`..`u64`, `f16`, `bf16`, `f32`, `f64` and carries NO legacy accessor:
+# a def nothing calls is invisible to every check. `spec.bend`'s own heads are
+# tinyspec's IR words and stay -- `index`, `boolean`, `int8`..`uint64`, `half`,
+# `bfloat16`, `single`, `double`. `index` is `S.index()` in spec.bend and NOT a
+# `dtypes.*` accessor here: upstream's `dtypes` has no such name to spell.
+# The groupings below answer a LIST of dtypes; upstream spells them as tuples.
 #
-# the attribute names are the rust names. tinygrad 793abbb renamed them, keeping
-# the old ones only in a block it labels `# legacy dtype aliases` -- so this list
-# spells `i8`..`u64`, `f16`, `bf16`, `f32`, `f64` and carries NO legacy accessor.
-# `dtypes.f16()`, `dtypes.f32()` and their kin were removed from the port on
-# the same day for the same reason; a def nothing calls is invisible to every
-# check, so keeping them would be a name the port can still spell but nothing
-# gates.
-#
-# `spec.bend`'s own heads are tinyspec's IR words and stay: they are not dtype.py
-# attribute names and never were -- `index`, `boolean`, `int8`..`uint64`, `half`,
-# `bfloat16`, `single`, `double`. `index` is the dtype an INDEX is carried in,
-# and it is `S.index()` in spec.bend and NOT a `dtypes.*` accessor here: upstream's
-# `dtypes` has no such name to spell, so a `dtypes.index()` would be a name the
-# port could write and upstream could not, and nothing called it.
-#
-# the groupings follow this block -- `dtypes.fp8s()` and its kin answer a list of
-# dtypes, and upstream spells them as tuples. They are counted apart from the
-# twenty because a grouping is a LIST and not a dtype.
-#
-# THE OMISSION DECLARATION. The port does not spell every name upstream's
-# `dtypes` spells, and the names it leaves out are a CLAIM, so they are declared
-# here -- next to the reason -- and read BY PATH by `gates/dtypeeven-gate.py`.
-# Each class is a RULE over a block of upstream's own `tinygrad/dtype.py` and not
-# a list of names, so the declaration cannot rot the way a hand list rots, and
-# the gate can say whether the rule still describes upstream.
+# THE OMISSION DECLARATION, read BY PATH by `gates/dtypeeven-gate.py`. Each class
+# is a RULE over a block of upstream's own `tinygrad/dtype.py` and not a list of
+# names, so the declaration cannot rot the way a hand list rots.
 #
 #   DTYPES-POLICY: canonical=ALL
 #   DTYPES-POLICY: grouping=PARTIAL
@@ -76,18 +53,14 @@ import ./base.bend as F
 #                 because a canonical name the port cannot spell is a dtype the
 #                 port cannot name.
 #   legacy-alias  upstream's `# legacy dtype aliases` block; the port spells
-#                 NONE, for the reason above -- a def nothing calls is invisible
-#                 to every check. `to_dtype_of` below still ACCEPTS them, because
-#                 upstream's `to_dtype` does.
-#   helper        upstream's REMAINING attributes, whatever upstream adds to that
-#                 residue: the predicates, the properties and the helper tuples. The
-#                 port spells NONE of them, because the port's `dtypes.*` namespace
-#                 holds DTYPES and the groupings of dtypes and nothing else.
+#                 NONE -- a def nothing calls is invisible to every check.
+#                 `to_dtype_of` below still ACCEPTS them, because upstream's
+#                 `to_dtype` does.
+#   helper        upstream's REMAINING attributes: the predicates, the properties
+#                 and the helper tuples. The port spells NONE, because the port's
+#                 `dtypes.*` namespace holds DTYPES and the groupings of dtypes.
 #   grouping      upstream's tuple-valued attributes; the port spells the ones
-#                 below, which are the ones `dtypes.all` is built from, and
-#                 leaves out the ones it does not need.
-#
-# rule that stops matching upstream is a lie the gate is asked to believe.
+#                 below, which are the ones `dtypes.all` is built from.
 
 def dtypes.void() -> S.Dt: S.void()
 def dtypes.weakint() -> S.Dt: S.weakint()
@@ -131,14 +104,10 @@ def dtypes.all() -> List<&2, S.Dt>:
   List.append(&2, S.Dt, List.append(&2, S.Dt, dtypes.floats(), dtypes.ints()),
     [S.boolean()])
 
-# The promotion lattice.
-#
-# The rank order is dtype.py's own `__lt__`, which sorts on
-# (priority, bitsize, name, fmt). Both fp8 ties at priority 10 and 11 are broken
-# by name, so the order below is forced and there is no choice to make -- and
-# THE RENAME DID NOT MOVE IT: "fp8e4m3" < "fp8e4m3fnuz" and "float8_e4m3" <
-# "float8_e4m3fnuz" are the same two comparisons, because the new names are the
-# old ones with "float8_" replaced by "fp8". So every mask below is unchanged.
+# The promotion lattice: dtype.py's own `__lt__` order (priority, bitsize, name,
+# fmt). Both fp8 ties at priority 10 and 11 are broken by name, so the order is
+# forced -- and THE RENAME DID NOT MOVE IT: "fp8e4m3" < "fp8e4m3fnuz" and
+# "float8_e4m3" < "float8_e4m3fnuz" are the same two comparisons.
 #
 #   0 bool       5 uint16    10 weakfloat  15 float16
 #   1 weakint    6 int32     11 fp8e4m3    16 bfloat16
@@ -283,11 +252,10 @@ def weak_dtype(+d: S.Dt) -> S.Dt:
 
 # can_lossless_cast -- "does dt1 preserve every value of dt0".
 #
-# Its own table, NOT the lattice: a mask of the recursive parents is wrong here.
-# int32 is a parent of float32 through int64 -> weakfloat, yet int32 -> float32
-# is lossy and int32 -> float64 is not, because float32 has 24 bits of mantissa
-# and int32 needs 31. So the row is `dt0` and the mask is over the ranks that
-# accept it, taken from dtype.py's `match dt1` arms one case at a time.
+# ITS OWN TABLE, NOT THE LATTICE: int32 is a parent of float32 through
+# int64 -> weakfloat, yet int32 -> float32 is lossy and int32 -> float64 is not
+# (float32 has 24 bits of mantissa, int32 needs 31). So the row is `dt0` and the
+# mask is over the ranks that accept it, taken from dtype.py's `match dt1` arms.
 
 def can_lossless_cast.row(nm: String) -> U32:
   match nm:
@@ -345,11 +313,9 @@ def can_lossless_cast.pair(row: U32, r: Nat) -> Bool:
 def can_lossless_cast(d0: S.Dt, d1: S.Dt) -> Bool:
   can_lossless_cast.pair(can_lossless_cast.row(dt_name(d0)), rank_of(dt_name(d1)))
 
-# sum_acc_dtype -- the dtype a reduction accumulates in.
-#
-# dtype.py reads SUM_DTYPE out of the environment. Bend has no process-wide
-# store, so it is a parameter here and the caller threads it, which is what
-# helpers.bend's `Flags` record exists for.
+# sum_acc_dtype -- the dtype a reduction accumulates in. dtype.py reads
+# SUM_DTYPE out of the environment; Bend has no process-wide store, so it is a
+# parameter here and the caller threads it.
 
 def sum_acc_dtype.cls(cls: S.Cls, dt: S.Dt, sum: S.Dt) -> S.Dt:
   match cls:
@@ -364,7 +330,6 @@ def sum_acc_dtype(+dt: S.Dt, sum: S.Dt) -> S.Dt:
 
 # finfo -- (exponent, mantissa) bit widths. dtype.py's is a dict lookup that
 # raises for a non-float; None is that raise.
-# A `Maybe` holds one field, so the answer is a record rather than a pair.
 type Finfo is Data:
   Finfo{e: U32, m: U32}
 
@@ -388,13 +353,10 @@ def finfo.cls(cls: S.Cls, nm: String) -> Maybe<&1, Finfo>:
 def finfo(+d: S.Dt) -> Maybe<&1, Finfo>:
   finfo.cls(S.Dt.cls(d), dt_name(d))
 
-# The integer range, as an I64.
-#
-# spec.bend's Dt.min / Dt.max answer this for the widths a U32 holds and None
-# above that; these two finish it. dtype.py's min/max are Python ints of unbounded
-# width, which is why the pair is the honest encoding and a U32 is not. The four
-# widths are tinygrad's, and 2^64-1 is the only one of the four limits with no
-# U32 image, so it is written as the two words it is.
+# The integer range, as an I64. spec.bend's Dt.min / Dt.max answer this for the
+# widths a U32 holds and None above that; these two finish it. dtype.py's min/max
+# are Python ints of unbounded width, so the pair is the honest encoding and a U32
+# is not.
 
 def i64_max_u(bits: U32) -> H.I64:
   match bits:
@@ -402,10 +364,10 @@ def i64_max_u(bits: U32) -> H.I64:
     case 16: H.i64_of_hi_lo(0, 65535)
     case 32: H.i64_of_hi_lo(0, 4294967295)
     # uint64's max is 2^64-1 and an I64 is a SIGNED pair, so it has no image:
-    # (0xFFFFFFFF, 0xFFFFFFFF) is -1. The bound is only read as `hi <= max` and
-    # every I64 hi is <= int64's max, so int64's max answers that test correctly
-    # on the whole domain. Found by mixin/dtype.bend's gate (u64_at_* rows),
-    # fixed here 2026-10-01; the old value made the uint64 rung unhittable.
+    # (0xFFFFFFFF, 0xFFFFFFFF) is -1. The bound is only read as `hi <= max`, and
+    # every I64 hi is <= int64's max, so int64's max answers that test on the
+    # whole domain. Found by mixin/dtype.bend's gate (u64_at_* rows), fixed
+    # 2026-10-01; the old value made the uint64 rung unhittable.
     case _: H.i64_of_hi_lo(2147483647, 4294967295)
 
 def i64_min_s(bits: U32) -> H.I64:
@@ -450,12 +412,10 @@ def dt_max(d: S.Dt) -> Maybe<&1, H.I64>:
   match d:
     case S.Dt{pri, bits, cls, nm}: dt_range.cls(S.Cls.sgn(cls), False{}, bits)
 
-# The float range.
-#
-# dtype.py's DType.max for a float is +inf, except that e4m3 and the fnuz fp8s
-# have no inf and end at their largest normal. `None` is the float case of the
-# spec.bend range: Bend cannot name an infinity in a U32, and here the fp8
-# answer is an ordinary F32, so it is spelled out.
+# The float range. dtype.py's DType.max for a float is +inf, except that e4m3 and
+# the fnuz fp8s have no inf and end at their largest normal. `None` is the float
+# case of the spec.bend range: Bend cannot name an infinity in a U32, and here
+# the fp8 answer is an ordinary F32, so it is spelled out.
 
 def fmax.of(nm: String) -> Maybe<&1, F32>:
   match nm:
@@ -476,11 +436,11 @@ def fmax(+d: S.Dt) -> Maybe<&1, F32>:
 # ATTRIBUTE names, not the `name` field. `void`, `weakint` and `weakfloat` are
 # reachable here too, even though DTYPES_DICT skips them.
 #
-# EVERY SPELLING IS HERE, CANONICAL FIRST. The canonical attribute names are the
-# RUST names (i8 .. u64, f16, bf16, f32, f64); upstream keeps the old ones in a
-# block it labels `# legacy dtype aliases`, so `to_dtype("half")` still answers
-# and this table must not drop it -- but the canonical arm comes first because
-# that is the spelling everything else in the port now uses.
+# EVERY SPELLING IS HERE, CANONICAL FIRST. The canonical names are the RUST names
+# (i8 .. u64, f16, bf16, f32, f64); upstream keeps the old ones in a block it
+# labels `# legacy dtype aliases`, so `to_dtype("half")` still answers and this
+# table must not drop it -- but the canonical arm comes first, because that is
+# the spelling everything else in the port now uses.
 
 def to_dtype_of(nm: String) -> Maybe<&1, S.Dt>:
   match nm:
@@ -536,15 +496,11 @@ def to_dtype(nm: String) -> Maybe<&1, S.Dt>:
 # commit_int -- the smallest dtype on the ladder that holds [lo, hi].
 #
 # The bounds are I64 because dtype.py takes Python ints and the ladder's top rung
-# is uint64, whose max has no U32 image. Two consequences, both facts rather than
-# simplifications:
-#
-#   * every I64 is inside int64's range, so the ladder's int64 rung always fits
-#     and its uint64 rung can never be reached. dtype.py returns `long` when it
-#     runs off the end anyway, so the answer is the same either way; the uint64
-#     rung is unreachable here and the fallback IS dtype.py's fallback.
-#   * the ladder starts at default_int, which may already be int32, so the int32
-#     test runs twice in that case. That is dtype.py's behaviour, kept.
+# is uint64, whose max has no U32 image. Every I64 is inside int64's range, so
+# the int64 rung always fits and the uint64 rung can never be reached; dtype.py
+# returns `long` when it runs off the end anyway, so the answer is the same
+# either way. The ladder starts at default_int, which may already be int32, so
+# the int32 test runs twice in that case -- dtype.py's behaviour, kept.
 def i64_min_s32() -> H.I64: H.i64_of_hi_lo(4294967295, 2147483648)
 def i64_max_s31() -> H.I64: H.i64_of_hi_lo(0, 2147483647)
 
@@ -581,14 +537,10 @@ def commit_int(+lo: H.I64, +hi: H.I64, +di: S.Dt) -> Maybe<&1, S.Dt>:
 
 # The conversion seam. `runtime/dtype.c` wrote all seven of these as effects and
 # said why in its own header: "Bend's only float is F32, and it can read an F32's
-# bits (F32.bits) but cannot build an F32 from a bit pattern."
-#
-# THAT SENTENCE IS NOW FALSE, and only its second half was ever true.
-# `./base.bend` adds `F32.from_bits`, and it is not a compiler intrinsic: `U32`
-# and `F32` are both `{data: Word(32n)}`, so the constructor `F32{..}` already
-# takes the pattern. `THE PORT's `runtime/ops_python.bend` HEADER` had measured that
-# (`w32`/`f32_of`) and could not hand it to this file, because it IMPORTS this
-# file.
+# bits (F32.bits) but cannot build an F32 from a bit pattern." THAT SENTENCE IS
+# NOW FALSE, and only its second half was ever true: `./base.bend` adds
+# `F32.from_bits`, and it is not a compiler intrinsic -- `U32` and `F32` are both
+# `{data: Word(32n)}`, so the constructor `F32{..}` already takes the pattern.
 #
 # So the three laws whose arithmetic is a rewrap -- `Dt.bf16`, `Dt.fp16`,
 # `Dt.fp8_to` -- are pure defs here, and with them the three wrappers that have
@@ -598,19 +550,18 @@ def commit_int(+lo: H.I64, +hi: H.I64, +di: S.Dt) -> Maybe<&1, S.Dt>:
 #
 # The `kind` argument is the fp8 id the C and the JS share, so the two lanes
 # cannot drift on which format is which.
+#
 # dtype.py's float_to_bf16, in bits: round the f32 pattern to bf16 with
 # round-half-to-even. bf16 IS the top half of an f32 pattern, so there is no
-# rebias.
+# rebias. `math.isfinite` is "exponent is not all ones", i.e. `(bits &
+# 0x7F800000) != 0x7F800000` on the pattern.
 #
-# the `isfinite` guard is not optional, and `runtime/dtype.c:168-176` does not
+# THE `isfinite` GUARD IS NOT OPTIONAL, and `runtime/dtype.c:168-176` does NOT
 # HAVE IT -- `bf16_run` rounds every pattern, so on a non-finite input it answers
-# +infinity where dtype.py:230 answers x unchanged. `dtype.bend`'s gate against
-# CPython measured it: at 0x7F800001 the C's line gives 0x7F800000 and dtype.py
-# gives 0x7F800001. REPORTED, NOT FIXED -- dtype.c is not this file's. bf16
-# exists to keep a NaN's payload, and rounding is what destroys it.
-#
-# `math.isfinite` is "exponent is not all ones", i.e. `(bits & 0x7F800000) !=
-# 0x7F800000` on the pattern.
+# +infinity where dtype.py:230 answers x unchanged. MEASURED by this file's gate
+# against CPython: at 0x7F800001 the C's line gives 0x7F800000 and dtype.py gives
+# 0x7F800001. REPORTED, NOT FIXED -- dtype.c is not this file's. bf16 exists to
+# keep a NaN's payload, and rounding is what destroys it.
 def bf16.round(+bits: U32) -> U32:
   U32.and(U32.add(U32.add(bits, 32767), U32.and(U32.shrn(bits, 16n), 1)),
           4294901760)
@@ -625,13 +576,13 @@ def Dt.bf16(+bits: U32) -> F32:
 # `dtype.c:143` says a half subnormal is `m * 2^-24`, always an f32 NORMAL, so
 # the DECODE side needs no denormal path; the encode side does.
 #
-# THE ONE ARITHMETIC SUBSTITUTION, and it is forced by the type: the C writes
+# THE ONE ARITHMETIC SUBSTITUTION, forced by the type: the C writes
 # `int exp = (int)e - 127 + 15` and tests `exp >= 0x1f`, `exp <= 0`, `exp < -10`.
-# `U32.sub` SATURATES AT 0 (base.bend:1375 symbol=Word.sub `Word.sub`; `U32.sub`
-# itself is at base.bend:1483 symbol=U32.sub), so `exp` cannot be
-# formed as a U32 at all -- every `e` under 112 would read 0 and "too small to
-# represent" would be indistinguishable from "subnormal". Every test is
-# therefore restated against `e` itself, which is exact:
+# `U32.sub` SATURATES AT 0 (base.bend:1375 symbol=Word.sub; `U32.sub` itself is
+# at base.bend:1483 symbol=U32.sub), so `exp` cannot be formed as a U32 at all --
+# every `e` under 112 would read 0 and "too small to represent" would be
+# indistinguishable from "subnormal". Every test is therefore restated against
+# `e` itself, which is exact:
 #
 #     exp = e - 112        exp >= 31  <=>  e >= 143
 #                         exp <= 0   <=>  e <= 112
@@ -644,7 +595,7 @@ def Dt.bf16(+bits: U32) -> F32:
 # Bend will not match on a computed Bool. A def must be declared before its
 # caller, so the arms run bottom-up.
 #
-# two of the c's four tests are gone, and both are subsumed rather than
+# TWO OF THE C's FOUR TESTS ARE GONE, both subsumed rather than
 # dropped-by-accident:
 #   `if (e == 0 && m == 0) return s;` (:122) -- e is 0, which is <= 101, so the
 #     underflow arm answers `s` too. The C needs the early exit; the ladder does
@@ -653,6 +604,7 @@ def Dt.bf16(+bits: U32) -> F32:
 #     happens to agree out here (half is 0 and rem cannot reach halfway), but
 #     only because `U32.shln(1, 126)` SATURATES to 0 and the mask then saturates
 #     too. Depending on that is depending on a cliff.
+#
 # Round-half-to-even: the tie is `rem == halfway` and then the LOW bit of what
 # is being kept decides (`dtype.c:132`, `:137`). `half` may carry, so the
 # increment is added, not or-ed in -- `dtype.c:137`'s comment says so.
@@ -720,13 +672,12 @@ def fp16_encode(+s: U32, +e: U32, +m: U32) -> U32:
 #
 # `k` IS `U32.log2(m)`: bend2's `U32.log2` is `floor(log2 n)`, and the C's
 # `31u - __builtin_clz(m)` (`tinybendygrad/runtime/dtype.c:175-176` AT PIN
-# `c958d7b0b`) is that same number, because `__builtin_clz(m)` is
-# `31 - floor(log2 m)`.  The `31 -` that used to stand in front of `U32.log2(m)`
-# here made the exponent `31 - floor(log2 m) + 103`: 2**31 too large at `m = 1`,
-# where the answer is 2-24 and the rule answered 128.0.  The JS lane's `k`
-# (`tinybendygrad/runtime/dtype.js:161` AT PIN `c958d7b0b`) is
-# `31 - Math.clz32(m)`, the same number spelled the other way round, and
-# `fp8_decode.sub_pat` below already spells `k` this way.
+# `c958d7b0b`) is that same number. BUG FOUND AND FIXED: the `31 -` that used to
+# stand in front of `U32.log2(m)` here made the exponent `31 - floor(log2 m) +
+# 103` -- 2**31 too large at `m = 1`, where the answer is 2-24 and the rule
+# answered 128.0. The JS lane's `k` (`tinybendygrad/runtime/dtype.js:161` AT PIN
+# `c958d7b0b`) is `31 - Math.clz32(m)`, the same number spelled the other way
+# round, and `fp8_decode.sub_pat` below already spells `k` this way.
 def fp16_f32.norm(s: U32, +m: U32) -> U32:
   U32.or(U32.shln(s, 31n),
          U32.or(U32.shln(U32.add(U32.from_nat(U32.log2(m)), 103), 23n),
@@ -800,14 +751,13 @@ def fp8_is_fnuz(kind: U32) -> Bool:
   U32.is_ge(kind, 2)
 
 # dtype.py's fp8_to_float, as the f32 PATTERN (`dtype.c:90-111`), which is what
-# `Dt.fp8_to` is declared to answer.
-#
-# The C computes `v` in floating point and rewaps it. It CAN, because an fp8 has
-# at most four significant bits and every one of the 256 codes is exactly
-# representable in f32 -- so the value arm is arithmetic that never rounds, and
-# the honest translation is the PATTERN those bits have. The C's own comment says
-# so at :106. Writing it as a float expression would import `F32.div` and
-# `F32.pow`, which are `law`s live code cannot call (helpers.bend:2276 symbol=cdiv_i64).
+# `Dt.fp8_to` is declared to answer. The C computes `v` in floating point and
+# rewraps it. It CAN, because an fp8 has at most four significant bits and every
+# one of the 256 codes is exactly representable in f32 -- so the value arm is
+# arithmetic that never rounds, and the honest translation is the PATTERN those
+# bits have. Writing it as a float expression would import `F32.div` and
+# `F32.pow`, which are `law`s live code cannot call
+# (helpers.bend:2276 symbol=cdiv_i64).
 #
 #   normal    (dtype.c:109) (1 + mant/2^(sig-1)) * 2^(exp - bias)
 #               = 1.f * 2^(exp - bias), and `1.f`'s top bit is exactly bit
@@ -819,8 +769,6 @@ def fp8_is_fnuz(kind: U32) -> Bool:
 #                 mant=1 and mant=7 of e4m3 differ by three in the leading bit --
 #                 so this one DOES need `U32.log2`, exactly as `fp16_f32.norm`
 #                 does, and its exponent field is 129 - bias - sig + log2(mant).
-# The subnormal arm's `1.f` -> f32 pattern, shared with nothing: `bias` and
-# `sig` are read once each so the exponent reads as one expression.
 def fp8_decode.sub_pat(sgn: U32, +mant: U32, bias: U32, sig: U32) -> U32:
   +k = U32.from_nat(U32.log2(mant))
   U32.or(U32.shln(sgn, 31n),
@@ -847,9 +795,9 @@ def fp8_decode.value(sub: Bool, +sgn: U32, +exp: U32, +mant: U32, +bias: U32,
 #
 # So an e4m3 code with the top exponent and any mantissa OTHER than all-ones is
 # an ordinary finite value: e4m3 has no infinity, which is why the mantissa is
-# there at all. Two wrong readings were measured by the gate and both are fixed
-# here: putting `kind == e5m2` in the GUARD answered a finite number for 0x7F
-# and 0xFF (where dtype.py says nan), and answering nan/inf for the whole arm
+# there at all. TWO WRONG READINGS WERE MEASURED BY THE GATE AND BOTH ARE FIXED
+# HERE: putting `kind == e5m2` in the GUARD answered a finite number for 0x7F and
+# 0xFF (where dtype.py says nan), and answering nan/inf for the whole arm
 # answered infinity for 0x78..0x7E where dtype.py says 464.0, 480.0, ... -- 15
 # codes per sign per format.
 #
@@ -931,21 +879,17 @@ def fp8_decode(+x: U32, +kind: U32) -> U32:
 def Dt.fp8_to(bits: U32, +kind: U32) -> F32:
   F.F32.from_bits(fp8_decode(U32.and(bits, 255), kind))
 
-# THE FP8 ENCODER, AND WHY IT IS PURE
+# THE FP8 ENCODER, AND WHY IT IS PURE. `Dt.fp8_from` and `float_to_fp8` were the
+# last two seams in this file and they close with nothing new at all -- not
+# `F32.from_bits`, because THE ENCODER NEVER BUILDS AN F32. Every step below is
+# U32 arithmetic on a bit pattern: the f32 arrives as its pattern, the fp8 leaves
+# as a byte, and nothing in between is a float value. `F32.from_bits` is a DECODER
+# primitive -- it turns a pattern into an `F32` -- and the three laws that needed
+# it (`Dt.bf16`, `Dt.fp16`, `Dt.fp8_to`) were retired when FROMBITS landed
+# `base.bend:53-55`.
 #
-# `Dt.fp8_from` and `float_to_fp8` were the last two seams in this file and they
-# close with nothing new at all -- not `F32.from_bits`, which DTYPEB's note names as
-# the one missing primitive, because THE ENCODER NEVER BUILDS AN F32. Every step
-# below is U32 arithmetic on a bit pattern: the f32 arrives as its pattern, the fp8
-# leaves as a byte, and nothing in between is a float value. `F32.from_bits` is a
-# DECODER primitive -- it turns a pattern into an `F32` -- and the three laws that
-# needed it (`Dt.bf16`, `Dt.fp16`, `Dt.fp8_to`) were retired when FROMBITS landed
-# `base.bend:53-55`. The encoder was simply never ported: the live file grew a
-# decoder (`fp8_decode.*`) and kept an imported body for the other direction.
-#
-# This is runtime/dtype.c:44-87 `fp8_encode`, arm for arm. Ported by DTYPEB into
-# `.agents/slop/dtypeb/tail-fp8-pure.bend.txt` and gated there over 384 rows against
-# CPython; those rows are re-run here.
+# This is runtime/dtype.c:44-87 `fp8_encode`, arm for arm, gated over 384 rows
+# against CPython.
 
 type Fp8 is Data:
   Fp8{bias: U32, sig: U32, mant: U32, denorm: U32, ovf: U32, max_norm: U32, min_norm: U32}
@@ -958,7 +902,7 @@ type Fp8 is Data:
 # i.e. one f64 ULP BELOW the value, so `absx > threshold` is already true at exactly
 # that value. runtime/dtype.c:40 restates all four as the f32 pattern of the value
 # itself -- 0x47700000, 0x43780000, 0x47700000 -- and dtype.c:70 then compares with
-# `>`, which loses the `-1`. Measured: at absx == 0x47700000 dtype.py answers 123 for
+# `>`, which loses the `-1`. MEASURED: at absx == 0x47700000 dtype.py answers 123 for
 # fp8e5m2 and 127 for fp8e4m3fnuz (both `max_norm`) and the C's comparison answers
 # 124 and 128. `ovf` here is the threshold with the `-1` already applied, so the `>`
 # below is dtype.py's `>` and not a restatement of it. REPORTED, not fixed:
@@ -971,7 +915,7 @@ def fp8_cfg(kind: U32) -> Fp8:
     case _: Fp8{16, 3, 3, 914358272, 1198522367, 127, 939524096}
 
 # THE ONE READER. Bend has no `cfg.field` accessor -- `cfg.denorm` is
-# "expected : a defined name", measured -- so a record field is reachable only by
+# "expected : a defined name", MEASURED -- so a record field is reachable only by
 # destructuring. This destructures once and indexes, so seven constants cost one
 # def instead of seven, and the index is the field's position in the record.
 def Fp8.at(+cfg: Fp8, i: U32) -> U32:
@@ -1098,8 +1042,7 @@ def Dt.i64_cmod(+a: H.I64, +b: H.I64) -> H.I64:
 # and it is asked ONCE: a first version passed it to `above` as well and computed the
 # evenness test in BOTH places, so the `P1` plant -- delete one of the two -- moved 0
 # rows. That is what a disarm does, not what a plant does, and it is the reason `P1`
-# exists in the form it does. `cmod_i64` is a multiply and a subtract; asking twice
-# was a cost as well as a redundancy.
+# exists in the form it does.
 #
 # the zero divisor is guarded here and only here. helpers.py:66-69 has no guard and
 # CPython raises ZeroDivisionError; `runtime/dtype.c:262-263` and `runtime/dtype.js:171`
@@ -1155,10 +1098,8 @@ def fp8_to_float(x: U32, dtype: S.Dt) -> F32:
 # f32 IS THE IDENTITY, because Bend's F32 IS the f32: a Bend float LITERAL is already
 # the f32 rounding of the decimal (bend.ts:2204-2210 makes `Lit("F32",
 # f32_to_bits(v))`), and upstream's `truncate[float32]` is `ctypes.c_float(x).value`,
-# which is the same rounding.
-#
-# weakfloat IS THE IDENTITY TOO, and upstream AGREES: `truncate.get(self, float)` is
-# `float` for a dtype the dict does not name, and `float` is the identity.
+# which is the same rounding. weakfloat IS THE IDENTITY TOO, and upstream AGREES:
+# `truncate.get(self, float)` is `float` for a dtype the dict does not name.
 #
 # f64 IS A WALL AND NOT A NEAR MISS. Upstream's `truncate[float64]` is
 # `ctypes.c_double(x).value` -- the identity on a DOUBLE -- and the port's value is an
@@ -1166,57 +1107,44 @@ def fp8_to_float(x: U32, dtype: S.Dt) -> F32:
 # (`uop/ops.bend:803`, `CFloat{f: F32}`) is where that would have to be fixed, and
 # that file is another unit's.
 #
-# the wall is wider than the value, and the wider part is the identity.  measured, and the
-# instrument is `gates/constid-gate.py` (three lanes, and a PLANT in `gates/constid-plant.py`):
+# THE WALL IS WIDER THAN THE VALUE, and the wider part is the identity. MEASURED by
+# `gates/constid-gate.py` (three lanes, and a PLANT in `gates/constid-plant.py`):
+# UPSTREAM'S CONST IDENTITY FOR A FLOAT IS 64 BITS -- `dtype.py:8-25`'s `ConstFloat`
+# packs its value with `struct.pack('<d', v)`, a DOUBLE -- so `0.1`
+# (`0x3FB999999999999A`) and `0.10000000149011612` (`0x3FB99999A0000000`) are TWO
+# ENTRIES in ONE dict, on upstream's own `ucache` key. THE PORT'S IS 32: a Bend float
+# LITERAL is an F32 literal, so the port's `0.1` and its `0.10000000149011612` are the
+# SAME 32 bits (`0x3DCCCCCD`) and therefore ONE key in ONE arena. The gate's
+# `merge_keys` row: upstream 2, the port 1. And the constant holds a different
+# number: upstream's weakfloat const holds the DOUBLE, so `16777217.0` stays
+# `16777217.0`, and the port's holds the f32 of it, `16777216.0` -- 2**24+1 is the
+# smallest integer an f32 cannot hold, and it is the pair whose difference the port's
+# own formatter can SEE (`merge_value_text`). So this is not a near miss on the value
+# alone: it is a merge of two upstream constants into one, and a merge is a hash
+# collision in the port's constant identity.
 #
-# UPSTREAM'S CONST IDENTITY FOR A FLOAT IS 64 BITS.  `dtype.py:8-25`'s `ConstFloat` packs
-# its value with `struct.pack('<d', v)` -- a DOUBLE -- and `__hash__` is `hash(self.bits)`.
-# So two upstream constants are two keys iff their DOUBLES differ, and `0.1`
-# (`0x3FB999999999999A`) and `0.10000000149011612` (`0x3FB99999A0000000`) are two keys: TWO
-# ENTRIES IN ONE DICT, on upstream's own `ucache` key.
-#
-# THE PORT'S IS 32.  A Bend float LITERAL is an F32 literal (`bend.ts:2204-2210`), so the
-# port's `0.1` and its `0.10000000149011612` are the SAME 32 bits (`0x3DCCCCCD`) and
-# therefore ONE key in ONE arena.  `gates/constid-gate.py`'s `merge_keys` row: upstream 2,
-# the port 1.  and the constant holds a different number: upstream's weakfloat const holds
-# the DOUBLE, so `16777217.0` stays `16777217.0`, and the port's holds the f32 of it, which
-# is `16777216.0` -- 2**24+1 is the smallest integer an f32 cannot hold, and it is the
-# pair whose difference the port's own formatter can SEE (`merge_value_text`).
-#
-# so this is not a near miss on the value alone: it is a merge of two upstream constants
-# into one, and a merge is a hash collision in the port's constant identity.
-#
-# what the compiler actually offers, from its source, because "there is no F64" is a
-# claim about a file and the file is right here:
-#
-#   * NO F64.  `references/bend/bend2/base.bend:65-68` declares `U32{data: Word(32n)}` and
-#     `F32{data: Word(32n)}` and NOTHING ELSE of that shape; there is no `F64` in
-#     `references/bend/bend2/` at all, and no f64 arithmetic to call.
-#   * A float LITERAL is an F32 literal.  `bend.ts:2204-2210`: `const v = f32_round(m[0]);
-#     ... return Lit("F32", f32_to_bits(v));`.  So the port's SOURCE cannot even SPELL a
-#     double -- the narrowing happens AT THE LITERAL, before any const identity question.
-#   * 64 BITS ARE HOLDABLE.  `Word(p)` is generic over `Nat` (`base.bend:51-61` --
-#     upstream's `Word.Nil` is at :51 and `Word.Con` at :54), so
-#     `Word(64n)` is a legal type, and THE PORT ALREADY HOLDS 64 BITS: `helpers.bend:1607 symbol=I64`
-#     is `type I64 is Data: I64{hi: U32, lo: U32}`.
-#
-# so the wall is not "the BITS do not fit".  it is: the port cannot write a double and
-# CANNOT COMPUTE ONE (no f64 arithmetic), so a `CFloat` that carried the double's bits
-# would have to have its f32 carried ALONGSIDE it, computed by an f64->f32 rounding that
+# The wall is not "the BITS do not fit". `references/bend/bend2/base.bend:65-68` has
+# `U32{data: Word(32n)}` and `F32{data: Word(32n)}` and nothing else of that shape,
+# so there is no F64 and no f64 arithmetic to call; `bend.ts:2204-2210` makes every
+# float literal an F32 literal, so the port's SOURCE cannot even SPELL a double;
+# and 64 BITS ARE HOLDABLE (`Word(p)` is generic over `Nat`, `base.bend:51-61`, and
+# `helpers.bend:1607 symbol=I64` is `type I64 is Data: I64{hi: U32, lo: U32}`). The
+# wall is that the port cannot COMPUTE a double, so a `CFloat` carrying the double's
+# bits would have to carry its f32 ALONGSIDE it, computed by an f64->f32 rounding that
 # Bend cannot do -- and every `CFloat{...}` site in the tree would have to spell the
-# double's bits.  THAT IS A CHANGE TO `uop/ops.bend`'s `Const`, which is another unit's.
+# double's bits. THAT IS A CHANGE TO `uop/ops.bend`'s `Const`, which is another
+# unit's.
 #
 # WHAT IS SETTLED, and MEASURED, so the next reader does not re-open it: the port's
-# `eq_const.CFloat` COMPARES THE BITS, and that is RIGHT.  Upstream's `__eq__` says two
+# `eq_const.CFloat` COMPARES THE BITS, and that is RIGHT. Upstream's `__eq__` says two
 # nans are equal and upstream's `__hash__` says otherwise -- upstream's own two rules
-# contradict each other, and upstream's own hash table settles it in favour of `__hash__`
-# (two entries in one dict).  `gates/constid-plant.py` MEASURES BOTH ALTERNATIVES, AND
-# neither is a fix: the ieee comparator splits a constant upstream interns as one (ieee says
-# a nan is not equal to itself, so the same payload twice becomes two nodes), and upstream's
-# own `__eq__` MERGES two DIFFERENT nan payloads upstream's hash table keeps apart -- a hash
-# collision upstream does not have.  the bitwise comparator is the only one of the three
-# that matches upstream's hash table in both nan cells.  the merge is the width.  the
-# COMPARATOR IS NOT WHAT DIVERGES.
+# contradict each other, and upstream's own hash table settles it in favour of
+# `__hash__` (two entries in one dict). `gates/constid-plant.py` MEASURES BOTH
+# ALTERNATIVES, AND neither is a fix: the ieee comparator splits a constant upstream
+# interns as one, and upstream's own `__eq__` MERGES two DIFFERENT nan payloads
+# upstream's hash table keeps apart. The bitwise comparator is the only one of the
+# three that matches upstream's hash table in both nan cells. The merge is the width.
+# THE COMPARATOR IS NOT WHAT DIVERGES.
 #
 # the INT arm is dtype.py:296's other half and is not ported: it needs the value to be
 # an `H.I64` and the width to be a mask, and the port's `CInt` holds a full `H.I64`.

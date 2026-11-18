@@ -2,32 +2,7 @@
 # implicit-input capture that turns a traced graph into a CALL, and the two
 # refusals that guard it.
 #
-
-# THE BRIEF DESCRIBES A DIFFERENT FILE, and that is the first thing to say.
-#
-# The unit was specified as `tinygrad/function.py:113` -- and the file at that
-# path IS 113 lines, so the name and the line count are right -- but the
-# description given with it ("the `total_nan_replace` rewrite", "`JitMatchError`",
-# "`argx`-style input spec handling", "`TinyJit.__call__` with its `input_spec`
-# matching, `count`, `misc`, `vars`") names the OLD `engine/jit.py`. Measured:
-#     rg -n "JitMatchError|total_nan_replace|assigned_vars" tinygrad/  -> no hits
-#     rg -n "class TinyJit" tinygrad/                                 -> engine/jit.py
-# and `tinygrad/engine/jit.py` in THIS checkout has none of those names either:
-# its match is `self.captured.expected_input_info != expected_input_info`, its
-# counter is `self.cnt`, and it raises `JitError`, not `JitMatchError`.
-#
-# So this file ports what `function.py` actually contains and says so in the
-# gate, rather than inventing rows for a `TinyJit` that is not here. What
-# survives of the brief's gate plan is the METHOD, applied to the predicates this
-# file really has: `is_implicit_storage` is a pure refusal predicate over
-# (op, slot, bind_on_realize, alloc_start) and is gated cell by cell against
-# CPython; `add_to_ctx` and the `allow_implicit` message are gated beside
-# CPython's exact strings; and the node-count gate carries op AND src-op
-# SEQUENCE in one string, because a gate with a count and a root op is
-# measurably blind to swapped operands (see `pctx_swapped` and mutation M7).
-#
-
-# what is ported, and that is the whole list:
+# WHAT IS PORTED, and that is the whole list:
 #
 #   function.py:9-13    `add_to_ctx`               the capture, and its refusal
 #   function.py:15-17   `is_implicit_storage`      the predicate, in full
@@ -44,9 +19,7 @@
 #   `get_state_dict((args, kwargs))`     `Context(...)`    `time.perf_counter`
 #   `self.fxn(*args, kwargs)`          `__get__`         `functools.partial`
 #
-# THE LAZY BEHAVIOUR, STATED HONESTLY, because the brief asked for it and the
-# two answers are not the same.
-#
+# THE LAZY BEHAVIOUR, STATED HONESTLY, because the two answers are not the same.
 # `TinyJit`'s laziness lives in `engine/jit.py`, not here: `cnt` 0 is the eager
 # pass, `cnt == 1` is the capture, `cnt >= 2` replays. WHAT IS LAZY HERE IS THE
 # CAPTURE ITSELF, and it is lazy in a way that needs no counter at all -- it

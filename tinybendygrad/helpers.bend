@@ -14,9 +14,6 @@
 # by `sh .agents/slop/helpers-tc-gate.sh`, which runs CPython and both Bend lanes.
 # That gate covers `trange`, `GlobalCounters`, `Context` and the 64-bit pair block
 # (`i64_or`, `i64_and`, `i64_shl`, `i64_div`, `i64_mod`, `gcd`): 199 shared rows.
-# `sh .agents/slop/helpers-i64-mutate.sh` is the mutation table for the last six --
-# twelve mutations, two per helper, plus two commutativity controls that move nothing
-# -- and `.agents/slop/helpers-i64-mutations.txt` is its output.
 #
 # `truncate` is not one of helpers.py's: it is dtype.py:289, it needs `dtypes`,
 # and it lives in ./dtype.bend. See dtype.bend `def truncate_float` -- THE FLOAT ARM,
@@ -44,22 +41,18 @@ import Base
 # plus device.py:18, uop/ops.py:1623-1624, hcq2.py:18, ops_nv.py:27, ops_amd.py:31-34)
 # and 85 more read through a bare `getenv("KEY", ...)`, and `Flags` implements THREE
 # of the 61 ContextVars -- NO_COLOR, DEFAULT_FLOAT, DEFAULT_INT -- plus SUM_DTYPE,
-# which is a bare getenv (dtype.py:223) and not a ContextVar at all. An earlier
-# `.agents/slop/env-coercion-table.txt` PART 1, which is 56 int-default and 8
-# str-default getenv calls measured by spying on os.getenv before the import.
-# So P6 is not a garbage-collection job. Every one of the other 57 ContextVars is
-# CONSUMED: `DEBUG` has 119 reads and the lowest is `HCQ_CACHE_THRESH` with 1.
+# which is a bare getenv (dtype.py:223) and not a ContextVar at all. So P6 is not
+# a garbage-collection job: every one of the other 57 ContextVars is CONSUMED --
+# `DEBUG` has 119 reads and the lowest is `HCQ_CACHE_THRESH` with 1.
 #
 # P6 replaces this one record with the full list, and every def that takes a
 # `Flags` keeps its shape -- but the SEMANTICS have to be settled first, because
 # `getenv` is `type(default)(os.getenv(key, default))` (helpers.py:162), so the
 # coercion is `int` for 51 of the 61, `str` for the rest, and `bool` for exactly
 # three: PMA (ops_nv.py:27), SQTT and PMC (ops_amd.py:31,34), whose defaults are
-# `abs(VIZ.value) >= 2`. MEASURED: `.agents/slop/env-coercion-table.txt` PART 2 is
-# the coercion matrix and PART 7 walks NO_COLOR end to end. The `bool` case is the
-# one that reads as "any non-empty string is true"; the `int` case, which NO_COLOR
-# is, reads an int-zero string as False, and that is the bug the old comment below
-# was written on.
+# `abs(VIZ.value) >= 2`. The `bool` case is the one that reads as "any non-empty
+# string is true"; the `int` case, which NO_COLOR is, reads an int-zero string as
+# False, and that is the bug the old comment below was written on.
 
 type Flags is Data:
   Flags{no_color: Bool, default_float: String, default_int: String, sum_dtype: String}
@@ -71,17 +64,14 @@ def Flags.defaults() -> Flags:
 # is `int` and getenv coerces through `int`, NOT through `bool`. `bool(NO_COLOR)`
 # is then `bool(int(...))`. MEASURED, 31 probes, live CPython
 # (oracles/nocolor-oracle.rows vs the Bend lane):
-# RETARGETED 2026-10-16. This read `.agents/slop/nocolor-oracle.txt` AND
-# `.agents/slop/nocolor-bend.txt`. The first is `oracles/nocolor-oracle.rows` and the two are
-# BYTE-IDENTICAL -- 206 B either way, verified with `cmp` -- so the content survived the sweep
-# and only the name went stale. The second has no successor at any path on any ref: its
-# basename is absent from all 18110 paths `git rev-list --all --objects` names, so the Bend
-# side of this comparison was never preserved. Named here rather than quietly dropped.
 #   "0", "00", "-0", "+0", "0 " and " 0" all read as 0 and leave COLOUR ON, and
 #   "1", "2", "007", "+1", "-1", "1_0", " 1 ", "\t2" and "2\n" all read non-zero
 #   and switch it OFF. So the rule is not "any text is truthy": that INVERTS
 #   every one of those six zeros, and a default-environment gate cannot see an
 #   inversion because the default is the only environment it ever runs.
+# The Bend side of that comparison was never preserved: `.agents/slop/nocolor-bend.txt`
+# has no successor at any path on any ref (its basename is absent from all 18110
+# paths `git rev-list --all --objects` names). Named here rather than quietly dropped.
 # So: trim, drop one leading sign, and require what is left to be `[0-9_]` with
 # at least one character other than '0'.
 # `int()` REFUSES "", "0.0", "1e3", "false" and the rest -- tinygrad does not
