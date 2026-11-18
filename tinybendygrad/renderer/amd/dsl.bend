@@ -1,62 +1,12 @@
 # tinybendygrad/renderer/amd/dsl.bend -- port of tinygrad/renderer/amd/dsl.py
-#
-# THE EXPRESSION ALGEBRA that builds AMD instructions. `dsl.py` is 456 lines of
-# Python: a 512-entry register space, a bit-field algebra with five typed field
-# classes, a handful of `encode`/`decode`/`set`/`fmt` rules, and the `Inst`
-# assembly that walks a class's field list to build one little-endian word.
-#
-# THE SPLIT, stated once and then obeyed. A def here EITHER builds the argument
-# of ONE device call (pure; the gate checks it) OR records that call in the
-# trace (the gate checks ORDER and IDENTITY). There is no third kind. This file
-# is ENTIRELY the first kind: it has no trace, no foreign effect, and no
-# `@extern`. It produces words; `sqtt.bend` consumes them.
-#
-# THE FOUR TABLE DIRECTIONS, which is the load-bearing part. `Reg._NAMES`,
-# `Reg._PAIRS` and `SrcField._FLOAT_ENC` are ported as (offset, name) pairs and
-# as (name, offset) pairs, and the gate reads BOTH. `ops_nv`'s audit found 33 of
-# 219 constants wrong in a file already printing 590 green rows, so a one-way
-# table is not a table.
-#
 
 # the deferred boundary, measured, and it is not this file.
 #
 # dsl.py:239-242 imports three GENERATED operand tables and merges them:
-#   tinygrad/runtime/autogen/amd/rdna3/operands.py   1522 lines
-#   tinygrad/runtime/autogen/amd/rdna4/operands.py   1546 lines
-#   tinygrad/runtime/autogen/amd/cdna/operands.py    1573 lines
-#                                   total             4641 lines
-# That is 4,641 lines of autogen, NOT 1,212 lines of logic, and it is the
-# `amd`/`isa` deferred scope this port does not take. Every `Inst` subclass, the
-# opcode enums they decode, and the `_fields` list of each are also autogen.
-#
-# so the port makes the operand INFO an argument. `Inst.operands` (:345) is a
-# property that reads a module-level dict; taking it as a parameter instead is
-# the same information with the lookup made explicit, and it is what makes the
-# ADJUSTMENTS in `op_bits` (:348-377) -- which are 30 of the 456 lines and all of
-# the interesting logic -- reachable and checkable at all. `dsl.bend` therefore
-# ports dsl.py's LOGIC and names dsl.py's DATA.
-#
-# `autogen/am/*.py` (34,567 lines, read only for the constant audit) holds MM
-# register definitions, NOT the src encoding space: `grep -rl
-# 'FLAT_SCRATCH_LO' tinygrad/runtime/autogen/am/` returns nothing. So the
-# authority for the register OFFSETS is the AMD ISA, which is not in this repo
-# and is not reachable offline. See CONSTANT MAP, item (a): the authority used
-# is dsl.py's own FOUR independent spellings of each boundary, cross-checked
-# against each other in `.agents/slop/dsl_constmap.py`.
 
 import Base
 import ../../helpers.bend as H
 
-# two BEND facts, proved by probe, that shape every gate row here.
-#
-# 1. A `do` BLOCK CANNOT BIND A NON-`Unit` VALUE. `a : U32 <- q()` inside
-#    `do IO<Unit>:` is a COMPILE ERROR -- the error even reads
-#    `expected : @-R:Type -> ... -> IO.OP<R>` / `observed : U32`, which sends you
-#    looking for a missing `IO.print` that is not there. The binding form is for
-#    sequencing `IO(Unit)` effects only, so a gate row here is
-#    `# a table's LENGTH is a Nat and a table's entry is a U32; printing both through
-# one text helper means a length row and a value row cannot disagree about what
-# a number looks like.
 def u32_text(v: U32) -> String: U32.show(v)
 def row(nm: String, b: Bool) -> IO(Unit): IO.print(String.concat([nm, "=", Bool.show(b)]))
 # 2. `H.I64` EXISTS (helpers.bend:1607, `I64{hi: U32, lo: U32}`), so the
@@ -65,7 +15,6 @@ def row(nm: String, b: Bool) -> IO(Unit): IO.print(String.concat([nm, "=", Bool.
 #    field WIDER than 64 bits, of which there are none.
 # THE TYPES.
 # `dsl.py:18-20`. `Reg` is a WINDOW on the 512-entry src space: an offset, a
-# width, and three source modifiers. `ab` is Python's `abs_` (`abs` is taken).
 type Rg is Data:
   Rg{off: U32, sz: U32, neg: Bool, ab: Bool, hi: Bool}
 
@@ -87,11 +36,6 @@ type Res is Data:
 # `H.I64` IS THE WORD. `bend` has no 64-bit primitive (helpers.bend:1607) and
 # `H.I64{hi: U32, lo: U32}` is this tree's own two-limb answer, already carried
 # by `dtype.bend` and `uop/fold.bend`. MEASURED on `helpers.bend`'s own algebra
-# against CPython's, all four exact:
-#     1 << 63    ->  2147483648:0     1 << 41  ->  512:0
-#     1 << 32    ->  1:0              1 << 31  ->  0:2147483648
-# and assembling `VOP2_ALL`'s six fields answers `72:335940096`, which is
-# `0x4814060a00` -- CPython's word for the same instruction, to the bit.
 type Wrd is Data:
   Wrd{w: H.I64, s: String}
   WBad{msg: String}
@@ -105,7 +49,7 @@ type Fld is Data:
       align: U32}
 
 # the KIND tag. The numbers are this file's own, in the order the classes are
-# defined in dsl.py -- they reach no device, so a wrong one is not a wrong call.
+# defined in dsl.py -- they reach no device.
 def K_PLAIN() -> U32: 0     # BitField
 def K_FIXED() -> U32: 1     # FixedBitField
 def K_ENUM() -> U32: 2      # EnumBitField
@@ -134,11 +78,9 @@ def OV_FLOAT() -> U32: 3
 type Arg is Data:
   Arg{name: String, v: Ov, has: Bool}
 
-# the `operands` dict of :345 as data: an operand's NAME and its WIDTH IN BITS.
 type Opd is Data:
   Opd{name: String, bits: U32}
 
-# a name -> offset binding, the shape of every table in this file.
 type Nm is Data:
   Nm{name: String, off: U32}
 
@@ -198,34 +140,9 @@ def FMT_RNG_HI() -> U32: 256
 #
 # "128: 0, 129-192: integers 1-64, 193-208: integers -1 to -16 / 240-248: float
 # constants (0.5, -0.5, 1.0, -1.0, 2.0, -2.0, 4.0, -4.0, 1/(2*PI))" -- dsl.py:79-80,
-# upstream's comment ON THE SLICES.
-#
-# THE THREE FACTS IN IT, AND EACH ONE IS A GOTCHA:
-#   * 128 IS **0**, NOT 1. THE RANGE IS 128..192, WHICH IS 65 SLOTS, AND IT
-#     ENCODES 0 THROUGH 64 -- SO `FMT_INT_LO` IS 128 AND `FMT_INT_BASE` IS 128
-#     AND THE OFFSET 128 IS **NOT** SUBTRACTED TO GET THE VALUE. The
-#     subtraction happens only because 0 has no slot of its own: 129 is 1.
-#     A reader that computes `o - 128` for offset 128 gets 0, which is RIGHT,
-#     and a reader that treats 128 as "1" gets every constant wrong by one.
-#   * 193..208 IS **NEGATIVE** 1 THROUGH -16, AND THE SIGN IS IN THE RANGE
-#     ITSELF: `str(-(o - 192))` -- 193 IS -1. SO THE NEGATIVE REGION IS
-#     16 SLOTS AND IT IS SEPARATE FROM THE POSITIVE ONE, NOT A SIGN BIT ON
-#     IT. `FMT_NEG_BASE` IS 192 FOR THAT REASON.
-#   * 240..248 IS NINE **FLOAT** CONSTANTS AND 248 IS `1/(2*PI)` -- WHICH IS
-#     NOT IN `_FLOAT_ENC` AT ALL. `_FLOAT_ENC` (dsl.py:151) HAS EIGHT ENTRIES,
-#     240..247, AND 248 IS THE NINTH, `INV_2PI`, WHICH IS IN `_NAMES` BUT NOT
-#     ENCODABLE AS A FIELD VALUE. SO `FMT_RNG_LO`/`FMT_RNG_HI` SPAN NINE
-#     OFFSETS AND `float_enc` SPANS EIGHT, AND THE DIFFERENCE IS 248.
-#
-# WHICH IS WHY THE PORT CARRIES BOTH: `FMT_RNG_LO`/`FMT_RNG_HI` ARE THE
-# PRINTED REGION AND `float_enc` BELOW IS THE ENCODABLE SUBSET, AND A READER
-# THAT ASSUMED THEY WERE THE SAME RANGE WOULD ENCODE `INV_2PI` AS A FIELD
-# VALUE IT CANNOT HOLD.
 
-# THE BRACKET RULE, :46: `l, r = ("[", "]") if parens or sz > 1 else ("", "")`.
 def BRACKET_MULTI() -> U32: 1   # sz > 1
 
-# THE FIELD RANGES, :150/:188/:199/:200, enforced at __init__ (:155-159).
 def SRC_VALID_LO() -> U32: 0
 def SRC_VALID_HI() -> U32: 511
 def SRC_VALID_N() -> U32: 512   # hi - lo + 1, and 2 ** (hi - lo + 1)
@@ -243,7 +160,6 @@ def SSRC_VALID_HI() -> U32: 255
 def SSRC_VALID_N() -> U32: 256
 def SSRC_FIELD_BITS() -> U32: 8
 
-# THE INLINE-INT RANGES, :165-166 and :56-57.
 def INT_MIN() -> U32: 0
 def INT_MAX() -> U32: 64
 def NEG_MIN() -> U32: 4294967280   # -16, two's complement: no I32 in Bend
@@ -257,21 +173,9 @@ def INT_N() -> U32: 65             # 0..64 inclusive, :252
 #
 # "For 8-bit vdst fields in VOP1/VOP2 16-bit ops, bit 7 is opsel for dest
 # half" -- dsl.py:192, upstream's comment ON THE `.h` ENCODING. THE `.h`
-# SUFFIX SELECTS THE **HIGH HALF** OF A 16-BIT DESTINATION, AND IN AN
-# 8-BIT `vdst` FIELD THE INDEX AND THE HALF SELECTION SHARE THE SAME 8
-# BITS: THE INDEX IS 7 BITS (VGPR 0..127) AND BIT 7 IS THE HALF. SO THE
-# ENCODED VALUE IS `index | 0x80` AND NOT `index`.
-#
-# WHICH IS WHY `VGPR_HI_MASK` IS 128 AND WHY THE ENCODED INDEX MUST ALREADY
-# BE BELOW 128: THE TWO SHARE THE BYTE, SO AN INDEX OF 128 WOULD BE
-# INDISTINGUISHABLE FROM "VGPR 0, HIGH HALF". UPSTREAM RAISES ON THAT CASE
-# (dsl.py:196, "not encodable in 8-bit field (v[0:127] only for .h)") AND
-# THE PORT REFUSES IT THE SAME WAY -- SO THE HALF BIT IS NOT A FLAG YOU CAN
-# SET ON ANY VGPR, IT IS A BIT OF A NIBBLE-SIZED ADDRESS.
 def VGPR_HI_MASK() -> U32: 128
 def VGPR_HI_BITS() -> U32: 8
 
-# THE ALIGNMENTS, :204/:218/:219 and the two `bit_length() - 1` shifts.
 def ALIGN_DEFAULT() -> U32: 2
 def ALIGN_SBASE() -> U32: 2
 def ALIGN_SRSC() -> U32: 4
@@ -284,7 +188,6 @@ def VDSTY_SHIFT() -> Nat: 1n
 def VDSTY_XOR() -> U32: 1
 def VDSTY_LO() -> U32: 256
 
-# `_base_size = (max(f.hi) + 8) // 8` (:282), and the literal marker / mask.
 def BASE_SIZE_ROUND() -> U32: 8
 def BASE_SIZE_DIV() -> U32: 8
 def LIT_MARKER() -> U32: 255
@@ -292,12 +195,6 @@ def LIT32_MASK() -> U32: 4294967295
 
 # the WORD, and the three widths that bound it. `H.I64` is 64 bits and
 # `H.i64_shl` SATURATES PAST 63 -- MEASURED, `put 1 at 64` answers `0:0` where
-# Python answers `1:18446744073709551616` -- so `WORD_HI` is where a field stops
-# being placeable, and `bf_set` says so OUT LOUD rather than writing a zero.
-# `WORD_BYTE` is the byte index at which the word's second limb starts and
-# `WORD_BYTE_SHIFT` is that boundary in BITS, which `Nat.sub` truncates to 0 for
-# every byte below it -- the eagerly-evaluated other arm of a `Bool.pick`, and
-# harmless for exactly that reason.
 def WORD_HI() -> U32: 63
 def WORD_BITS() -> U32: 32
 def WORD_BYTE() -> U32: 4
@@ -312,11 +209,9 @@ def MOD_SRC1_BIT() -> U32: 2
 def MOD_SRC2_BIT() -> U32: 4
 def MOD_VDST_BIT() -> U32: 8
 
-# `op_regs = {k: max(1, v // 32)}` (:381/:402) and its 32-bit stride.
 def REG_STRIDE() -> U32: 32
 def REG_MIN() -> U32: 1
 
-# THE `op_bits` ADJUSTMENTS, :353-376.
 def ADJ_SRC2_BITS() -> U32: 32     # cndmask / _co_ci_ / VOP3SD / cmp
 def ADJ_VDST_BITS() -> U32: 32
 def ADJ_ADDR_BITS() -> U32: 64
@@ -327,7 +222,6 @@ def ADJ_VADDR_MULT() -> U32: 32    # max(1, offen + idxen) * 32
 def ADJ_CBSZ_SHIFT() -> U32: 8
 def ADJ_BLGP_SHIFT() -> U32: 61
 def ADJ_MFMA_SEL_MASK() -> U32: 7
-# the `vgprs` dict at :375, as (cbsz, blgp) -> BITS PER REGISTER
 def MFMA_CBSZ_LO() -> U32: 0
 def MFMA_CBSZ_HI() -> U32: 4
 def MFMA_B0() -> U32: 8
@@ -342,13 +236,11 @@ def MFMA_DEFAULT() -> U32: 8
 def CANON_SEED() -> U32: 32
 def CANON_N() -> U32: 5
 
-# `num_srcs`, :404-410.
 def NSRC_MAX() -> U32: 3
 def NSRC_TWO() -> U32: 2
 def NSRC_ONE() -> U32: 1
 def NSRC_ZERO() -> U32: 0
 
-# `_variant_suffix`, :423-437 -- three offsets, three suffixes.
 def VS_LIT_OFF() -> U32: 255
 def VS_SDWA_OFF() -> U32: 249
 def VS_DPP8_OFF() -> U32: 249
@@ -380,23 +272,6 @@ def t_stub() -> IO(Unit):
 # "Register names vary by arch: RDNA has NULL@124/M0@125, CDNA has
 # M0@124/reserved@125 / RDNA4 has DPP8@233, CDNA has SDWA@249/DPP@250/VCCZ@251/
 # EXECZ@252" -- dsl.py:9-10, upstream's comment ON THIS TABLE. THE TWO
-# REGISTERS AT 124 AND 125 ARE **SWAPPED** BETWEEN RDNA AND CDNA, AND THAT IS
-# THE WHOLE OF THE COMMENT: THE SAME OFFSET 124 IS `NULL` ON RDNA AND `M0` ON
-# CDNA, AND 125 IS `M0` ON RDNA AND A RESERVED SLOT ON CDNA.
-#
-# WHY IT MATTERS AND WHY IT IS NOT FIXABLE HERE. THE OFFSETS 233, 249, 250,
-# 251 AND 252 ARE **ARCH-DEPENDENT EXTENSIONS** -- RDNA4 HAS `DPP8` AT 233 AND
-# CDNA HAS `SDWA`/`DPP`/`VCCZ`/`EXECZ` AT 249..252 -- SO A SINGLE TABLE CANNOT
-# BE RIGHT FOR BOTH ARCHS. UPSTREAM'S TABLE IS THE **UNION**, AND A GIVEN
-# ARCH'S DSL USES ONLY ITS OWN HALF, SO A NAME AT 249 IS NEVER PRINTED ON
-# RDNA. THAT IS WHY THE TABLE BELOW IS A UNION AND NOT AN ERROR.
-#
-# AND THE 124/125 SWAP IS NOT A UNION CASE AT ALL: BOTH ARCHS USE BOTH
-# OFFSETS, AND THEY MEAN DIFFERENT THINGS. WHICH IS WHY THE PORT CANNOT
-# RESOLVE THEM BY NAME AND WHY THE TWO OFFSETS ARE NAMED CONSTANTS
-# (`ADJ_SADDR_NULL` / `ADJ_SADDR_M0`, and `NORESIZE_A` / `NORESIZE_B`) RATHER
-# THAN LOOKED UP IN A TABLE: EVERY USE OF 124 AND 125 IS AN
-# ARCH-DEPENDENT DECISION AND THE DECISION IS THE ARCH'S, NOT THE TABLE'S.
 def reg_names() -> List<&2, Nm>:
   [Nm{"FLAT_SCRATCH_LO", 102}, Nm{"FLAT_SCRATCH_HI", 103}, Nm{"XNACK_MASK_LO", 104},
    Nm{"XNACK_MASK_HI", 105}, Nm{"VCC_LO", 106}, Nm{"VCC_HI", 107}, Nm{"NULL", 124},
@@ -431,11 +306,6 @@ def canon_in() -> List<&2, Nm>:
    Nm{"data", 4}, Nm{"vdata", 4}, Nm{"data0", 4}, Nm{"vsrc", 4}]
 
 # THE LOOKUPS. A dict lookup is "walk in lockstep and keep the FIRST hit", so
-# every one of these carries `found` and `Bool.pick`s the value. `List.find`
-# would keep the LAST hit and is NOT the same function.
-# offset -> name, keeping the first hit. Absent answers "" -- `self._NAMES[o]`
-# is a KeyError, and the port turns it into the arm that follows, which is the
-# value that arm returns. "" is therefore the SENTINEL, not a name.
 def nm_name.go(n: Nat, +off: U32, xs: List<&2, Nm>, +found: Bool, got: String) -> String:
   match n:
     case 0n: got
@@ -446,7 +316,6 @@ def nm_name.go(n: Nat, +off: U32, xs: List<&2, Nm>, +found: Bool, got: String) -
           +h = U32.is_eq(off, o)
           nm_name.go(m, off, t, Bool.or(found, h), Bool.pick(String, Bool.and(Bool.not(found), h), nm, got))
 
-# name -> offset, keeping the first hit. Absent answers the caller's `dflt`.
 def nm_off.go(n: Nat, +want: String, xs: List<&2, Nm>, +found: Bool, got: U32) -> U32:
   match n:
     case 0n: got
@@ -547,17 +416,6 @@ def reg_at.go(bad: Bool, +r: Rg, +key: U32, +neg: Bool) -> Res:
     case False{}: Res{0, ""}
 
 # `src[a:b]` (:24-27). FOUR tests, in source order, and only the first two can
-# refuse: `start < 0` or `stop >= self.sz`. `start > stop` is NOT refused -- the
-# port keeps the Python and the gate records what it produces, which is
-# `Reg(offset + start, stop - start + 1)` with a NEGATIVE size.
-#
-# `key.start or 0` (:25) and `key.stop or (self.sz - 1)`: a slice with an
-# absent bound reads it as absent, which is what `has_start` / `has_stop` say.
-# `f"slice [{key.start}:{key.stop}]"` (:26) PRINTS BOTH BOUNDS SIGNED, exactly as
-# `reg_at` above prints its key signed -- and `key_text` is the def that spells a U32's
-# two's complement back. This arm read `U32.show(start)`, so `src[-1:5]` refused with
-# `slice [4294967295:5]` where CPython refuses with `slice [-1:5]`. The refusal text is
-# the thing the census compares, so this is a real mismatch and not a formatting quibble.
 def reg_slice.go(bad: Bool, start_neg: Bool, stop_neg: Bool, +start: U32, +stop: U32, +r: Rg) -> Res:
   match bad:
     case True{}:
@@ -565,30 +423,11 @@ def reg_slice.go(bad: Bool, start_neg: Bool, stop_neg: Bool, +start: U32, +stop:
     case False{}: Res{0, ""}
 
 # `Reg.fmt` -- :44-62. EIGHT arms, and a transposed pair of them is a silently
-# wrong assembly string, so the gate reads the STRING, never a branch taken.
-#
-#   256 <= o < 512   ->  v[idx]                   (:47-49)
-#   o < 106          ->  s[idx]                   (:50)
-#   sz == 2 and o in _PAIRS -> VCC | EXEC         (:51)
-#   o in _NAMES      ->  the name                 (:52)
-#   108 <= o < 124   ->  ttmp[idx]                (:53-55)
-#   128 <= o <= 192  ->  str(o - 128)             (:56)
-#   193 <= o <= 208  ->  str(-(o - 192))          (:57)
-#   else             ->  REFUSE                   (:58)
-#
-# `brk` is `parens or sz > 1` (:46), resolved by the CALLER because `fmt`
-# computes it before it branches. Only the three indexed arms read it; the name
-# and integer arms ignore it, which is why `abs(...)`/`|...|` and `-...` are the
-# only suffixes and there is no bracket suffix.
 
 def reg_at(+key: U32, +key_neg: Bool, +r: Rg) -> Res:
   reg_at.go(Bool.or(key_neg, U32.is_ge(key, Rg.sz(r))), r, key, key_neg)
 
 # `f"index {key} out of bounds"` (:28) prints the SIGNED key, and Bend has no
-# I32 -- so a negative key arrives as its two's complement and has to be spelled
-# back. The refusal text is the thing the gate compares, so a `4294967295` where
-# CPython writes `-1` is a real mismatch and not a formatting quibble. `key_text`
-# above is that spelling, and the SLICE arm below reads it too.
 def reg_slice(+start: U32, +start_neg: Bool, has_start: Bool, +stop: U32, +stop_neg: Bool,
               has_stop: Bool, +r: Rg) -> Res:
   reg_slice.go(Bool.or(Bool.or(start_neg, stop_neg), U32.is_ge(stop, Rg.sz(r))),
@@ -682,25 +521,7 @@ def reg_fmt.go(+r: Rg, +sz_ov: U32, parens: Bool, upper: Bool) -> Res:
 def reg_fmt(+r: Rg, sz_ov: U32, parens: Bool, upper: Bool) -> Res: reg_fmt.go(r, sz_ov, parens, upper)
 def reg_repr(+r: Rg) -> Res: reg_fmt(r, 0, True{}, True{})
 
-# `BitField` -- :100-123. THE FOUR NUMBERS, and only four:
-#
-#   hi, lo, default, mask = (1 << (hi - lo + 1)) - 1   (:103)
-#
-# `mask` is the load-bearing one: every read AND every write is masked by it, so
-# a wrong mask silently reads a neighbouring field. `set` is (:113-119):
-#
-#   val is None  -> default            (:114)
-#   encoded < 0  -> encoded & mask     two's complement (:117)
-#   out of range -> REFUSE             (:118)
-#   else  -> (raw & ~(mask << lo)) | (encoded << lo)          (:119)
-#
-# THE FIELD's OWN FOUR NUMBERS are U32s and always will be: `mask = (1 << (hi -
-# lo + 1)) - 1` and a field is at most 32 bits wide (`bf_width_ok`), so `enc` is
-# always below 2^32 and `U32.shln` is the right shift for the MASK. WHAT IS NOT a
-# U32 is the WORD the mask is shifted INTO -- see `wplaced`. `~` is `U32.not`
-# for a mask and `H.i64_not` for a word, and `<<` is `U32.shln` on a Nat for the
-# former (`U32.shl` is a ONE-BIT shift, so every shift AMOUNT is a Nat literal or
-# a `U32.to_nat` of a bound) and `H.i64_shl` for the latter.
+# THE TABLE IS IN `.agents/slop/tables/renderer-amd-dsl-685.md` -- `BitField` -- :100-123. THE FOUR NUMBERS, and only four:
 
 def bf_bits(+f: Fld) -> U32: U32.add(U32.sub(Fld.hi(f), Fld.lo(f)), 1)
 
@@ -724,7 +545,6 @@ def bf_in_word(+f: Fld) -> Bool: U32.is_le(Fld.hi(f), WORD_HI())
 # [63:32] of an F64 -- and a census that compares rendered BYTES could not see it
 # because `hex8` masked to 32 bits ON BOTH SIDES, so the two lanes agreed and
 # were both wrong. MEASURED, both lanes: `raw_vop2_all` read `|0x14060a00` where
-# CPython's word is `0x4814060a00`.
 def wplaced(enc: U32, lo: U32) -> H.I64: H.i64_shl(H.i64_of_i32(enc), U32.to_nat(lo))
 
 def bf_raw_get(+raw: H.I64, +lo: U32, mask: U32) -> U32:
@@ -763,17 +583,6 @@ def bf_set.go(fits: Bool, over: Bool, +f: Fld, raw: H.I64, enc: U32) -> Wrd:
     case False{}: WBad{bf_word_msg(f)}
 
 # `encoded < 0 or encoded > self.mask` (:118), held as U32. `enc_neg` IS the
-# first arm and is always False here because :117 `& mask`es a negative before
-# it gets here -- so the live half is `enc > mask`, and it is written that way.
-#
-# it was `(enc & mask) > mask`, which is not TRUE and not measurable as a
-# PREDICATE: `enc & mask` IS AT MOST `mask`, so the arm could never fire and the
-# width refusal was being produced by `bfs`, which re-derived the test
-# correctly and printed `bf_set_msg` itself. Routing `bfs` through `bf_set` --
-# which is what let it see the WORD refusal at all -- exposed the dead half, and
-# the fix is CPython's own test rather than a second copy of it. `bfset_*` over
-# `(3,0)`, `(7,4)`, `(23,8)` x `[0, 0xDEADBEEF]` x `[0, 1, 7, 8, 255, 2^32-1]`
-# is what pins it: twelve rows refused before this and refuse again.
 def bf_set(+f: Fld, raw: H.I64, +enc: U32, enc_neg: Bool) -> Wrd:
   bf_set.go(bf_in_word(f), Bool.or(enc_neg, U32.is_gt(enc, bf_mask(f))), f, raw, enc)
 
@@ -784,7 +593,6 @@ def bf_set(+f: Fld, raw: H.I64, +enc: U32, enc_neg: Bool) -> Wrd:
 
 def src_ov_float(off: U32, known: Bool) -> Ov: Ov{OV_FLOAT(), Bool.pick(U32, known, off, FLOAT_ENC_DEFAULT()), 1, False{}, False{}, False{}}
 
-# the offset an operand encodes to, BEFORE the `_valid_range` subtraction
 def enc_off.int.neg(neg: Bool, +n: U32) -> Res:
   match neg:
     case True{}: Res{U32.sub(NEG_OFF_BASE(), n), ""}
@@ -851,10 +659,6 @@ def vgpr_encode.big.go(big: Bool, enc: U32, e: U32, s: String) -> Res:
     case False{}: Res{enc, s}
 
 # `AlignedSGPRField.encode` (:205-210). FOUR cases, and the FIRST is the one a
-# plain reading misses: `if isinstance(val, int) and val == 0: return 0` --
-# the bare int ZERO is accepted and encodes as s0, before the Reg test ever
-# runs. Then the alignment check, whose shift is `_align.bit_length() - 1`, i.e.
-# 1 for align 2 and 2 for align 4 -- NOT the alignment itself.
 
 def vgpr_encode.big(enc: U32, +f: Fld, +e: U32, s: String) -> Res:
   vgpr_encode.big.go(U32.is_ge(e, VGPR_HI_MASK()), enc, e, s)
@@ -864,7 +668,6 @@ def vgpr_encode.range(res: Res, +v: Ov, +f: Fld) -> Res:
     case Bad{msg}: Bad{msg}
     case Res{+enc, s}: vgpr_encode.big(enc, f, enc, s)
 
-# `v[{encoded}].h not encodable in 8-bit field (v[0:127] only for .h)` (:196)
 
 def vgpr_encode.fit(set: Bool, res: Res, +v: Ov, +f: Fld) -> Res:
   match set:
@@ -885,8 +688,6 @@ def vgpr_or(set: Bool, res: Res, f: Fld) -> Res:
 # `vgpr_encode.fit(set, vgpr_or(set, X, f), v, f)` -- the OR FIRST, then the test -- and
 # since ORing 0x80 into an eight-bit value ALWAYS leaves it >= 128, EVERY `.h` in an
 # eight-bit field took the refusal arm. MEASURED on the census: `vgenchi_7_0_256` CPython
-# `128`, port `0`; and the `_384`/`_511` rows CPython REFUSES agreed with the port only
-# because `Res.v(Bad{..})` IS `0`, so a right answer for a wrong reason read as agreement.
 def vgpr_encode.hi(+set: Bool, +v: Ov, +f: Fld) -> Res: vgpr_or(set, vgpr_encode.fit(set, src_encode(v, f), v, f), f)
 
 def vgpr_hbit(v: Ov, f: Fld) -> Bool: Bool.and(Ov.hi(v), U32.is_eq(bf_bits(f), VGPR_HI_BITS()))
@@ -895,18 +696,6 @@ def vgpr_encode(+v: Ov, +f: Fld) -> Res: vgpr_encode.hi(vgpr_hbit(v, f), v, f)
 
 # the shift is `_align.bit_length() - 1`, which is not the alignment and not `align - 1`.
 # This def read `U32.sub(Fld.align(f), 1)`, so for `_align = 4` (`dsl.py:219 SRsrcField`) it
-# answered 3 where CPython answers `4.bit_length() - 1 = 2`. THE FILE ALREADY SAID SO:
-# the note at `:870` reads "whose shift is `_align.bit_length() - 1`, i.e. 1 for align 2 and
-# 2 for align 4 -- NOT the alignment itself", and `ALIGN_SHIFT_2`/`ALIGN_SHIFT_4` at `:252-253`
-# are the two correct constants. they were dead: `grep -c` answered 2, which is their own two
-# definitions and no call site. So the third instance of this file's own recorded class -- "a
-# def nothing calls is invisible to every other check", the same fault its mask defs had.
-#
-# IT IS A MASK-VERSUS-SHIFT CONFLATION, and `al_aligned` below shows why the two look alike:
-# `U32.and(off, align - 1)` IS a mask and IS correct. The same expression read as a SHIFT is
-# wrong, and one def used it for both. THE CONSTANTS ARE NOW CALLED.
-# `Bool.pick` is this file's own idiom for a computed condition (`src_bit`, `mod_mask`), and
-# `match` refuses a call as well as an arithmetic result -- so the arm is a `pick`, not a match.
 def al_shift_of.two() -> U32: ALIGN_SHIFT_2()
 def al_shift_of.four() -> U32: ALIGN_SHIFT_4()
 def al_shift_of.is2(a: U32) -> Bool: U32.is_eq(a, 2)
@@ -922,7 +711,6 @@ def al_encode.why(notsgpr: Bool, +v: Ov, +f: Fld) -> Res:
     case False{}:
       Bad{String.concat([Fld.name(f), " requires ", U32.show(Fld.align(f)), "-aligned SGPR, got s[", U32.show(Ov.off(v)), "]"])}
 
-# `AlignedSGPRField.decode(raw)` (:211) -- `src[raw << shift]`, a ONE-wide Reg.
 
 def al_sgpr_hi() -> U32: 128
 
@@ -957,15 +745,6 @@ def vdsty_hi() -> U32: 512
 def al_decode(raw: U32, f: Fld) -> Rg: Rg{U32.shln(raw, U32.to_nat(al_shift_of(f))), 1, False{}, False{}, False{}}
 
 # `VDSTYField.encode` (:223-226) -- `(val.offset - 256) >> 1`, and the offset
-# must be a VGPR. `decode` does not exist as a method; `__get__` (:227-232)
-# rebuilds `256 + ((raw << 1) | ((vdstx.offset - 256 & 1) ^ 1))`, so the LOW BIT
-# comes from `vdstx`, not from `vdsty`. Both halves are gated.
-# `VDSTYField` is the one field class whose default does not encode. Every other
-# class's default round-trips to the field's own `dflt` (`s[0]`/`v[0]` sit at their
-# range's low end, so the `- _valid_range[0]` at :171 is 0; the aligned classes'
-# default is the bare int 0, which :207 accepts), but :224 wants a `Reg` and the
-# default is an int -- so an ABSENT vd sty operand is a REFUSAL, spelled once here
-# and read from two places (`vdsty_encode.why` and `fld_encode.dflt`).
 def vdsty_not_reg() -> String: "VDSTYField requires Reg, got int"
 
 def vdsty_encode.why(isreg: Bool, +v: Ov) -> Res:
@@ -994,16 +773,6 @@ def vdsty_low(vdstx_off: U32) -> U32: U32.xor(U32.and(U32.sub(vdstx_off, VDSTY_L
 def enum_encode(enc: U32, is_member: Bool) -> Bool: Bool.not(is_member)
 
 # `Inst` -- :270-456. The LOGIC, with the autogen DATA as arguments.
-#
-# `_fields` is the field list in DECLARATION order (:274-282), and it is
-# load-bearing four times over: `__init__` walks it to place positional args
-# (:304-307), walks it again to write every field (:334-335), `__repr__` walks
-# it to print in order and strip trailing defaults (:454-455), and
-# `_variant_suffix` walks it to find the first 249/250/255 (:431-436). A
-# transposed pair is a silently wrong encoding, so `inst_fields` is gated BY
-# NAME, in order, as a String.
-# ONE field, as the walk needs it: the name, the field, and the value the
-# caller supplied. `has` is Python's `vals[name] is None` test.
 type Vf is Data:
   Vf{f: Fld, v: Ov, has: Bool}
 
@@ -1021,39 +790,11 @@ type Vf is Data:
 # `for name, bit in [('src0', 0), ('src1', 1), ('src2', 2)]` (:314) -- the
 # REGISTER decides which bit, and `.hi` on `vdst` takes bit 3 (:320-321). Four
 # registers, four DIFFERENT bits, and reading the bit position as a SHIFT is the
-# easy wrong answer. `src_bit` is that table, and it is the ONLY reader of
-# MOD_SRC0_BIT / MOD_SRC1_BIT / MOD_SRC2_BIT: without it those three defs were
-# DEAD, and the M29 mutations measured exactly that -- three edits to constants
-# nothing called moved nothing, which is `schedule/indexing.bend`'s "a def
-# nothing calls is invisible to every other check" reproduced.
-# `.vdst` IS THE FOURTH AND LAST ARM OF dsl.py:313-321:
-#     for name, bit in [('src0', 0), ('src1', 1), ('src2', 2)]:
-#       if name in vals and isinstance(vals[name], Reg): ...
-#     if 'vdst' in vals and isinstance(vals['vdst'], Reg) and vals['vdst'].hi:
-#       opsel_bits |= (1 << 3)
-#
-# one name, bit 3. it is not `_canonical_name` (dsl.py:266), which is a different function
-# AND MENTIONS `('vdst', 'sdst', 'sdata')` -- an earlier reading of this reached for THAT one
-# and answered 8 for `sdst` where CPython answers 0, and the census caught the over-correction
-# immediately. the fix is the single-name test.
-#
-# it read `String.eq("vdst", "vdst")` -- a literal compared with itself, which is always TRUE.
-# `src_bit(name)` is a CHAIN of `Bool.pick`s accumulating OR'd mask bits and `.vdst` is the
-# INNERMOST, so EVERY name took this arm: `sdst`, `op` and `nosuch` all answered 8 where
-# CPython answers 0. MEASURED on the census, and the three pins are those three names.
-#
-# THE DEF WAS BORN WITH IT (`git log -S` finds the tautology in the FIRST commit introducing
-# this def), so it is not a regression. The note above explains the MISSING PARAMETER: the
-# three mask defs were DEAD -- "three edits to constants nothing called moved nothing" -- and
-# `vdst` took no `name` because its own caller never had one to pass. THE PARAM THAT WOULD HAVE
-# made the test meaningful is the PARAM that went away, and a test that does not read its
-# INPUT IS NOT A TEST. `.s0/.s1/.s2` kept theirs, which is why only this arm is a tautology.
 def src_bit.vdst(name: String, rest: U32) -> U32:
   Bool.pick(U32, String.eq(name, "vdst"), MOD_VDST_BIT(), rest)
 
 def src_bit.s2(name: String, rest: U32) -> U32: Bool.pick(U32, String.eq(name, "src2"), MOD_SRC2_BIT(), rest)
 
-# the three MASKS, over a field list and in dsl.py's order (:313-321).
 
 def src_bit.s1(name: String, rest: U32) -> U32: Bool.pick(U32, String.eq(name, "src1"), MOD_SRC1_BIT(), rest)
 
@@ -1063,12 +804,6 @@ def src_bit(+name: String) -> U32:
   src_bit.s2(name, src_bit.s1(name, src_bit.s0(name, src_bit.vdst(name, 0))))
 
 # which of the three masks is being accumulated. dsl.py:313-319 keeps three
-# SEPARATE accumulators and reads ONE `Reg` flag into each, so a mask is not
-# identified by its own bit: `mod_mask(bit, ...)` cannot tell `neg_bits` from
-# `abs_bits` when both are asked for the same register, and the census's `ab` and
-# `hi` families were passing a mask that had no `Reg` flag to read at all.
-# `MOD_NONE` is not a fourth CPYTHON mask -- it is `vals['src0'] = ...` not being
-# A LINE in dsl.py, which is why the four register-named census families answer 0.
 def MOD_NEG() -> U32: 0     # neg_bits   (dsl.py:317)
 def MOD_ABS() -> U32: 1     # abs_bits   (dsl.py:318)  `Reg.abs_`; the census spells it `ab`
 def MOD_OPSEL() -> U32: 2   # opsel_bits (dsl.py:319)
@@ -1078,25 +813,6 @@ def mod_mask.pick.go(hit: Bool, +bit: U32, +acc: U32) -> U32:
     case False{}: acc
 
 # `if reg.neg` / `if reg.abs_` / `if reg.hi` (:317-319) -- the three tests the loop
-# makes, selected by the mask being accumulated. a chain of `Bool.pick`s in the
-# shape `src_bit` above uses, and `MOD_NONE` falls off the end of it.
-#
-# this is the `Reg` flag that selects the bit, which the comment below used to
-# CLAIM AND THE DEF DID NOT: `mod_mask.one` asked only `is the value a Reg`, so
-# every register that was one contributed to all three masks and the three census
-# families were ONE MEASUREMENT UNDER THREE NAMES. `mod_neg`/`mod_ab`/`mod_hi`
-# below DO read the flag -- one register, one flag, the bit is 1 -- so the three
-# predicates already existed and nothing called them here.
-#
-# measured, one arm at a time, over all 1178 rows (each arm deleted, gate lane
-# re-run, reverted): deleting `mod_hit.neg` moves 1 row (`modmask_neg_neg`);
-# deleting `mod_hit.ab` moves 0; deleting `mod_hit.opsel` moves 0; and letting the
-# chain fall through to `True` -- the original "is a Reg" answer -- moves 8, all
-# of them the `MOD_NONE` register-named families. SO TWO OF dsl.py's THREE FLAGS
-# are unmeasured by this census, and it is not the def's fault: no fixture here
-# sets `Reg.abs_`, and the opsel family asks about `src2`, which `VOP2_FIELDS` has
-# NO FIELD FOR. `mod_src0_ab`/`mod_src0_hi` DO exercise the flags, through
-# `mod_ab`/`mod_hi` -- the same three predicates, a different row.
 def mod_hit.opsel(m: U32, +v: Ov, rest: Bool) -> Bool: Bool.pick(Bool, U32.is_eq(m, MOD_OPSEL()), Ov.hi(v), rest)
 def mod_hit.ab(m: U32, +v: Ov, rest: Bool) -> Bool: Bool.pick(Bool, U32.is_eq(m, MOD_ABS()), Ov.ab(v), rest)
 def mod_hit.neg(m: U32, +v: Ov, rest: Bool) -> Bool: Bool.pick(Bool, U32.is_eq(m, MOD_NEG()), Ov.neg(v), rest)
@@ -1119,7 +835,6 @@ def mod_mask(m: U32, bit: U32, vfs: List<&2, Vf>) -> U32: mod_mask.go(m, vfs, 0,
 def bind.take(name: String, f: Fld, kwname: String, kwsz: U32, kwhas: Bool, has: Bool) -> Bool:
   Bool.or(U32.is_eq(Fld.kind(f), K_FIXED()), Bool.or(kwhas, has))
 
-# `not (remaining := list(args_iter))` -- "too many positional args" (:308).
 def too_many(n_left: U32) -> Bool: U32.is_gt(n_left, 0)
 
 # the write walk (:334-335): `for name, field in self._fields: self._raw =
@@ -1168,34 +883,6 @@ def typed_encode(k: Nat, +vf: Vf) -> Res:
 # "Resize register based on operand info (skip non-resizable special
 # registers) / VCC/EXEC pairs (106, 126), NULL (124), M0 (125), float constants
 # (240-255)" -- dsl.py:178-179, upstream's comment ON THE SKIP. THE RESIZE IS
-# NOT COSMETIC: A FIELD'S VALUE IS A REGISTER *OFFSET*, BUT THE INSTRUCTION
-# NEEDS A REGISTER *OF A GIVEN WIDTH*, AND THE WIDTH COMES FROM THE XML'S
-# OPERAND INFO, NOT FROM THE OFFSET. SO A `src0` THAT THE XML SAYS IS TWO
-# VGPRS WIDE MUST READ BACK AS A TWO-REGISTER `Reg`, AND THE ENCODER THEN
-# EMITS `v[0:1]`.
-#
-# AND THE SKIP IS THE PART THAT IS EASY TO GET WRONG: A RESIZE IS NOT ALWAYS
-# POSSIBLE. THE VCC AND EXEC PAIRS (106, 126) ARE TWO REGISTERS BY
-# CONSTRUCTION, NULL (124) AND M0 (125) ARE SINGLE REGISTERS THAT HAPPEN TO
-# HAVE A NAME, AND THE FLOAT CONSTANTS (240..255) ARE **VALUES** AND NOT
-# REGISTERS AT ALL -- RESIZING A FLOAT CONSTANT WOULD PRODUCE A `Reg` THAT
-# PRINTS AS A REGISTER NAME IT IS NOT. SO THE SKIP LIST IS A LIST OF
-# "THIS OFFSET IS NOT A RESIZABLE REGISTER" AND IT IS NOT A LIST OF "THIS
-# OFFSET IS SPECIAL" IN GENERAL: 233 (`DPP8`) AND 236..238 (`SHARED_BASE`
-# AND FRIENDS) ARE SPECIAL AND ARE **NOT** IN THE LIST, BECAUSE THEY *ARE*
-# RESIZABLE.
-#
-# "Map variant field names (vsrc0->src0, vsrc1->src1, etc.) for DPP/SDWA
-# classes" -- dsl.py:181, upstream's comment ON THE NAME HALF OF THE SAME
-# STATEMENT. A DPP OR SDWA CLASS NAMES ITS SOURCE FIELD `vsrc0` WHERE THE
-# ORDINARY CLASS NAMES IT `src0`, AND THE OPERAND INFO IS KEYED BY THE
-# ORDINARY NAME. SO THE LOOKUP STRIPS A LEADING `v` -- BUT ONLY IF WHAT
-# FOLWS IS A NAME THE OPERAND INFO ACTUALLY HAS, BECAUSE A FIELD GENUINELY
-# NAMED `vdst` OR `vdata` MUST NOT BECOME `dst` OR `data`. THE PORT'S
-# `canon_fwd` / `canon_in` TABLES (THE EVEN FOLD AT dsl.py:261-268) ARE THE
-# SAME IDEA WRITTEN ONCE: `src0`/`vsrc0`/`ssrc0` ALL FOLD TO `s0`, `vdst`/
-# `sdst`/`sdata` ALL FOLD TO `d`, AND `data`/`vdata`/`data0`/`vsrc` ALL FOLD
-# TO `data`.
 
 def fld_encode.k(k: Nat, +vf: Vf) -> Res:
   match k:
@@ -1205,22 +892,6 @@ def fld_encode.k(k: Nat, +vf: Vf) -> Res:
     case _: typed_encode(U32.to_nat(Fld.kind(Vf.f(vf))), vf)
 
 # `if val is None: val = self.default` (dsl.py:114), which is the FIRST LINE of `set`
-# and the whole of the ABSENT_OPERAND class. `Inst.__init__` gives a field the caller
-# never mentioned the value `None` (:305/:307), and `set` swaps in the DEFAULT and
-# still writes the field -- so an instruction with an omitted operand is NOT the zero
-# word, it is every other field at its default.
-#
-# `fld_encode.k` NEVER READ `Vf.has`. It did not need to, because every fixture that
-# omits an operand spells the omission `Ov.none()` and `Ov.none().off` is 0 -- which is
-# the same number as every default in this file, SO THE OMISSION LOOKED LIKE A ZERO.
-# MEASURED: `raw_vop2_neg` CPython `|0x14060a00`, port `|0x00000000`, and the three
-# fixtures with NO omitted operand (`_all`, `_big`, `_big2`) agreed, so the defect was
-# invisible everywhere except the ten fixtures that omit something.
-#
-# `encode(default)` IS `dflt` for every class here -- `s[0]`/`v[0]` sit at their range's
-# low end so the `- _valid_range[0]` at :171 is 0, and the aligned classes' default is
-# the bare int 0 which :207 accepts -- and `VDSTY` is the one that refuses (:224 wants
-# a Reg). So the default arm needs no arithmetic and no new constant.
 def fld_encode.dflt(k: Nat, +f: Fld) -> Res:
   match k:
     case 10n: Bad{vdsty_not_reg()}
@@ -1246,20 +917,7 @@ def needs_literal.k(k: Nat, +v: Ov) -> Bool:
 
 def needs_literal(+v: Ov) -> Bool: needs_literal.k(U32.to_nat(Ov.k(v)), v)
 
-# `op_bits` / `op_regs` -- :348-381. FIVE ADJUSTMENTS over the XML widths, and
-# each is a CONDITIONAL on the op NAME or on the raw word, so each needs its own
-# pair of rows: one that fires and one that sits next to it and does not.
-#
-#   cndmask  / _co_ci_  -> src2 = 32          (:356-357)  RDNA (WAVE32) only
-#   VOP3SD              -> sdst = 32          (:359)      by CLASS NAME
-#   cmp                 -> vdst = 32          (:360)      RDNA only
-#   addr                -> 64 or 32 by saddr  (:363-365)  GLOBAL/FLAT, not SCRATCH
-#   vaddr               -> max(1,offen+idxen)*32 (:367-368)
-#   f8f6f4              -> src0/src1 by cbsz/blgp (:371-376)
-#
-# EVERY adjustment is inside `if not self._is_cdna():` EXCEPT the saddr and
-# vaddr ones -- so a CDNA instruction gets cndmask/cmp/f8f6f4 differently, and
-# the gate has a row for that.
+# THE TABLE IS IN `.agents/slop/tables/renderer-amd-dsl-1249.md` -- `op_bits` / `op_regs` -- :348-381. FIVE ADJUSTMENTS over the XML widths, and
 
 def ADJ_WAVE32() -> U32: 1
 def ADJ_IS_CDNA() -> U32: 1
@@ -1271,10 +929,6 @@ def adj_sdst_bits(cls: String, has_sdst: Bool) -> U32:
   Bool.pick(U32, Bool.and(has_sdst, is_vop3sd(cls)), ADJ_SRC2_BITS(), 0)
 
 # GLOBAL/FLAT: `saddr_val = (self._raw >> saddr.lo) & saddr.mask` (:364) reads
-# the ENCODED field, then `64 if saddr_val in (124, 125) else 32` (:365). So the
-# trigger is 124 or 125 and nothing else -- 123 and 126 are the negative cases,
-# and they are ADJACENT to the positive ones, which is the whole point of
-# putting them in the gate.
 def adj_addr_bits.y(narrow: Bool) -> U32:
   match narrow:
     case True{}: ADJ_ADDR_BITS2()
@@ -1323,12 +977,6 @@ def mfma_b_of(cbsz: U32) -> U32: mfma_regs(cbsz)
 def num_srcs.a0(+has_s0: Bool) -> U32: Bool.pick(U32, has_s0, NSRC_ONE(), NSRC_ZERO())
 
 # `_variant_suffix` (:423-437). 255 -> _LIT, 249 -> _SDWA or _DPP8 by arch,
-# 250 -> _DPP16, anything else None -- and the FIRST SrcField with one of those
-# offsets wins, so the walk is a scan and not a test of the last field.
-# The suffix is a STRING or nothing, and "nothing" is `None{}` -- one `Maybe`
-# over `Maybe<&2, String>` rather than a new type. An EMPTY string is not the
-# same as None and the gate pins both, because a caller that prints the suffix
-# would print "" for a variant and nothing for a plain instruction.
 
 def num_srcs.a1(+has_s1: Bool, +has_s0: Bool) -> U32:
   match has_s1:
@@ -1362,15 +1010,6 @@ def vs_of(r: Maybe<&2, String>) -> String:
   vs_of.go(r, "")
 
 # THE GATE. Every `py=` below was produced by CALLING CPython --
-# `.agents/slop/dsl_oracle.py`, which imports `tinygrad/renderer/amd/dsl.py` and
-# calls its methods; nothing in this file is transcribed from a Python
-# expression. `.agents/slop/dsl_gate.py` diffs the whole `name=value` line.
-#
-# THE FIXTURES. dsl.py's `Inst` subclasses are autogen (:239-242 plus the per-arch
-# ins.py), so the classes here are FIXTURES with LEGAL field widths -- a
-# `SrcField` must be 9 bits, a `VGPRField` 8, an `SGPRField` 7, an `SSrcField`
-# 8 (:155-159) -- laid out non-overlapping. Their widths are chosen; every
-# NUMBER the gate prints about them is dsl.py's arithmetic on those choices.
 
 def eqr(+a: Res, +b: Res) -> Bool: U32.is_eq(Res.v(a), Res.v(b))
 def eqrs(+a: Res, +b: Res) -> Bool: String.eq(Res.s(a), Res.s(b))
@@ -1398,7 +1037,6 @@ def fields_of.go(fs: List<&2, Fld>, +acc: String) -> String:
     case Fld{nm, hi, lo, dflt, kind, rlo, rhi, align} <> t:
       fields_of.go(t, String.concat([acc, nm, ":", U32.show(hi), ":", U32.show(lo), ","]))
 
-# `_base_size = (max(f.hi) + 8) // 8` (:282)
 
 def fields_of(fs: List<&2, Fld>) -> String: fields_of.go(fs, "")
 
@@ -1408,24 +1046,10 @@ def hi_max.go(fs: List<&2, Fld>, +acc: U32) -> U32:
     case Fld{nm, hi, lo, dflt, kind, rlo, rhi, align} <> t: hi_max.go(t, U32.max(acc, hi))
 
 # gate 1: the tables, both directions, and one row per entry.
-#
-# `ops_nv`'s audit found 33 of 219 constants wrong in a file already printing
-# 590 green rows, and all eleven `CLASS_*` ids among them, because a ONE-WAY
-# table cannot see a wrong binding. So every entry gets TWO rows -- the forward
-# direction and the reverse -- and the ROW NAME carries the offset CPython
-# reports, which makes a wrong constant a NAME MISMATCH and not a moved value.
-#
-# Written out rather than walked: a walker needs an index into the table, and an
-# index that is itself computed is the exact thing that hides a wrong binding.
 
 def hi_max(fs: List<&2, Fld>) -> U32: hi_max.go(fs, 0)
 
 # THE GATE'S HELPERS. Each exists because a generated row needs it, and NONE of
-# them is a re-implementation of a table -- they are RENDERERS, so a gate row
-# reads as the CPython value it is compared against. `.agents/slop/dsl_gen.py`
-# keeps everything above this block and regenerates everything below.
-# `Reg` as CPython's tuple spelling, `f"{r.offset},{r.sz},{r.neg},{r.abs_},{r.hi}"`
-# -- and `str(False)` is "False", so the Bool is spelled the Python way.
 def bs(b: Bool) -> String: Bool.pick(String, b, "True", "False")
 
 def rg_add(+r: Rg, n: U32) -> Rg: Rg{U32.add(Rg.off(r), n), Rg.sz(r), Rg.neg(r), Rg.ab(r), Rg.hi(r)}
@@ -1486,15 +1110,6 @@ def hex8(+v: U32) -> String:
   String.concat([hex4(U32.shrn(v, 16n)), hex4(U32.and(v, 65535))])
 
 # CPython's `f"{x:#010x}"` -- OF A WORD. `#010x` pads to a WIDTH, and a word
-# wider than 32 bits is already past the width, so eight digits is a FLOOR and
-# not a ceiling: `hex8` renders the low word and `hexw` renders all of it. This
-# is the renderer that used to MASK both lanes to 32 bits and hide AMDWORD32
-# from a byte-diff census -- `raw_vop2_all` read `|0x14060a00` on the port AND
-# on the oracle where CPython's word is `0x4814060a00`.
-#
-# `hexhi` reads the high word's nibbles LOWEST first and PREPENDS, and it stops
-# at a zero limb, so the top digit is never a leading zero: `0x48` and not
-# `0x00000048`. The fuel is `HEX_NIBBLES` because a U32 is eight nibbles wide.
 def hexhi.go(k: Nat, zero: Bool, +hi: U32, acc: String) -> String:
   match k:
     case 0n: acc
@@ -1507,10 +1122,6 @@ def hexhi.go(k: Nat, zero: Bool, +hi: U32, acc: String) -> String:
 def hexhi(+hi: U32) -> String: hexhi.go(HEX_NIBBLES(), U32.is_zero(hi), hi, "")
 
 # the high WORD is omitted rather than zero-printed, and that is the whole
-# difference between `0x14060a00` -- a 32-bit word, and the value every lane
-# agreed on while both of them were wrong -- and `0x4814060a00`. Every word that
-# FITS a U32 renders exactly as `hex8` rendered it, so the widening is invisible
-# until a word is actually wide, which is what keeps 1129 rows from moving.
 def hexw(+w: H.I64) -> String:
   +hi = H.hi32(w)
   +lo = hex8(H.lo32(w))
@@ -1532,11 +1143,6 @@ def is_some.go(m: Maybe<&2, String>, dflt: Bool) -> Bool:
     case None{}: dflt
 
 # `int.from_bytes(data[:base_size], 'little')` (:442) -- the DECODE half of
-# `from_bytes`, with the `base_size` truncation already applied by the caller.
-# THE ANSWER IS A WORD, because for `_base_size > 4` CPython's answer is wider
-# than a U32 and a `U32` here would be AMDWORD32 read backwards. The two rows
-# that read it drive 32-bit fixtures, so they read the low word -- and they say
-# so at the row rather than leaving a `U32` seam in the middle.
 
 def is_some(m: Maybe<&2, String>) -> Bool: is_some.go(m, False{})
 
@@ -1560,19 +1166,6 @@ def bytes_of.go(n: Nat, +b: Nat, +w: H.I64, acc: String) -> String:
 def bytes_of(w: H.I64, sz: U32) -> String: bytes_of.go(U32.to_nat(sz), 0n, w, "")
 
 # `raw_walk` -- the `__init__` write walk (:334-335): `for name, field in
-# self._fields: self._raw = field.set(self._raw, vals[name])`.
-#
-# ONE SELF-RECURSIVE DEF, and that is not style. A walk needs a leaf helper to
-# lift the `Wrd` out of `raw_step`, and a leaf that recurses back into the walk
-# is MUTUAL RECURSION, which cannot be ordered -- Bend wants every def before its
-# first use and a two-def cycle has no such order. So the incoming `Wrd` IS the
-# state: it carries `_raw` in `w` and a pending refusal in `s`, the walk stops
-# the moment a refusal appears, and there is no second def to place.
-#
-# THE FUEL IS THE LISTS THEMSELVES, not a counter, and that is forced too: inside
-# a `case 1n+m:` arm Bend will not let you match an outer parameter, so a Nat
-# fuel and a list walk cannot live in the same arm. `ShapeRes.dims` walks the
-# same way.
 def raw_walk.go(vfs: List<&2, Vf>, prior: Wrd) -> Wrd:
   match vfs:
     case Nil{}: prior
@@ -1606,9 +1199,6 @@ def ref(msg: String) -> String: String.concat(["REFUSE:", msg])
 # `SrcField._FLOAT_ENC` is a float -> int dict, so its REVERSE prints the
 # float's own spelling as the table holds it: "0.5", "-0.5", "1.0" ... Those are
 # the SAME eight strings `_NAMES` holds at dsl.py:14, which is what makes the
-# pair a cross-check of TWO SPELLINGS rather than a second copy of one table. A
-# name absent from the table answers 255, and 255 is not a spelling, so it is
-# written as the number -- that is the negative row's whole content.
 def FLOAT_SPELL.go(off: Nat, dflt: String) -> String:
   match off:
     case 240n: "0.5"
@@ -1651,6 +1241,5 @@ def vs_text.go(m: Maybe<&2, String>, dflt: String) -> String:
     case None{}: dflt
 
 # ==== GATE BODY (generated by .agents/slop/dsl_gen.py) ====
-# --- T  THE FOUR TABLES, BOTH DIRECTIONS -------------------------------
 
 def vs_text(m: Maybe<&2, String>) -> String: vs_text.go(m, "None")

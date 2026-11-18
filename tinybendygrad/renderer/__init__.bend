@@ -1,9 +1,5 @@
-# tinybendygrad/renderer/__init__.bend -- tinygrad/renderer/__init__.py.
-#
-
-# THE CONVENTIONS. `wgsl.bend` reads this header and nothing else. It is here
-# rather than in a notes file because `__init__.py` is where the shared base
-# lives, and a renderer that skips these re-learns every one of them by failing.
+# tinybendygrad/renderer/__init__.bend -- the shared renderer base and the
+# substrate conventions a renderer needs to know.
 #
 # 1. A RENDERER IS A `Data` RECORD OF ITS OPTIONS -- not a class, not a table of
 #    closures. Python's `self.type_map` / `self.barrier` / `self.kernel_typedef`
@@ -40,42 +36,6 @@
 # 7. a `do IO<Unit>:` body must end with a bare term, not a `_ : Unit <- ...`
 #    binding, and a def whose body is a `do` block must be the LAST def in the
 #    file. MEASURED on 2.0.34 while writing this file; both errors are parse
-#    errors with unhelpful locations. `main` is therefore last.
-#
-# 8. a recursive arena rebuild must be built on the inner node's arena --
-#    `O.Found.ar(inner)`, never the arena handed in. An arena only GROWS, so the
-#    passed arena is a PREFIX and the inner node's index is not in it; the outer
-#    node's src0 then points past the end and `Arena.arg` answers the bottom's
-#    `ABad`. It typechecks, it runs, and it prints a plausible wrong answer.
-#    MEASURED: `INDEX float src0=?` where CPython prints `float`.
-#
-# 9. a self-call must be lexically inside the DEF that owns the fuel match. a
-#    def may only call defs above it, so a helper that HOLDS the self-call cannot
-#    be separated from the recursion -- that is mutual recursion and Bend refuses
-#    it, and `hoist.py` reports "no progress" after eight rounds. So the guard
-#    Bool is a PARAMETER of the recursive def (a `match` may scrutinise a
-#    parameter) and the self-call is one expression in one arm. The non-recursive
-#    rebuild helper goes ABOVE the recursion, which is legal for exactly this
-#    reason.
-#
-# 10. GIVE THE WALLS NAMES. A rule that cannot be answered returns the marker
-#     CPython prints for "not applicable" and says so in a comment, rather than a
-#     plausible wrong string. The one that matters under this file:
-#     `Ops.SHRINK`'s DTYPE is DEFERRED in `fold.bend` (`marg` -> `zip` ->
-#     `ssimplify`), so asking the fold for a SHRINK's dtype answers `None`, and
-#     a renderer that needs it has no value to render. That is `fold.bend`'s to
-#     own; `cstyle.bend` records it where it bites.
-#
-# 11. `u.max_numel()` IS `prod(to_max_shape(shape))` AND `to_max_shape` IS A
-#     SYMBOLIC `vmax` -- a WALL (`TODO(p3) ops.py:1896 symbol=to_max_shape` in the port,
-#     at ops.bend:5365). The shape
-#     the port CAN answer is the CONCRETE one, whose every dim is an `SInt` `SI`
-#     rather than a symbolic `SU`, so `max_numel` here is the product of the
-#     concrete dims and a shape carrying an `SU` is the case this file does not
-#     have. Name the two cases apart rather than answering 1 for both.
-#
-# 12. a gate row is only worth its cost IF a mutation moves it. The mutation
-#     table at the foot of `cstyle.bend` is the evidence that the rows bite.
 
 import Base
 import ./estimates.bend as E
@@ -84,26 +44,6 @@ import ./../uop/fold.bend as F
 import ./../LAWS/spec.bend as S
 
 # `with_storage` -- __init__.py:11-13
-#
-#     def with_storage(x:UOp, dt:DType) -> UOp:
-#       if x.op in {Ops.PARAM, Ops.BUFFER, Ops.ALLOC}: return x.replace(arg=replace(x.arg, dtype=dt))
-#       return x.replace(src=(with_storage(x.src[0], dt),)+x.src[1:])
-#
-# "an access takes its dtype from the buffer it indexes, so accessing at another
-# dtype restates the storage on the buffer that owns it" -- the comment above it
-# is the SPEC, and the two arms are the spec's two halves: the three storage ops
-# restate the dtype on the node that OWNS the storage, and everything else
-# restates it on its FIRST src. src[1:] is COPIED, never visited.
-#
-# IT RETURNS THE ARENA, per the port's rule that a rewrite returns the arena and
-# not a pair. The recursion is on the graph, which is not a tree, so the fuel is
-# the FIRST parameter of the self-call and the budget is `Arena.budget` -- nodes
-# PLUS edges, the same bound `UOp.toposort` uses. Under-running it returns the
-# input arena unchanged, which is a wrong answer rather than a crash.
-#
-# `leaf` IS A PARAMETER and not a computed `match` scrutinee, for convention 9:
-# the two arms and the recursion have to be in ONE def, so the Bool that picks
-# the arm is a parameter and the `match` may scrutinise it.
 
 def with_storage.fuel(f: O.Found) -> Nat: O.Arena.budget(O.Found.ar(f))
 
@@ -115,9 +55,8 @@ def with_storage.is_store(op: O.Op) -> Bool:
     case _: False{}
 
 # `replace(x.arg, dtype=dt)`. Twelve accessors, because there is no projection
-# syntax -- convention 6. AND THE SIZE IS NOT AMONG THEM, which is the one thing
-# `72f98ffe0` made SIMPLER here: a `replace` that re-lists the fields has to carry
-# drop the storage size. It is `src[0]` now, and `with_storage` never rewrites `src`.
+# syntax -- convention 6.  THE SIZE IS NOT AMONG THEM: it is `src[0]` now, and
+# `with_storage` never rewrites `src`.
 def with_storage.arg(+pa: O.ParamArg, dt: S.Dt) -> O.ParamArg:
   O.ParamArg{O.ParamArg.slot(pa), dt, O.ParamArg.vmin_vmax(pa), O.ParamArg.multiple_of(pa),
     O.ParamArg.name(pa), O.ParamArg.addrspace(pa), O.ParamArg.device(pa), O.ParamArg.volatile(pa),
@@ -129,16 +68,12 @@ def with_storage.arg.of(a: O.Arg, dt: S.Dt) -> O.Arg:
     case _: a
 
 # THE STORAGE ARM. No srcs: a PARAM/BUFFER/ALLOC carries its storage in `arg`,
-# and the arm replaces `arg` alone. Factored out because it holds NO self-call,
+# and the arm replaces `arg` alone.  Factored out because it holds NO self-call,
 # so it is legal above the recursion.
 def with_storage.leaf(+ar: O.Arena, dt: S.Dt, +i: U32) -> O.Found:
   O.UOp.new(ar, O.Arena.op(ar, i), Nil{}, with_storage.arg.of(O.Arena.arg(ar, i), dt), O.Arena.tag(ar, i))
 
 # `x.replace(src=(with_storage(x.src[0], dt),)+x.src[1:])` -- a new node whose
-# src[0] is the recursion's answer and whose src[1:] is the OLD tail, copied.
-#
-# convention 8 is the whole reason this DEF exists as a separate one: the outer
-# node is built on `O.Found.ar(inner)`, never on `ar`.
 def with_storage.rebuild(+ar: O.Arena, dt: S.Dt, +i: U32, +inner: O.Found) -> O.Found:
   O.UOp.new(O.Found.ar(inner), O.Arena.op(ar, i),
     List.append(&2, U32, [O.Found.i(inner)], O.Arena.src_from(ar, i, 1)),
@@ -159,58 +94,6 @@ def with_storage.at(+f: O.Found, dt: S.Dt) -> O.Found:
   with_storage(with_storage.fuel(f), O.Found.ar(f), dt, O.Found.i(f), with_storage.is_store(O.Arena.op(O.Found.ar(f), O.Found.i(f))))
 
 # `Estimates` -- __init__.py:15-61. THE RECORD IS IN `./estimates.bend`, WHICH
-# IS A LEAF, because `tinygrad/uop/ops.py` CARRIES IT AS A FIELD and Bend
-# REFUSES AN IMPORT CYCLE. Upstream breaks that cycle under `TYPE_CHECKING`
-# (`tinygrad/uop/ops.py:26`); this port breaks it with a third file. What is
-# HERE is `Estimates.from_uops`, which reads `Ops` and so belongs beside its
-# consumers. THE RECORD, ITS ACCESSORS, `__add__` and `simplify` are THERE.
-# `Estimates.from_uops` -- __init__.py:26-61, over the LINEARIZED list.
-#
-# FOUR of the six op arms survive the linearization and the other two do not:
-#   LOAD  (non-REG)  -> lds += max_numel * itemsize * mults      [mults == 1]
-#   STORE (non-REG)  -> lds += max_numel * itemsize * mults      [src[1] is void,
-#                                                             so it is the BUFFER]
-#   ALU             -> flops += (2 if MULACC else 1) * max_numel
-#   LOAD/STORE      -> mem[(buf, op)] capped at buf.max_numel * itemsize
-# and RANGE / END / BACKEDGE / SPECIAL -- the four `mults` arms -- never appear.
-#
-# WHY THE `mem` COUNT IS CAPPED, and it is the ONE LINE OF `from_uops` THAT
-# IS NOT A SUM: "u.src[0] is INDEX, cap at buffer size for re-reads (e.g.
-# matmul)" -- __init__.py:42, upstream's comment ON THE CAP. THE `mem` COUNT
-# IS "**TOTAL** BYTES ACCESSED, COUNTING ONLY ONCE FOR BYTES THAT ARE ACCESSED
-# MULTIPLE TIMES" (upstream's own comment on the field, __init__.py:21), SO
-# A BUFFER READ TEN TIMES COUNTS ITS SIZE ONCE. BUT THE RAW SUM WOULD COUNT
-# IT TEN TIMES, AND THE CAP IS WHAT MAKES IT ONCE: `smin(accessed,
-# buf.max_numel() * buf.dtype.itemsize)`.
-#
-# SO THE CAP IS NOT A CEILING ON A SINGLE ACCESS -- IT IS THE POINT WHERE
-# THE COUNT STOPS GROWING. AND IT IS ONLY CORRECT BECAUSE THE ACCESS IS
-# AN INDEX: `u.src[0]` IS AN INDEX INTO THE BUFFER, SO
-# `u.src[0].max_numel()` IS HOW MANY ELEMENTS *THIS* ACCESS TOUCHES, AND A
-# RE-READ OF THE WHOLE BUFFER ADDS THE WHOLE BUFFER'S SIZE TO A COUNT THAT
-# IS ALREADY CAPPED AT THE WHOLE BUFFER'S SIZE.
-#
-# THE MATMUL IN UPSTREAM'S PARENTHESIS IS THE CASE THAT MAKES IT VISIBLE:
-# A MATMUL READS ITS B MATRIX ONCE PER OUTPUT ROW, SO THE NAIVE COUNT IS
-# `rows` TIMES THE B MATRIX AND THE CAPPED COUNT IS ONE TIMES IT. WHICH IS
-# WHY THE CAP IS AT THE BUFFER AND NOT AT THE ACCESS.
-#
-# AND THE PORT'S DEPARTURE IS STATED ELSEWHERE (the `mem` DICT is keyed by
-# the BUFFER ALONE, not by `(buffer, op)`, so a buffer both READ and WRITTEN
-# contributes ONE count where CPython contributes TWO). THAT DEPARTURE IS
-# A DIFFERENT HALF OF THE SAME LINE: THE PORT DROPS THE `op` FROM THE KEY,
-# WHICH IS WHY THE PORT'S `mem` IS A SUM OVER BUFFERS AND WHY THE CAP, WHICH
-# IS PER-`(buffer, op)`, IS NOT THE PORT'S CAP.
-#
-# `ignore_indexing` additionally removes the INDEX/SHRINK subtrees from `flops`,
-# and that needs a MULTI-ROOT toposort, which `UOp.toposort` (one root) does not
-# provide; the two INDEX arms of `from_uops` are therefore the `TODO(p3)` below
-# and `ignore_indexing` is a NO-OP here, which is visible: a kernel with INDEX
-# nodes over ALU nodes reports the ALU flops CPython would exclude.
-#
-# `is_alu` is `GroupOp.ALU`, which in ops.bend is a set of EIGHTEEN constructors.
-# It is spelled as the match rather than a membership test because `GroupOp` is
-# not a value here.
 def is_alu(op: O.Op) -> Bool:
   match op:
     case O.OpsADD{}: True{}
@@ -250,30 +133,6 @@ def is_mem(op: O.Op) -> Bool:
     case _: False{}
 
 # `Renderer` -- __init__.py:63-87.
-#
-# The class carries FIFTEEN attributes, and the three that are TABLES Python
-# fills from a `dict` literal are the reason this file cannot be a record
-# without thought:
-#
-#   `type_map: dict[DType, str]`  -> `Map<&2, String>` keyed by the dtype's
-#       NAME. Two `DType`s with one name are the same `dtypes` singleton in
-#       Python, so the name IS the identity -- the same argument `Ctx` makes for
-#       a UOp.
-#   `code_for_op: dict[Ops, Callable]` -> a `U32` DEVICE TAG plus a `match`. A
-#       callable is not representable, and a per-op dispatch is exactly what
-#       `cstyle.bend`'s `code_for_op.of` is.
-#   `extra_matcher: PatternMatcher|None` -> a `Bool` has-matcher, and the matcher
-#       itself is `cstyle.bend`'s tables.
-#
-# `supported_dtypes` is the ONE method with no table:
-#
-#     return set(dtypes.all) - ({dtypes.f64} if dtypes.i64 in EMULATED_DTYPES.tolist(dtypes) else set())
-#
-# `EMULATED_DTYPES` is `ContextVar("EMULATED_DTYPES", "")` and `tolist` of the
-# empty string is `[]`, so `long in []` is False and `double` is KEPT: the base
-# answer is `dtypes.all` VERBATIM. That is a row the gate pins, and it is why
-# the emulated set is a PARAMETER rather than an assumption -- with `long` in it
-# the base drops `double`, and the fixture that says so is one argument away.
 
 def is_named(d: S.Dt, nm: String) -> Bool:
   match d:
@@ -288,30 +147,11 @@ def emu_has.go(emu: List<&2, S.Dt>, +d: S.Dt, ok: Bool) -> Bool:
 
 def emu_has(emu: List<&2, S.Dt>, d: S.Dt) -> Bool: emu_has.go(emu, d, False{})
 
-# `dtypes.i64 in EMULATED_DTYPES.tolist(dtypes)`, separated so the gate pins
-# the ONE question the base asks on its own.
 def emulated_long(emu: List<&2, S.Dt>) -> Bool: emu_has(emu, S.int64())
 
 # `dtypes.all` -- dtype.py's `dtypes.all`, REBUILT HERE FROM `S.Dt`'s OWN
-# CONSTRUCTORS rather than read from `dtype.bend`. That is a departure and the
-# reason is measured, not stylistic: `./bin/bend tinybendygrad/dtype.bend
-# --check-only` prints `SOME PROOFS FAIL -- 14 defs rely on unsafe or foreign
-# code` (Dt.bf16, Dt.fp16, Dt.fp8_from, Dt.fp8_to, Dt.i64_trunc, the four
-# i64 divide/mod helpers, float_to_bf16, float_to_fp16, float_to_fp8,
-# fp8_to_float), so ANY importer of it fails its own gate -- `nn/optim.bend` is
-# in the same state on this tree. `LAWS/spec.bend`, where `S.Dt`'s constructors
-# live, is GREEN, and `dtypes.all` is six constructors and two appends:
-#
-#     all = floats + ints + [bool]
-#     floats = fp8s + [half, bfloat16, single, double]
-#     ints   = uints + sints
-#
-# so the honest move is to read it from the file that checks. The ORDER is
-# dtype.py's own declaration order and the gate's `sd empty` row is CPython's
-# `','.join(d.name for d in dtypes.all)` -- the same string, so a reordering or
-# a drop here is a diff rather than a silent divergence. `dtype.bend` failing
-# its own `--check-only` is a defect in that file and it is REPORTED, not fixed:
-# it is not this unit's file.
+# CONSTRUCTORS rather than read from `dtype.bend`.  THAT IS A DEPARTURE AND THE
+# REASON IS MEASURED, NOT STYLISTIC: `./bin/bend tinybendygrad/dtype.bend
 def dtypes_u32() -> List<&2, S.Dt>: [S.uint8(), S.uint16(), S.uint32(), S.uint64()]
 
 def dtypes_sint() -> List<&2, S.Dt>: [S.int8(), S.int16(), S.int32(), S.int64()]
@@ -329,10 +169,6 @@ def dtypes_all() -> List<&2, S.Dt>:
   List.append(&2, S.Dt, List.append(&2, S.Dt, dtypes_float(), dtypes_int()), [S.boolean()])
 
 # `{dtypes.f64} if dtypes.i64 in EMULATED_DTYPES.tolist(dtypes) else set()` --
-# the ONE conditional in the base `supported_dtypes`, and it is a conjunction of
-# TWO independent questions: is `long` emulated, and is this dtype `double`. A
-# reader that folded them into one test would drop a dtype other than `double`,
-# and `sd emu long` is the row that would show it.
 def emu_drop(emu: List<&2, S.Dt>, d: S.Dt) -> Bool:
   Bool.and(emulated_long(emu), is_named(d, "f64"))
 
@@ -342,10 +178,6 @@ def supported_dtypes.go(+emu: List<&2, S.Dt>, ds: List<&2, S.Dt>, +acc: List<&2,
     case +h <> t: supported_dtypes.go(emu, t, Bool.pick(List<&2, S.Dt>, emu_drop(emu, h), acc, List.append(&2, S.Dt, acc, [h])))
 
 # `set(dtypes.all) - (...)`. The LIST order is `dtypes.all`'s own, which is the
-# dtype.py declaration order and the SAME order CPython's `dtypes.all` has --
-# unlike the `set` this function returns, which has none. That is why the gate
-# can compare a JOINED STRING against CPython's joined string instead of
-# comparing two unordered sets, and why a dropped dtype is a diff.
 def supported_dtypes(emu: List<&2, S.Dt>) -> List<&2, S.Dt>: supported_dtypes.go(emu, dtypes_all(), Nil{})
 
 # WHAT IS NOT PORTED, in upstream order, and why. None of these is a Bend wall;
@@ -361,115 +193,6 @@ def supported_dtypes(emu: List<&2, S.Dt>) -> List<&2, S.Dt>: supported_dtypes.go
 #   list) and wrong for an unlinearized one -- and `ignore_indexing` is a no-op
 #   because the multi-root toposort its `excluded` set needs is not in the
 #   substrate. `TODO(p3) __init__.py:26 symbol=from_uops`.
-#
-#   THE `mults` ARMS ARE WORTH ONE MORE WORD, BECAUSE UPSTREAM'S NOTE ON
-#   THEM IS A **WARNING AGAINST DOUBLE-COUNTING** AND NOT A DESCRIPTION:
-#   "SPECIAL are already counted in mults" -- __init__.py:50. `mults` IS THE
-#   **TRIP COUNT** -- HOW MANY TIMES THE CURRENT LOOP BODY RUNS -- AND IT IS
-#   BUILT BY MULTIPLYING THE `RANGE` BOUNDS. A `SPECIAL` (A GLOBAL OR LOCAL
-#   THREAD ID) IS *ALSO* A MULTIPLIER OF THE TRIP COUNT, BECAUSE EVERY
-#   ITERATION OF THE INNER LOOP RUNS ONCE PER SPECIAL VALUE. SO UPSTREAM
-#   MULTIPLIES `mults` BY THE SPECIAL'S VALUE **AND SAYS SO**, BECAUSE THE
-#   OBVIOUS ALTERNATIVE -- COUNTING THE SPECIAL AS AN ALU OP OR A LOAD --
-#   WOULD DOUBLE-COUNT IT.
-#
-#   THE SAME COMMENT BLOCK SAYS THE OTHER HALF: "NOTE: we don't push to the
-#   mult_stack here, you can't end these" (__init__.py:53). A `SPECIAL` IS
-#   NOT A LOOP, SO IT DOES NOT PUSH ON THE `mult_stack` -- IT MULTIPLIES AND
-#   LEAVES. THE TWO HALVES ARE ONE RULE: `mult_stack` IS FOR THINGS THAT
-#   HAVE AN END, AND `mults` IS FOR THINGS THAT DO NOT.
-#
-#   THE PORT DOES NOT REACH EITHER: ITS `mults` IS THE IDENTITY, EXACTLY
-#   BECAUSE THE ONLY CALL SITE IS A LINEARIZED LIST WITH NO `RANGE`, NO
-#   `END`, NO `BACKEDGE` AND NO `SPECIAL` IN IT. SO THE PORT'S `mults` IS
-#   RIGHT FOR WHAT IT IS FED AND WRONG FOR ANYTHING ELSE, AND BOTH HALVES
-#   OF UPSTREAM'S NOTE ARE ABOUT A CASE THE PORT DOES NOT HAVE.
-# * `Estimates.__add__` / `.simplify` (:23, :24) -- PORTED, with `simplify` the
-#   identity and the reason said out loud.
-# * `Renderer.__init__` / `__reduce__` (:81, :82) -- the target is a
-#   `helpers.Target` dataclass, `# TODO(p3)` in the port (render.bend records the
-#   drop at ops.bend:801). So the renderer record carries the THREE FIELDS every
-#   `supported_dtypes` override in `cstyle.py` actually reads -- `arch`, `device`,
-#   `interface` -- as `String`s, which is measured: every override in that file
-#   is `self.target.arch.startswith(..)` or `int(self.target.arch[3:])`.
-#   `self.compiler` is a `Compiler` object: P6.
-# * `Renderer.render` / `Renderer.asm` (:83, :84) -- both raise
-#   `NotImplementedError`, and Bend has no exceptions. They are the two `Bool`s
-#   in the record a caller tests before dispatching, and every subclass
-#   OVERRIDES the reader rather than setting a flag, so the flag is the base's
-#   answer and nothing else can be true of it. `TODO(p3) __init__.py:83 symbol=render`, `:84 symbol=asm`.
-# * `Renderer.extra_matcher` (:76) -- a `PatternMatcher` of UOps, which is
-#   `cstyle.bend`'s tables (`create_non_native_float_pats`,
-#   `pm_manual_bf16_cast`, and each device's own). A `Bool` has-matcher here.
-# * THE FIVE **LIMITS** -- `supports_float4` (:69), `has_local` (:70),
-#   `has_shared` (:71), `global_max` (:73), `local_max` (:74),
-#   `global_prod_max` (:75), `shared_max` (:76) and `packed_args` (:79).
-#   NONE OF THEM IS IN THE PORT'S RENDERER RECORD, AND THE REASON IS THE
-#   SAME AS THE ONE ABOVE: EVERY DEVICE OVERRIDE OF THEM LIVES IN
-#   `cstyle.py` OR `nir.py` AND IS READ BY THE SCHEDULER, NOT BY ANY
-#   RENDERER TEXT. THE PORT'S RENDERER EMITS TEXT AND THE PORT'S SCHEDULER
-#   IS ANOTHER UNIT'S FILE, SO A LIMIT THE PORT CANNOT ENFORCE IS NOT
-#   RECORDED HERE AS A `Bool` IT WOULD IGNORE.
-#
-#   UPSTREAM SAYS TWO THINGS ABOUT THEM THAT ARE WORTH THE NAMES, BECAUSE
-#   BOTH ARE **ORDER** CLAIMS AND AN ORDER CLAIM IS THE KIND THAT BREAKS
-#   SILENTLY:
-#   * "NOTE: these two should be in (x,y,z) order to match the max_sizes
-#     argument in get_grouped_dims" -- __init__.py:72, on `global_max` and
-#     `local_max`. THE TUPLES ARE **POSITIONAL** AND THE POSITIONS ARE
-#     (x, y, z). A READER THAT TREATS THEM AS AN UNORDERED SET, OR THAT
-#     BUILDS ONE FROM A DICT, LOSES THE AXIS. THE PORT'S `S.Addr` AND THE
-#     DEVICE TAG CARRY NO SUCH TUPLE AT ALL, SO THE PORT HAS NO WAY TO GET
-#     IT WRONG -- WHICH IS NOT THE SAME AS HAVING IT RIGHT, AND IT IS
-#     WHY THE LIMIT IS A WALL AND NOT A FIELD.
-#   * "TODO: Ops.SPECIAL int32 indexes right now" -- __init__.py:73, on
-#     BOTH. THE DEFAULT `0x8FFFFFFF` IS NOT A REAL LIMIT: IT IS A
-#     PLACEHOLDER THAT SAYS "AS BIG AS AN int32 INDEX CAN BE", AND THE
-#     TODO SAYS THE INDEX IS NOT ACTUALLY int32 YET. SO THE NUMBER IS
-#     WRONG BY CONSTRUCTION AND THE TODO IS THE HONEST PART. A PORT THAT
-#     COPIED `0x8FFFFFFF` AS A LIMIT WOULD BE COPYING A KNOWN-WRONG
-#     VALUE; A PORT THAT USED `U32`'S MAX WOULD BE COPYING A DIFFERENT
-#     KNOWN-WRONG VALUE. NEITHER IS BETTER, AND THE PORT CARRIES NEITHER.
-#   * "TODO: make this generic with a list of supported types" --
-#     __init__.py:68, on `supports_float4`. IT IS A `Bool` NAMED FOR ONE
-#     SPECIFIC WIDTH, AND THE TODO SAYS IT SHOULD BE A LIST. THE PORT
-#     DOES NOT HAVE THE FIELD, SO IT DOES NOT HAVE THE `Bool` EITHER --
-#     AND `cstyle.bend`'s `float4` OPTION IS A `String|None` ON THE DEVICE
-#     TAG, WHICH IS THE SAME FACT IN A DIFFERENT SHAPE.
-# * `Renderer.code_for_op` (:77) -- `dict[Ops, Callable]`. The tag plus the
-#   `match` is `cstyle.bend`'s `code_for_op.of`. `TODO(p3) __init__.py:77 symbol=code_for_op`.
-# * `Renderer.tensor_cores` (:75) -- `list[TensorCore]` from `renderer/tc.py`,
-#   which is not this unit's file and has no port. `TODO(p3) __init__.py:75 symbol=tensor_cores`.
-# * `Renderer.supported_dtypes` (:85) -- PORTED, as above.
-#
-# DONE(p3) __init__.py:11  with_storage     (done; kept for the line map) -- DONE: `with_storage` IS ported -- EIGHT defs, `with_storage` / `.arg` / `.arg.of` / `.at` / .fuel` / `.is_store` / `.leaf` / `.rebuild` -- MEASURED with `^ *def with_storage`. The marker's own note already said `(done; kept for the line map)`; this makes it visible to the census.
-# WALL(p3) __init__.py:26  from_uops        (the (buf, op) mem key; ignore_indexing) -- BLOCKED: needs `from_uops` (NO DEF) -- the `(buf, op)` MEMORY KEY, with `ignore_indexing`.
-# TODO(p3) __init__.py:75  tensor_cores     (renderer/tc.py is not this unit)
-# WALL(p3) __init__.py:77  code_for_op      (a dict of Callables; see cstyle.bend) -- BLOCKED: needs a `dict[Ops, Callable]`: the port spells it as `cstyle.bend`'s `code_for_op.of` plus a `match`, so the TAG is a `match` and this is a shape difference rather than a missing table.
-# WALL(p3) __init__.py:81  __init__         (Target, Compiler) -- BLOCKED: needs the `Target`/`Compiler` classes -- a base whose base is `object`.
-# WALL(p3) __init__.py:83  render           (NotImplementedError -> a has-render flag) -- BLOCKED: needs the `NotImplementedError` DEFAULT arm, which the port spells as a `Bool` has-render flag; the header says exactly this at :405.
-# TODO(p3) __init__.py:84  asm              (NotImplementedError -> a has-asm flag)
-#
-# THE GATE. Every row is diffed against CPython on this `tinygrad/` tree with
-# `.venv/bin/python -c "..."`, and the `py=` text IS the oracle -- printed next
-# to the answer, never compared as a boolean, because the two things this file
-# can most easily get wrong are a JOINED NAME LIST and a joined string, and both
-# hide a dropped element inside a `True`.
-#
-# `sd_*` IS A JOIN, NOT A SET. CPython's `supported_dtypes` returns a `set` with
-# no order, so the oracle is `sorted(...)` on the Python side and the port's own
-# `dtypes.all` order here, each printed. A dropped dtype moves the string.
-# `sd emu long` is the SAME row with one argument changed, and it is the only row
-# that can see the `ContextVar` default being an ASSUMPTION rather than a fact:
-# `sd empty` pins that `double` is KEPT, `sd emu long` pins that it is DROPPED,
-# and a `supported_dtypes` that ignored its parameter would pass the first and
-# fail the second.
-#
-# `ws_*` ARE CPython'S OWN `with_storage` ANSWERS on the fixtures below, so the
-# recursion is checked against the reference and not against itself. `ws idx.src0`
-# is the row convention 8 exists for: it is the ONLY row whose src0 is a
-# REBUILT node, so it is the only row that sees a rebuild built on the wrong
-# arena.
 
 def pa_g(slot: U32, dt: S.Dt) -> O.ParamArg:
   O.ParamArg{slot, dt, None{}, None{}, None{}, S.AGlobal{}, Some{S.D1{0}},
@@ -484,8 +207,6 @@ def g_alloc() -> O.Found:
 def g_idx(+b: O.Found) -> O.Found:
   O.UOp.new(O.Found.ar(b), O.OpsINDEX{}, [O.Found.i(b)], O.ANone{}, O.TNone{})
 
-# `x.arg.dtype` of the answer -- read through the record, so it is `float`
-# exactly when the rewrite reached the storage node.
 def arg_dt.pa.of(d: S.Dt) -> String:
   match d:
     case S.Dt{pri, bits, cls, s}: s
@@ -493,11 +214,6 @@ def arg_dt.pa.of(d: S.Dt) -> String:
 def arg_dt.pa(pa: O.ParamArg) -> String: arg_dt.pa.of(O.ParamArg.dtype(pa))
 
 # `repr(x.arg.dtype)` for a PARAM-shaped arg and `repr(x.arg)` for anything else.
-# The second answer is CPython's `repr(None)`, spelled "None" rather than the
-# port's usual "?" marker, and deliberately: the row diffs a STRING, and a row
-# whose two sides can never be equal teaches nothing. `Ops.INDEX`'s arg really
-# is `ANone{}` here and really is `None` in Python, so "None" is the honest
-# answer and not a fudge.
 def arg_dt.of(a: O.Arg) -> String:
   match a:
     case O.AParam{pa}: arg_dt.pa(pa)
@@ -538,8 +254,6 @@ def sd_names(emu: List<&2, S.Dt>) -> List<&2, String>: sd_names_of(supported_dty
 # two-line row is INVISIBLE to a row-keyed diff: the mutation harness keys on
 # ` = [` followed by `]   py=[`, so a row whose oracle is on the next line is not
 # a row at all. MEASURED: `I3 supported_dtypes ignores its emu argument` reported
-# "NO ROW MOVED" for four runs while the file was visibly wrong, for exactly this
-# reason. The alignment is worth less than being checkable.
 def sd_row(nm: String, emu: List<&2, S.Dt>) -> IO(Unit):
   +a = String.join(sd_names(emu), ",")
   IO.print(String.concat([nm, " = [", a, "]   py=[", a, "]"]))
@@ -562,17 +276,6 @@ def main() -> IO(Unit):
     _ : Unit <- sd_row("sd empty     ", Nil{})
     _ : Unit <- sd_row("sd emu long  ", [S.int64()])
     # `dtypes.all` ITSELF, joined in dtype.py's declaration order. This is the row
-    # `dtypes_all` above is diffed against, and it is why that list is read from
-    # `spec.bend` rather than from `dtype.bend`: the two are claimed to hold the
-    # same seventeen dtypes in the same order, and a drop or a swap in either is
-    # a visible string difference.
-    #
-    # the three `py=` strings below and the three `ws` rows moved, and both sides
-    # OF EACH MOVED WITH THE RENAME -- that is the point. They are CPython's own
-    # printed dtype names, and tinygrad 793abbb moved `DType.name` off the C
-    # spellings, so `half`/`__bf16`/`float`/`double`/`unsigned char`/... became
-    # `f16`/`bf16`/`f32`/`f64`/`u8`/... . Editing one side alone would be the bug;
-    # they move together because CPython genuinely prints the new names.
     _ : Unit <- all_row("dtypes.all    ")
     _ : Unit <- IO.print("emu_long []      = [" ++ Bool.show(emulated_long(Nil{})) ++ "]   py=False")
     _ : Unit <- IO.print("emu_long [long]  = [" ++ Bool.show(emulated_long([S.int64()])) ++ "]   py=True")

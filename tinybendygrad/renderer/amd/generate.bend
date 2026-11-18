@@ -89,37 +89,6 @@
 #   is a value and a gate row rather than a claim.
 #
 # MEASURED bend 2.0.34 constraints that shape every def here.  Cite the
-# positions in `.agents/slop/notes/bend2-constraints.md`, not rule numbers:
-#
-#   * A `match` may only scrutinise a PARAMETER or a PATTERN BINDER (pos 2146).
-#     So every "is this Bool true" question gets its own def and the Bool
-#     arrives as a parameter.  This file has one `.cmp`/`.hit`/`.ok` def per
-#     decision, which is the single largest source of LOC here.
-#   * `Bool.pick` CHOOSES an arm and BEND IS STRICT, so it EVALUATES BOTH
-#     (pos 1389, 2106).  It is never used to guard a call, only to choose
-#     between two already-computed values.
-#   * `List.append(a, A, xs, ys)` is `xs ++ ys` (pos 1590), so an accumulator
-#     that must stay in order either APPENDS or is reversed at the end.  Every
-#     list-emitting fold in this file appends.
-#   * `String.to_list` / `String.from_list` are the string walk: `take`/`drop`
-#     CONSUME the string (pos 2000), so a substring walk is a walk over
-#     `List<&2, Char>` and the needle is a `List<&2, Char>` too.
-#   * No f-string interpolation (pos 11084), so every emitted line is built by
-#     `++`, and a row NAME must already be interpolated.
-#   * `do IO<Unit>:` must end with a BARE TERM (pos 3298) and may only bind
-#     `IO(Unit)` (pos 11076), so a gate row is `def ... -> IO(Unit)` that
-#     prints and returns nothing.
-#   * `List.sort`'s comparator is `@_ -> @_ -> Bool`, i.e. BORROWED ONCE, and
-#     every field accessor here is a `match` rather than a projection, so a
-#     comparator on a two-key record must `match a b:` and compare the two
-#     BINDERS.  Asking `PE.en(x)` for the same field twice is two consumptions.
-#   * A def body that CONTINUES must continue with a term, not with an operator:
-#     `f(x)` on one line and `++ y` on the next parses as two statements and bend
-#     reports `expected : String` against the last argument of `f`.
-#   * bend's machine stack is not a fixed budget: this file ran to completion on
-#     8 of 8 idle runs and died with `the machine stack overflowed` on 2 of 12
-#     back-to-back runs, so a harness that runs it ONCE will report a spurious
-#     failure.  `ga_mutate.py` retries that error eight times.
 
 import Base
 
@@ -132,24 +101,6 @@ type RS is Data:
      old: List<&2, Char>, new: List<&2, Char>}
 
 # SECTION 1 -- the string algebra, once, because FOUR of generate.py's
-# functions are `str.replace` and bend has none.
-#
-# `rep.go` is the general leftmost-first, non-overlapping replace, i.e. exactly
-# Python's `str.replace(old, new)`.  The algorithm, and why it is ONE def:
-#
-#   Python finds the leftmost occurrence of `old`, emits `new`, and RESUMES
-#   AFTER the replacement.  Written positionally that is "consume len(old) or
-#   consume 1", which is TWO SELF-CALLS IN ONE ARM and is refused (pos 1908).
-#   So the position is not carried; a PENDING flag in the accumulator is: the
-#   walk always consumes exactly one Char, and the accumulator says whether
-#   that Char extended a match, completed one, or is sitting in one.
-#
-#   THE NON-OBVIOUS CASE is the mismatch.  When a partial match breaks, the
-#   chars already consumed are LITERAL TEXT and must be emitted, and the
-#   CURRENT char must be re-tested as a fresh start -- otherwise "aa" over
-#   "aaa" drops an "a".  `rep.match` does exactly that by delegating to
-#   `rep.armed` with `done` already flushed, which is why this is exact for
-#   BORDERED needles too and needs no unbordered precondition.
 
 type Suf is Data: Suf{old: String, new: String}
 
@@ -230,7 +181,6 @@ def PE.code(e: PE) -> String:
   match e:
     case PE{en, mn, +op, +code}: code
 
-# ---- THE OPCODE-SET ALGEBRA ------------------------------------------
 # `enums`, `suffix_only_ops` and `sdst_opcodes` are SETS OF OPCODES in the
 # Python, and three of the four class folds are set difference or set union
 # over them, so the set algebra has to exist before any class does.
@@ -313,15 +263,6 @@ def strip_prefix(+s: String, +p: String) -> String:
   Bool.pick(String, String.starts_with(s, p), String.drop(s, String.length(p)), s)
 
 # SECTION 2 -- the CONFIG TABLES, generate.py:11-42.  PORTED AS DATA, in
-# DECLARATION ORDER, and the order is load-bearing twice over:
-#   * `_FIELD_RENAMES` is a `dict`, so it is applied in INSERTION order, and
-#     `op_sel_hi_2` must run BEFORE `op_sel` or the longer name is destroyed;
-#   * `_ENC_SUFFIX_MAP` is applied in DESCENDING LENGTH order, by an explicit
-#     `sorted(..., key=lambda x: -len(x[0]))` at generate.py:53, because
-#     `_VOP_DPP` is a PREFIX of `_VOP_DPP8` and the wrong order mangles it.
-#
-# Both orders are gate rows (`order enc_suffix_map`, `order field_renames`)
-# taken from CPython, not from this comment.
 
 def enc_suffixes() -> List<&2, String>: ["_NSA1"]
 
@@ -381,10 +322,6 @@ def field_fixes() -> List<&2, FLX>:
   [FLX{"cdna", [FL{"VOP3P", [Fx3{"opsel_hi2", 14, 14}]}]}]
 
 # `FIXED_FIELDS` -- {arch: {encoding: {field: int | (encoding, opcode)}}}.  A
-# PAIR value, so it is a SUM type, not a record with an empty slot: `is_pair`
-# says which arm and `e` carries either the decimal int or the OTHER ENCODING's
-# name.  The table has exactly one arch (cdna) so the arch key is carried on
-# the SECTION 5 records instead of being a third lookup level.
 
 def fixed_fields() -> List<&2, Fd2>:
   [Fd2{"VOP3PX2", "x2encoding", "VOP3P", "V_MFMA_LD_SCALE_B32", True{}},
@@ -393,11 +330,6 @@ def fixed_fields() -> List<&2, Fd2>:
 def archs() -> List<&2, String>: ["rdna3", "rdna4", "cdna"]
 
 # THE INDEXED READER, shared: `xs[i]` as a COUNTDOWN, not as a comparison.
-# `List.get` answers a `Maybe`, so every caller would be a two-def reader; and
-# a comparison against the counter would need the Bool as a parameter, which
-# makes `str_at` and `str_at.of` mutually recursive -- refused (pos 11109).
-# Counting down to zero makes the index THE FUEL, so one def answers it.
-# "?" is the port's marker for "index past the end".
 
 def str_at(xs: List<&2, String>, n: Nat) -> String:
   match xs:
@@ -408,16 +340,6 @@ def str_at(xs: List<&2, String>, n: Nat) -> String:
         case 1n+p: str_at(t, p)
 
 # `ARCHS[a]["xml"]`, as a walk over the arch list rather than `List.get`: the
-# two list literals below are the ONLY copy of the three filenames, and
-# `List.get` answers a `Maybe`, which would make every caller a two-def
-# reader for a table of constants.
-# `ARCHS[a]["xml"]`, as a walk over the arch list rather than `List.get`: the
-# two list literals below are the ONLY copy of the three filenames, and
-# `List.get` answers a `Maybe`, which would make every caller a two-def
-# reader for a table of constants.
-# `len(s)` as a `U32`, because `U32.sub` takes `U32`s and `String.length`
-# answers a `Nat`.  The two conversions are named so the widths are read
-# at every site rather than at the point of the mistake.
 
 def slen(s: String) -> U32: U32.from_nat(String.length(s))
 
@@ -427,21 +349,6 @@ def xml_url() -> String: "https://gpuopen.com/download/AMD_GPU_MR_ISA_XML_2025_0
 
 # "Pin the September 2025 XML bundle because newer `latest` changed WMMA format
 # bit sizes across archs and breaks generation." -- generate.py:16, upstream's
-# comment ON THE PIN ITSELF. THE URL IS NOT `.../latest/` AND THAT IS THE
-# WHOLE POINT: `latest` IS A MOVING TARGET, AND WHEN AMD CHANGED THE WMMA
-# FORMAT'S BIT SIZES THE GENERATOR'S OUTPUT CHANGED SHAPE WITH IT -- THE
-# ENCODING TABLES STOPPED MATCHING THE PINNED ONES.
-#
-# SO THE PIN IS A REPRODUCIBILITY INSTRUMENT AND NOT A VERSION PREFERENCE: THE
-# GENERATOR IS ONLY COMPARABLE TO ITSELF IF THE INPUT IS FIXED. AND THE PORT
-# INHERITS THE PIN VERBATIM -- `xml_url` above is upstream's `XML_URL` and
-# not a re-derivation of it -- so a port that "updated" the pin would produce
-# a DIFFERENT `enum.py` from the SAME source and no test would notice, because
-# the only witness is the emitted file itself.
-#
-# THE PORT DOES NOT FETCH IT (WALL 1), so the pin is here as a CONSTANT and
-# as a RULE: if the URL ever moves, the fix is to move the STRING and to
-# re-emit every generated file, and not to change anything else.
 
 # SECTION 3 -- `_strip_enc` (:48), `_norm_field` (:56), `_map_flat` (:61).
 # PORTED.  16 of the 28 logic lines of these three functions.
@@ -480,10 +387,6 @@ def norm_field.go(rs: List<&2, Suf>, acc: String) -> String:
 def norm_field(name: String) -> String: norm_field.go(field_renames(), name)
 
 # `_map_flat`: FLAT/GLOBAL/SCRATCH share ONE opcode field and are told apart by
-# the INSTRUCTION's prefix, not the encoding's.  The V comes off the ENCODING.
-# Every test is a `*_b` def and every dispatch is a `.of` that takes the answer
-# as a PARAMETER, because a match may not scrutinise a call (pos 2146).  There
-# is no shorter spelling of that rule; the `.of` split IS the cost.
 
 def map_flat.glbl_b(+enc_name: String) -> Bool:
   Bool.or(String.eq(enc_name, "FLAT_GLBL"), String.eq(enc_name, "FLAT_GLOBAL"))
@@ -523,12 +426,6 @@ def map_flat.of(+enc_name: String, instr_name: String, glbl: Bool) -> String:
     case True{}: "GLOBAL"
     case False{}: map_flat.scratch.of(enc_name, instr_name, String.eq(enc_name, "FLAT_SCRATCH"))
 
-# `_map_flat`: FLAT/GLOBAL/SCRATCH share ONE opcode field and are told apart by
-# the INSTRUCTION's prefix, not the encoding's.  The V comes off the ENCODING.
-# Every test is a `*_b` def and every dispatch is a `.of` that takes the answer
-# as a PARAMETER, because a match may not scrutinise a call (pos 2146).  There
-# is no shorter spelling of that rule; the `.of` split IS the cost.
-
 def map_flat(+enc_name: String, instr_name: String) -> String:
   map_flat.of(enc_name, instr_name, map_flat.glbl_b(enc_name))
 
@@ -540,18 +437,6 @@ def variant_suffixes() -> List<&2, String>: ["_LIT", "_DPP16", "_DPP8", "_SDWA_S
 #
 # WHY THE SUFFIX IS STRIPPED AT ALL, and it is not cosmetic:
 # "Encoding variants use the same Op enum as the base format" -- generate.py:132,
-# upstream's comment ON `base_enum`. A VARIANT ENCODING -- `VOP1_DPP8`,
-# `VOP1_SDWA`, `VOP1_LIT` -- IS A DIFFERENT ENCODING OF THE SAME
-# INSTRUCTIONS, SO THE OPCODES ARE THE BASE'S OPCODES AND THE `Op` ENUM IS
-# THE BASE'S ENUM. WITHOUT THE STRIP, EVERY VARIANT WOULD EMIT ITS OWN `Op`
-# ENUM AND THE OPCODE NUMBERS WOULD BE DECLARED TWICE, IN TWO ENUMS, WITH
-# THE SAME VALUES -- AND EVERY `from ins import *` DOWNSTREAM WOULD SEE TWO
-# ENUMS WHERE THE HARDWARE HAS ONE SET OF OPCODES.
-#
-# SO `get_base_fmt` IS NOT A NAME COSMETIC: IT IS WHAT MAKES THE OPCODE
-# SPACE SINGLE. AND IT IS WHY THE PORT'S `variant_class` (FOLD 3) READS THE
-# BASE'S `Op` ENUM THROUGH `get_base_fmt(EC.name(e)) ++ "Op"` RATHER THAN
-# OFF THE VARIANT'S OWN NAME.
 
 def get_base_fmt.go(sfx: List<&2, String>, fmt: String) -> String:
   match sfx:
@@ -561,11 +446,6 @@ def get_base_fmt.go(sfx: List<&2, String>, fmt: String) -> String:
 def get_base_fmt(fmt: String) -> String: get_base_fmt.go(variant_suffixes(), fmt)
 
 # `ORDER` -- the DECLARATION ORDER of a generated instruction's fields, which is
-# NOT the bit order: `encoding` is bit 31 and is emitted FIRST, `offset` is bit
-# 14 and is emitted 37th.  This list is the single most load-bearing table in
-# the file: `ORDER.index(f[0]) if f[0] in ORDER else 999` is the sort key, so a
-# name that is MISSING from it lands at 999 and sorts LAST, and a name that is
-# present sorts by declaration, not by `lo`.
 
 def Fld.lo(f: Fld) -> U32:
   match f:
@@ -602,11 +482,6 @@ def r(+nm: String, +got: String, +want: String) -> String:
   String.concat([nm, " = [", got, "]   py=[", want, "]"])
 
 # the derived row.  The `py=` half is the port's own value, read through the same
-# reader the row prints, so a row cannot disagree with itself and a transcription
-# cannot rot.  `rd` is the derived half of `r`, the shape `renderer/tc.bend` and
-# `renderer/llvmir.bend` use.  THE TEETH MOVE TO THE ORACLE: a derived row's two
-# halves always agree with each other, so only the byte diff against CPython can
-# catch a wrong VALUE.
 def rd(+nm: String, +got: String) -> String: r(nm, got, got)
 
 def g(nm: String, got: String) -> IO(Unit): IO.print(rd(nm, got))
@@ -647,11 +522,6 @@ def eo_of_fmt(eos: List<&2, EO>, fmt: String) -> List<&2, OP>:
 def ops_of(fmt: String, eos: List<&2, EO>) -> List<&2, OP>: sort_ops(eo_of_fmt(eos, fmt))
 
 # `next(op for op, n in enums[fmt].items() if n == nm)` -- the search by NAME.
-# A miss answers 0 and says so in the caller; no gate row can reach the miss
-# with the shipped FIXED_FIELDS table, and `fd.miss` says so out loud.
-# `Maybe<&2, String>` OR a miss value.  Three call sites need it -- an opcode
-# lookup, a field-def miss, and `write_pcode`'s `(name, opcode)` hit -- so it is
-# one def named for what it does rather than for its first caller.
 
 def maybe_str(m: Maybe<&2, String>, miss: String) -> String:
   match m:
@@ -683,13 +553,6 @@ def op_named(base: String, op: U32, eos: List<&2, EO>) -> String:
   maybe_str(op_find_nm(ops_of(base, eos), U32.show(op)), "")
 
 # `f"{op_enum}.{enums[op_enum.removesuffix('Op')][op]}"` -- the PREFIX is the
-# enum class name and the LOOKUP is the stripped format, which are two different
-# strings over one table.  The opcode set is SORTED first: `fmt_allowed` receives
-# a Python `set` and the emission order is the opcode order.
-# `fmt_allowed` takes an OPCODE SET, not a list of enum members: every caller
-# holds a set of opcodes (`all_ops`, `base_allowed`, `sdst_ops`,
-# `suffix_only_ops[sfx][base]`) and the NAME comes from the enum table by
-# opcode, which is `op_named` below.
 
 def fmt_allowed.names.go(os_: List<&2, U32>, +op_enum: String, +eos: List<&2, EO>,
                          acc: List<&2, String>) -> List<&2, String>:
@@ -747,11 +610,6 @@ def order() -> List<&2, String>:
 def order.hit(o: List<&2, String>, nm: String) -> Bool: str_in(nm, o)
 
 # 999 is not a sentinel the port invented: it is the literal in generate.py:327,
-# and it is what puts a field this file has never heard of LAST.
-# `ORDER.index(nm)` -- the index of the first entry equal to `nm`.  ONE def, not
-# a `cmp` helper that calls back: two defs that call each other have no order in
-# bend.  `Bool.pick` CHOOSES and bend evaluates both arms, which is free here
-# because the walk is a pure recursion over a strictly shrinking list.
 
 def order_at(o: List<&2, String>, +nm: String, +i: U32) -> U32:
   match o:
@@ -771,12 +629,6 @@ def Fld.nm(f: Fld) -> String:
 def Fld.of(nm: String, hi: U32, lo: U32) -> Fld: Fld{nm, hi, lo}
 
 # `sorted(fields, key=lambda f: (ORDER.index(...) else 999, f[2]))` -- a
-# TWO-KEY sort.  `List.sort` takes one `le`, so the pair is compared field by
-# field here rather than by a tuple, which bend has no spelling for.  This is
-# also the ONE comparator in the file whose parameters must stay BORROWED: a
-# record read CONSUMES, `List.sort` hands `le` borrowed elements, so each
-# element is destructured exactly once and the two keys are carried out as
-# arguments instead of being re-read.
 
 def fld_le.k2(same: Bool, ka: U32, kb: U32, la: U32, lb: U32) -> Bool:
   match same:
@@ -801,28 +653,6 @@ def sort_fields(fs: List<&2, Fld>) -> List<&2, Fld>: List.sort(Fld, fld_le, fs)
 # SECTION 5 -- the fixture shapes, `field_def`, and the emitters.
 #
 # `field_def` is generate.py:295-318 and it is a SEVENTEEN-ARM LADDER over
-# (field name, bit width, format, arch, enc_bits).  Its ORDER is load-bearing:
-# `soffset` at 7 bits is `SGPRField` and at 8 bits it is `SSrcField`, and the
-# `ssrc*`-at-8 arm is tested BEFORE the `saddr`/`soffset`-at-8 arm.  So the
-# ladder is a TABLE here, in source order, and the walk returns the FIRST
-# match.  The table IS the spec; reordering the table reorders the spec.
-#
-# the kind codes are `K2_*`, not `dsl.bend`'s `K_*`, deliberately.  dsl.bend
-# exports `K_PLAIN`/`K_FIXED`/`K_ENUM`/`K_SRC`/`K_VGPR`/`K_SGPR`/`K_SSRC`/
-# `K_ALIGN`/`K_SBASE`/`K_SRSC`/`K_VDSTY`, which classify the SAME eleven
-# classes -- at the ENCODE side, where `SGPRField(7,0)` is ONE class.  The
-# generator emits `SGPRField(hi, lo)` and `SGPRField(hi, lo, default=NULL)` as
-# two DIFFERENT lines, so importing dsl's codes would alias them and every
-# `field_def` row would be blind to exactly that swap.  Two code spaces, and
-# this paragraph is the reason.  REPORTED to the coordinator: if one code space
-# is preferred, the default variants have to gain a bit over there first.
-#
-# `ctor_names` / `arg3_names` are INDEXED TABLES of eighteen strings rather than
-# eighteen-arm matches, because a `match` may not scrutinise a computed value
-# and an eighteen-deep `.of` chain would be thirty-six defs.
-# pk: 0 nm == pa | 1 starts_with(nm, pa) | 2 nm in pa(words)
-# pb: 0 any width | 1 width == pb
-# pc: 0 any format | 1 fmt not in (DPP,SDWA) | 2 base_fmt in (GLOBAL,SCRATCH)
 
 def K2_BIT() -> U32: 0
 
@@ -926,24 +756,11 @@ def arg3(+kind: U32, base_fmt: String) -> String:
 # its most literal form.
 # THE ONLY PLACE `hi` IS NOT `hi`.  The inherited file defined this and never
 # called it, so the `BitField(12, {lo})` arm of generate.py:315 was DEAD in the
-# port and every GLOBAL/SCRATCH `offset` came out as `BitField(14, 0)`.
 
 def field_def.hi(kind: U32, +hi: U32) -> U32:
   Bool.pick(U32, U32.is_eq(kind, K2_OFF13()), 12, hi)
 
 # `field_def`, generate.py:295-318.  ARMS 1 AND 2 COME FIRST because they are
-# the only two that consult FIXED_FIELDS, and both return a `FixedBitField`
-# with a LITERAL value rather than a class.
-#
-# ARM 2's value is the interesting one.  FIXED_FIELDS says
-# `{"x2encoding": ("VOP3P", "V_MFMA_LD_SCALE_B32")}`, and the emitted literal is
-# that format's ENCODING BITS concatenated with the OPCODE of that instruction,
-# zero-padded to the field width.  So the emitted `0b...` is a FUNCTION OF THE
-# OTHER TABLES, and it is where a mis-transcribed opcode would land; the
-# `cdna` `fd.emb` rows diff it against CPython's own emitted file.
-# `0b{fixed_bits}{opcode:0{bits-len(fixed_bits)}b}` -- `String.repeat` with a
-# NEGATIVE count is the failure, so the padding width is clamped and the clamp
-# is a named def rather than a hidden `max`.
 
 def ctor_text(+kind: U32, +hi: U32, +lo: U32, +base_fmt: String) -> String:
   Bool.pick(String, String.is_empty(arg3(kind, base_fmt)),
@@ -956,19 +773,6 @@ def ctor_text(+kind: U32, +hi: U32, +lo: U32, +base_fmt: String) -> String:
 #
 # "GLOBAL/SCRATCH: offset is 13-bit signed [12:0], FLAT: 12-bit unsigned (XML
 # has 12-bit for all)" -- generate.py:315, upstream's comment ON THIS FIELD.
-# THE TWO HALVES ARE A SIGNEDNESS DIFF AND A WIDTH DIFF AT ONCE, AND THEY
-# DIFFER BECAUSE THE THREE ADDRESS SPACES MEAN DIFFERENT THINGS:
-#   * GLOBAL and SCRATCH offsets are RELATIVE to a 64-BASE (a global address
-#     or a scratch base), so they can be NEGATIVE -- hence SIGNED, and hence
-#     13 bits, one more than the XML's 12.
-#   * a FLAT offset is ABSOLUTE within the 48-BIT ADDRESS SPACE, so it cannot
-#     be negative and 12 unsigned bits suffice.
-# SO THE XML IS WRONG FOR TWO OF THE THREE FORMATS AND THE FIX IS IN THE
-# GENERATOR, NOT IN THE XML -- and the port's `ctor_text` above writes the
-# 13-bit SIGNED form for GLOBAL/SCRATCH and leaves FLAT at the XML's 12.
-# A reader that took the XML's width for all three would produce a GLOBAL
-# offset that cannot express the most negative displacement, and a FLAT offset
-# that is one bit too wide.
 
 def pad_n(+n: Nat) -> Nat: Bool.pick(Nat, Nat.is_lt(0n, n), n, 0n)
 
@@ -988,18 +792,6 @@ def ty_le.b(t: TY, +a_name: String, +a_base: String) -> Bool:
     case TY{+name, +base, flds}: ty_le.pair(String.is_lt(a_name, name), String.eq(a_name, name), a_base, base)
 
 # `{opcode:0{bits-len(fixed_bits)}b}` -- the opcode in BINARY, left-padded with
-# zeros to `width - len(fixed_bits)`, and NOT TRUNCATED: Python's format spec
-# widens, it does not narrow, so 44 with a width of 5 is `101100`, six digits,
-# and the emitted literal is seven digits wide.  bend 2.0.34 has no binary
-# formatter on `U32` (`to_binary`, `show_bin`, `bits` and `bin` are all absent),
-# so this halves with the digits PREPENDED, which turns least-significant first
-# into most-significant first.
-#
-# the `Nat` countdown is the only decreasing argument BEND accepts here.
-# `U32.div(x, 2)` is not a STRUCTURAL subterm of `x` and the
-# decreasing-self-call rule is structural, so a `U32`-only recursion is refused
-# outright.  `U32.log2` supplies the digit count, which is exactly Python's `b`
-# format width for a value asked for with no padding.
 
 def ubin.of(x: U32) -> Nat: U32.log2(x)
 
@@ -1056,25 +848,12 @@ def Fd2.k(x: Fd2) -> String:
 # is why the gate can diff the emission at all.
 #
 # `write_enum`, generate.py:273-287.
-# `suffix = "_E32" if name in ("VOP1","VOP2","VOPC") else "_E64" if name == "VOP3" else ""`
-# the five searches share one shape, and it is the shape bend forces: a walk
-# that RETURNS a `Maybe` cannot be `find` -> `hit` -> `find`, because two defs
-# that call each other have no order.  So the accumulator IS the recursion
-# parameter, `kv` is the per-element answer (never recursive), and `go` is the
-# only self-call.  `go` stops as soon as `acc` is `Some`, which is what
-# `next(...)`/`dict.get` do.
 
 def field_def.fd_kv(+k: Fd2, +fmt: String, +nm: String) -> Maybe<&2, Fd2>:
   Bool.pick(Maybe<&2, Fd2>, Bool.and(String.eq(Fd2.fmt(k), fmt), String.eq(Fd2.k(k), nm)),
     Some{k}, None{})
 
 # the five `Maybe`-returning searches share one shape, and it is the shape bend
-# forces.  A search cannot be `find` -> `hit` -> `find`, because two defs that
-# call each other have no order; and it cannot match a second list inside a
-# match arm, because a `match` on a parameter NESTED in a match arm is refused.
-# So: `kv` is the per-element answer and is never recursive, `take` is
-# first-hit-wins, and `go` is the only self-call.  `go` returns `acc` at the end
-# of the list, so it is exactly `next(...)` / `dict.get`.
 
 def field_def.fd_take(acc: Maybe<&2, Fd2>, hit: Maybe<&2, Fd2>) -> Maybe<&2, Fd2>:
   match acc:
@@ -1131,7 +910,6 @@ def ec_find.go(encs: List<&2, EC>, +nm: String, acc: Maybe<&2, EC>) -> Maybe<&2,
 def ec_find(nm: String, encs: List<&2, EC>) -> Maybe<&2, EC>:
   ec_find.go(encs, nm, None{})
 
-# ---- Fd2, the FIXED_FIELDS sum ------------------------------------------
 
 def ec_get.of(m: Maybe<&2, EC>, miss: EC) -> EC:
   match m:
@@ -1165,11 +943,6 @@ def op_find(os_: List<&2, OP>, nm: String) -> Maybe<&2, U32>:
 def ec_op_of(eos: List<&2, EO>, fmt: String, nm: String) -> U32:
   ec_op_of.of(op_find(ops_of(fmt, eos), nm), 0)
 
-# `next(op for op, n in enums[fixed[0]].items() if n == fixed[1])` -- a SEARCH
-# by NAME over one format's opcode table.  There is no `Maybe`-free spelling of
-# a search, so `ec_op_of` answers 0 on a miss and `fd.emb` row for
-# `x2encoding` is the row that would see it.
-
 def field_def.fix_pair(+g: Fd2, +hi: U32, +lo: U32, encs: List<&2, EC>, enums: List<&2, EO>) -> String:
   field_def.emb(hi, lo, EC.bits(ec_get(Fd2.e(g), encs)), ec_op_of(enums, Fd2.e(g), Fd2.onm(g)),
     U32.sub(U32.add(hi, 1), lo))
@@ -1187,13 +960,6 @@ def fmt_exempt_b(+pc: U32, fmt: String, +base_fmt: String) -> Bool:
       Bool.or(String.eq(base_fmt, "GLOBAL"), String.eq(base_fmt, "SCRATCH")), True{}))
 
 # the record shapes, and the four different sorts.  They are not
-# interchangeable and a gate that only diffed counts would pass with all four
-# collapsed into one:
-#   sorted(ops.items())       -- by OPCODE; in write_ins the opcode IS the
-#                                identity, so the sort is total.
-#   sorted(encodings.items()) -- by ENCODING NAME, lexicographic.
-#   sorted(fields, key=(order, lo)) -- the two-key ORDER sort of SECTION 4.
-#   sorted(types.items())     -- by (name, encoding), a PAIR.
 
 def r_ok.pc(pk_ok: Bool, pb_ok: Bool, pc_ok: Bool) -> Bool: Bool.and(pk_ok, Bool.and(pb_ok, pc_ok))
 
@@ -1201,11 +967,6 @@ def vgpr_hit(+nm: String, ws: List<&2, String>) -> Bool:
   match ws:
     case Nil{}: False{}
     case +h <> +t: Bool.or(String.eq(h, nm), vgpr_hit(nm, t))
-
-# pc: 0 any | 1 fmt not in (DPP,SDWA) | 2 base_fmt in (GLOBAL,SCRATCH).  The
-# `DPP`/`SDWA` exemption is the ONE place `field_def` refuses to call an enum
-# for a format whose `op` field is not an opcode, and it is a NOT IN test, so
-# a fourth format would have to be added to BOTH this def and the comment.
 
 def R.pk(r: R) -> U32:
   match r:
@@ -1260,7 +1021,6 @@ def field_def.kind(nm: String, hi: U32, lo: U32, fmt: String, encs: List<&2, EC>
                    enums: List<&2, EO>) -> String:
   field_def.fix_kind(nm, hi, lo, fmt, encs, enums)
 
-# ---- THE LADDER ITSELF: `sorted`-independent FIRST MATCH over the table ----
 
 def field_def.fix_pair.of(g: Fd2, hi: U32, lo: U32, +encs: List<&2, EC>, +enums: List<&2, EO>,
                            is_pair: Bool) -> String:
@@ -1285,11 +1045,6 @@ def field_def.fix(+nm: String, hi: U32, lo: U32, +fmt: String, +fixed: List<&2, 
 
 def field_def.k0(is_enc: Bool, has_bits: Bool) -> Bool: Bool.and(is_enc, has_bits)
 
-# FIXED_FIELDS is keyed by (arch, encoding, field).  The arch is a TABLE
-# CONSTANT here -- the only entry is cdna's -- so it is not a third lookup
-# level; conflating FIXED_FIELDS with FIELD_FIXES would be, and FIELD_FIXES is
-# a field-LIST append done by `__main__`, not a lookup.  Two different tables.
-
 def field_def.enc.of(k0: Bool, +nm: String, hi: U32, lo: U32, +bits: String, +fmt: String,
                      +fixed: List<&2, Fd2>, +encs: List<&2, EC>, +enums: List<&2, EO>) -> String:
   match k0:
@@ -1300,24 +1055,6 @@ def field_def.enc.of(k0: Bool, +nm: String, hi: U32, lo: U32, +bits: String, +fm
 #
 # "For multi-dword formats, encoding field may be in higher dword but
 # identifier is always in dword0; use % 32" -- generate.py:114, upstream's
-# comment ON THE `enc_bits` SLICE. THE XML GIVES AN ENCODING FIELD'S BIT
-# RANGE AND AN ENCODING IDENTIFIER'S BIT STRING, AND FOR A MULTI-DWORD
-# FORMAT THE TWO LIVES IN DIFFERENT PLACES: THE IDENTIFIER IS ALWAYS THE
-# FIRST DWORD, BUT THE FIELD'S RANGE MAY BE IN A HIGHER ONE. SO THE SLICE
-# TAKES THE IDENTIFIER'S BITS AT THE FIELD'S POSITION -- AND THE POSITION IS
-# TAKEN `% 32`, BECAUSE THE IDENTIFIER STRING IS ONE DWORD LONG AND A
-# FIELD IN DWORD 1 WOULD INDEX PAST ITS END.
-#
-# THE `% 32` IS THE WHOLE TRICK AND IT IS A TRAP: WITHOUT IT A MULTI-DWORD
-# FORMAT'S `encoding` FIELD WOULD SLICE OUT OF RANGE OR WRAP TO THE WRONG
-# BITS, AND THE WRONG BITS ARE A VALID-LOOKING `FixedBitField` LITERAL --
-# SO THE ERROR IS AN EMITTED CLASS WITH THE WRONG ENCODING CONSTANT, NOT A
-# CRASH.
-#
-# THE PORT'S `bits` IS A FIXTURE (WALL 1: the XML is not fetched), so the
-# `% 32` IS NOT RE-DERIVED HERE. WHAT IS HERE IS THE CONSUMER: the
-# `encoding` field is the ONLY field that gets a `FixedBitField` literal at
-# all, and `field_def.enc.of`'s `True{}` arm is the whole of that.
 
 def field_def.enc(+nm: String, hi: U32, lo: U32, +fmt: String, +bits: String, has_bits: Bool,
                   +fixed: List<&2, Fd2>, +encs: List<&2, EC>, +enums: List<&2, EO>) -> String:
@@ -1393,28 +1130,11 @@ def write_enum.aliases.go(os_: List<&2, OP>, +fmt: String, +acc: List<&2, String
           List.append(&2, String, acc, ["  " ++ OP.nm(o) ++ " = " ++ OP.nm(o) ++ op_msuf(fmt, OP.op(o))])))
 
 # `write_common`, generate.py:256-271.  `all_fmts` and `all_op_types` are the
-# CROSS-ARCH union that `__main__` builds, and `sorted(all_fmts.keys())` is a
-# LEXICOGRAPHIC sort of the keys with `sorted(all_fmts.items())` a second sort
-# over the pairs.  Both are emitted, in that order, which is why the two
-# `Fmt` blocks in common.py are in different orders for the same key set.
-# the alias pass is second and separate: `aliases` collects (mem, msuf) for
-# every op that GOT a suffix and is emitted after all the value cells, so
-# `V_CNPY = V_CNPY_E32` follows `V_CNPY_E32 = 0`.  Folding the two passes into
-# one list puts the aliases before the values, which is legal Python and a
-# different file.
 
 def write_enum.aliases(fmt: String, os_: List<&2, OP>) -> List<&2, String>:
   write_enum.aliases.go(os_, fmt, Nil{})
 
 # the alias pass is second and separate: `aliases` collects (mem, msuf) for
-# every op that GOT a suffix and is emitted after all the value cells, so
-# `V_CNPY = V_CNPY_E32` follows `V_CNPY_E32 = 0`.  Folding the two passes into
-# one list puts the aliases before the values, which is legal Python and a
-# different file.
-# one class = header, value cells, alias cells, blank, in that order.  The
-# value walk (`enum_members.go`) and the alias walk (`write_enum.aliases.go`)
-# are separate folds over the SAME sorted opcode list, and the alias walk emits
-# only for the ops that received a suffix.
 
 def write_enum.one(+fmt: String, +os_: List<&2, OP>, acc: List<&2, String>) -> List<&2, String>:
   List.append(&2, String, acc, List.append(&2, String,
@@ -1456,13 +1176,6 @@ def str_le(a: String, b: String) -> Bool: String.is_lt(a, b)
 def sort_strs(xs: List<&2, String>) -> List<&2, String>: List.sort(String, str_le, xs)
 
 # `fmt_allowed`, generate.py:361-364, and `write_operands`/`fmt_val`,
-# generate.py:464-482.
-#
-# `fmt_allowed` is "{EnumName.MEMBER, ...}" and its member names come from the
-# ENUM TABLE, not from the operand set's own names, so a caller that formatted
-# the members from `ops` directly would produce a different string whenever an
-# opcode is in the set but absent from the enum.  `suffix_only_ops` supplies
-# exactly such an opcode in the fixture.
 
 def write_common.head() -> List<&2, String>:
   ["# autogenerated from AMD ISA XML - do not edit", "from enum import Enum, auto", "",
@@ -1560,10 +1273,6 @@ def ty_le(a: TY, b: TY) -> Bool:
 def fixed_of(+arch: String) -> List<&2, Fd2>:
   Bool.pick(List<&2, Fd2>, String.eq(arch, "cdna"), fixed_fields(), Nil{})
 
-# ---- THE FIXTURE.  Built by `.agents/slop/ga_fix.py` from the SAME dicts
-# `ga-oracle.py` hands to `generate.write_ins`, so the port's fixture and
-# CPython's input cannot drift apart.
-
 def sort_tys(tys: List<&2, TY>) -> List<&2, TY>: List.sort(TY, ty_le, tys)
 
 def write_operands.cells.go(ois: List<&2, OI>, acc: List<&2, String>) -> List<&2, String>:
@@ -1585,10 +1294,6 @@ def write_operands.tail(rows: List<&2, String>, head: List<&2, String>) -> List<
 # the closing brace is its own step, not a fourth nested `List.append`: four
 # opens with three closes parses as "a term with no value" and bend reports it
 # against the NEXT `def`, thirty lines away, with no mention of the paren.
-# ---- THE FIXTURE.  Built by `.agents/slop/ga_fix.py` from the SAME dicts
-# `ga-oracle.py` hands to `generate.write_ins`, so the port's fixture and
-# CPython's input cannot drift apart.
-
 def VF.name(v: VF) -> String:
   match v:
     case VF{name, +fmt}: name
@@ -1629,10 +1334,6 @@ def used_bases.go(tys: List<&2, TY>, +vs: List<&2, VF>, +acc: List<&2, String>) 
         List.append(&2, String, acc, [TY.base(t)]), acc))
 
 # the recursion is an argument, not an arm of the pick.  `Bool.pick` chooses
-# between two already-computed values and never sequences one, so a self-call
-# inside a pick arm means the walk stops at the first element whose accumulator
-# is chosen -- `dedup_adj(["a","a","b","b","c"])` answered `["a"]`, and the
-# import list came out as `DPPOp, FLATOp`.  Only the ACCUMULATOR is a pick.
 
 def dedup_adj.step(+x: String, +last: String, +acc: List<&2, String>) -> List<&2, String>:
   Bool.pick(List<&2, String>, String.eq(x, last), acc, List.append(&2, String, acc, [x]))
@@ -1682,18 +1383,6 @@ def write_operands(+tys: List<&2, TY>, +eos: List<&2, EO>, +arch: String) -> Lis
         String.join(write_operands.enum_names(tys, eos), ", "), ""])
 
 # FOLD 5 -- `write_pcode`, generate.py:484-499.  The only emitter whose product
-# is DATA rather than a class tree, and the only one that has to spell a Python
-# string LITERAL rather than concatenate one.
-#
-# `extract_pcode`, which produces this input, is NOT PORTED: bend 2.0.34 has
-# `F32` and no `F64` (`bend base | grep -c F64` is 0), and `extract_pdf_text`
-# accumulates PDF `Td` offsets into Python floats, so `round(y)`'s grouping and
-# every `55 < x < 65` window would be decided on 32-bit values.  See WALL 5.
-# `{code!r}` -- CPython's `repr` for a `str`: single-quoted unless the text
-# contains `'` and not `"`, and `\\`, `\t`, `\n`, `\r`, `\'` plus a `\xNN` for
-# every other code point `str.isprintable()` rejects.  A bend char literal
-# cannot SPELL `'` (there is no escape for it inside `'...'`) nor `\`, so those
-# two arrive as code points and the other three are literals.
 
 def ctl(code: U32) -> Char: Char.from_u32(code)
 
@@ -1733,10 +1422,6 @@ def pcode_find.go(ps: List<&2, PK>, +nm: String, +op: U32) -> Maybe<&2, String>:
 def pcode_find(ps: List<&2, PK>, nm: String, op: U32) -> Maybe<&2, String>: pcode_find.go(ps, nm, op)
 
 # `entries.append((f"{fmt_name}Op", f"{name}{msuf}", opcode, pcode[(name, opcode)]))` --
-# the SAME `member_suffix if fmt != "VOP3" or opcode < 512` rule the enum
-# emitter and the helper block already share.  A `PK` whose code is the EMPTY
-# string is a miss, which is exactly Python's `"x" in d` for this fixture, so the
-# lookup is a one-field test rather than a `Maybe` round trip.
 
 def pcode_entry.go(os_: List<&2, OP>, +fmt: String, +ps: List<&2, PK>, +acc: List<&2, PE>) -> List<&2, PE>:
   match os_:
@@ -1763,17 +1448,6 @@ def pcode_enums.go(es: List<&2, PE>, +acc: List<&2, String>) -> List<&2, String>
     case +e <> +t: pcode_enums.go(t, List.append(&2, String, acc, [PE.en(e)]))
 
 # `sorted(entries, key=lambda x: (x[0], x[2]))` -- by ENUM then OPCODE, never by
-# name: `V_MAD_F32` (512) precedes `V_ADD_F32` (300) only because their enums
-# differ.
-# `pcode` is walked TWICE -- once for the rows, once for the import list -- so
-# every parameter on this chain is BORROWED.  `List.sort`'s comparator takes
-# `@_` for the same reason and because a comparator that consumed its operands
-# would have to rebuild them.
-# `pcode` is walked TWICE -- once for the rows, once for the import list -- so
-# every parameter on this chain is BORROWED.  `List.sort`'s comparator takes
-# `@_`, and `PE.en` is a `match` rather than a projection, so the comparator
-# DESTRUCTURES ONCE and compares the two binders: asking `PE.en(a)` and
-# `PE.en(b)` for the same field twice is two consumptions of one operand.
 
 def pe_le(a: PE, b: PE) -> Bool:
   match a b:
@@ -1802,27 +1476,6 @@ def write_pcode(+ps: List<&2, PK>, +eos: List<&2, EO>, +arch: String) -> List<&2
 
 # ================= INS-PART-1 =========================
 # `write_ins`, generate.py:289-462: the CLASS TREE and the helpers.
-#
-# The inherited file stopped at `field_def`, which is the 17-arm field ladder
-# inside `write_ins`, and never emitted a class.  Everything below is the other
-# half of the same function, and the whole emitted `ins.py` is ONE gate row
-# (`ins rdna3`, `ins cdna`) because a count row is identical for a dropped
-# member, a dropped alias, a swapped `default=NULL` and a reordered field.
-#
-# FOUR FOLDS, in upstream order, and the order is the file:
-#   1. base classes -- with the RDNA3 `seg` special case that splits FLAT into
-#      flat/global/scratch and vflat into vflat/vglobal/vscratch, and the
-#      EXCLUSION list (`FLAT_GLOBAL`, `FLAT_SCRATCH`, `FLAT_GLBL`, `DPP`,
-#      `SDWA`) that emits nothing at all;
-#   2. variant classes -- only the fields the base does NOT already have, plus
-#      an `op` override when the variant is a SUFFIX-ONLY variant;
-#   3. the SDST classes -- `VOP1_SDST`/`VOP3_SDST` and their `_LIT` children,
-#      with `VOP3` widened by every opcode below 256;
-#   4. `functools.partial` helpers -- the only place `ADDTID` is dropped.
-#
-# `Bool.pick` IS NEVER USED TO SEQUENCE A WALK.  It chooses between two
-# already-computed values, so every fold below passes the self-call as an
-# ARGUMENT and puts only the accumulator in the pick.
 
 def u32_in(+x: U32, xs: List<&2, U32>) -> Bool:
   match xs:
@@ -1866,7 +1519,6 @@ def u32_filter.go(xs: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
 
 def u32_filter(xs: List<&2, U32>) -> List<&2, U32>: u32_filter.go(xs, Nil{})
 
-# ---- `suffix_only_ops`, the {suffix: {fmt: {opcode}}} table ----------
 # `suffix_only_ops.values()` is a list of dicts of sets, and three different
 # questions are asked of it: does a format's BASE class exclude these opcodes,
 # does a variant class ALLOW them, and which CLASS does an opcode's helper use.
@@ -1943,7 +1595,6 @@ def op_sfx.go(ss: List<&2, SS>, +fmt: String, +op: U32, +acc: String) -> String:
 def op_to_suffix(ss: List<&2, SS>, +fmt: String, op: U32) -> String:
   op_sfx.go(ss, fmt, op, "")
 
-# ---- `sdst_opcodes`: ops whose `vdst` operand is an SGPR --------------
 # `types.get((name, fmt), {})` then `.get("vdst", (None,None,None))[2] == "OPR_SREG"`.
 
 def oi_hit(ois: List<&2, OI>, +nm: String) -> Bool:
@@ -2013,7 +1664,6 @@ def sdst_ops(tys: List<&2, TY>, eos: List<&2, EO>) -> List<&2, SG>:
 def sdst_of.step(+g: SG, +fmt: String, +acc: List<&2, U32>) -> List<&2, U32>:
   Bool.pick(List<&2, U32>, String.eq(SG.fmt(g), fmt), u32_union(acc, SG.ops(g)), acc)
 
-# ---- the encoding split and the `seg` test ---------------------------
 
 def sdst_of(sgs: List<&2, SG>, +fmt: String, +acc: List<&2, U32>) -> List<&2, U32>:
   match sgs:
@@ -2066,23 +1716,6 @@ def is_flat_split(+nm: String, has_seg: Bool) -> Bool:
 # "RDNA3 FLAT/GLOBAL/SCRATCH share encoding bits, differentiated by seg field"
 # / "RDNA4 VFLAT/VGLOBAL/VSCRATCH have distinct encoding bits, no seg field
 # needed" -- generate.py:374-375, upstream's comment ON THIS EXACT DECISION.
-# ON RDNA3 THE THREE FORMATS ARE ONE ENCODING WITH A `seg` DISCRIMINATOR:
-# THE SAME BITS MEAN "GLOBAL", "SCRATCH" OR "FLAT" DEPENDING ON `seg`, SO ONE
-# XML ENCODING YIELDS THREE CLASSES AND THE `seg` FIELD IS WHAT SEPARATES
-# THEM. `is_flat_split` IS THE PORT'S TEST FOR EXACTLY THAT -- A FORMAT WITH A
-# `seg` FIELD AND A FLAT NAME.
-#
-# ON RDNA4 THE THREE ARE THREE ENCODINGS WITH DISTINCT BITS, SO `seg` DOES NOT
-# EXIST AND THE THREE CLASSES COME FROM THE XML DIRECTLY. WHICH IS WHY THE
-# TEST IS `has_seg AND (FLAT or VFLAT)` AND NOT "THE NAME IS FLAT": a
-# RDNA4 FLAT HAS NO `seg` AND IS NOT SPLIT. THE PORT'S `seg_hit` IS THE
-# `has_seg` HALF, AND IT IS A SEARCH OVER THE FIELD LIST BECAUSE `seg` IS
-# NOT ALWAYS THE FIRST FIELD.
-#
-# THE CONSEQUENCE, AND IT IS A GOTCHA: A PORT THAT SPLIT ON THE NAME ALONE
-# WOULD MAKE THREE CLASSES OUT OF A RDNA4 FLAT THAT ARE NOT DISTINCT, AND A
-# PORT THAT SPLIT ON `seg` ALONE WOULD MAKE ONE CLASS OUT OF THREE RDNA3
-# FORMATS THAT MUST BE THREE.
 
 # `prefix = "V" if enc_name == "VFLAT" else ""`
 
@@ -2102,7 +1735,6 @@ def FV.oe(f: FV) -> String:
   match f:
     case FV{cls, +seg, oe}: oe
 
-# ---- the import header -----------------------------------------------
 
 def enum_names.take.plain(+e: EO, +acc: List<&2, String>, is_plain: Bool) -> List<&2, String>:
   Bool.pick(List<&2, String>, is_plain, List.append(&2, String, acc, [EO.fmt(e)]), acc)
@@ -2167,7 +1799,6 @@ def dsl_regs() -> List<&2, String>:
 # joined field definitions, which is why the list is a flat string and not a
 # set of classes: `SGPRField(1, 2)` and `SGPRField(1, 2, default=NULL)` are one
 # class name here and TWO DIFFERENT LINES in the emission, which is exactly why
-# this file uses its own `K2_*` codes and not `dsl.bend`'s.
 
 def dsl_used.step(+x: String, +hay: String, +acc: List<&2, String>) -> List<&2, String>:
   Bool.pick(List<&2, String>, String.contains(hay, x), List.append(&2, String, acc, [x]), acc)
@@ -2194,16 +1825,6 @@ def dsl_reexport(+encs: List<&2, EC>, fixed: List<&2, Fd2>, eos: List<&2, EO>) -
 #
 # "Exclude SDST ops from base class (they need VOP1_SDST/VOP3_SDST/VOP3B)"
 # -- generate.py:372, upstream's comment ON THE SECOND SUBTRACTION. THE REASON
-# IS NOT COSMETIC: AN SDST OP WRITES AN SGPR, AND THE BASE CLASS'S `vdst` IS A
-# VGPR, SO AN SDST OP IN A BASE CLASS WOULD HAVE NO FIELD TO WRITE ITS
-# DESTINATION TO. THE FIX IS NOT TO DROP THE OP BUT TO MOVE IT TO A CLASS
-# WHOSE DESTINATION FIELD IS AN SGPR -- `VOP1_SDST`, `VOP3_SDST`, or
-# `VOP3B` -- AND THOSE CLASSES ARE EMITTED LATER (FOLD 3, below).
-#
-# SO THE EXCLUSION IS A ROUTING DECISION AND NOT A LOSS: EVERY SDST OP IS
-# EMITTED, IN A DIFFERENT CLASS. A PORT THAT READ THE SUBTRACTION AS A DROP
-# WOULD LOSE THE OP ENTIRELY, AND ONE THAT LEFT IT IN THE BASE WOULD EMIT A
-# CLASS WHOSE `vdst` FIELD IS THE WRONG WIDTH.
 
 def all_ops.of(os_: List<&2, OP>, +acc: List<&2, U32>) -> List<&2, U32>:
   match os_:
@@ -2519,17 +2140,6 @@ def sdst_classes(eos: List<&2, EO>, tys: List<&2, TY>, vs: List<&2, EC>, fixed: 
 # THE UPSTREAM HALF OF THAT SENTENCE, WHICH THE PORT NEEDS AND DID NOT HAVE:
 # "ADDTID instructions go in both FLAT and GLOBAL enums (pcode uses FLATOp for
 # these)" -- generate.py:138. THE ADDTID OPCODES ARE PUT IN *TWO* ENUMS BY THE
-# XML PARSER -- `FLAT` AND `GLOBAL` (AND `VFLAT` AND `VGLOBAL` FOR THE V
-# FORMS) -- BECAUSE THE PDF's PSEUDOCODE FOR AN ADDTID NAMES `FLATOp` EVEN
-# THOUGH THE INSTRUCTION IS A GLOBAL ONE. SO THE DUPLICATION IS NOT AN ERROR
-# IN THE XML BUT A MISMATCH BETWEEN TWO SOURCES: THE OPCODE TABLE SAYS GLOBAL
-# AND THE PSEUDOCODE SAYS FLAT.
-#
-# WHICH IS WHY THE PORT'S `drop_addtid` DROPS THE FLAT SIDE: THE PSEUDOCODE
-# HELPER MUST BE EMITTED ONCE, AND THE PORT KEEPS THE GLOBAL ONE. A PORT THAT
-# EMITTED BOTH WOULD HAVE TWO HELPERS FOR ONE INSTRUCTION, AND THE PDF's
-# SINGLE pseudocode entry would be matched by whichever came FIRST.
-# `fmt not in base_encodings and fmt not in ("GLOBAL","SCRATCH","VGLOBAL","VSCRATCH")`
 
 def not(b: Bool) -> Bool: Bool.not(b)
 
@@ -2594,19 +2204,6 @@ def write_ins.head.of(+encs: List<&2, EC>, +eos: List<&2, EO>, +arch: String,
    "import functools", ""]
 
 # THE GATE.
-#
-# EVERY `py=` LITERAL BELOW IS A ROW OF `.agents/slop/ga-oracle.txt`, WHICH
-# CALLS generate.py's OWN FUNCTIONS -- `_strip_enc`, `_norm_field`,
-# `_map_flat`, and the four emitters, whose emitted FILES are read back.  No
-# `py=` here was typed by a human; `.agents/slop/ga_fix.py` splices them in
-# from the oracle, and it REFUSES to emit a row whose name is not in the
-# oracle file.  That is the rule five files in this project broke by hand
-# (`cstyle` 17/215, `ops_nv` 33/219, `rdma` one hex digit, `amdev` 7/80,
-# `ops_qcom` one table entry).
-# ---- THE FIXTURE.  Built by `.agents/slop/ga_fix.py` from the SAME dicts
-# `ga-oracle.py` hands to `generate.write_ins`, so the port's fixture and
-# CPython's input cannot drift apart.
-
 def write_ins.head(encs: List<&2, EC>, +eos: List<&2, EO>, +arch: String) -> List<&2, String>:
   write_ins.head.of(encs, eos, arch, fixed_of(arch))
 
@@ -2687,24 +2284,6 @@ def fx_ps() -> List<&2, PK>:
 # reach that ceiling, and it needs no escaping at all -- which also retires
 # cstyle's escape ambiguity outright.  That ambiguity is a real concern here:
 # `write_pcode` emits `{code!r}` (generate.py:497), so CPython's OWN output holds
-# a literal backslash-n inside a pcode body, and an escaping gate cannot tell it
-# from a line break.
-#
-# `want` IS A LIST, NOT ONE STRING, and that is measured too: walking `want`
-# with `String.take`/`String.drop` (references/bend/bend2/base.bend:2133
-# symbol=String.take and references/bend/bend2/base.bend:2142 symbol=String.drop)
-# recurses over the prefix
-# it consumes, so one 177-line file was 9 of 12 while the same 177 rows over two
-# list arguments were 20 of 20.  `write_*` RETURNS a list (generate.py:276-282,
-# :457, :469, :494), so the expectation is written in the shape the function
-# already has and the two sides are walked in lockstep.
-#
-# `lines` IS NOT A COVERAGE CLAIM.  It is the one hole the index opens: an index
-# cannot see a dropped LAST line.  The count is the PORT'S OWN list length, and the
-# per-line rows carry the PORT'S OWN line, so the two halves of every row agree by
-# construction -- and the TEETH MOVE TO THE ORACLE: a derived row's two halves
-# always agree with each other, so only the byte diff against CPython's own rows
-# can catch a wrong VALUE, and a dropped LAST line is a missing row there.
 def gl.go(+nm: String, got: List<&2, String>, +i: Nat) -> String:
   match got:
     case Nil{}: ""

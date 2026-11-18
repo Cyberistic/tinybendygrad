@@ -1,50 +1,15 @@
-# tinybendygrad/renderer/amd/sqtt.bend -- port of tinygrad/renderer/amd/sqtt.py
-#
-# THE SQTT PACKET LAYOUT. `sqtt.py` is 756 lines and almost all of it is TABLES:
-# three opcode dispatch tables, ~40 packet classes whose fields are declared with
-# dsl.py's `bits[hi:lo]` syntax, three 256-byte nibble state tables, the decode
-# info those tables imply, and five derived properties. The remaining 200 lines
-# are the nibble reader, the PC mapper and the printer, and those are named at the
-# bottom rather than half-ported.
+# tinybendygrad/renderer/amd/sqtt.bend -- the SQTT PACKET LAYOUT: three opcode
+# dispatch tables, ~40 packet classes whose fields are declared with dsl.py's
+# `bits[hi:lo]` syntax, three 256-byte nibble state tables, the decode info
+# those tables imply, and five derived properties.  The remaining 200 lines of
+# `sqtt.py` are the nibble reader, the PC mapper and the printer, and those are
+# named at the bottom rather than half-ported.
 #
 # THIS FILE BUILDS ON `dsl.bend`, exactly as `sqtt.py:12` does:
-#   `from tinygrad.renderer.amd.dsl import BitField, FixedBitField, Inst, bits`
-# `Fld` and `bf_mask` are dsl.bend's, so every field width here is checked by the
-# SAME `bf_mask` and a wrong width is a wrong mask in both files at once.
-#
-# THE SPLIT, stated once and then obeyed. A def here EITHER builds the argument
-# of ONE device call (pure; the gate checks it) OR records that call in the
-# trace (the gate checks ORDER and IDENTITY). There is no third kind. This file
-# is ENTIRELY the first kind: no trace, no foreign effect, no `@extern`.
-#
 
-# what is ported, and what each thing is for.
-#
-#   T  PACKET_TYPES_RDNA3 / _RDNA4 / _CDNA -- opcode -> class name, BOTH
-#      directions (24 + 24 + 17 entries). `ops_nv`'s audit found 33 of 219
-#      constants wrong in a file already printing 590 green rows, and a ONE-WAY
-#      table cannot see a wrong binding.
-#   L  EVERY packet class's field list, BY NAME AND IN ORDER, as `name:hi:lo;`.
-#      A count cannot check this: `ops_cl`'s unit found `Sig`'s field names
-#      INVERTED, and `WAVEEND`/`WAVEEND_RDNA4` differ in exactly ONE field
-#      (`wgp` at [13:11] vs [14:11]) with a derived property that shifts to
-#      match. One field, one bit, and a wrong CU id is silently wrong.
-#   S  `_size_nibbles` per class -- `(max(f.hi) + 4) // 4`, the packet's width.
-#   E  `encoding.mask` / `encoding.default` -- the nibble pattern.
-#   B  the three 256-byte STATE TABLES, read out of the live module.
-#   D  the DECODE INFO: nib_count, delta_lo, delta_mask, delta_mul, special.
-#   P  `cu`, `is_marker`, `is_config`, `wave_interest`, `terminate_all`.
-#
+# WHAT IS PORTED, AND WHAT EACH THING IS FOR:
 
 # THE DEFERRED BOUNDARY, MEASURED. `sqtt.py` imports nothing from
-# `tinygrad/runtime/autogen/`, so THIS FILE has no autogen seam at all -- its 756
-# lines are the whole of it. The sibling `dsl.py` does, and the measurement is in
-# `dsl.bend`'s header: `autogen/amd/{rdna3,rdna4,cdna}/operands.py` is 4,641
-# lines of generated table. THAT is the deferred scope; this file is not it.
-#
-# `tinygrad/runtime/autogen/sqtt.py` is 523 lines and is NOT read by
-# `renderer/amd/sqtt.py` at all -- it is the OTHER direction (encoding, for the
-# profiler's own writer). Nothing here depends on it and nothing here quotes it.
 
 import Base
 import ../../helpers.bend as H
@@ -53,48 +18,6 @@ import ./dsl.bend as D
 # NOT PORTED, WITH PYTHON LINES. Named, not half-written.
 #
 #   sqtt.py:566-638  `decode(data)` -- the NIBBLE READER, 73 lines. It keeps a
-#                     64-bit `reg`, consumes `need = nib_count - nib_off` NIBBLES
-#                     in up to three steps (align on a high nibble, read whole
-#                     bytes, read a low nibble), and `pos` advances by BYTES while
-#                     `nib_off` advances by NIBBLES. `nib_count` comes from the
-#                     decode info this file DOES port, so the reader's input is
-#                     here and only its LOOP is not. The loop needs a mutable
-#                     (reg, pos, nib_off) triple and a generator; the natural
-#                     Bend shape is an `Effect` with a `Ref`, and a
-#                     trace-following port would record each packet read, which
-#                     is the lane this repo prefers but is not a 30-minute job.
-#   sqtt.py:641-729  `map_insts(data, lib, target)` -- 89 lines. It calls
-#                     `tinygrad.viz.serve.amd_decode`, so it is an FFI seam at
-#                     :645 as well as a real algorithm, AND it needs
-#                     `pc_map` keyed by (simd, wave) with a
-#                     `cdna_imm_queue` of LISTS. Not half-ported.
-#   sqtt.py:733-742  `PACKET_COLORS` -- 17 name -> colour bindings. Pure data and
-#                     TRIVIAL, left out only because it reaches no packet and the
-#                     gate would be 17 rows about a CSS palette. TODO(p3).
-#   sqtt.py:744-751  `format_packet` -- the printer, 8 lines of f-string plus a
-#                     five-way `isinstance` cascade. It reads fields off a decoded
-#                     packet, and this file has no packet VALUE (only its
-#                     LAYOUT), so it is downstream of the reader above. TODO(p3).
-#   sqtt.py:752-754  `print_packets` -- one `skip` set and a filter. TODO(p3).
-#   sqtt.py:189-193  `PacketType.__repr__` -- `", ".join(f"{k}={getattr(...)}")`
-#                     over `_fields`. It needs a packet value; the field ORDER it
-#                     would print IS `field_order_X()`, which is gated.
-#   sqtt.py:550-563  `_build_decode_tables` -- PORTED as DATA (the state tables
-#                     and the decode info are both tables here, and both are read
-#                     out of the live module by the generator). The FUNCTION that
-#                     builds them -- the `-bin(mask).count('1')` sort with the
-#                     NOP-last tiebreak -- is not a def here, so a wrong sort
-#                     ORDER would not move a row: `spec_order_X()` and
-#                     `op_order_X()` pin the sorted order the live module
-#                     produced, and `nop_last_X()` says whether NOP sorted last,
-#                     which is the whole point of the second sort key.
-#
-# SO: 1,015 of the 1,228 oracle rows this file gates agree. The 309 it does not
-# print are the per-opcode `_special` tags, the `_lo_set`/`_mask_set` lists, the
-# `OTHER_` member names and the `other_*` source annotations -- all of which are
-# either derived from rows already gated or are annotations.
-# THE TYPES. `Nm` and `Fld` come from `dsl.bend`, so a `Nm` here and a `Nm` there
-# are the SAME type and a lookup is one function.
 
 def row(nm: String, b: Bool) -> IO(Unit): IO.print(String.concat([nm, "=", Bool.show(b)]))
 def u32_text(v: U32) -> String: U32.show(v)
@@ -105,10 +28,6 @@ def u32_at.go(m: Maybe<&2, U32>, dflt: U32) -> U32:
     case None{}: dflt
 
 # a whole table as one row, comma separated. A 256-byte state table is 256
-# numbers, and printing it as ONE row means a transposed pair inside it is a
-# visible comma at a known position rather than 256 silent rows.
-# The DEFAULT for every table miss. No opcode is 4294967295 and no enum member is
-# either, so an absent binding is visible as the sentinel and not as a valid row.
 def DSLT() -> U32: 4294967295
 
 def u32_list_text.go(xs: List<&2, U32>, +acc: String) -> String:
@@ -117,15 +36,6 @@ def u32_list_text.go(xs: List<&2, U32>, +acc: String) -> String:
     case x <> t: u32_list_text.go(t, String.concat([acc, u32_text(x), ","]))
 
 # `dict.get`-ish lookups over an `Nm` list. `nm_name.go` is dsl.bend's OFFSET-keyed
-# walk; these are the NAME-keyed and INDEX-keyed ones, and they are SEPARATE
-# functions on purpose: a table whose two directions are the same body agrees with
-# itself and tells you nothing.
-# THE LOOKUPS, and they are THIS FILE'S. `dsl.bend`'s walks are over ITS `Nm`
-# and Bend's `import X as Y` does not bring a `type` across, so the two tables
-# here carry their own `Pn`. That is a duplicate of a two-field record and NOT a
-# duplicate of the WALK: `pn_name.go` keeps the FIRST hit (a dict lookup) and
-# `pn_off.go` is a different function keyed the other way. One body for both
-# would make the two directions agree with each other and tell you nothing.
 type Pn is Data:
   Pn{name: String, off: U32}
 
@@ -161,16 +71,6 @@ def cls_count.go(xs: List<&2, String>, +n: U32) -> U32:
     case _ <> t: cls_count.go(t, U32.add(n, 1))
 
 # the per-opcode sets, derived. `decode_info[opcode]` is the five-tuple
-# `decode()` unpacks at :611 -- nib_count, delta_lo, delta_mask, delta_mul,
-# special -- and the four SETS are folded out of the CONCATENATED tuples with a
-# STRIDE of five.
-#
-# the first version answered from a literal and had `special = 2` at list
-# POSITION 15 where the real answer is `special = 1` at OPCODE 22:
-# TS_DELTA_SHORT is opcode 15 and TS_DELTA_OR_MARK is opcode 22, and a hardcoded
-# list confuses the two silently. Bend has no `List<List<U32>>`, hence the
-# concatenation -- and the STRIDE is a def, so a wrong tuple width moves every
-# set row instead of hiding inside a literal.
 def CLS_NAMES() -> List<&2, String>: ["VALUINST","VMEMEXEC","ALUEXEC","IMMEDIATE","IMMEDIATE_MASK","WAVERDY","TS_DELTA_S8_W3","WAVEEND","WAVESTART","TS_DELTA_S5_W2","WAVEALLOC","TS_DELTA_S5_W3","PERF","UTILCTR","TS_DELTA_SHORT","NOP","TS_WAVE_STATE","EVENT","EVENT_BIG","REG","SNAPSHOT","TS_DELTA_OR_MARK","LAYOUT_HEADER","INST","WAVEEND_RDNA4","WAVESTART_RDNA4","TS_DELTA_S5_W2_RDNA4","WAVEALLOC_RDNA4","TS_DELTA_S5_W3_RDNA4","PERF_RDNA4","TS_DELTA_OR_MARK_RDNA4","INST_RDNA4","CDNA_MISC","CDNA_TIMESTAMP","CDNA_REG","CDNA_WAVESTART","CDNA_WAVEALLOC","CDNA_REG_CS","CDNA_WAVEEND","CDNA_EVENT","CDNA_EVENT_CS","CDNA_EVENT_GFX1","CDNA_INST","CDNA_INST_PC","CDNA_USERDATA","CDNA_ISSUE","CDNA_PERF","CDNA_REG_CS_PRIV"]
 
 def di_text.go(xs: List<&2, U32>, +acc: String) -> String:
@@ -179,46 +79,6 @@ def di_text.go(xs: List<&2, U32>, +acc: String) -> String:
     case x <> t: di_text.go(t, String.concat([acc, u32_text(x), ","]))
 
 # the per-arch delta MULTIPLIER set and SPECIAL set, as one string each. CDNA
-# multiplies by 4 and RDNA by 1 (:558), and that single number is why the same
-# 64-bit blob decodes to different timestamps on the two architectures.
-# the per-opcode sets, derived. `decode_info[opcode]` is the five-tuple
-# `decode()` unpacks at :611 -- nib_count, delta_lo, delta_mask, delta_mul,
-# special -- and the four SETS are folded out of the CONCATENATED tuples with a
-# STRIDE of five.
-#
-# the first version answered from a literal and had `special = 2` at list
-# POSITION 15 where the real answer is `special = 1` at OPCODE 22:
-# TS_DELTA_SHORT is opcode 15 and TS_DELTA_OR_MARK is opcode 22, and a hardcoded
-# list confuses the two silently. Bend has no `List<List<U32>>`, hence the
-# concatenation -- and the STRIDE is a def, so a wrong tuple width moves every set
-# row instead of hiding inside a literal.
-# the per-opcode sets, derived. `decode_info[opcode]` is the five-tuple
-# `decode()` unpacks at :611 -- nib_count, delta_lo, delta_mask, delta_mul,
-# special -- and the four SETS are folded out of the CONCATENATED tuples with a
-# STRIDE of five.
-#
-# the first version answered from a literal and had `special = 2` at list
-# POSITION 15 where the real answer is `special = 1` at OPCODE 22:
-# TS_DELTA_SHORT is opcode 15 and TS_DELTA_OR_MARK is opcode 22, and a hardcoded
-# list confuses the two silently. Bend has no `List<List<U32>>`, hence the
-# concatenation -- and the STRIDE is a def, so a wrong tuple width moves every set
-# row instead of hiding inside a literal.
-# the per-opcode sets, derived. `decode_info[opcode]` is the five-tuple
-# `decode()` unpacks at :611 -- nib_count, delta_lo, delta_mask, delta_mul,
-# special -- and the two SETS are folded out of the CONCATENATED tuples with a
-# STRIDE of five.
-#
-# the first version answered from a literal and had `special = 2` at list
-# POSITION 15 where the real answer is `special = 1` at OPCODE 22:
-# TS_DELTA_SHORT is opcode 15 and TS_DELTA_OR_MARK is opcode 22, and a hardcoded
-# list confuses the two silently. Bend has no `List<List<U32>>`, hence the
-# concatenation -- and the STRIDE is a def, so a wrong tuple width moves every set
-# row instead of hiding inside a literal.
-#
-# TWO WALKS, not one with a flag. `mul` is the FOURTH element and `special` the
-# FIFTH, so one walk that always reads the fifth can only ever serve one of them;
-# a flag would have to carry the other element along and that is the same walker
-# written twice. TWO walks it is, and they are one line apart.
 def TUPLE_W() -> U32: 5
 
 def set_mul.go(+xs: List<&2, U32>, +acc: String) -> String:
@@ -260,7 +120,6 @@ def t_stub() -> IO(Unit):
     IO.print("stub")
 
 # ==== GATE BODY (generated by .agents/slop/sqtt_gen.py) ====
-# --- t the three opcode tables, both directions --------------------
 def tbl_RDNA3() -> List<&2, Pn>: [Pn{"VALUINST", 1},Pn{"VMEMEXEC", 2},Pn{"ALUEXEC", 3},Pn{"IMMEDIATE", 4},Pn{"IMMEDIATE_MASK", 5},Pn{"WAVERDY", 6},Pn{"TS_DELTA_S8_W3", 7},Pn{"WAVEEND", 8},Pn{"WAVESTART", 9},Pn{"TS_DELTA_S5_W2", 10},Pn{"WAVEALLOC", 11},Pn{"TS_DELTA_S5_W3", 12},Pn{"PERF", 13},Pn{"UTILCTR", 14},Pn{"TS_DELTA_SHORT", 15},Pn{"NOP", 16},Pn{"TS_WAVE_STATE", 17},Pn{"EVENT", 18},Pn{"EVENT_BIG", 19},Pn{"REG", 20},Pn{"SNAPSHOT", 21},Pn{"TS_DELTA_OR_MARK", 22},Pn{"LAYOUT_HEADER", 23},Pn{"INST", 24}]
 def tbl_RDNA3_n() -> Nat: 24n
 def tbl_RDNA4() -> List<&2, Pn>: [Pn{"VALUINST", 1},Pn{"VMEMEXEC", 2},Pn{"ALUEXEC", 3},Pn{"IMMEDIATE", 4},Pn{"IMMEDIATE_MASK", 5},Pn{"WAVERDY", 6},Pn{"TS_DELTA_S8_W3", 7},Pn{"WAVEEND_RDNA4", 8},Pn{"WAVESTART_RDNA4", 9},Pn{"TS_DELTA_S5_W2_RDNA4", 10},Pn{"WAVEALLOC_RDNA4", 11},Pn{"TS_DELTA_S5_W3_RDNA4", 12},Pn{"PERF_RDNA4", 13},Pn{"UTILCTR", 14},Pn{"TS_DELTA_SHORT", 15},Pn{"NOP", 16},Pn{"TS_WAVE_STATE", 17},Pn{"EVENT", 18},Pn{"EVENT_BIG", 19},Pn{"REG", 20},Pn{"SNAPSHOT", 21},Pn{"TS_DELTA_OR_MARK_RDNA4", 22},Pn{"LAYOUT_HEADER", 23},Pn{"INST_RDNA4", 24}]
@@ -268,7 +127,6 @@ def tbl_RDNA4_n() -> Nat: 24n
 def tbl_CDNA() -> List<&2, Pn>: [Pn{"CDNA_MISC", 0},Pn{"CDNA_TIMESTAMP", 1},Pn{"CDNA_REG", 2},Pn{"CDNA_WAVESTART", 3},Pn{"CDNA_WAVEALLOC", 4},Pn{"CDNA_REG_CS", 5},Pn{"CDNA_WAVEEND", 6},Pn{"CDNA_EVENT", 7},Pn{"CDNA_EVENT_CS", 8},Pn{"CDNA_EVENT_GFX1", 9},Pn{"CDNA_INST", 10},Pn{"CDNA_INST_PC", 11},Pn{"CDNA_USERDATA", 12},Pn{"CDNA_ISSUE", 13},Pn{"CDNA_PERF", 14},Pn{"CDNA_REG_CS_PRIV", 15},Pn{"LAYOUT_HEADER", 16}]
 def tbl_CDNA_n() -> Nat: 17n
 
-# --- L / S / E  EVERY CLASS: fields BY NAME IN ORDER, nibbles, encoding ---
 def fields_VALUINST() -> String: "encoding:2:0;delta:5:3;flag:6:6;wave:11:7"
 def field_order_VALUINST() -> String: "encoding,delta,flag,wave"
 def cls_VALUINST() -> U32: 3
@@ -699,28 +557,16 @@ def dflt_CDNA_REG_CS_PRIV() -> U32: 15
 def himax_CDNA_REG_CS_PRIV() -> U32: 47
 def hasdelta_CDNA_REG_CS_PRIV() -> String: "no"
 
-# --- THE CLASS NAME LIST ------------------------------------------------
 def str_list_text.go(xs: List<&2, String>, +acc: String) -> String:
   match xs:
     case Nil{}: acc
     case x <> t: str_list_text.go(t, String.concat([acc, x, ","]))
 
-# --- THE WIDTH FORMULA --------------------------------------------------
 # `cls._size_nibbles = ((max(f.hi) for f in cls._fields.values()) + 4) // 4`
-# (:186) -- the packet WIDTH in NIBBLES, and it is what the nibble reader
-# consumes, so a wrong one desynchronises every packet after it rather than
-# misreading one. `cls_X()` holds the value and `nibs_of` recomputes it from
-# the widest field, so the gate compares the FORMULA against CPython.
 
 def NIB_DEN() -> U32: 4
 
-# --- e the sort that decides the state table ------------------------------
 # `sorted(packet_types.items(), key=lambda x: (-bin(mask).count("1"), x[0] == 16))`
-# (:557). TWO keys, and the second is what puts NOP -- opcode 16 -- LAST, so
-# a byte with no match falls through to NOP rather than to whichever 4-bit
-# pattern happened to be visited first. A port that sorts on specificity
-# alone puts NOP FIRST and every unmatched byte decodes as a NOP of the
-# wrong width.
 
 def NIB_DIV(v: U32) -> U32: U32.div(v, NIB_DEN())
 
@@ -738,7 +584,6 @@ def spec_order_CDNA() -> String: "7,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4"
 def op_order_CDNA() -> String: "16,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15"
 def nop_last_CDNA() -> U32: 0
 
-# --- B  THE THREE 256-BYTE STATE TABLES ----------------------------------
 def state_RDNA3() -> List<&2, U32>: [16,22,24,1,5,11,12,16,15,20,24,1,9,4,3,2,16,23,24,1,6,8,13,16,15,20,24,1,10,4,3,2,16,7,24,1,5,11,12,16,15,20,24,1,9,4,3,2,16,14,24,1,6,8,13,16,15,20,24,1,10,4,3,2,16,16,24,1,5,11,12,16,15,20,24,1,9,4,3,2,16,17,24,1,6,8,13,16,15,20,24,1,10,4,3,2,16,18,24,1,5,11,12,16,15,20,24,1,9,4,3,2,16,21,24,1,6,8,13,16,15,20,24,1,10,4,3,2,16,22,24,1,5,11,12,16,15,20,24,1,9,4,3,2,16,23,24,1,6,8,13,16,15,20,24,1,10,4,3,2,16,7,24,1,5,11,12,16,15,20,24,1,9,4,3,2,16,14,24,1,6,8,13,16,15,20,24,1,10,4,3,2,16,16,24,1,5,11,12,16,15,20,24,1,9,4,3,2,16,17,24,1,6,8,13,16,15,20,24,1,10,4,3,2,16,19,24,1,5,11,12,16,15,20,24,1,9,4,3,2,16,21,24,1,6,8,13,16,15,20,24,1,10,4,3,2]
 def state_RDNA3_n() -> Nat: 256n
 def state_RDNA4() -> List<&2, U32>: [16,22,24,1,5,11,12,16,15,20,24,1,9,4,3,2,16,23,24,1,6,8,13,16,15,20,24,1,10,4,3,2,16,7,24,1,5,11,12,16,15,20,24,1,9,4,3,2,16,14,24,1,6,8,13,16,15,20,24,1,10,4,3,2,16,16,24,1,5,11,12,16,15,20,24,1,9,4,3,2,16,17,24,1,6,8,13,16,15,20,24,1,10,4,3,2,16,18,24,1,5,11,12,16,15,20,24,1,9,4,3,2,16,21,24,1,6,8,13,16,15,20,24,1,10,4,3,2,16,22,24,1,5,11,12,16,15,20,24,1,9,4,3,2,16,23,24,1,6,8,13,16,15,20,24,1,10,4,3,2,16,7,24,1,5,11,12,16,15,20,24,1,9,4,3,2,16,14,24,1,6,8,13,16,15,20,24,1,10,4,3,2,16,16,24,1,5,11,12,16,15,20,24,1,9,4,3,2,16,17,24,1,6,8,13,16,15,20,24,1,10,4,3,2,16,19,24,1,5,11,12,16,15,20,24,1,9,4,3,2,16,21,24,1,6,8,13,16,15,20,24,1,10,4,3,2]
@@ -746,7 +591,6 @@ def state_RDNA4_n() -> Nat: 256n
 def state_CDNA() -> List<&2, U32>: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,0,16,2,3,4,5,6,7,8,9,10,11,12,13,14,15,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,0,16,2,3,4,5,6,7,8,9,10,11,12,13,14,15,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
 def state_CDNA_n() -> Nat: 256n
 
-# --- D  THE DECODE INFO: nib_count, delta_lo, delta_mask, delta_mul, special -----
 # `special`: 0 none, 1 TS_DELTA_OR_MARK, 2 TS_DELTA_SHORT (+4), 4 CDNA_TIMESTAMP.
 # The DELTA defaults differ per arch -- CDNA uses bits[4:4] with a multiplier
 # of 4, RDNA uses None with a multiplier of 1 (:558) -- and that is the whole
@@ -820,18 +664,14 @@ def di_CDNA_15() -> List<&2, U32>: [12,4,1,4,0]
 def di_CDNA_16() -> List<&2, U32>: [16,0,0,4,0]
 def di_CDNA_n() -> Nat: 17n
 
-# --- THE PER-OPCODE SETS, DERIVED ------------------------------------------
 # `decode_info[opcode] = (cls, _size_nibbles, lo, mask, mul, special)` (:558-560)
 # and the two SETS a reader indexes by opcode: the delta MULTIPLIER (always 4
 # for CDNA, 1 for RDNA, :558) and the SPECIAL tag. Only THREE opcodes are
 # non-zero and they are DIFFERENT opcodes per arch: RDNA puts 2 on 15 and 1
-# on 22; CDNA puts 4 on 1. A set written as one literal for both would put a
-# `+4` on a CDNA timestamp.
 def di_RDNA3_flat() -> List<&2, U32>: [3,3,7,1,0,2,4,3,1,0,2,4,3,1,0,3,4,7,1,0,6,5,7,1,0,6,5,7,1,0,18,8,7,1,0,5,5,7,1,0,8,5,3,1,0,12,5,3,1,0,5,5,7,1,0,13,5,7,1,0,7,5,7,1,0,12,7,3,1,0,2,4,15,1,2,1,0,0,1,0,6,7,511,1,0,6,8,7,1,0,8,8,7,1,0,16,4,7,1,0,16,7,7,1,0,12,12,4294967295,1,1,16,0,0,1,0,5,4,7,1,0]
 def di_RDNA4_flat() -> List<&2, U32>: [3,3,7,1,0,2,4,3,1,0,2,4,3,1,0,3,4,7,1,0,6,5,7,1,0,6,5,7,1,0,18,8,7,1,0,5,5,7,1,0,8,5,3,1,0,10,5,3,1,0,6,5,7,1,0,14,7,7,1,0,8,7,7,1,0,12,7,3,1,0,2,4,15,1,2,1,0,0,1,0,6,7,511,1,0,6,8,7,1,0,8,8,7,1,0,16,4,7,1,0,16,7,7,1,0,16,12,4294967295,1,1,16,0,0,1,0,5,3,7,1,0]
 def di_CDNA_flat() -> List<&2, U32>: [4,4,255,4,0,16,4,1,4,4,16,4,1,4,0,8,4,1,4,0,4,4,1,4,0,12,4,1,4,0,4,4,1,4,0,4,4,1,4,0,4,4,1,4,0,4,4,1,4,0,4,4,1,4,0,16,4,1,4,0,12,4,1,4,0,8,4,1,4,0,16,4,1,4,0,12,4,1,4,0,16,0,0,4,0]
 
-# --- P  THE DERIVED PROPERTIES -------------------------------------------
 # `cu` has THREE FORMULAS in one file and the difference is one bit of shift:
 # WAVEEND and WAVESTART use `wgp | (sa << 3)` while their _RDNA4 twins use
 # `wgp | (sa << 4)` (:266, :302, :311, :321). A lookup keyed by the SHORT name
@@ -840,7 +680,6 @@ def cu_WAVEEND(wgp: U32, sa: U32) -> U32: U32.or(wgp, U32.shln(sa, 3n))
 def cu_WAVEEND_RDNA4(wgp: U32, sa: U32) -> U32: U32.or(wgp, U32.shln(sa, 4n))
 def cu_WAVESTART(wgp: U32, sa: U32) -> U32: U32.or(wgp, U32.shln(sa, 3n))
 def cu_WAVESTART_RDNA4(wgp: U32, sa: U32) -> U32: U32.or(wgp, U32.shln(sa, 4n))
-# --- E  THE OP ENUMS, BOTH DIRECTIONS -------------------------------------
 # The five defs below are upstream's five `class X(Enum)` NAMES, spelled bare.
 # They were `enum_X` until the naming gate (`naming-gate.py`) required the
 # upstream spelling: the bare names are FREE here -- `enum_` was never forced,
@@ -853,7 +692,6 @@ def cu_WAVESTART_RDNA4(wgp: U32, sa: U32) -> U32: U32.or(wgp, U32.shln(sa, 4n))
 # `add_other_simd` (:34-39) builds names by FORMULA --
 # `f"OTHER_{category}_{value - start + base_cycle}"` -- and the three ranges
 # have DIFFERENT base_cycles (LDS 1, FLAT 2, VMEM 1), so the generated names
-# are the part a hand-written table gets wrong and they are 5+5+13 rows.
 def MemSrc() -> List<&2, Pn>: [Pn{"LDS", 0},Pn{"LDS_ALT", 1},Pn{"VMEM", 2},Pn{"VMEM_ALT", 3}]
 def MemSrc_n() -> Nat: 4n
 def AluSrc() -> List<&2, Pn>: [Pn{"NONE", 0},Pn{"SALU", 1},Pn{"VALU", 2},Pn{"VALU_SALU", 3}]

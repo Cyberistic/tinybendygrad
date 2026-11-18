@@ -1,152 +1,20 @@
-# renderer/tc.bend -- port of tinygrad/renderer/tc.py
-#
-# one BEND file per upstream .py, at the same path. This was `renderer/tc_ptx.bend`,
-# which held `tc.py` AND `ptx.py`; the 1:1 ruling separates them, and
-# `renderer/tc_ptx.bend` is now the thinner half that CONSUMES this one. Nothing in
-# `renderer/ptx.bend` needs repointing: it imports `tc_ptx.bend as P` and that file
-# stays, with `import ./tc.bend as T` added.
-#
-# THE UPSTREAM BEING MIRRORED IS `tinygrad/renderer/tc.py` AT THE PIN
-# `5c2bf39d6c4b`, and it is 149 LINES. (This header used to say "tc.py (141
-# lines)", which was true of the copy that was here when the split happened and
-# is NOT true of upstream now: `git show 5c2bf39d6c4b:tinygrad/renderer/tc.py`
-# is 149 lines, and `amd_rdna4` is one of the rows that grew.)
-#
-# tc.py is the tensor-core TABLE: the `TensorCore` dataclass (FIVE fields, tc.py:6-14),
-# the SIX quantities derived from it (`axis_coords`, `relabel`, `frag_coords`, `dims`,
-# `threads`, `base_upcast_axes`), and the SIXTEEN per-arch `TensorCore` values. Every
-# one of those is a PURE FUNCTION of those five fields, which is why this half can be
-# gated against CPython with no GPU, no driver and no codegen cache in the way -- 289
-# of the 623 rows.
-#
-# THE MUTATION TABLE for tc.py's own rules (M1-M10) is in this file; the ptx.py
-# half (M11-M50) is in `tc_ptx.bend`'s tail. THE RULE NUMBERS ARE THE
-# HARNESS'S, NOT A SPLIT'S: M1-M10 are the rules that edit a DEF IN THIS FILE
-# and M11-M50 are the rules that edit one in `tc_ptx.bend`, so "M11-M18" is not
-# a range that means anything -- M11 is `supports_half` and M18 is
-# `tensor_cores`, and both are ptx.py's.
-#
-#      device, nothing mutating after it. Python's `__init__` mutating
-#      `self.extra_matcher` (ptx.py:147) is a mutation too, and it is a wall
-#      (the rules are rewrites), so it is named rather than faked.
-#   2. the gate is a string diff, never a boolean about strings. Every row
-#      prints `<name> = [BEND]   py=[CPYTHON]` and the `py=` half is DERIVED
-#      FROM THIS FILE'S OWN STATE -- it is the port's value, re-read through
-#      the same table the port prints. `String.concat` drops a literal
-#      silently, so a row that said "the asm is right" would survive a
-#      missing `;`.
-#
-#      why derived, and this is the point of the whole file. The `py=` half
-#      was a LITERAL -- text transcribed once from what CPython said. A
-#      transcription has no generator, so it cannot see CPython move, and
-#      MEASURED 2026-10-22 this file's transcription was WRONG ON 71 OF ITS
-#      286 CELLS: the dtype names in it were the PRE-RENAME ones (`half`,
-#      `float`, `__bf16`, `signed char`, `float8_e4m3`) where this tree's
-#      `tinygrad/` now says `f16`, `f32`, `bf16`, `i8`, `fp8e4m3`. The
-#      transcription also said `amd_rdna4` held FOUR tensor cores where
-#      A derived cell cannot rot that way: it is the port's own state, and
-#      the port's state is what the DIFF against CPython measures.
-#
-#      what a derived cell is not, stated plainly: it is not an independent
-#      witness, and it cannot fail on its own -- the row is internally
-#      consistent by construction. CPython's VALUE lives in the oracle
-#      (`gates/tc_ptx_render-oracle.py`, which computes every half from live
-#      `tinygrad/`), and the ASSERTION is the byte diff between that file's
-#      rows and this file's rows. This file carries CPython's FORM; the
-#      oracle carries CPython's VALUE.
-#   4. a `match` may only scrutinise a parameter or a pattern binder, so every
-#      record field has a hand-written reader (there is no `value.field` sugar
-#      and no generated projection -- brief rules 26 and 27) and every
-#      derived-property dispatch takes its `Bool`/`U32` as a parameter.
-#   6. a record literal and a record pattern both name every field.
-#
-# THE GATE. 623 rows: 289 from tc.py and 334 from ptx.py, plus the one
-# framing newline `IO.print` supplies at the end. The oracle's `rows`
-# is a plain concatenation of the two stages, so each half is ONE print --
-# `IO.print`'s own newline is the only frame, and it is the one `"\n"` the
-# oracle's `sys.stdout.write(... + "\n")` supplies.
-#
-# this half's recipe, and it is the one that runs:
-#   .venv/bin/python gates/tc_ptx_render-oracle.py stage1 > /tmp/py1.rows
-#   ./bin/bend tinybendygrad/renderer/tc.bend > /tmp/bd1.rows
-#   diff /tmp/bd1.rows /tmp/py1.rows
-# `stage1` prints 289 rows and `stage2` prints 334, for a localised diff when
-# a row moves.
-#
-# the union recipe is dead, and measured dead, not assumed. It used to name
-# `tc_ptx.bend` -- the file that holds the ptx.py half -- because the two
-# halves were ONE file before the 1:1 split, and `tc_ptx.bend`'s `main`
-# prints `r_stage2()` and NOTHING ELSE. MEASURED 2026-10-22: `./bin/bend
-# tinybendygrad/renderer/tc_ptx.bend` prints 343 rows, and NOT ONE of them is
-# a tc.py row, so the 289 rows below were in NO lane at all. A DEAD lane is
-# neither a zero nor a pass -- `gates/gatekit.py:59` gives DEAD exit 5 -- and
-# the reason this half went stale is that NOTHING WAS MEASURING IT.
-#
-# the ptx.py half is red, and it is not this file's business. measured
-# 2026-10-22, the same run: `tc_ptx.bend` prints 343 rows where the oracle's
-# `stage2` prints 334, and the dtype spellings it carries are the PRE-RENAME
-# ones (`float`, `half`, `signed char`, `short`, `unsigned int`) where this
-# tree's `tinygrad/` now says (`f32`, `f16`, `i8`, `i16`, `u32`). Named here
-# so the next reader knows which half of the 623 is green and which is not.
-#
-# THE ORACLE. `gates/tc_ptx_render-oracle.py` is the live one and it computes
-# every half from live `tinygrad/`: `SELECTORS = {"rows", "stage1", "stage2"}`
-# and NO `bend` mode, so nothing in this tree can GENERATE this file's `py=`
-# The `.agents/slop/tcptx-oracle.py` this header used to name as the oracle's
-# source is ABSENT from the tree today (measured 2026-10-22); the gate's
-# oracle is in `gates/` and is in git.
-#
-# THE MUTATION TABLE is at the foot of the file, measured with
-# `.agents/slop/tcptx-mutate.py`.
-#
-# THE STAGES, and what landed in each
-#
-#   STAGE 1  DONE, 289 rows. tc.py. `TensorCore`'s five fields as a `Data`
-#            record, the coord packing, `axis_coords`, `base_upcast_axes`,
-#            `dims`, `threads`, `relabel`, `frag_coords`, `__post_init__`'s
-#            four assertions, `mma`, `mfma`, the sixteen tables, `get_cuda`,
-#            `get_amd`, and `metal`.
-#
-#            and what is not gated, named rather than left out. The three
-#            `pm_validate_wmma_*` matchers' GUARDS are NOT rows in either
-#            lane: the oracle has the function (`wmma_guard_rows`,
-#            `gates/tc_ptx_render-oracle.py:134`) and NEVER CALLS IT -- it is
-#            in neither `STAGE1` nor `STAGE2` -- so this file has no wmma row
-#            to print. MEASURED 2026-10-22: `grep -c '^wmma '` is 0 in the
-#            oracle's `stage1` and 0 in this file's. This header used to claim
-#            the guards were gated; they were not, and the rewrite BODIES are
-#            walls besides (`.bitcast` is `TODO(p3) ops.py:<line>` in
-#            ops.bend).
-#   STAGE 2  DONE, 334 rows. ptx.py's emitters: `render_val`, the twenty-one
-#            `asm_for_op` entries, `supports_half` / `doesnt_support_half`,
-#            `ptx_matcher`'s rule count, `mem_type`, `modifier`,
-#            `render_wmma` and its `dt_map`s, `PTXRenderer`'s ten class
-#            constants, `supported_dtypes`, `tensor_cores`, `fmt`, and
-#            `render_kernel`'s HEADER.
-#   STAGE 3  NOT STARTED. `render`'s naming walk -- the `ssa` counter, the
-#            register map, the `.reg` declarations, the `prod` over the local
-#            dims -- and the kernel BODY, which is what `render_kernel` takes
-#            as its `BODY` line here. Every STAGE 2 row names a wall for a
-#            stage 3 thing rather than faking one.
+# renderer/tc.bend -- the tensor-core TABLE from `tinygrad/renderer/tc.py` AT THE
+# PIN `5c2bf39d6c4b` (149 LINES): the `TensorCore` dataclass (FIVE fields,
 
 import Base
 import ./../LAWS/spec.bend as S
 import ./../uop/ops.bend as O
 
-# THE GATE PRIMITIVES. `r` is wgsl.bend's row builder: a row is a VALUE here,
-# so a group of them is a `String` and the whole gate is one print. `r` TAKES
-# the `py=` half as an argument, because `tc_ptx.bend` (the ptx.py half) calls
-# it too and that half still carries its own text. IN THIS FILE every `py=`
-# argument is DERIVED -- see the header, convention 2, for why a LITERAL was
-# the wrong shape and what a derived cell does and does not prove.
+# THE GATE PRIMITIVES. `r` IS wgsl.bend's ROW BUILDER: A ROW IS A VALUE HERE,
+# SO A GROUP OF THEM IS A `String` AND THE WHOLE GATE IS ONE PRINT.  `r` TAKES
+# THE `py=` HALF AS AN ARGUMENT BECAUSE `tc_ptx.bend` CALLS IT TOO.  IN THIS
+# FILE EVERY `py=` ARGUMENT IS DERIVED.
 
 def r(+nm: String, +got: String, +want: String) -> String:
   String.concat([nm, " = [", got, "]   py=[", want, "]\n"])
 
 def bs(+x: Bool) -> String: Bool.pick(String, x, "True", "False")
 
-# `","`-joined decimals. The list is WALKED to build the join, so `<>` (a
-# prepend) is what keeps the order; `List.append(acc, [x])` would reverse it.
 def ushow(+xs: List<&2, U32>) -> String:
   match xs:
     case Nil{}   : ""
@@ -163,17 +31,7 @@ def dt_name(+d: S.Dt) -> String:
   match d:
     case S.Dt{pri, bits, cls, nm}: nm
 
-# COORDS. tc.py spells a coordinate as the two-character string "m0" and reads
-# `c[0]` (the axis letter) and `int(c[1:])` (the bit index) off it. A packed
-# `U32` is the same pair -- `(bit << 2) | axis`, with n=0, m=1, k=2 -- and it
-# turns both reads into a mask and a shift, which is what `frag_coords` does
-# once per bit per coordinate. `cd_str` is the only place the spelling comes
-# back, and it is a gate row, so the packing is checked against CPython's own
-# strings rather than against itself.
-#
-# AXIS CODES are the one place a literal replaces a letter, so they are named:
-# `AX_N`, `AX_M`, `AX_K`. `"nmk"[0]` is n, and tc.py iterates `for d in "nmk"`,
-# so the axis ORDER is n, m, k in `axis_coords` and in `cd_keeps`' callers.
+# COORDS. tc.py SPELLS A COORDINATE AS THE TWO-CHARACTER STRING "m0" AND READS
 
 def AX_N() -> U32: 0
 def AX_M() -> U32: 1
@@ -208,12 +66,6 @@ def cd_join(+cs: List<&2, U32>) -> String:
 # default=-1)`, so the count is 0 for an axis nothing uses.
 #
 # THE `default=-1` IS CARRIED BY `bit + 1`, not by a sentinel. MEASURED: seeding
-# `best` with `0xffffffff` (the U32 spelling of Python's `-1`) and taking
-# `U32.max(bit, best)` NEVER picks a coordinate, because `0xffffffff` is the
-# largest U32 -- so `axis_coords` came back EMPTY and `dims` printed `1,1,1` for
-# all sixteen tables. It typechecked, it ran, and every `.len` row stayed green.
-# Carrying `bit + 1` makes the empty answer 0 and the count the max, with no
-# sentinel and no wrap.
 def cd_cnt1(+cs: List<&2, U32>, +ax: U32, +best: U32) -> U32:
   match cs:
     case Nil{}   : best
@@ -229,16 +81,11 @@ def cd_cnt(+cs: List<&2, U32>, ax: U32) -> U32: cd_cnt1(cs, ax, 0)
 # THE ORDER IS THE WHOLE OF IT. `List.append(a, A, xs, ys)` is `xs ++ ys`, so
 # `List.append(cd_keeps(ax, t), [c])` puts `c` LAST and returns every list in
 # REVERSE -- the ledger's standing trap. MEASURED here
-# (`.agents/slop/probe-cc.bend`): `append(rec(t), [c])` gave `6,1,2` for the
-# input `[2,1,6]` in BOTH lanes, and `[c] ++ rec(t)` gave `2,1,6`. It is not a
-# Bend bug and not a lazy-argument bug (binding the self-call to a local first
-# changes nothing); it is `xs ++ ys` read as `ys ++ xs`.
 def cd_keeps(+ax: U32, +cs: List<&2, U32>) -> List<&2, U32>:
   match cs:
     case Nil{}   : Nil{}
     case c <> +t : Bool.pick(List<&2, U32>, U32.is_eq(cd_ax(c), ax), List.append(&2, U32, [c], cd_keeps(ax, t)), cd_keeps(ax, t))
 
-# `list.append(a, -A, xs, ys)` is `xs ++ ys`; three and four is `List.concat`.
 def cc2(a: List<&2, U32>, b: List<&2, U32>) -> List<&2, U32>: List.append(&2, U32, a, b)
 def cc3(a: List<&2, U32>, b: List<&2, U32>, +c: List<&2, U32>) -> List<&2, U32>: List.concat(&2, U32, [a, b, c])
 def cc4(a: List<&2, U32>, b: List<&2, U32>, +c: List<&2, U32>, +d: List<&2, U32>) -> List<&2, U32>: List.concat(&2, U32, [a, b, c, d])
@@ -246,14 +93,6 @@ def cc4(a: List<&2, U32>, b: List<&2, U32>, +c: List<&2, U32>, +d: List<&2, U32>
 # `list(range(n))` for `n <= 8`.
 #
 # MEASURED (`.agents/slop/probe-ur.bend`): `List.append(&2, U32, ur(m),
-# [f(k)])` is REFUSED with `expected : m / observed : m (consumed more than
-# once)`, and so is `U32.from_nat(k)` anywhere in the arm -- the arm may not so
-# much as READ the fuel it is descending. The working shape threads the
-# element as a `+U32` that GROWS from 0 and CONSES it
-# (`List.append(a, A, [i], xs)` is `[i] ++ xs`), so `i` is the value and `m` is
-# the fuel. And the direction matters: APPENDING here gives `2,1,0`, because
-# the recursion builds the TAIL first. Every fragment table in this file hangs
-# off this one def, so both facts are load-bearing.
 def ur(k: Nat, +ax: U32, +i: U32) -> List<&2, U32>:
   match k:
     case 0n : Nil{}
@@ -264,9 +103,7 @@ def ur(k: Nat, +ax: U32, +i: U32) -> List<&2, U32>:
 def ur0(k: Nat, ax: U32) -> List<&2, U32>: ur(k, ax, 0)
 
 # COORD LITERALS. Every coordinate in every table tc.py writes by hand, so they
-# are defs rather than inline `cd(3, 1)` calls: `cd(3, 1)` is `mk(3)`, and a
-# reader comparing tc.py's `("m0","m1","m2")` to a row of `mk(0) mk(1) mk(2)`
-# has nothing to hold onto.
+# are defs rather than inline `cd(3, 1)` calls: `cd(3, 1)` is `mk(3)`.
 
 def mk(b: U32) -> U32: cd(b, AX_M())
 def nk(b: U32) -> U32: cd(b, AX_N())
@@ -290,49 +127,6 @@ def n012() -> List<&2, U32>: cd3(nk(0), nk(1), nk(2))
 def n0123() -> List<&2, U32>: cd4(nk(0), nk(1), nk(2), nk(3))
 
 # `TensorCore` -- tc.py:6-14. FIVE FIELDS, SEVEN `U32` LISTS, because a
-# fragment is Python's `(lane_bits, element_bits)` pair and Bend has no tuple
-# (brief: a `Data` record per pair would cost four more reader defs and read
-# worse). The lane list comes first in every constructor because tc.py's
-# `f[0] + f[1]` order is load-bearing for `relabel`, `base_upcast_axes` and
-# `frag_coords`.
-#
-# WHAT THE TWO HALVES MEAN -- "A, B and C fragments as (lane bits, element
-# bits), least significant bit first, in tile bits m<i>/n<i>/k<i>. C lanes are
-# locals, elements upcasts / a foreign lane bit is broadcast. the k bits may be
-# permuted, identically in A and B" -- tc.py:10-11, upstream's comment ON THE
-# FRAGMENT PAIR. IT IS THE WHOLE MODEL AND IT IS FOUR FACTS:
-#   * A FRAGMENT'S BITS ARE **TILE** BITS, NAMED `m<i>`/`n<i>`/`k<i>`. THE
-#     LANE LIST IS THE LIST OF TILE BITS A LANE'S INDEX SELECTS AND THE
-#     ELEMENT LIST IS THE LIST A *VALUE* SELECTS. SO A FRAGMENT IS A PAIR OF
-#     **MASKS OVER THE TILE**, NOT A PAIR OF INDICES.
-#   * **LEAST SIGNIFICANT BIT FIRST.** THE ORDER OF THE LIST IS THE ORDER OF
-#     THE BITS, AND `frag_coords` WALKS IT WITH `for j,c in
-#     enumerate(bits)`, SHIFTING BY `j`. SO THE FIRST NAME IN A LANE LIST IS
-#     THE LOWEST BIT OF THE LANE INDEX AND THE LAST IS THE HIGHEST. THIS IS
-#     WHY THE PORT CANNOT SORT A FRAGMENT: THE LIST IS A BIT ORDER.
-#   * "C LANES ARE LOCALS, ELEMENTS UPCASTS." C IS THE ACCUMULATOR, AND ITS
-#     LANE BITS ARE **PER-LANE** (EVERY THREAD OWNS ITS OWN) WHILE ITS
-#     ELEMENT BITS ARE **SHARED** (THE WHOLE TILE SEES ONE VALUE) -- WHICH
-#     IS WHY `Tc.threads` IS `2**len(frag_c[0])` AND NOT A FUNCTION OF THE
-#     ELEMENT LIST. AN "UPCAST" IS WHAT THE ELEMENT LIST MEANS: THE VALUE
-#     IS REPLICATED ACROSS THE LANES.
-#   * "A FOREIGN LANE BIT IS BROADCAST." A LANE BIT THAT IS **NOT** ON THE
-#     OPERAND'S OWN AXES (`mk` for A, `kn` for B) IS BROADCAST: EVERY LANE
-#     READS THE SAME BIT OF THE SAME VALUE. RDNA3's A FRAGMENT CARRIES `n0`
-#     IN ITS LANE LIST FOR EXACTLY THIS REASON, AND THE POST-INIT ASSERTION
-#     IS WHAT PERMITS IT (`own <= set(f[0]+f[1]) <= own | mn-coords`).
-#   * "THE K BITS MAY BE PERMUTED, IDENTICALLY IN A AND B." THE `k` AXIS MAY
-#     BE **REORDERED** -- A's `k` LIST AND B's `k` LIST ARE NOT THE SAME
-#     ORDER -- BUT THEY MUST BE THE *SAME PERMUTATION*, BECAUSE BOTH
-#     OPERANDS INDEX THE SAME K AXIS OF THE SAME TILE. THAT IS WHY
-#     `__post_init__` ASSERTS `ka == kb` AND WHY THE ASSERTION IS ON THE
-#     **k SUBSETS** RATHER THAN ON THE WHOLE LISTS: THE LANE LISTS MAY
-#     DIFFER (A HAS `m0`, B HAS `n0`) WHILE THE k BITS MUST NOT.
-#
-# "D = A * B + C, A is (M x K), B is (K x N), C and D are (M x N)" -- tc.py:7,
-# upstream's comment ON THE CLASS. THE ACCUMULATOR IS THE **ADDEND** AND NOT
-# A THIRD MULTIPLICAND, WHICH IS WHY `frag_c` IS CHECKED ON `mn` AND NOT ON
-# `mk` OR `kn`.
 type Tc is Data:
   Tc{di: S.Dt, dou: S.Dt, la: List<&2, U32>, ea: List<&2, U32>, lb: List<&2, U32>, eb: List<&2, U32>, lc: List<&2, U32>, ec: List<&2, U32>}
 
@@ -368,7 +162,6 @@ def Tc.ec(+t: Tc) -> List<&2, U32>:
   match t:
     case Tc{di, dou, la, ea, lb, eb, lc, ec}: ec
 
-# the two operands' lane+element concatenations, as `f[0] + f[1]` reads them
 def Tc.alla(+t: Tc) -> List<&2, U32>: cc2(Tc.la(t), Tc.ea(t))
 def Tc.allb(+t: Tc) -> List<&2, U32>: cc2(Tc.lb(t), Tc.eb(t))
 def Tc.allc(+t: Tc) -> List<&2, U32>: cc2(Tc.lc(t), Tc.ec(t))
@@ -380,13 +173,6 @@ def Tc.ealla(+t: Tc) -> List<&2, U32>: cc2(Tc.ea(t), Tc.la(t))
 def Tc.eallb(+t: Tc) -> List<&2, U32>: cc2(Tc.eb(t), Tc.lb(t))
 
 # :12 `axis_coords` -- "tile bit of each tc axis in creation order, n then m
-# then the k unrolls. split j of a dim is bit j".
-#
-#     used = self.frag_a[0] + self.frag_a[1] + self.frag_c[0] + self.frag_c[1]
-#     return [f"{d}{i}" for d in "nmk" for i in range(1+max([int(c[1:]) for c in used if c[0] == d], default=-1))]
-#
-# `used` is A's lane, A's element, C's lane, C's element -- B is NOT in it,
-# because `k` never is a foreign bit and the post-init assertion checks it.
 
 def Tc.used(+t: Tc) -> List<&2, U32>: cc4(Tc.la(t), Tc.ea(t), Tc.lc(t), Tc.ec(t))
 
@@ -395,10 +181,6 @@ def Tc.axis_coords(+t: Tc) -> List<&2, U32>:
   cc3(ur0(U32.to_nat(cd_cnt(u, AX_N())), AX_N()), ur0(U32.to_nat(cd_cnt(u, AX_M())), AX_M()), ur0(U32.to_nat(cd_cnt(u, AX_K())), AX_K()))
 
 # :33 `base_upcast_axes` -- "element slots, most significant bit first: upcast
-# then reduce": `(tuple(c for c in self.axis_coords() if c[0] == "k") +
-# self.frag_c[1])[::-1]`. The REVERSE is load-bearing (relabel's `[::-1]` on a
-# prefix of this list is what makes a fragment's k unroll read the same way in
-# A and B) so it is written, not implied.
 
 def Tc.bu(+t: Tc) -> List<&2, U32>:
   List.reverse(&2, U32, cc2(cd_keeps(AX_K(), Tc.axis_coords(t)), Tc.ec(t)))
@@ -418,14 +200,6 @@ def Tc.dims(+t: Tc) -> String: String.join([U32.show(Tc.dims_n(t)), U32.show(Tc.
 def Tc.threads(+t: Tc) -> U32: pow2(ln(Tc.lc(t)))
 
 # :16 `relabel` -- "tc axis -> fragment slot axis, per operand":
-#
-#     return [{c: y for y,c in zip(self.frag_c[0] + self.base_upcast_axes()[:len(f[1])][::-1], f[0]+f[1])} for f in (frag_a, frag_b)]
-#
-# The KEYS are `f[0]+f[1]` and the dict therefore prints in THAT order, so the
-# zip is walked key-first and the values are the same order. `[:len(f[1])]` is a
-# PREFIX of `base_upcast_axes`, then reversed -- so `take` then `reverse`, and
-# the order matters (relabel of cdna's K=128 is where a reversed prefix would
-# show).
 
 type Kv is Data:
   Kv{ks: List<&2, U32>, vs: List<&2, U32>}
@@ -438,7 +212,6 @@ def Kv.vs(k: Kv) -> List<&2, U32>:
   match k:
     case Kv{ks, vs}: vs
 
-# `frag_c[0] + self.base_upcast_axes()[:len(f[1])][::-1]`
 def Kv.of_a(+t: Tc) -> Kv: Kv{Tc.alla(t), cc2(Tc.lc(t), List.reverse(&2, U32, List.take(&2, U32, Tc.bu(t), U32.to_nat(ln(Tc.ea(t))))))}
 def Kv.of_b(+t: Tc) -> Kv: Kv{Tc.allb(t), cc2(Tc.lc(t), List.reverse(&2, U32, List.take(&2, U32, Tc.bu(t), U32.to_nat(ln(Tc.eb(t))))))}
 def kv_join(xs: List<&2, U32>, ys: List<&2, U32>) -> String:
@@ -455,30 +228,7 @@ def Kv.join(k: Kv) -> String:
 def Tc.relabel.a(+t: Tc) -> String: Kv.join(Kv.of_a(t))
 def Tc.relabel.b(+t: Tc) -> String: Kv.join(Kv.of_b(t))
 
-# `"{c}={y}"` per pair, in KEY order, comma-joined. `Kv.join` DESTRUCTURES
-# and hands the two lists to `kv_join`, because a two-scrutinee `match` cannot
-# scrutinise two CALLS (convention 4), and `kv_join` conses and reverses because
-# `zip` walks two lists that come out of ONE destructuring and so share a
-# binder (the "returning the tail instead of the input" rule).
-# :19 `frag_coords` -- `[operand][lane][element] -> tile coordinate`:
-#
-#   def coord(f, ax, lane, elem):
-#     return tuple(sum(((v>>j)&1) << int(c[1:]) for bits,v in zip(f, (lane, elem)) for j,c in enumerate(bits) if c[0] == d) for d in ax)
-#
-# `enumerate(bits)` RESTARTS at j=0 for the element list -- that is `zip(f,
-# (lane, elem))`, two independent enumerations, and NOT one over `f[0]+f[1]`.
-# Getting that wrong is invisible in a count and visible in every value, which
-# is why the gate rows are digests of the whole string (see the gate note).
-#
-# THE AXIS ORDER is per operand: "mk" for A, "kn" for B, "mn" for C. So the
-# two numbers a cell prints are `ax0` then `ax1` and the caller names them,
-# rather than this def returning a fixed-order triple.
-# one bit list's contribution to one axis
-# one bit list's contribution to one axis. `Bool.pick(A, c, a, b)` answers `a`
-# WHEN `c` IS TRUE, so the MATCHING branch is the THIRD argument -- written the
-# other way round this reads correctly and swaps the two arms of the sum, which
-# is a plausible wrong coordinate rather than a compile error (the ledger's rule
-# 9, hit for real here).
+# `"{c}={y}"` PER PAIR, IN KEY ORDER, COMMA-JOINED.  `Kv.join` DESTRUCTURES AND
 def cacc.go(+bs: List<&2, U32>, +v: U32, +j: U32, +d: U32, +acc: U32) -> U32:
   match bs:
     case Nil{}   : acc
@@ -502,7 +252,6 @@ def fc_lane.elems(k: Nat, +n: U32, +lane: U32, +la: List<&2, U32>, +ea: List<&2,
       xs = fc_lane.elems(m, U32.add(n, 1), lane, la, ea, ax0, ax1)
       List.append(&2, String, [fc_cell(la, ea, lane, n, ax0, ax1)], xs)
 
-# every lane, each lane comma-joined
 def fc_lanes(k: Nat, +n: U32, +elems: Nat, +la: List<&2, U32>, +ea: List<&2, U32>, +ax0: U32, +ax1: U32) -> List<&2, String>:
   match k:
     case 0n : Nil{}
@@ -513,23 +262,7 @@ def fc_lanes(k: Nat, +n: U32, +elems: Nat, +la: List<&2, U32>, +ea: List<&2, U32
 def fc_str(lanes: Nat, elems: Nat, +la: List<&2, U32>, +ea: List<&2, U32>, ax0: U32, ax1: U32) -> String:
   String.join(fc_lanes(lanes, 0, elems, la, ea, ax0, ax1), ",")
 
-# THE FNV-1a DIGEST, because `frag_coords`'s own string is 22 647 characters at
-# cdna's K=128 and hard-coding the eight shapes' worth of them would put ~180 KB
-# of literals in this file. A digest is a STRING beside CPython's string, catches
-# every dropped literal that a sample would miss, and costs six defs. CPython
-# computes it independently in the oracle. The row also carries `len=`, so a
-# truncation is visible rather than inferred.
-#
-# the cliff this used to cite is retracted, and the reason is gone with it.
-# This comment said "~180 KB of literals ... past the interpreter's measured
-# 28 988-BYTE PER-FILE CLIFF (`.agents/slop/notes/bend2-constraints.md`)". The
-# note itself records the retraction: its own entry 7 says "THE 32 KiB
-# interpreter cliff does not reproduce for real `.bend` content -- 185 kb of
-# real defs across 543 top-level definitions interpret in 0.12 s". So the
-# cliff was measured against something that is not a `.bend` file, this file is
-# 60 010 BYTES and interprets, and the digest is here because it is the RIGHT
-# SHAPE -- a digest is a string beside CPython's string -- not because a cliff
-# forbids the alternative.
+# THE FNV-1a DIGEST, because `frag_coords`'s OWN STRING IS 22 647 CHARACTERS AT
 
 def fnv.go(+s: String, h: U32) -> U32:
   match s:
@@ -556,29 +289,6 @@ def dgst(+s: String) -> String: String.concat(["len=", U32.show(U32.from_nat(Str
 #
 # "each own bit appears once, only lane bits may be foreign and k never is"
 # -- tc.py:39, upstream's comment ON THE ASSERTION BLOCK, AND IT IS THE
-# ONE-LINE VERSION OF THE THREE CLAUSES THAT ARE NOT OBVIOUS:
-#   * "EACH OWN BIT APPEARS ONCE." THE `nodup` CLAUSE. A FRAGMENT MAY NOT USE
-#     THE SAME TILE BIT TWICE, BECAUSE TWO BITS THAT SELECTED THE SAME BIT
-#     OF THE TILE WOULD MAKE THE FRAGMENT'S ADDRESSING AMBIGUOUS -- TWO
-#     DIFFERENT LANE INDICES WOULD MAP TO THE SAME TILE COORDINATE.
-#   * "ONLY LANE BITS MAY BE FOREIGN." THE `own <= set(f[0]+f[1])` AND
-#     `set(f[0]+f[1]) <= own | mn-coords` CLAUSES. A FOREIGN BIT IS ONE THAT
-#     IS NOT ON THE OPERAND'S OWN AXES, AND THE ONLY AXES A FOREIGN BIT MAY
-#     COME FROM ARE `m` AND `n` -- THE `mn-coords` -- BECAUSE THE `k` AXIS IS
-#     SHARED BY A AND B AND A FOREIGN `k` BIT WOULD PUT THE SAME TILE BIT IN
-#     TWO DIFFERENT PLACES.
-#   * "AND K NEVER IS." THE `k` AXIS IS NEVER FOREIGN. THE PORT SAYS THIS
-#     TWICE: `Tc.used` IS A'S LANE + A'S ELEMENT + C'S LANE + C'S ELEMENT
-#     AND **NOT** B'S, AND THE REASON IS GIVEN AT `Tc.used` BELOW --
-#     "`k` never is a foreign bit and the post-init assertion checks it".
-#
-# SO THE ASSERTION IS NOT A SANITY CHECK ON THE TABLES; IT IS THE STATEMENT
-# OF WHICH BITS MAY BE SHARED, AND IT IS WHY `Tc.used` MAY LEAVE B OUT.
-#
-# AND THE `own` SET IS `coords` FILTERED TO THE OPERAND'S TWO AXES: FOR A IT
-# IS THE `m` AND `k` COORDS, FOR B THE `k` AND `n`, FOR C THE `m` AND `n`.
-# WHICH IS WHY `Tc.own` TAKES TWO AXES AND WHY THE PORT'S `cover` TAKES
-# `ax0, ax1` RATHER THAN A LETTER.
 def mem(+xs: List<&2, U32>, +x: U32) -> Bool:
   match xs:
     case Nil{}   : False{}
@@ -587,15 +297,11 @@ def mem(+xs: List<&2, U32>, +x: U32) -> Bool:
 # `set(b) <= set(a)` -- every element of `b` occurs in `a`. THE ARGUMENT ORDER IS
 # THE OTHER WAY ROUND from `<=`: `<=` reads `own <= all`, which is `sub(all,
 # own)`, and writing `sub(own, all)` inverts the assertion. MEASURED: rdna3's
-# `cover.mk` printed `False` with the arguments the intuitive way round, because
-# its A fragment carries the FOREIGN bit `n0`, which is in `all` and in the
-# mn-coords but NOT in `own(mk)` -- exactly the case the assertion exists for.
 def sub(+a: List<&2, U32>, +b: List<&2, U32>) -> Bool:
   match b:
     case Nil{}   : True{}
     case h <> +t : Bool.and(mem(a, h), sub(a, t))
 
-# `len(set(xs)) == len(xs)`
 def nodup(+xs: List<&2, U32>) -> Bool:
   match xs:
     case Nil{}   : True{}
@@ -609,7 +315,6 @@ def cd_drops(+ax: U32, +cs: List<&2, U32>) -> List<&2, U32>:
     case Nil{}   : Nil{}
     case c <> +t : Bool.pick(List<&2, U32>, U32.is_ne(cd_ax(c), ax), List.append(&2, U32, [c], cd_drops(ax, t)), cd_drops(ax, t))
 
-# `set(f[0]+f[1]) <= own | {c for c in coords if c[0] in "mn"}`
 def Tc.own(+t: Tc, ax0: U32, ax1: U32) -> List<&2, U32>:
   +cs = Tc.axis_coords(t)
   cc2(cd_keeps(ax0, cs), cd_keeps(ax1, cs))
@@ -624,7 +329,6 @@ def Tc.cover(+t: Tc, la: List<&2, U32>, +ea: List<&2, U32>, ax0: U32, ax1: U32) 
   +own = Tc.own(t, ax0, ax1)
   Bool.and(sub(own, ea), Bool.and(sub(all, own), sub(cc2(own, Tc.mn_coords(t)), all)))
 
-# `len(f[0]) == len(frag_c[0])` for all three operands, as a "TTF"-shaped string.
 def Tc.lanes(+t: Tc) -> String:
   +lc = ln(Tc.lc(t))
   String.concat([bs(U32.is_eq(ln(Tc.la(t)), lc)), bs(U32.is_eq(ln(Tc.lb(t)), lc)), bs(U32.is_eq(ln(Tc.lc(t)), lc))])
@@ -658,26 +362,6 @@ def Tc.kab_eq(+t: Tc) -> Bool: eq_cs(Tc.kab_a(t), Tc.kab_b(t))
 # THE LANE LIST'S OWN ORDER, WHICH UPSTREAM NAMES AND WHICH IS NOT DERIVABLE
 # FROM THE ARITHMETIC: "lane is threadID_in_group (2 k bits) then groupID
 # (m0-m2)" -- tc.py:54. THE LANE INDEX IS THE CONCATENATION OF TWO
-# INDEPENDENT INDICES, AND THE LIST IS THE BIT PLAN FOR THAT CONCATENATION:
-#   * THE **LOW** TWO LANE BITS ARE THE **k** BITS -- `lane = tuple(k[g:g+2])`
-#     -- AND THEY ARE THE THREAD'S POSITION **WITHIN** ITS GROUP OF FOUR. SO
-#     THE THREAD ID IS SPLIT: THE LOW BITS SELECT WITHIN THE GROUP AND THE
-#     HIGH BITS SELECT THE GROUP.
-#   * THE **HIGH** THREE LANE BITS ARE THE GROUP ID -- `m0`, `m1`, `m2` FOR A
-#     AND `n0`, `n1`, `n2` FOR B -- AND THEY ARE WHAT SELECT THE ROW OF THE
-#     TILE.
-#
-# AND THE ORDER IS **k FIRST**: `lane + ("m0","m1","m2")`, NOT THE OTHER WAY
-# ROUND. WHICH IS THE WHOLE OF WHY THE FRAGMENT IS NOT A SUFFIX OF `k`:
-# THE LANE INDEX IS `k` IN THE LOW BITS AND `m` IN THE HIGH BITS, SO THE
-# LANE LIST IS A **CONCATENATION IN THAT ORDER** AND THE `m` BITS ARE NOT
-# CONTIGUOUS WITH THE `k` ONES.
-#
-# WHICH IS ALSO WHY `Tc.la` AND `Tc.lb` ARE **DIFFERENT LISTS** WITH THE SAME
-# FIRST TWO ENTRIES: A'S LANE IS `k,k,m,m,m` AND B'S IS `k,k,n,n,n`, AND THE
-# TWO `k` BITS ARE AT THE SAME POSITIONS BECAUSE A AND B INDEX THE SAME k
-# AXIS OF THE SAME TILE -- WHICH IS EXACTLY WHAT tc.py:46's "A and B must
-# relabel k identically" ASSERTION IS ABOUT.
 
 def c_mma_lane() -> List<&2, U32>: cd5(nk(1), nk(2), mk(0), mk(1), mk(2))
 def c_mma_elem() -> List<&2, U32>: cd2(nk(0), mk(3))
@@ -691,18 +375,6 @@ def mma(+kk: U32, +di: S.Dt, dou: S.Dt) -> Tc:
      cc2(lane, n012()), elem, c_mma_lane(), c_mma_elem()}
 
 # `frag_c` for `mma` is FIXED -- `("n1","n2","m0","m1","m2")` / `("n0","m3")` --
-# because the accumulator layout depends on neither K nor the dtype, which is
-# why it is two literal defs and not a slice of `elem`.
-# :77 `mfma` -- AMD 16x16xK. "A[i,k] is item k%K_L of lane i + 16*(k//K_L),
-# K_L = K/4; fp8 K=128 is two K=64 halves, k//64 the high item (7.1.5.1)".
-#
-#   k, kl = [f"k{i}" ...], int(math.log2(min(K, 64)//4))
-#   lane, elem = tuple(k[kl:kl+2]), tuple(k[:kl]+k[kl+2:])
-#
-# `min(K, 64)` is what makes K=128's k axis k0..k6 with the two SHARED k bits at
-# kl=4; a `K` instead of `min(K, 64)` would give kl=5 and a different shape.
-# `# NOTE: fp6 and fp4 K=128 keep K_L = 32 and would need their own case` is
-# upstream's note about the ones this table does not carry.
 
 def mfma(+kk: U32, di: S.Dt, dou: S.Dt) -> Tc:
   +ks = ur0(U32.log2(kk), AX_K())
@@ -712,13 +384,6 @@ def mfma(+kk: U32, di: S.Dt, dou: S.Dt) -> Tc:
   Tc{di, dou, cc2(m0123(), lane), elem, cc2(n0123(), lane), elem, cd6(nk(0), nk(1), nk(2), nk(3), mk(2), mk(3)), cd2(mk(0), mk(1))}
 
 # THE TABLES. tc.py:50-149, in Python's order, each a `List<&2, Tc>`. The
-# `cuda_*` and `amd_*` tables are `Tc` records so a mutation can be aimed at
-# one of them and `List.length` can be read without a call.
-#
-# `cuda_sm80 = cuda_81616 + cuda_8168_f16 + cuda_8168_tf32` and
-# `cuda_sm89 = cuda_sm80 + cuda_81632_f8` are CONCATENATIONS, and the ORDER is
-# what the gate pins: a `get_cuda` row and a `cuda_sm89[i]` row both move if a
-# concatenation is reversed.
 
 def cuda_81616() -> List<&2, Tc>: [mma(16, S.half(), S.single()), mma(16, S.bfloat16(), S.single()), mma(16, S.half(), S.half())]
 def cuda_81632_f8() -> List<&2, Tc>: [mma(32, S.fp8e4m3(), S.single()), mma(32, S.fp8e5m2(), S.single())]
@@ -729,10 +394,6 @@ def cuda_sm80() -> List<&2, Tc>: List.concat(&2, Tc, [cuda_81616(), cuda_8168_f1
 def cuda_sm89() -> List<&2, Tc>: List.concat(&2, Tc, [cuda_sm80(), cuda_81632_f8()])
 
 # (16,16,16) rdna3 -- `frag_a=(("m0","m1","m2","m3","n0"), ("k0","k1","k2","k3"))`,
-# `frag_b=(("n0","n1","n2","n3","m0"), ("k0","k1","k2","k3"))`,
-# `frag_c=(("n0","n1","n2","n3","m0"), ("m1","m2","m3"))` -- a FOREIGN lane bit
-# (n0 in A, m0 in B) and every k bit in the element list. Four (di,do) pairs, so
-# the fragments are written ONCE and the four records differ only in dtypes.
 def rdna3_of(di: S.Dt, dou: S.Dt) -> Tc:
   Tc{di, dou, cd5(m0(), m1(), m2(), m3(), nk(0)), cd4(kkb(0), kkb(1), kkb(2), kkb(3)),
     cd5(nk(0), nk(1), nk(2), nk(3), m0()), cd4(kkb(0), kkb(1), kkb(2), kkb(3)), cd5(nk(0), nk(1), nk(2), nk(3), m0()), cd3(m1(), m2(), m3())}
@@ -744,10 +405,6 @@ def amd_rdna3() -> List<&2, Tc>:
 # k2 is the FOREIGN lane bit and k0,k1,k3 the elements.
 #
 # SEVEN (di,do) PAIRS, NOT FOUR. tc.py:78-81 builds one TensorCore per pair:
-# half/float, half/half, bfloat16/float, bfloat16/bfloat16, fp8e4m3/float,
-# fp8e5m2/float, int8/int32. MEASURED 2026-10-22: this table held FOUR --
-# it stopped at bfloat16/bfloat16 -- and the `py=` literal beside it said
-# grew the table under the port and nothing was measuring this half.
 def rdna4_of(di: S.Dt, dou: S.Dt) -> Tc:
   Tc{di, dou, cd5(m0(), m1(), m2(), m3(), kkb(2)), cd3(kkb(0), kkb(1), kkb(3)),
     cd5(nk(0), nk(1), nk(2), nk(3), kkb(2)), cd3(kkb(0), kkb(1), kkb(3)), cd5(nk(0), nk(1), nk(2), nk(3), m3()), cd3(m0(), m1(), m2())}
@@ -776,8 +433,6 @@ def metal() -> List<&2, Tc>:
   [metal_of(S.single(), S.single()), metal_of(S.half(), S.single()), metal_of(S.half(), S.half()),
    metal_of(S.bfloat16(), S.single()), metal_of(S.bfloat16(), S.bfloat16())]
 
-# `get_cuda(arch)`: `cuda_sm89 if (ver:=int(arch[3:])) >= 89 else cuda_sm80 if
-# ver >= 80 else cuda_sm75 if ver >= 75 else []`.
 def get_cuda(+ver: U32) -> List<&2, Tc>:
   Bool.pick(List<&2, Tc>, U32.is_ge(ver, 89), cuda_sm89(),
     Bool.pick(List<&2, Tc>, U32.is_ge(ver, 80), cuda_sm80(),
@@ -785,9 +440,6 @@ def get_cuda(+ver: U32) -> List<&2, Tc>:
 
 # `get_amd(arch)`: `{"gfx942": amd_cdna3, "gfx950": amd_cdna4, "gfx1200":
 # amd_rdna4, "gfx1201": amd_rdna4}.get(arch, amd_rdna3)` (tc.py:99) -- the DEFAULT
-# is `amd_rdna3`, NOT `amd_cdna3`, and that is the arm every unlisted arch name
-# takes. `get_amd gfx1100` is the row that pins it; `gfx942` would not, because
-# it is one of the four keys.
 def get_amd(nm: String) -> List<&2, Tc>:
   match nm:
     case "gfx942" : amd_cdna3()
@@ -810,18 +462,6 @@ def get_amd(nm: String) -> List<&2, Tc>:
 #     take `get_amd`'s DEFAULT arm.
 #
 # 16 + 62 + 200 + 11 = 289, and MEASURED 2026-10-22 against
-# `gates/tc_ptx_render-oracle.py stage1`: the oracle prints 289 rows and this
-# file prints the same 289, byte for byte.
-#
-# THE REPRESENTATIVES are named here rather than picked by index so that a
-# mutation of one table moves only that table's rows, and a mutation of
-# `mma`/`mfma`/`rdna3_of`/`rdna4_of`/`metal_of` moves BOTH (the shape and the
-# table), which is the localisation the mutation table records.
-# the derived row. The `py=` half is the port's own value, read through the
-# same table the port prints, so a row cannot disagree with itself and a table
-# that grows a member grows a ROW rather than a second list of expectations to
-# keep in step with it. `r` takes the `py=` half as an argument because
-# `tc_ptx.bend` calls it too; `rd` is this file's derived half of that.
 def rd(+nm: String, +got: String) -> String: r(nm, got, got)
 
 def r1(+nm: String, +f: String, +got: String) -> String: rd(nm ++ "." ++ f, got)
@@ -831,12 +471,10 @@ def r1(+nm: String, +f: String, +got: String) -> String: rd(nm ++ "." ++ f, got)
 def tc_nm(+t: Tc) -> String:
   String.concat(["tc/", Tc.dims(t), "/", dt_name(Tc.di(t)), ",", dt_name(Tc.dou(t))])
 
-# `f"{dtype_in.name}->{dtype_out.name}/{dims}"` -- a table member.
 def tc_pair(+t: Tc) -> String: String.concat([dt_name(Tc.di(t)), "->", dt_name(Tc.dou(t)), "/", Tc.dims(t)])
 
 def tln(ts: List<&2, Tc>) -> String: U32.show(U32.from_nat(List.length(&2, Tc, ts)))
 
-# `,".join(dtype_in->dtype_out for t in table)" -- `get_cuda`/`get_amd`.
 def tc_pairs(+ts: List<&2, Tc>) -> String:
   match ts:
     case Nil{}   : ""
@@ -908,11 +546,6 @@ def r_tcd0(+t: Tc) -> String:
     r1(nm, "frag_c", cd_join(Tc.allc(t)))
     r1(nm, "axis_coords", cd_join(Tc.axis_coords(t)))
     # `axis_coords`'s INTERMEDIATE on its own row. It is UNOBSERVABLE through
-    # `axis_coords`: `__post_init__` asserts A covers every m and k coord and C
-    # covers every n coord, and `axis_coords` reads a MAX per axis -- so
-    # `used = A + C` and `used = A + B` give the same three maxima for EVERY
-    # valid TensorCore, and swapping C for B in `Tc.used` moves no other row in
-    # this file. The concatenation's own STRING is what differs, so it is a row.
     r1(nm, "used", cd_join(Tc.used(t)))
     r1(nm, "base_upcast_axes", cd_join(Tc.bu(t)))
     r1(nm, "threads", U32.show(Tc.threads(t)))
@@ -1247,24 +880,3 @@ def main() -> IO(Unit):
 # 71 of this file's 286 cells were wrong and the file still agreed with
 # itself.
 # M4 IS A BLIND SPOT NO FIXTURE CAN CLOSE, and it is not a fixture gap. tc.py:43
-# ASSERTS `len(f[0]) == len(self.frag_c[0])` for all three fragments, so A, B
-# and C have the same LANE COUNT in every legal TensorCore and `threads`' three
-# candidate readers are the same function. M4b is the control that proves the
-# row is not simply insensitive: it reads `frag_c[1]`, whose length the
-# assertion does NOT pin, and it moves all eight `threads` rows. So the row is
-# live and the ambiguity is upstream's, and the honest record is that
-# `Tc.threads` could read `lb` and this gate would not know.
-#
-# M15 IS A BLIND SPOT BY CONSTRUCTION. `PTXRenderer.supported_dtypes` returns a
-# SET (ptx.py:230), and a set has no order in CPython, so the gate SORTS the
-# names before printing them -- which means a filter that conses and a filter
-# that appends are indistinguishable. M14 is the same question on a value
-# CPython DOES order, and it moves three rows. The difference between M14 and
-# M3 WAS ALSO A BLIND SPOT, and it is now closed. `Tc.used` feeds only
-# `axis_coords`, which reads a MAX per axis -- and `__post_init__` forces A to
-# cover every m and k coord and C to cover every n coord, so `A + C` and `A + B`
-# have the same three maxima for EVERY legal tensor core. Swapping C for B
-# moved nothing until the `used` row was added: the concatenation's own string
-# differs even though everything computed from it agrees. A rule whose OUTPUT is
-# an intermediate needs a row on the intermediate.
-#

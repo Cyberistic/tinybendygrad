@@ -14,55 +14,6 @@
 # `mesa.glsl_type_builtin_*` is NOT REACHABLE ON THIS TREE. It is bound inside a
 # `try: ... .in_dll(dll, ...)` -- `glsl_type_builtin_error` at
 # `tinygrad/runtime/autogen/mesa.py:5375` -- and `dll` is the LAZY `c.DLL` of
-# `tinygrad/runtime/support/c.py:89`, which raises when the library is absent and
-# the `try` swallows it, so the names never get bound. `tinymesa` is not
-# installed: `.venv/lib/python3.12/site-packages/tinymesa` does not exist.
-#
-#     .venv/bin/python -c "from tinygrad.runtime.autogen import mesa; print(len(dir(mesa)))"
-#       glsl_type_builtin*: 0        # of 9,974 module attributes
-#
-# So `nir.glsl_type` (:14-16) is not missing a constant, it is UNUSABLE: its dict
-# comprehension is EAGER, so it evaluates `g("glsl_type_builtin_double")` before
-# it ever indexes `[t]`, and that getattr raises -- so `glsl_type` raises
-# `AttributeError` for EVERY `t`, including the eleven whose own symbol is never
-# consulted. The gate rows say exactly that, and they name the symbol CPython
-# asked for, because 0 would be `nir_deref_type_var`'s value and would read as a
-# plausible wrong constant.
-#
-# FACT TWO, and it is narrower. `nir_intrinsic_infos` (mesa.py:989) is the same
-# `in_dll` shape and is likewise absent, so `nir_instr`'s intrinsic arm
-# (:49-52) raises before it reaches its own `assert idx > 0, "invalid intrinsic.
-# mesa version mismatch?"`. But the `NIR_INTRINSIC_*` ENUM values it would index
-# with are generated INTS and ARE present, so this file audits all eight of them
-# and records the `index_map` SLOTS as the wall. `TODO(p3) nir.py:50 symbol=nir_instr`.
-#
-# THE CONVENTIONS are `renderer/__init__.bend`'s HEADER, read in full. Four that
-# bite here:
-#
-#   1. A RENDERER IS A `Data` RECORD OF ITS OPTIONS. `NIRRenderer` and its three
-#      subclasses differ by `supported_dtypes`, `code_for_op`, the `param`
-#      builder and three maxima, so each is one `Nir` record below and the gate
-#      READS THE RECORD -- a wrong constant is a moved row, not a wrong shader
-#      nobody diffs.
-#   2. the gate is a string diff, never a boolean about strings. Every row is
-#      `<name> = [BEND]   py=[CPYTHON]`, the `py=` half is a LITERAL so it cannot
-#      be the same expression as the BEND half, and `String.concat` -- which
-#      drops a literal silently -- is why every table is emitted as ONE joined
-#      string rather than a count.
-#   4. a `match` may only scrutinise a parameter or a pattern binder. Every test
-#      of a computed value is therefore a trailing `Bool`/`U32` parameter of a
-#      `.of`/`.go` helper and the `match` is inside THAT. Measured: the first
-#      draft of this file refused on `match Bool.and(c.is_uint(d), unsigned):`
-#      at line 173, which is why there are eleven `.of` helpers below.
-#   6. a record literal and a record pattern both name every field.
-#
-# BOTH DIRECTIONS ARE WRITTEN INDEPENDENTLY, and that is deliberate. Folding the
-# reverse table out of the forward one would make the two rows agree by
-# construction: `agent-core.md`'s `nv_query_litter` case, where the port and the
-# oracle made the SAME mistake and the differ reported zero disagreements over
-# it. So `u_aop` and `u_aop.rev` are two matches, each typed from `nir.py:19-20`,
-# and the ORACLE inverts Python's dict. An arm moved in one does not move in the
-# other, which is what makes the reverse rows worth their cost.
 
 import Base
 import ./__init__.bend as R
@@ -70,15 +21,6 @@ import ./../uop/ops.bend as O
 import ./../LAWS/spec.bend as S
 
 # THE GATE PRIMITIVES. Same shape as `nir_llvmir.bend`'s: a row is a VALUE, so a
-# group of rows is a `String` and the whole gate is ONE `IO.print` whose own
-# newline is the only frame.
-#
-# the derived row.  The `py=` half is the port's own value, re-read through the same
-# code the port prints, so a row cannot disagree with itself and a transcription
-# cannot rot.  `r` takes the `py=` half as an argument because `tc_ptx.bend` calls
-# it too; `rd` is this file's derived half of that.  THE TEETH MOVE TO THE ORACLE:
-# a derived row's two halves always agree with each other, so only the byte diff
-# against CPython can catch a wrong VALUE.
 
 def r(+nm: String, +got: String, +want: String) -> String:
   String.concat([nm, " = [", got, "]   py=[", want, "]\n"])
@@ -151,18 +93,6 @@ def dnames(+ds: List<&2, S.Dt>) -> String:
     case d <> +t: dngo(t, dtn(d))
 
 # the three set-membership tests, and they are not `S.Dt`'s.
-#
-#     c(t,u): "u" if t in dtypes.uints and u else ("i" if t in dtypes.ints else
-#             ("f" if t in dtypes.floats else "b"))
-#     ncast:  it in dtypes.ints and ot in dtypes.ints
-#
-# `dtypes.ints` is `uints + sints` -- EIGHT concrete dtypes -- while
-# `dtypes.is_int(x)` (and so `S.Dt.is_int`) is `x in ints + (weakint,)`. They
-# DIFFER on `weakint`, and so do `floats` and `dtypes.is_float` on `weakfloat`.
-# A port that reaches for the shared reader answers `"i"` for `weakint` where
-# Python answers `"b"`, and nothing downstream would notice. So these three
-# match the CLASS and exclude the weak members, and the `weakint` / `void` /
-# `weakfloat` rows at the foot of the gate are what hold them to it.
 
 def c.cls_uint(cls: S.Cls) -> Bool:
   match cls:
@@ -196,12 +126,6 @@ def c.in_floats(d: S.Dt) -> Bool:
     case S.Dt{pri, bits, cls, nm}: c.cls_float(cls)
 
 # `c(t, u)` -- nir.py:26. FOUR arms, and the fourth is the reach for `bool`,
-# which is in NEITHER set: `dtypes.floats` excludes it and `dtypes.ints` excludes
-# it, so a `bool` falls all the way through to `"b"`. The `and u` binds to the
-# FIRST arm only, so `u=False` turns a uint into `"i"` and leaves every other
-# class alone. Both are boundary cases with their own row.
-# the three arms, innermost first: a def may only call defs above it, so the
-# chain `arm1 -> arm2 -> arm3` is spelled bottom-up. Measured refusal otherwise.
 def c.arm3(d: S.Dt, is_float: Bool) -> String:
   match is_float:
     case True{}: "f"
@@ -220,41 +144,6 @@ def c.arm1(+d: S.Dt, is_uint: Bool) -> String:
 def c(+d: S.Dt, unsigned: Bool) -> String: c.arm1(d, Bool.and(c.in_uints(d), unsigned))
 
 # THE THREE ALU OP TABLES -- nir.py:19-23.
-#
-#   u_aop  unsigned/bool arithmetic        14 entries  (nir.py:19-20)
-#   s_aop  u_aop with FIVE arms replaced   14 entries  (nir.py:21)
-#   f_aop  float arithmetic                13 entries  (nir.py:22-23)
-#   aop    dtype -> one of the three       17 keys     (nir.py:24)
-#
-# `f_aop` is THIRTEEN and was TWELVE, and the thirteenth is `SQRT`: upstream added
-# `Ops.SQRT: "fsqrt"` to `f_aop` in PR #18815 (`c04397442`, 2026-10-18) and this tree
-# took it in the 2026-10-20 re-vendor `77e6c2bec`.  MEASURED 2026-10-22: the port was
-# last edited 2026-10-06 and still had twelve, so it was CORRECT WHEN IT WAS WRITTEN
-# and STALE afterwards -- and its `py=` half was DERIVED from its own value, so the
-# four `cfo` rows were GREEN on a stale answer.  A derived half cannot disagree with
-# the port, so only the byte diff against live CPython can see this, and the lane
-# against live CPython did not exist until `gates/nir_render-gate.py` did.
-#
-# `s_aop`'s FIVE overrides are the whole difference between the two integer
-# tables and they are NOT the ones a reader would guess. CMPLT, TRUNCDIV, TRUNCMOD, MAX
-# and SHR change; ADD, MUL, CMPNE, CMPEQ, OR, AND, XOR, WHERE and SHL are
-# spelled the SAME for signed and unsigned -- NINE shared spellings, FIVE
-# diverging ones. So each table is its own match rather than `u_aop` plus a
-# patch list: a port that derived `s_aop` from `u_aop` could not tell which of
-# the fourteen entries is a shared spelling and which is an override, and the
-# `aop signed char` row is the one that shows a wrong answer in either.
-#
-# The three tables have SIX NAMES in common as OPS (`ADD`, `MUL`, `CMPLT`,
-# `CMPNE`, `CMPEQ`, `MAX` are `iadd`/`imul`/.. in one table and `fadd`/`fmul`/..
-# in another), which is why the REVERSE direction is a per-table match and not
-# one shared inverse: `f_aop.rev("fadd") = "ADD"` and `u_aop.rev("iadd") =
-# "ADD"` are BOTH true and one shared inverse would have to pick.
-# THE MESA ENUM VALUES. Read by `getattr` on the live module, never transcribed,
-# and each one is gated so an entry moved into the wrong arm is a diff. The
-# authority for every one of these is the generated enum in
-# `tinygrad/runtime/autogen/mesa.py`; `nir.py` never states a value, only a
-# SYMBOL, so this file is the place the numbers enter and the gate is the only
-# thing that can say they are right.
 
 def op_const(nm: String) -> U32:
   match nm:
@@ -329,11 +218,6 @@ def op_const(nm: String) -> U32:
     case _: 0
 
 # nine of the thirty-six CAST names do not exist: every `*2f8` (the fp8s are not
-# in `glsl_type`'s key set and neither are they in NIR's op enum) and every
-# `*2b1` (`nir_op_i2b1` and friends are not ops). So `ncast` to an fp8 or to
-# `bool` RAISES in CPython, and `op_const`'s `case _` of 0 would be a plausible
-# wrong constant for all nine. `op_present` is the separate question and the
-# `ncast` rows print the refusal where it says no.
 def op_present(nm: String) -> Bool:
   match nm:
     case "b2b1": True{}
@@ -566,19 +450,6 @@ def f_aop.rev(nm: String) -> String:
     case _: ""
 
 # `aop` -- nir.py:24. `{{x:u_aop for x in (dtypes.bool,)+dtypes.uints},
-# {x:s_aop for x in dtypes.sints}, {x:f_aop for x in dtypes.floats}}`.
-#
-# The INSERTION ORDER is bool, uints, sints, floats -- NOT `dtypes.all`'s
-# floats-first order, and that is a real diff rather than a cosmetic one: it is
-# why `aop keys` is a joined STRING and not a count. THREE classes, so the table
-# is a `U32` TAG -- `0` unsigned/bool, `1` signed, `2` float -- which keeps
-# `aop_of` total on all seventeen and makes an unreachable class a `3` no row
-# can hide.
-# `(dtypes.bool,) + dtypes.uints` (nir.py:24), so `bool` is in the SAME class as
-# the uints and not a fourth class of its own. The first run answered `1` for
-# `bool` -- `bool`'s CLASS is `CBool`, which is neither `CUint` nor `CSint`, so
-# the unsigned test alone fell through to the signed arm. CAUGHT BY THE
-# `aop kind bool` ROW.
 def aop_kind.u(is_unsigned: Bool) -> U32:
   match is_unsigned:
     case True{}: 0
@@ -656,16 +527,6 @@ def aop_rev_of(k: U32, nm: String) -> String:
     case _: ""
 
 # `glsl_type` -- nir.py:14-16. THE SYMBOL NAME is computed, not looked up:
-# `'u'*(d in dtypes.uints)`, then the LITERAL `int`, then `bitsize + '_t'`
-# EXCEPT when `itemsize == 4`. That exception is the whole width rule -- `uint32`
-# and `int32` are spelled with no `_t` while all three other widths carry one,
-# and it is `itemsize` rather than `bitsize` that decides, so the two agree on
-# every dtype here only by luck.
-#
-# TWELVE keys -- four explicit plus the EIGHT of `dtypes.ints` -- so the fp8s and
-# `__bf16` are ABSENT and `glsl_type(fp8_e4m3)` is a `KeyError`, not a wrong
-# answer. `glsl_keyed` is that membership and the five non-int dtypes it admits
-# are exactly the four explicit keys plus `bool`.
 
 def glsl_sym4.of3(d: S.Dt, is_half: Bool) -> String:
   match is_half:
@@ -687,13 +548,6 @@ def glsl_sym4(+d: S.Dt) -> String: glsl_sym4.of(d, R.is_named(d, "f64"))
 # `bits` is read TWICE -- once for the `itemsize == 4` test and once for the
 # spelling -- and a pattern BINDER is affine exactly like a parameter, so it is
 # `S.Dt.bits(d)` twice rather than a binder. MEASURED on 2.0.34: `case D{a, b}:
-# String.concat([b, b])` is refused with "b (consumed more than once)". Calls are
-# repeatable; bindings are not. That is also why `dtn` and `c.in_uints` read each
-# binder once.
-# The `glsl_type_builtin_` PREFIX IS PART OF THE KEY. The first run printed
-# `unsigned char=uint8_t` -- the f-string's tail with its head left off -- and
-# the `glsl keys` row caught it. `nir.py:16` interpolates the prefix into the
-# SAME f-string, so there was nowhere to have forgotten it.
 def glsl_sym_int(+d: S.Dt) -> String:
   String.concat(["glsl_type_builtin_", Bool.pick(String, c.in_uints(d), "u", ""), "int",
     Bool.pick(String, U32.is_eq(S.Dt.bits(d), 32), "", String.concat([U32.show(S.Dt.bits(d)), "_t"]))])
@@ -718,16 +572,6 @@ def glsl_sym.keyed(+d: S.Dt, keyed: Bool) -> String:
 def glsl_sym(+d: S.Dt) -> String: glsl_sym.keyed(d, glsl_keyed(d))
 
 # `g(s)` is `getattr(mesa, s)` (nir.py:11) and all twelve symbols are `in_dll`
-# DATA symbols tinymesa does not provide here, so the answer is the same refusal
-# for all twelve -- and the refusal NAMES the symbol, which is what turns it from
-# a shrug into a diagnosis. The FIRST one is `double`'s, because the dict
-# comprehension is eager, so that is the symbol the traceback actually says.
-# the call raises for every `t`, including the five whose key it does not hold.
-# `nir.py:15` builds the dict EAGERLY, so `g("glsl_type_builtin_double")` runs --
-# and raises -- before `[t]` is ever indexed, so an unkeyed `t` never gets that
-# far. The first run printed `NO_KEY` for the fp8s and `__bf16` here and
-# `glsl call` disagreed with CPython on five of seventeen cells. Key MEMBERSHIP
-# is `glsl keys`; the CALL is this, and it has one answer.
 def glsl_const(nm: String) -> String: "AttributeError:glsl_type_builtin_double"
 
 def glsl_row(+d: S.Dt) -> String: String.concat([dtn(d), " -> ", glsl_sym(d), " ", glsl_const(glsl_sym(d))])
@@ -735,26 +579,6 @@ def glsl_row(+d: S.Dt) -> String: String.concat([dtn(d), " -> ", glsl_sym(d), " 
 def glsl_call_row(+d: S.Dt) -> String: String.concat([dtn(d), "=", glsl_const(glsl_sym(d))])
 
 # `ncast` -- nir.py:27-28.
-#
-#     nalu(b, f"{c(it)}2{c(it) if it in dtypes.ints and ot in dtypes.ints else
-#                  c(ot, ot == dtypes.bool)}{ot.bitsize}", src)
-#
-# The name is `c(it)` + the literal `2` + a SECOND prefix + the DESTINATION's
-# bit size, and the second prefix has a two-way condition that is easy to get
-# backwards: int->int keeps the SOURCE prefix -- so a signed->unsigned cast is
-# `i2u8` and the source's `i` survives -- while everything else uses
-# `c(ot, ot == bool)` on the DESTINATION. So `float->int` is `f2i32`,
-# `uint8->bool` is `u2b1`, and `bool->bool` is `b2b1`: the destination `bool`
-# makes the second prefix `b` even though the SOURCE is not an int.
-#
-# GATED BY ASKING, not by re-deriving. The oracle replaces `nir.g` with a
-# recorder and calls the REAL `nir.ncast`, so each `py=` half is the symbol mesa
-# was asked for. A port that misreads the two-way condition disagrees on a large
-# part of the 17x17 grid, which is the point.
-# both prefixes are computed and passed in, rather than one computed per arm:
-# Bend counts a parameter read in each arm as read TWICE (measured at line 617,
-# `ot` in `ncast_mid.of`), so the arms must select between two values rather than
-# compute one. That also puts the two-way condition in ONE place.
 def ncast_mid.of(src: String, dst: String, both_int: Bool) -> String:
   match both_int:
     case True{}: src
@@ -781,13 +605,6 @@ def ncast_rows(+it: S.Dt, +ots: List<&2, S.Dt>, +acc: List<&2, String>) -> Strin
 def ncast_row(it: S.Dt, ots: List<&2, S.Dt>) -> String: ncast_rows(it, ots, Nil{})
 
 # `nalu` -- nir.py:38. `g(f"nir_build_alu{len(srcs)}")(b, g(f"nir_op_{op}"), *srcs)`.
-#
-# So the mesa SYMBOL is `nir_op_` + the table entry and the BUILD call is
-# `nir_build_alu` + the arity. FOUR arities exist and `nir.py` asks for
-# `alu1` (ncast, nchannel, nimm, nundef), `alu2` (every binary op), `alu3` (`ilt`
-# compares, and `ngid`/`nlid` are `nc=3` destinations) and `alu4` (`tovec`,
-# nir.py:273). A `nalu` with FIVE srcs would ask for a fifth arity that does not
-# exist, so `alu5` is ABSENT and that is a row rather than an assumption.
 
 def build_alu(n: U32) -> String:
   match n:
@@ -798,15 +615,6 @@ def build_alu(n: U32) -> String:
     case _: "ABSENT"
 
 # `scope(space)` -- nir.py:83.
-#
-#     return 'global' if space == AddrSpace.GLOBAL else ('shared' if space ==
-#            AddrSpace.LOCAL else 'deref')
-#
-# TWO arms and an ELSE, and the else is a WALL: `AddrSpace.REG` is the one the
-# else was written for, and `AddrSpace.ALU` -- which exists, and which
-# `NIRRenderer.param` reads at nir.py:147 -- falls into it too, answering
-# `deref`. So `scope(ALU) == scope(REG)` and a renderer that gives ALU its own
-# case is not reading this function. The ALU rows below are exactly that test.
 
 def scope(space: S.Addr) -> String:
   match space:
@@ -826,24 +634,6 @@ def is_global(space: S.Addr) -> Bool:
     case _: False{}
 
 # THE INTRINSIC ARITHMETIC -- nir.py:84-91. The oracle reaches these by calling
-# the REAL closures out of `nir_instr` (`inspect.getclosurevars`), not by
-# reimplementing them, so every `py=` half here is `nir`'s own lambda:
-#
-#   nstore (nir.py:84-87)
-#     WRITE_MASK = (1 << val.num_components) - 1            ALWAYS
-#     ALIGN_MUL  = val.bit_size // 8 * val.num_components   UNLESS space is REG
-#     srcs       = [val, addr] reversed for REG, copied otherwise
-#   nload  (nir.py:88-91)
-#     ACCESS     = ACCESS_CAN_REORDER                        ONLY for GLOBAL
-#     ALIGN_MUL  = u.dtype.itemsize * u.max_numel()          UNLESS space is REG
-#
-# TWO FACTS THE ROWS PIN, and both are boundary cases rather than arithmetic:
-# `REG` is the ONLY space with no `ALIGN_MUL` on either side, so `ALU` -- which
-# HAS one -- is the row that separates "unless REG" from "for GLOBAL"; and the
-# REG `srcs` REVERSAL is the one place in this file where the order of two
-# identical-typed operands is the whole answer, so it is emitted as a NAME list
-# rather than a count. `nir.py:86` spells the reversal
-# `[nsrc(val), nsrc(addr)][::1 if space != AddrSpace.REG else -1]`.
 
 def nstore_mask(n: U32) -> U32: U32.sub(U32.shln(1, U32.to_nat(n)), 1)
 
@@ -910,37 +700,11 @@ def store_nc() -> U32: 1
 
 # `padded_idx(param_idx:int, size:int) -> round_up(param_idx, size) + size`
 # -- nir.py:246.
-#
-# `round_up(x, y)` is `(x + (y-1)) // y * y`, so `padded_idx(p, s)` is
-# `ceil(p/s)*s + s`: it rounds UP and then adds a WHOLE EXTRA size, which
-# reserves the base pointer of the NEXT param. So it is never `s` and never `0`,
-# and `padded_idx(0, s) == s`. Both are rows, because `round_up + size` misread as
-# `round_up` is an off-by-a-whole-block, and `LVPRenderer.param_sz`
-# (nir.py:271) and `IR3Renderer.param_sz` (nir.py:309) both REDUCE over it.
-# `y` appears THREE times -- the `(y-1)`, the divisor and the multiplier -- so it
-# needs `+` and this is the only arithmetic in the file that does. Measured.
 def round_up(+x: U32, +y: U32) -> U32: U32.mul(U32.div(U32.add(x, U32.sub(y, 1)), y), y)
 
 def padded_idx(+p: U32, +s: U32) -> U32: U32.add(round_up(p, s), s)
 
 # THE RENDERER RECORD -- convention 1. `NIRRenderer` and its three subclasses
-# are one `Nir` each; nothing mutates after construction and the gate READS THE
-# RECORD, so a wrong constant is a moved row rather than a wrong shader nobody
-# diffs.
-#
-# `NIRRenderer` (:116-119) sets `suffix = "NIR"`, takes the THREE MAXIMA from
-# `CUDARenderer` and has no `has_local`/`has_shared` override, so it keeps the
-# base's `True`/`True`. `LVPRenderer` (:255-259) is the only one that flips them
-# AND the only one that pins `global_max = (1, 0, 0)` -- which is why that row
-# carries a ZERO and every other device's does not, and why `unum` has to print
-# the zeros rather than elide them. `NAKRenderer` (:248) and `IR3Renderer` (:285)
-# override neither.
-#
-# `sd_kind` is `Nir`'s own tag for WHICH `supported_dtypes` override is live:
-# `0` the base filter, `1` NAK's arch test, `2` IR3's `double` drop. LVP is `0`
-# because `LVPRenderer` does not override `supported_dtypes` -- it inherits
-# `NIRRenderer`'s -- and a renderer that gave it a tag of its own would be
-# inventing an override `nir.py` does not have.
 
 type Nir is Data:
   Nir{name: String, has_local: Bool, has_shared: Bool, g0: U32, g1: U32, g2: U32, l0: U32, l1: U32, l2: U32,
@@ -982,9 +746,6 @@ def Nir.l(n: Nir) -> List<&2, U32>:
 
 # `shared_max` IS A SCALAR, not a triple: `CUDARenderer.shared_max` is the
 # int `49152` and nir.py:118 TAKES it, so `Nir` carries one `U32` where
-# `global_max` and `local_max` are triples. The first draft gave it three `U32`s
-# of `0` and the `rec NIR` row disagreed with CPython on the field COUNT --
-# caught because the row is a string and not a claim about three numbers.
 def Nir.s(n: Nir) -> U32:
   match n:
     case Nir{name, has_local, has_shared, g0, g1, g2, l0, l1, l2, shared_max, drops_exp2, has_param, sd_kind}: shared_max
@@ -1008,20 +769,6 @@ def Nir.row(+n: Nir) -> String:
     " sd_kind=", U32.show(Nir.sd_kind(n))])
 
 # `supported_dtypes` -- nir.py:244, :253, :321. THREE OVERRIDES, and the
-# NESTING is the content:
-#
-#   NIRRenderer (:244)  dtypes.all MINUS fp8s MINUS bfloat16            -> 12
-#   NAKRenderer (:253)  NIR's MINUS half, but only when int(arch[3:]) < 53  -> 11 / 12
-#   IR3Renderer (:321)  NIR's MINUS double                              -> 11
-#
-# The NAK test is `int(self.target.arch[3:])`, so it reads the digits after a
-# THREE-CHARACTER PREFIX: `sm_53` -> 53 -> keeps `half`, `sm_52` -> 52 -> drops
-# it, `sm_120` -> 120 -> keeps it. `52` and `120` are the two boundary rows,
-# because a `>=` written as `>` drops `half` on 53 and a TWO-character slice
-# would raise on a bare `"86"` -- which is `arch_off` below.
-# No binder: `R.is_named` takes the dtype, so a `case S.Dt{...}` here bound four
-# names and read none of them -- and an unread binder still counts toward
-# affinity (refused as "nm (consumed more than once)" at line 884).
 def sd.drop_base(+d: S.Dt) -> Bool:
   Bool.or(R.is_named(d, "fp8e4m3") || R.is_named(d, "fp8e5m2") ||
   R.is_named(d, "fp8e4m3fnuz") || R.is_named(d, "fp8e5m2fnuz"), R.is_named(d, "bf16"))
@@ -1034,12 +781,6 @@ def sd.drop_nak.of(under: Bool, d: S.Dt) -> Bool:
 def sd.drop_ir3(d: S.Dt) -> Bool: R.is_named(d, "f64")
 
 # ONE MATCH PER PARAMETER, and that is a measured Bend rule rather than taste: a
-# def parameter or binder may be `match`ed ONCE, so the base filter and the
-# device tag are two matches in TWO defs (`sd.is_drop.of` / `sd.by_kind`) rather
-# than one nested match. Refused at line 893 on the nested spelling.
-#
-# A device that set two flags would get BOTH drops, which no renderer does and
-# which no row can hide -- that is what the `sd_kind` tag buys.
 def sd.by_kind(kind: U32, under53: Bool, d: S.Dt) -> Bool:
   match kind:
     case 1: sd.drop_nak.of(under53, d)
@@ -1078,12 +819,6 @@ def arch_off(nm: String) -> String:
     case _: ""
 
 # `int(arch[3:])` with NO string-to-Nat conversion available -- Base has no
-# `String.to_nat` -- so the four gated arches are matched directly and the SLICE
-# stays a separate string row (`arch_off`). Keeping them apart matters: `arch_off`
-# is the rule "the offset is THREE" and `arch_int` is the rule "these are the
-# values", and a port that fused them could pass both rows while getting the
-# offset wrong for a fifth arch. `"86"` has no `sm_` prefix, so `arch_off` reads
-# it as itself -- which is the row that would catch a two-character slice.
 def arch_int(nm: String) -> U32:
   match nm:
     case "sm_52": 52
@@ -1093,15 +828,6 @@ def arch_int(nm: String) -> U32:
     case _: 0
 
 # `code_for_op` -- nir.py:119 and :262.
-#
-#     code_for_op = {{k:None for k in s_aop.keys()}, {k:None for k in f_aop.keys()}}
-#     LVPRenderer: {k:v for k,v in NIRRenderer.code_for_op.items() if k != Ops.EXP2}
-#
-# A SET of ops -- 14 signed + 13 float with SIX shared op names, so 21 unique,
-# and 20 for LVP. Every value is `lambda: None`, so the set's only content is
-# WHICH ops a device claims to implement natively; the `EXP2` removal is
-# gallivm's "undefined behavior with infs, 0s and nans" (nir.py:260-261). The
-# gate emits the joined NAMES in `CFO_NAMES`' order, so a dropped op is a diff.
 
 def cfo.is(nm: String) -> Bool:
   match nm:
@@ -1129,10 +855,6 @@ def cfo.is(nm: String) -> Bool:
     case _: False{}
 
 # `k != Ops.EXP2` is the ONLY filter `LVPRenderer` applies (nir.py:262), and
-# `Bool.or(Bool.not(drops), nm != "EXP2")` says it with no `match` at all. That is
-# not a style preference: a `match` whose scrutinee is `Nir.drops_exp2(n)` is a
-# computed value and is refused, and nesting a `match` on a def parameter inside
-# another `match` is refused too (measured at lines 893 and 979).
 def cfo.has(+n: Nir, +nm: String) -> Bool:
   Bool.and(cfo.is(nm), Bool.or(Bool.not(Nir.drops_exp2(n)), Bool.not(String.eq(nm, "EXP2"))))
 
@@ -1142,10 +864,6 @@ def cfo.go(+n: Nir, +ns: List<&2, String>, +acc: List<&2, String>) -> List<&2, S
   match ns:
     case Nil{}: acc
     # `Bool.pick(t, cond, X, Y)` is X WHEN cond IS TRUE, so the KEPT arm goes in
-    # the SECOND position. The first run had it the other way round and every
-    # `cfo` row printed the exact inverse: `cfo nir` was `[]` and `cfo lvp` was
-    # `[EXP2]`. This is `agent-core.md`'s "Bool.pick CHOOSES an arm; it does not
-    # SEQUENCE one" wearing the polarity as a disguise.
     case +h <> +t: cfo.go(n, t, Bool.pick(List<&2, String>, cfo.has(n, h), List.append(&2, String, acc, [h]), acc))
 
 def code_for_op(n: Nir) -> List<&2, String>: cfo.go(n, cfo_names(), Nil{})
@@ -1157,11 +875,6 @@ def code_for_op(n: Nir) -> List<&2, String>: cfo.go(n, cfo_names(), Nil{})
 # `agent-core.md`'s "a def nothing calls is invisible to every other check".
 #
 # `mov` is `nchannel`'s op (nir.py:65, taken straight off `mesa` and never
-# through `nalu`), `vecN` is `tovec`'s (nir.py:273) and `Ops.STACK`'s
-# `f"vec{x.max_numel()}"` (nir.py:158), and the intrinsics and the
-# `NIR_INTRINSIC_*` keys are only reachable through `mesa.nir_intrinsic_instr_create`
-# and `nir_intrinsic_infos` -- the second of which is ABSENT here (see the
-# header), so there is no object to ask and the constant IS the whole claim.
 
 def intr_names() -> List<&2, String>: ["nir_intrinsic_store_global","nir_intrinsic_store_shared","nir_intrinsic_store_deref","nir_intrinsic_load_global","nir_intrinsic_load_shared","nir_intrinsic_load_deref","nir_intrinsic_load_workgroup_id","nir_intrinsic_load_local_invocation_id","nir_intrinsic_barrier","nir_intrinsic_ldc_nv","nir_intrinsic_load_ubo","nir_intrinsic_image_store","nir_intrinsic_image_load","nir_type_float16","nir_type_float32","nir_deref_type_var","nir_deref_type_array","nir_jump_break","MESA_SHADER_COMPUTE","SCOPE_WORKGROUP","ACCESS_CAN_REORDER","GLSL_SAMPLER_DIM_2D"]
 
@@ -1196,26 +909,7 @@ def const_rows3(+names: List<&2, String>, +tag: U32, +pre: String, +acc: List<&2
 
 def const_pick(names: List<&2, String>, tag: U32, pre: String) -> String: const_rows3(names, tag, pre, Nil{})
 
-# the gate, and what every group is for.
-#
-#   .venv/bin/python .agents/slop/nir/nir-oracle.py rows > .agents/slop/nir/py1.txt
-#   ./bin/bend tinybendygrad/renderer/nir.bend            > /tmp/nir_i.txt
-#   ./bin/bend tinybendygrad/renderer/nir.bend -o /tmp/nir && /tmp/nir > /tmp/nir_n.txt
-#   diff /tmp/nir_i.txt .agents/slop/nir/py1.txt && diff /tmp/nir_n.txt .agents/slop/nir/py1.txt
-#
-# The whole gate is ONE `IO.print`, so its own newline is the only frame and the
-# oracle's single trailing "\n" is its match. BOTH lanes are compared -- the
-# interpreted and the native.
-#
-# `aop.*` AND `aop rev.*` ARE THE TWO DIRECTIONS, and they are separate rows on
-# purpose: `u_aop` reads nir.py:19-20 forwards and `u_aop.rev` reads it
-# backwards, so an arm moved in one leaves the other green. `aop rev` prints
-# `name -> rev(name) -> forward(rev(name))`, so a REVERSE table that disagrees
-# with the FORWARD one is caught rather than assumed consistent.
-#
-# `mesa.nir_op_*` IS THE CONSTANT SWEEP: every enum this file names is gated by
-# `getattr` on the live module, and `aop.*` carries the SAME value inline as
-# `OP=nir_name/value`, so a table entry and the constant behind it move together.
+# THE TABLE IS IN `.agents/slop/tables/renderer-nir-1199.md` -- the gate, and what every group is for.
 
 def u_aop_tbl(k: U32) -> String: aop_rows(k, u_ops(), Nil{})
 def f_aop_tbl(k: U32) -> String: aop_rows(k, f_ops(), Nil{})
@@ -1279,17 +973,11 @@ def pad_tbl.go(+ps: List<&2, U32>, +ss: List<&2, U32>, acc: String) -> String:
     # elements, so a list of columns read `...,pi32,|1:ru1,...` with `|` as a
     # prefix and `...,pi32;,1:ru1` with `;` as a suffix -- in both cases a
     # separator this fold does not own sat between two columns. MEASURED in a
-    # six-line reduction before it was spelled this way.
     case +p <> +t: pad_tbl.go(t, ss, String.concat([acc, pad_col(p, ss, Nil{}), ";"]))
 
 def pad_tbl(ps: List<&2, U32>, ss: List<&2, U32>) -> String: pad_tbl.go(ps, ss, "")
 
 # THE GATE ROWS.
-#
-# `pad_tbl` is ONE COLUMN PER `param_idx` holding every `size`: the grid is
-# 11 x 5, so a joined column keeps it at one row while a wrong CELL is still a
-# diff. A `size`-outer fold prints the same numbers in the other order and
-# would read as a different table, so the ORDER is part of the claim.
 
 def main() -> IO(Unit):
   do IO<Unit>:
@@ -1314,13 +1002,6 @@ def main() -> IO(Unit):
     rd("c void u=True ", c(S.void(), True{})),
     rd("c index u=True", c(S.index(), True{})),
     # THE SPELLING ROW, and the only row that is about SPELLING. `spec.bend`'s
-    # `Dt.nm` and CPython's `DType.name` currently disagree on ten of the
-    # seventeen -- `tinygrad/dtype.py` was renamed to `u8`/`f16`/`f32` in the
-    # index on 2026-10-02 and `spec.bend` has not followed. Every OTHER row in
-    # this gate is keyed to `spec.bend`'s spelling so that a rename reads as a
-    # diff HERE and nowhere else; when `spec.bend` catches up this row collapses
-    # to seventeen `AGREE`s and nothing else moves. REPORTED, not fixed: neither
-    # file is this unit's.
     rd("dt name map     ", dnames(all_of())),
     # ---- the three op tables, FORWARD and REVERSE
     rd("aop u  keys    ", dnames(aop_keys())),
@@ -1424,326 +1105,4 @@ def main() -> IO(Unit):
     rd("cfo ir3        ", join(code_for_op(Nir.ir3()))),
     ]))
 
-# THE MUTATION TABLE -- 37 mutations, MEASURED, one per ported rule, reported
-# with the rows they moved by name. Reproduce with:
-#
-#   .venv/bin/python .agents/slop/nir/nir_mutate.py         > .agents/slop/nir/mut.txt
-#   .venv/bin/python .agents/slop/nir/nir_mutate.py --const > .agents/slop/nir/const_sweep.txt
-#
-# The harness diffs WHOLE `name=value` LINES and never row names -- a
-# name-comparing harness reported 0 for all 30 mutations in one unit of this repo
-# and 0 for all 68 in another. It also RE-CHECKS THE SUBSTRATE BEFORE EVERY
-# STEP, because four agents are editing it: one whole run of this table came
-# back with twenty-two "DID NOT COMPILE: expected : 'def', 'type'" which were
-# another agent's half-written `fold.bend`, and reporting those as this file's
-# blind spots would have been a lie with a table under it.
-#
-# ONE BLIND, AND IT IS A THEOREM. M18b replaces `c(ot, ot == dtypes.bool)` with
-# `c(ot)` in `ncast`'s second prefix and nothing moves. `c`'s first arm is
-# `t in dtypes.uints and u`, `bool` is NOT in `dtypes.uints`, so the `u`
-# argument is unreachable for the only `t` that could make it true -- `c(bool,
-# True)` and `c(bool, False)` are both `"b"`, which is exactly what the two
-# `c bool` rows say. `nir.py:28`'s `ot == dtypes.bool` is therefore dead weight
-# in upstream and no fixture can separate the two spellings. That is a property
-# of the FUNCTION, not a gap in the gate.
-#
-# NO CONSTANT IS BLIND. The `+1` sweep is over every one of the 101 constant arms
-# in the file -- the 67 of `op_const`, the 22 of `intr_const`, the 8 of
-# `idx_const` and the 4 of `arch_int` -- and every one moves a row. Its FIRST
-# run found 38 blind of 101, and all thirty-eight were defs no gate row called:
-# `intr_const`, `idx_const`, and the seven `op_const` arms outside the three
-# tables (`mov`, `vec2`..`vec16`). The three `mesa *` rows at the foot of the
-# gate exist for that reason and nothing else.
-#
-# baseline: 102 rows
-#
-# ID    WHAT                                           ROWS MOVED (BY NAME)
-# M01   c: uint arm -> i                               c uint32 u=True, c uint8 u=True , ncast from uint8
-# M02   c: i arm -> f                                  c int32 u=True , c uint64 u=Fal, c uint8 u=Fals, ncast from bool , ncast from float, ncast from int32, ncast from long , ncast from weaki
-# M03   c: f arm -> b (bool never reaches)             c bf16 u=True  , c double u=True, c fp8_e4m3 u=T , c half u=True  , ncast from bool , ncast from float, ncast from int32, ncast from long , ncast from uint8, ncast from weaki
-# M04   c: `and u` dropped                             c uint64 u=Fal, c uint8 u=Fals, ncast from bool , ncast from float, ncast from weaki
-# M05   c: `ints` widened to `S.Dt.is_int` (weakint!)  c index u=True, c weakint u=T , ncast from weaki
-# M06   u_aop: ADD -> uadd                             aop rev u      , aop u  table
-# M07   s_aop: MAX imax -> umax                        aop rev s      , aop s  table
-# M08   f_aop: FDIV -> rcp                             aop f  table   , aop rev f
-# M09   f_aop: CMPEQ feq -> fneu                       aop f  table   , aop rev f
-# M10   u_aop.rev: ishl swapped with ushr              aop rev u
-# M11   f_aop.rev: ftrunc dropped                      aop rev f
-# M13   aop_kind: float class becomes 1                aop kind half
-# M14   op_of: WHERE -> OpsCONST                       aop rev s      , aop rev u      , aop s  table   , aop u  table
-# M15   glsl_sym_int: `glsl_type_builtin_` head dropped glsl keys
-# M16   glsl_sym_int: `itemsize == 4` exception dropped glsl keys
-# M17   glsl_keyed: `bool` stops being a key           glsl keys
-# M18   ncast: two-way condition `and` -> `or`         ncast from bool , ncast from float, ncast from int32, ncast from long , ncast from uint8, ncast from weaki
-# M18b  ncast: second prefix taken from the DESTINATION's signedness only [THEOREM] * NOTHING MOVED *
-# M19   ncast: destination bitsize -> source           ncast from bool , ncast from float, ncast from int32, ncast from long , ncast from uint8, ncast from weaki
-# M20   scope: ALU given its own case                  scope alu
-# M22   nstore: ALIGN_MUL becomes REG-only             nstore align A , nstore align L , nstore align R
-# M23   nstore: WRITE_MASK off by one                  nstore mask
-# M24   nload: ACCESS for every space                  nload hasACC A , nload hasACC L , nload hasACC R
-# M25   padded_idx: the extra `+ size` dropped         padded 0 4     , padded 17 32   , padded 3 8     , padded 8 8     , padded 9 16    , padded tbl
-# M26   round_up: multiply BEFORE dividing             padded 17 32   , padded 3 8     , padded 9 16    , padded tbl
-# M27   sd: NAK's arch test `>= 53` becomes `> 53`     sd nak sm_53
-# M28   sd: bfloat16 stops being dropped               sd ir3         , sd nak sm_120  , sd nak sm_52   , sd nak sm_53   , sd nak sm_86   , sd nir
-# M28b  sd: one fp8 stops being dropped                sd ir3         , sd nak sm_120  , sd nak sm_52   , sd nak sm_53   , sd nak sm_86   , sd nir
-# M30   Nir: LVP's global_max 1 -> 2147483647          rec LVP
-# M31   Nir: shared_max 49152 -> 32768 (the BASE value) rec NIR
-# M32   arch_off: the offset becomes 2                 arch_off sm_53
-# M33   build_alu: a fifth arity invented              alu arities
-# M34   aop_keys: insertion order float-first (`dtypes.all`'s, not `aop`'s) aop u  keys
-# M35   cfo: WHERE dropped from the op set             cfo ir3        , cfo lvp        , cfo nak        , cfo nir
-#
-# 37 mutations, 1 blind
-# THE CONSTANT SWEEP. `+1` on every constant arm, one at a time.
-# baseline: 102 rows
-#
-# ID     LINE   ARM                                ROWS MOVED
-# K01    255    case "iadd": 306                   aop rev s      , aop rev u      , aop s  table   , aop u  table   , mesa alu
-# K02    256    case "imul": 338                   aop rev s      , aop rev u      , aop s  table   , aop u  table   , mesa alu
-# K03    257    case "udiv": 427                   aop rev u      , aop u  table
-# K04    258    case "umod": 451                   aop rev u      , aop u  table
-# K05    259    case "ult": 441                    aop rev u      , aop u  table
-# K06    260    case "ilt": 326                    aop rev s      , aop s  table   , mesa alu
-# K07    261    case "ine": 344                    aop rev s      , aop rev u      , aop s  table   , aop u  table
-# K08    262    case "ieq": 314                    aop rev s      , aop rev u      , aop s  table   , aop u  table
-# K09    263    case "ior": 353                    aop rev s      , aop rev u      , aop s  table   , aop u  table
-# K10    264    case "iand": 309                   aop rev s      , aop rev u      , aop s  table   , aop u  table
-# K11    265    case "ixor": 361                   aop rev s      , aop rev u      , aop s  table   , aop u  table
-# K12    266    case "bcsel": 115                  aop rev s      , aop rev u      , aop s  table   , aop u  table
-# K13    267    case "umax": 447                   aop rev u      , aop u  table
-# K14    268    case "imax": 334                   aop rev s      , aop s  table
-# K15    269    case "ishl": 356                   aop rev s      , aop rev u      , aop s  table   , aop u  table
-# K16    270    case "ushr": 479                   aop rev u      , aop u  table
-# K17    271    case "ishr": 357                   aop rev s      , aop s  table
-# K18    272    case "idiv": 313                   aop rev s      , aop s  table
-# K19    273    case "irem": 354                   aop rev s      , aop s  table
-# K20    274    case "fadd": 177                   aop f  table   , aop rev f
-# K21    275    case "fmul": 253                   aop f  table   , aop rev f
-# K22    276    case "flt": 240                    aop f  table   , aop rev f
-# K23    277    case "fneu": 260                   aop f  table   , aop rev f
-# K24    278    case "feq": 213                    aop f  table   , aop rev f
-# K25    279    case "fdiv": 198                   aop f  table   , aop rev f
-# K26    280    case "frcp": 270                   aop f  table   , aop rev f
-# K27    281    case "fmax": 248                   aop f  table   , aop rev f
-# K28    282    case "ftrunc": 288                 aop f  table   , aop rev f
-# K29    283    case "fsin": 279                   aop f  table   , aop rev f
-# K30    284    case "fexp2": 221                  aop f  table   , aop rev f
-# K31    285    case "flog2": 238                  aop f  table   , aop rev f
-# K32    286    case "mov": 365                    mesa alu
-# K33    287    case "vec2": 484                   mesa alu
-# K34    288    case "vec3": 485                   mesa alu
-# K35    289    case "vec4": 486                   mesa alu
-# K36    290    case "vec5": 487                   mesa alu
-# K37    291    case "vec8": 488                   mesa alu
-# K38    292    case "vec16": 483                  mesa alu
-# K39    293    case "b2b1": 28                    ncast from bool , ncast from weaki
-# K40    294    case "b2f16": 32                   ncast from bool , ncast from weaki
-# K41    295    case "b2f32": 33                   ncast from bool , ncast from weaki
-# K42    296    case "b2f64": 34                   ncast from bool , ncast from weaki
-# K43    297    case "b2i8": 39                    ncast from bool , ncast from weaki
-# K44    298    case "b2i16": 36                   ncast from bool , ncast from weaki
-# K45    299    case "b2i32": 37                   ncast from bool , ncast from weaki
-# K46    300    case "b2i64": 38                   ncast from bool , ncast from weaki
-# K47    301    case "f2f16": 156                  ncast from float
-# K48    302    case "f2f32": 159                  ncast from float
-# K49    303    case "f2f64": 160                  ncast from float
-# K50    304    case "f2i8": 166                   ncast from float
-# K51    305    case "f2i16": 163                  ncast from float
-# K52    306    case "f2i32": 164                  ncast from float
-# K53    307    case "f2i64": 165                  ncast from float
-# K54    308    case "i2f16": 293                  ncast from int32, ncast from long
-# K55    309    case "i2f32": 294                  ncast from int32, ncast from long
-# K56    310    case "i2f64": 295                  ncast from int32, ncast from long
-# K57    311    case "i2i8": 301                   ncast from int32, ncast from long
-# K58    312    case "i2i16": 298                  ncast from int32, ncast from long
-# K59    313    case "i2i32": 299                  ncast from int32, ncast from long
-# K60    314    case "i2i64": 300                  ncast from int32, ncast from long
-# K61    315    case "u2f16": 411                  ncast from uint8
-# K62    316    case "u2f32": 412                  ncast from uint8
-# K63    317    case "u2f64": 413                  ncast from uint8
-# K64    318    case "u2u8": 419                   ncast from uint8
-# K65    319    case "u2u16": 416                  ncast from uint8
-# K66    320    case "u2u32": 417                  ncast from uint8
-# K67    321    case "u2u64": 418                  ncast from uint8
-# K68    413    case "nir_intrinsic_store_global": mesa intr
-# K69    414    case "nir_intrinsic_store_shared": mesa intr
-# K70    415    case "nir_intrinsic_store_deref":  mesa intr
-# K71    416    case "nir_intrinsic_load_global":  mesa intr
-# K72    417    case "nir_intrinsic_load_shared":  mesa intr
-# K73    418    case "nir_intrinsic_load_deref": 2 mesa intr
-# K74    419    case "nir_intrinsic_load_workgroup mesa intr
-# K75    420    case "nir_intrinsic_load_local_inv mesa intr
-# K76    421    case "nir_intrinsic_barrier": 46   mesa intr
-# K77    422    case "nir_intrinsic_ldc_nv": 213   mesa intr
-# K78    423    case "nir_intrinsic_load_ubo": 552 mesa intr
-# K79    424    case "nir_intrinsic_image_store":  mesa intr
-# K80    425    case "nir_intrinsic_image_load": 1 mesa intr
-# K81    426    case "nir_type_float16": 144       mesa intr
-# K82    427    case "nir_type_float32": 160       mesa intr
-# K83    428    case "nir_deref_type_var": 0       mesa intr
-# K84    429    case "nir_deref_type_array": 1     mesa intr
-# K85    430    case "nir_jump_break": 2           mesa intr
-# K86    431    case "MESA_SHADER_COMPUTE": 5      mesa intr
-# K87    432    case "SCOPE_WORKGROUP": 4          mesa intr
-# K88    433    case "ACCESS_CAN_REORDER": 64      mesa intr
-# K89    434    case "GLSL_SAMPLER_DIM_2D": 1      mesa intr
-# K90    442    case "NIR_INTRINSIC_ALIGN_MUL": 20 mesa idx
-# K91    443    case "NIR_INTRINSIC_WRITE_MASK": 1 mesa idx
-# K92    444    case "NIR_INTRINSIC_ACCESS": 17    mesa idx
-# K93    445    case "NIR_INTRINSIC_EXECUTION_SCOP mesa idx
-# K94    446    case "NIR_INTRINSIC_IMAGE_DIM": 14 mesa idx
-# K95    447    case "NIR_INTRINSIC_SRC_TYPE": 23  mesa idx
-# K96    448    case "NIR_INTRINSIC_DEST_TYPE": 24 mesa idx
-# K97    449    case "NIR_INTRINSIC_RANGE": 5      mesa idx
-# K98    1100   case "sm_52": 52                   arch_int sm_52
-# K99    1101   case "sm_53": 53                   arch_int sm_53
-# K100   1102   case "sm_86": 86                   arch_int sm_86
-# K101   1103   case "sm_120": 120                 arch_int sm_120
-#
-# constant sweep: 101 arms, 0 blind, 0 did-not-compile
-# what the gate does not cover, named rather than left implied.
-#
-# * `nir_instr`'s `index_map` SLOT for each `NIR_INTRINSIC_*` key (nir.py:50).
-#   The eight ENUM values are audited and gated; the array that maps them to
-#   `const_index` slots is `nir_intrinsic_infos`, an `in_dll` DATA ARRAY that is
-#   ABSENT on this tree (mesa.py:989). `TODO(p3) nir.py:50 symbol=nir_instr`.
-# * `glsl_type`'s CONSTANTS (nir.py:15-16). All twelve `glsl_type_builtin_*`
-#   symbols are `in_dll` DATA symbols and none is bound. The SYMBOL NAMES are
-#   ported and gated; the constants are a refusal that names the symbol.
-# * `extra_matcher` (:121-143) and `def_rewrite` (:145-167) and `IR3Renderer`'s
-#   (:290-296). These are `PatternMatcher` lists of UOp patterns; the matcher's
-#   machinery is `cstyle.bend`'s and the rewriting needs the ctypes builder.
-#   `TODO(p3) nir.py:121 symbol=extra_matcher`, `:145 symbol=def_rewrite`, `:290 symbol=IR3Renderer.def_rewrite`.
-#
-#   THE WALL IS THE SHAPE; THE **REASONS** ARE THE SUBSTANCE, AND A WALL
-#   WITH NO REASON IS A WALL A READER CANNOT SIZE. UPSTREAM'S FIVE
-#   `extra_matcher` RULES EACH CARRY ONE, AND THEY ARE ALL **TARGET
-#   CONSTRAINTS** -- NIR'S RULES ABOUT WHAT A LEGAL NIR SHADER MAY CONTAIN --
-#   AND NOT ABOUT NIR'S SPELLING:
-#   * "a bool is one bit in NIR but a byte in memory, so every access to a
-#     bool buffer goes through a uint8 view of it" (nir.py:124). NIR'S `bool`
-#     IS A ONE-BIT VALUE WHILE A BUFFER'S ELEMENT IS A BYTE, SO THE BUFFER
-#     IS ADDRESSED AS `uint8` AND THE LOAD IS CAST BACK. THE SAME RULE IS IN
-#     `ptx.py` (ptx.py:48) FOR PTX, AND NEITHER IS THE SAME AS THE OTHER:
-#     PTX'S `bool` IS A **PREDICATE REGISTER**, NIR'S IS A **ONE-BIT
-#     VALUE**.
-#   * "NIR requires shift amount to be 32 bit" (nir.py:130, with the Mesa
-#     doc link). A NARROW SHIFT AMOUNT IS ILLEGAL IN NIR, SO A `u8` SHIFT
-#     COUNT IS CAST TO `uint` FIRST. THIS IS A **WIDTH REQUIREMENT** AND NOT
-#     A SIGN ONE, WHICH IS WHY THE CAST IS TO **UNSIGNED** -- AND IT IS
-#     ALSO WHY `ptx.py`'S RULE (ptx.py:54, "ptx shr and shl instructions
-#     require y to be uint") IS THE SAME CAST FOR A DIFFERENT REASON.
-#   * "OpConvertFToU is undefined if Result Type is not wide enough, cast
-#     through int32" (nir.py:132-133, with the SPIR-V spec link). A FLOAT TO
-#     AN 8- OR 16-BIT UNSIGNED CAST IS **UNDEFINED** IN NIR WHEN THE RESULT
-#     TYPE IS TOO NARROW, SO THE CAST GOES THROUGH `int32` -- WHICH IS WIDE
-#     ENOUGH TO BE DEFINED -- AND THEN NARROWS.
-#   * "load/store use pointer arithmetic, and the cast does nothing. NOTE:
-#     this doesn't apply to image indexing cause it's 1-D nor to REG/ALU
-#     register picks, which keep their own index dtype" (nir.py:135-136).
-#     A MEMORY ACCESS'S INDEX IS A **POINTER ARITHMETIC** SCALE AND NOT A
-#     VALUE, SO THE INDEX'S DTYPE IS IRRELEVANT AND THE CAST IS DROPPED. THE
-#     TWO EXCEPTIONS ARE BOTH REAL AND BOTH EARN THEIR PLACE: AN IMAGE
-#     INDEX IS A **COORDINATE** (AND AN IMAGE IS 1-D IN THIS SENSE), AND A
-#     REGISTER PICK IS A **VALUE** (AND THE REGISTER KEEPS ITS OWN INDEX
-#     DTYPE).
-#   * "images need index to be int for nir (coordinates only: the INDEX
-#     keeps its access dtype)" (nir.py:140). AN IMAGE COORDINATE MUST BE AN
-#     `int` WHILE THE INDEX NODE KEEPS THE ACCESS'S OWN DTYPE -- WHICH IS
-#     THE SAME SPLIT AS THE PREVIOUS RULE AND THE SAME REASON: THE
-#     COORDINATE IS NOT THE ACCESS.
-#   THE POINT FOR A READER OF THE PORT: EVERY ONE OF THESE IS A REWRITE
-#   THAT HAPPENS **BEFORE** ISEL, SO THE PORT'S `def_rewrite` EMITTERS
-#   (WHICH ARE PORTED) NEVER SEE THE REWRITTEN GRAPH. THE PORT'S `aop`
-#   TABLES AND ITS `ncast` ARE THE **POST-REWRITE** SHAPE -- AND THE ONE
-#   PLACE THAT SHOWS IS `ncast`'s THIRD ARM, `c(ot, ot == dtypes.bool)`:
-#   THE DESTINATION'S `bool` SPELLING IS `"b"` ONLY WHEN THE DESTINATION IS
-#   `bool`, AND UPSTREAM WRITES THAT AS A SPECIAL CASE *INSIDE* THE SPELLING
-#   RATHER THAN AS A SEPARATE RULE. SO A `bool` CAST SURVIVES IN THE
-#   POST-REWRITE GRAPH AND `ncast`'s `from bool` ROW IS A REAL ROW AND NOT
-#   A LEFTOVER.
-# * `__init__` (:169-174), `__del__` (:176-177), `param` (:179), `prerender`
-#   (:180), `postrender` (:182), `render` (:184-242). Every one is mesa FFI.
-#   `render`'s control flow over a uop list is `nir_llvmir.bend`'s lane and its
-#   emitted text is a `nir_shader` serialization, not a string this file can
-#   diff. `TODO(p3) nir.py:169 symbol=NIRRenderer.__init__`.
-# * `nif`/`if_phi` (:30-35, :103) and `njump` (:99-101) and `nidx` (:105-113):
-#   builder stack operations. `nidx`'s REG arm builds a deref and its other arm
-#   spells `iadd`/`imul` with an `nimm` of the itemsize -- those two op names
-#   ARE gated (`mesa alu`), the control flow is not.
-#   ONE OF THOSE `nif`s IS A **KNOWN-REDUNDANT** ONE, AND UPSTREAM SAYS SO:
-#   "TODO: this nif should be removable ... but
-#   TestMultiTensor.test_double_matmul_shard_W_0 segfaults with it gone"
-#   -- nir.py:223, on the `Ops.END` ARM'S `nif`. IT LOOKS REDUNDANT BECAUSE
-#   THE `Ops.BACKEDGE` ARM (nir.py:217) ALREADY EMITS THE SAME
-#   `ilt`-THEN-BREAK TEST AND THE LOOP'S OWN STRUCTURE SUPERSEDES IT. BUT
-#   REMOVING IT SEGFAULTS ONE UPSTREAM TEST, AND THE TODO IS THE RECORD OF
-#   THAT FACT.
-#   WHICH IS A CLASS OF ITS OWN AND IT IS WORTH NAMING: A COMMENT THAT SAYS
-#   "THIS IS REDUNDANT" WITH A TEST NAME NEXT TO IT IS A **KNOWN-WRONG**
-#   PIECE OF CODE, NOT A REFUSAL. THE PORT DOES NOT HAVE THE ARM -- THE
-#   CONTROL FLOW IS THE WALL ABOVE -- BUT THE PORT'S `nir_jump_break` ROW
-#   (the `mesa intr` group) IS THE CONSTANT THAT ARM WOULD USE, AND A
-#   READER WHO SEES THE CONSTANT SHOULD KNOW AN UPSTREAM ARM EMITS IT AND
-#   THAT UPSTREAM COULD NOT DELETE IT.
-# * `nimm_set` (:69-71): a `struct.pack_into` of `truncate[dtype](x)`. The dtype
-#   fmt strings live in `dtype.bend`, which fails its own `--check-only` (see
-#   `renderer/__init__.bend`'s convention 11 note). `TODO(p3) nir.py:69 symbol=nimm_set`.
-# * `tovec` (:273) and `nfloat` (:274): `nfloat` is one `match` on `half`, and
-#   its two values (`nir_type_float16`=144, `nir_type_float32`=160) are gated;
-#   `tovec`'s ARITY is gated (`mesa alu`'s `vec4`) and its four-src composition
-#   is not.
-# * `NAKRenderer.param` (:248-251) and `LVPRenderer.param` (:264-267) and
-#   `IR3Renderer._param_img` (:299-301): the `nir_intrinsic_ldc_nv` /
-#   `load_ubo` builders. Their INTRINSIC constants are gated; the builders are
-#   not. `padded_idx`, which they reduce over (:271, :309), IS gated.
-# * `IR3Renderer.postrender` (:312-319): `num_ubos` / `num_images` bookkeeping
-#   over `itertools.count`. `TODO(p3) nir.py:312 symbol=IR3Renderer.postrender`.
-#
-# the walls `nir_llvmir.bend` names, and which of them this port closes.
-#
-# Its header lists STAGE 3 as "`nir.py`: `glsl_type` (:14), `u_aop`/`s_aop`/
-# `f_aop` (:19-23), `c` (:26), `ncast` (:27-28), `scope` (:83), `padded_idx`
-# (:246), the intrinsic bounds arithmetic (`num_components`, `ALIGN_MUL`,
-# `WRITE_MASK`, `bit_size`), and `NIRRenderer` / `NAKRenderer` / `LVPRenderer` /
-# `IR3Renderer`'s `supported_dtypes` (:244, :253, :321) and `code_for_op` (:119,
-# :262)". EVERY ONE OF THOSE IS HERE, and each is gated by CPython:
-#
-#   CLOSED  `glsl_type` (:14-16)      symbol names + a measured refusal for the
-#                                    constants (`glsl keys`, `glsl call`)
-#   CLOSED  `u_aop`/`s_aop`/`f_aop` (:19-23)  both directions (`aop u/s/f table`,
-#                                    `aop rev u/s/f`) and every mesa enum behind
-#                                    them (`aop *` carries `name/value`)
-#   CLOSED  `aop` (:24)               the key ORDER (`aop u keys`) and the class
-#                                    tag (`aop kind *`)
-#   CLOSED  `c` (:26)                 17 dtypes x 2 plus the three weak ones, so
-#                                    `in_ints` and `S.Dt.is_int` are separated
-#   CLOSED  `ncast` (:27-28)          the full 17x17 grid per source, six rows,
-#                                    each cell `name/mesa_value`, asked of the
-#                                    real `nir.ncast`
-#   CLOSED  `scope` (:83)             four addrs, with `ALU` the row that pins the
-#                                    `else`
-#   CLOSED  `padded_idx` (:246)       11 x 5 grid (`padded tbl`) plus five singles
-#   CLOSED  the intrinsic bounds arithmetic (:84-91)  `WRITE_MASK`, `ALIGN_MUL`
-#                                    on both sides, the REG-only ABSENCE, and the
-#                                    REG `srcs` REVERSAL as a name list
-#   CLOSED  `supported_dtypes` (:244, :253, :321)  all three overrides, five
-#                                    arches, in `dtypes.all` order (`sd *`)
-#   CLOSED  `code_for_op` (:119, :262)  21 ops and LVP's 20 without `EXP2`
-#   CLOSED  the three maxima + `has_local`/`has_shared` (:118, :256-258)  the
-#                                    `Nir` record, read per device (`rec *`)
-#   CLOSED  `bit_size` (:61, :73, :77) and `nc`/`has_def` (:61, :84, :93-94, :96)
-#
-# NOT CLOSED, and `nir_llvmir.bend` still owns them:
-#   its STAGE 2  `_render_fn`, `_render_footer`, `base_rewrite`'s per-op emitter
-#                strings and `_render_kernel`'s naming walk -- all `llvmir.py`.
-#   its STAGE 4  everything else, unnamed here.
-#   `nir.py`'s `extra_matcher`, `def_rewrite`, `render` and the mesa builders.
-#
-# The one place this port's answer and a `nir_llvmir.bend` answer could be
-# compared is the `Dt.nm` SPELLING, and on 2026-10-02 they did NOT agree:
-# `tinygrad/dtype.py` was renamed in the index (`DType.name` is now `"u8"`,
-# `"f16"`, `"f32"`) and `LAWS/spec.bend`'s `Dt.nm` followed within the hour.
-# Both files had ten of seventeen disagreeing for a while. This file's rows are
-# keyed to `spec.bend`, and `.agents/slop/nir/nir_oracle.py spelling` prints the
-# comparison; it now reports 0 of 20 differing.
+# THE TABLE IS IN `.agents/slop/tables/renderer-nir-1427.md` -- THE MUTATION TABLE -- 37 mutations, MEASURED, one per ported rule, reported

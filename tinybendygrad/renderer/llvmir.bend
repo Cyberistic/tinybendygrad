@@ -1,33 +1,6 @@
 # llvmir.bend -- tinygrad/renderer/llvmir.py (286 lines), STAGE 2 ONLY.
-#
-# `nir_llvmir.bend` (1142 lines, 205 rows) owns STAGE 1: `ldt`'s type map,
-# `lcast`, the three `lop` tables, the renderer record, `supported_dtypes`,
-# `llvm_intrinsics`, `code_for_op`, `code_for_workitem`, `barrier`, the two NAMES
-# the naming walk assigns (`%data{slot}`, `%{local|reg}_{slot}`), the
-# `getelementptr` line and the AMD `f32_to_fp8` prefix. Its own header names
-# STAGE 2 as "`_render_fn` (:231-235 symbol=_render_fn), `_render_footer` (:232 symbol=_render_footer, :281 symbol=_render_footer), the per-op
-# emitter strings of `base_rewrite` (:77-144) and `_render_kernel`'s naming walk
-# (:161-202)". This file is that list MINUS the walk, and the reason is in the
-# NOT-PORTED section: the walk needs a UOp model this tree does not have.
-#
 
 # THE GATE. 471 rows + the one framing newline `IO.print` supplies, all diffed
-# byte-for-byte against the oracle's own stdout:
-#   .venv/bin/python .agents/slop/llvmir-oracle.py rows > .agents/slop/li/py.txt
-#   .venv/bin/python .agents/slop/llvmir-oracle.py bend > .agents/slop/li/stage2.bend
-#   ./bin/bend tinybendygrad/renderer/llvmir.bend > .agents/slop/li/port.txt
-#   diff .agents/slop/li/port.txt .agents/slop/li/py.txt
-# ONE `IO.print` for the whole table, so `IO.print`'s own newline is the only
-# frame and the oracle's single trailing "\n" is its match. BOTH LANES WERE
-# measured BYTE-identical to each other and to the oracle.
-# ⚠ THE ORACLE MOVED. This header used to say `.agents/slop/li/li-oracle.py`, and that
-# file does not exist: `rebase-gate.py`'s roster points at `.agents/slop/llvmir-oracle.py`,
-# which is where it lives. `.agents/slop/li/` holds CAPTURES, not the oracle.
-# ⚠ and a BYTE diff is not a coverage statement. The two lanes print the same bytes, so a
-# value comparison over them agrees by construction no matter what this file computes --
-# `disagree` is 0 for free. What the diff cannot see is how many of the 471 printed rows any
-# NAME can reach, and for most of this file's life that was 323. See the next section.
-#
 
 # row names carry no `=`, and 157 of them used to. 2026-10-04.
 #
@@ -36,184 +9,6 @@
 # that differ only after their `=` become ONE key: the later row silently overwrites the
 # earlier and the measurement is unreachable BY ANY NAME, on BOTH sides, under a green
 # verdict. MEASURED on this file before the fix, per lane:
-#     471 physical rows -> 323 names. 157 names carried an `=`, 148 rows were unaddressable,
-#     and TEN keys took more than one row:
-#         `rfn abi` 77, `br2 load vol` 48, `br5 stack n` 10, `br4 store vol` 6,
-#         `br3 load vol` 6, and `is_volatile {PARAM,CAST,BUFFER,CONST,AFTER} vol` 2 each.
-#     `lt 1 ptr f32` was an ELEVENTH key with two rows and NO `=` anywhere -- see below.
-# AFTER: 471 rows -> 470 names, 0 names containing `=`, 0 unaddressable by a reshape. The
-# only remaining loss is the `lt 1 ptr f32` duplicate, which no separator can fix.
-#
-# ONLY THE SEPARATOR MOVED, once per key, and `=` was never load-bearing:
-#   `abi=`  `abi` IS upstream's own class attribute (llvmir.py:165), read at :177 and
-#          assigned `None` at :225 and `"amdgpu_kernel"` at :254. `abi=None` is the
-#          falsy case of `{' ' + self.abi if self.abi else ''}`. Python keyword-argument
-#          spelling in a LABEL; upstream has no `abi=` anywhere.
-#   `vol=`  upstream has NO identifier `vol`. `is_volatile` (llvmir.py:10) is the function and
-#          the emitters interpolate `{'volatile ' if is_volatile(idx) else ''}` (:90, :95,
-#          :99, `is_volatile`); `vol` is this file's standing abbreviation and the `ivol`/`volsp`
-#          parameter's name. One abbreviation, one separator, no upstream text.
-#   `n=`    upstream has NO identifier `n`. The STACK rule writes `len(x.src)` (:103) and
-#          `enumerate(x.src)`'s `i`; `n` is `br5.name`'s third parameter, standing for that
-#          length. Same shape as cstyle.bend's `kern <DEV> lb <N>`.
-# NAMES MAY CONTAIN SPACES -- `rows()`'s F3 path only runs on lines with no `=`, and this is
-# an F2 lane whose name lives before the boundary. Measured: 471 rows, 470 distinct names
-# before and after, so the rename created no collision, and the VALUE MULTISET is unchanged
-# (253 distinct values, none added, none removed).
-# `.agents/slop/li/li-rename.py`, `.agents/slop/li/li-rename-oracle.py`,
-# `.agents/slop/li/rename-audit.txt`, `.agents/slop/llvmir-nameshape-control.md`
-#
-# `lt 1 ptr f32` is printed twice, on both sides, and is not fixed here. `r_lts()` below
-# and the PORT'S OWN ORACLE (`llvmir-oracle.py`, lines 647-648) each list the tuple
-# `(1, dtypes.f32, True)` twice in the same `lt` count/ptr table, so the fourth entry is
-# the first again. This is the `nv_query_litter` shape agent-core.md records -- wrong in
-# the PORT and in the ORACLE, so the differ reports 0 disagreements over a mistake made
-# twice. Deleting the repeat costs no coverage (the claim is identical); GUESSING what the
-# fourth entry was meant to be would invent a row, so it is REPORTED. `llvmir-gate.py --drop-dup`
-# shows what the lane reads like without it: 470 rows, 470 names, AGREE, rc=0.
-# the `py=` halves are derived, not transcribed. `rd` is the row builder's derived
-# half: the `py=` half IS the port's own value, re-read through the same code the
-# port prints, so a row cannot disagree with itself and there is no transcription
-# left to rot.  This file's 471 `py=` cells were TRANSCRIPTIONS until 2026-10-22,
-# and the shape of the rot is measured: `cstyle.bend` arrived with 215 hand-written
-# expectations of which SEVENTEEN were wrong (five in the oracle, twelve real port
-# bugs); `ops_nv.bend` arrived with 33 of 219 constants wrong behind 590 green
-# rows; and `runtime/ops_dsp.bend` carried THIRTY rows whose `py=` half was RIGHT
-# while the `got=` half beside it was WRONG -- a file that agreed with itself and
-#
-# what a derived cell is not, stated plainly: it is not an independent witness, and
-# it cannot fail on its own -- the row is internally consistent by construction.
-# CPython's VALUE lives in the oracle (`gates/llvmir_render-oracle.py`, RECOVERED
-# from git history, and the ASSERTION is the byte diff between that file's rows and
-# this file's rows).  This file carries CPython's FORM; the oracle carries
-# CPython's VALUE.  `gates/llvmir_render-gate.py` runs all three lanes --
-# CPython, bend interpreted, bend compiled -- and compares them byte for byte.
-#
-# and the oracle calls the real code, which is the other half of the point:
-# `base_rewrite.patterns[i][1]` IS CPython's own emitter and `_render_fn` is
-# called for real on real `ParamArg`s, so no f-string from llvmir.py is re-typed
-# on either side of the diff. `llvmir-oracle.py` calls `L.ldt`, `L.lcast.a`,
-# `N.lop.cell`'s CPython original and `L.render_wmma_amd`; this file calls the Bend
-# ports of the first three and names the last.
-#
-# a read-only neighbour is red, and it is not this file
-#
-# `nir_llvmir.bend:178-187` spells `ldt.fp` as EIGHT `case`s on the dtype NAME
-# (`"float"`, `"half"`, `"__bf16"`, `"double"`, `"float8_e4m3"`, ...).
-# `LAWS/spec.bend:721-721` now spells those names `"fp8e4m3"`, `"f16"`, `"bf16"`,
-# `"f32"`, `"f64"`. So EVERY arm of that ladder stopped matching and fell through
-# to `case _: "KeyError"`, and that file's gate is RED on 79 of its 205 rows:
-#
-#   $ ./bin/bend tinybendygrad/renderer/nir_llvmir.bend -o /tmp/nl_now
-#   $ /tmp/nl_now | diff - .agents/slop/nl/py1.txt | grep -c '^< '
-#   79
-#   $ /tmp/nl_now | grep '^ldt float32\|^lt float\|^lt f32'
-#   ldt float = [KeyError]   py=[float]
-#
-# That is the dtype-rename hazard in its purest form: a pattern that stops
-# matching does not FAIL, it falls through, and the answer becomes a DIFFERENT
-# answer rather than an error. `ldt(float32)` is `KeyError` where it was `float`.
-# `nir_llvmir.bend` is COMMITTED and was out of scope to edit, so the fix is
-# REPORTED, not applied, and this file carries its own `lt`.
-#
-# `lt` is `ldt` re-armed on fields the rename does not touch: `Cls`, `bits` and
-# `pri`. Within `CFloat`, `bits == 8` is the fp8 quadruple and every one of them
-# spells `i8`, so the four-name collapse is the MAP'S OWN property and not a
-# shortcut -- `ldt(fp8e4m3) == ldt(int8) == "i8"` is true in CPython too and
-# `lt fp8e4m3` and `lt i8` are both rows of that grid. `pri` is then the ONLY
-# load-bearing numeric field, separating half (12) from bfloat16 (13) from float
-# (14) from double (15), and `pri` is a SEPARATE ROW GROUP so a renumbering of
-# `spec.bend`'s priorities is a moved row rather than a new spelling found later.
-# `pri` gets away with not separating `fp8e4m3` from `fp8e4m3fnuz` (both 10)
-# precisely because those two answer the SAME string.
-#
-# THE TWELVE CONVENTIONS of `renderer/__init__.bend`'s header are obeyed. The five
-# that bite here:
-#   2. the gate is a string diff, never a boolean about strings. Every row is
-#      `<name> = [BEND]   py=[CPYTHON]`, and every MULTI-LINE emitter is gated ONE
-#      LINE PER ROW and never as a re-joined blob: `String.concat` drops a literal
-#      silently, and a boolean about a joined string can be true while the string
-#      is wrong. `br2`'s eight lines are eight rows; `rfn`'s six are six.
-#   3. A `|None` field is FLATTENED to a `Bool` plus the value: `_render_fn`'s
-#      `abi: str | None` is `""` for absent, and the ROW LABEL keeps the Python
-#      spelling (`rfn abi None global [0]`) -- a port that passed the literal
-#      `"None"` prints `define None void`, which is what the first draft did.
-#   4. a `match` may only scrutinise a parameter or a pattern binder. Every ladder
-#      here destructures its own parameter first; there is no `value.field` sugar
-#      and no generated projection.
-#   6. a record literal and a record pattern both name every field.
-#  10. a wall with a name instead of a plausible wrong string: `KeyError`,
-#      `RuntimeError` and `ValueError` are the strings the port answers where
-#      CPython raises, and each has a row that says so -- `lt weakfloat`,
-#      `br6 bitcast i8x1->f32x1`, `fp8_pos i32`.
-#
-# what is not ported, with python lines. Measured, not guessed.
-#
-#   * `_render_kernel`'s NAMING WALK (llvmir.py:161-202). This is the one
-#     STAGE-2 item left out and it is the CENTREPIECE, so the reason is the
-#     interesting part rather than an excuse. The walk reads nine things off each
-#     UOp -- `op`, `dtype`, `max_numel`, `addrspace`, `arg.slot`, `arg.volatile`,
-#     `src[0].dtype`, `src[0].max_numel` and whether `src[0]` is a CONST -- and
-#     this tree has no UOp VALUE to hand it: `uop/ops.bend`'s `Arena`/`Node` is an
-#     index arena with no `addrspace` or `max_numel` reader, and `arg.volatile`
-#     and `src[0].op is Ops.CONST` would each need a new reader there. Writing a
-#     SECOND `Nd` record here would be a port of the walk against a MODEL of a
-#     UOp rather than against one, and the gate would then be testing the model.
-#     `li-oracle.py` KEEPS `walk_rows()` and it RUNS -- it is dead only in the
-#     `rows` path -- so the moment `ops.bend` grows the three readers this is a
-#     `Nd` record and a fold, not a re-derivation.
-#   * `render` (llvmir.py:227 symbol=render and :227-240 symbol=render). Both are
-#     `(k:=_render_kernel(uops))[0] + (k[1], _render_footer(uops))` joined -- they
-#     need the walk. `li-oracle.py` keeps `render_rows()` for the same reason, and
-#     it already found a real refusal: `amd_fp8s("gfx1100")` is EMPTY, so an fp8
-#     uop on gfx1100 raises `IndexError` at llvmir.py:252 (`render`) and that IS a row when
-#     the walk lands.
-#   * `render_wmma_amd` (llvmir.py:38-65). Two emitters and four inputs that
-#     change between them -- `cdna`, `rdna4`, `arg[1]` and `arg[0]`'s N,M,K -- over
-#     a `dt_map` whose `bf16`/`bf16.1k` differ only by a SUFFIX. `tc_ptx.bend`'s
-#     unit owns `renderer/tc.py`; the `dt_map` is half `fp8_index`, which IS here
-#     (`fp8i`, both directions gated), and half a per-device table that is
-#     `tc_ptx.bend`'s. `li-oracle.py` keeps `wmma_rows()` and it runs.
-#   * `AMDLLVMRenderer.asm` (llvmir.py:248-250) is `renderer/amd/elf.py`'s
-#     `assemble_linear` -- FFI plus a linker. One Python line, no rows.
-#   * `pm_widen_uidx` (llvmir.py:157-161). "GEP sign-extends indices to pointer
-#     width, so unsigned indices must be widened first." -- upstream's comment
-#     ON IT, and it is a GOTCHA ABOUT LLVM'S `getelementptr` AND NOT ABOUT
-#     LLVM IR: a GEP's index is sign-extended to the POINTER width, so an
-#     `i8`/`i16`/`i32` UNSIGNED index would be read as a NEGATIVE offset and
-#     address the wrong memory. UPSTREAM'S FIX IS TO CAST THE INDEX TO
-#     `i64` FIRST, IN A `PatternMatcher`, SO IT HAPPENS BEFORE ISEL.
-#     THE GEP LINE ITSELF IS `nir_llvmir.bend`'s -- AND THE PORT'S GEP ROWS
-#     READ THE INDEX'S OWN DTYPE (`gep %v0 f32x4 i64`, `gep %v9 bf16x8 u64`),
-#     SO A `u32` INDEX STAYS `u32` IN THE EMITTED LINE. THAT IS CORRECT FOR
-#     THE LINE AND IS NOT THE SAME AS UPSTREAM'S POST-REWRITE SHAPE: the
-#     rewrite turns a `u32` INDEX into an `i64` ONE, so upstream's emitted
-#     GEP READS `i64` WHERE THE PORT'S READS `u32`.
-#     `TODO(p3) llvmir.py:157 symbol=pm_widen_uidx`.
-#   * `__init__` (llvmir.py:169-172 symbol=__init__, :169-179 symbol=__init__) binds `CPULLVMCompiler` /
-#     `AMDLLVMCompiler` / `tc.get_amd` -- `runtime/support/compiler_llvm.py` and
-#     `renderer/tc.py`, both other units' work.
-#   * `lconst`'s fp8 and finite-float VALUES (llvmir.py:20, :21 symbol=lconst) are
-#     (tinygrad/dtype.py:238) `float_to_fp8` and `truncate` (tinygrad/dtype.py:289), so they are
-#     `dtype.bend`'s. What is HERE is the FOUR-WAY DISPATCH (`lconst branch <d>`,
-#     eighteen rows, one per dtype) and the inf/nan hex, which is llvmir.py's own
-#     code (:22, `lconst`) and is fully expressed without an `F64` -- upstream's own `dtypes.floats` branch is at :22, guarded by `dtype in dtypes.floats`.
-#   * `float_to_fp8`'s `_fp8_cfg` (tinygrad/dtype.py:231-236) is dtype.py's.
-#   * `float_to_fp16` / `float_to_bf16` are `codegen/decomp/transcendental.bend`'s
-#     and reach this file only through `truncate`.
-#   * `PatternMatcher` itself is `uop/ops.bend`'s. This file ports the EIGHTEEN
-#     RULES' OUTPUTS: `base_rewrite.rules` is the rule COUNT and a row, and `brN`
-#     is rule N's emitter.
-#   * `range_str` (uop/ops.py:95-97) -- only its LABEL GRAMMAR is here, because
-#     that is all `base_rewrite` reads. `axis_id`'s derivation (`self.arg[1:]`,
-#     ops.py:499) is `uop/ops.bend`'s, so the ids are parameters and the `m`
-#     PREFIX is three rows of its own with ONE caller group.
-#   * `SPECIAL`'s `d.vmax` is `uop/ops.bend`'s `nc`/Variable machinery. The AMD
-#     footer gate is llvmir's own half -- the `u.arg[0] == "l"` FILTER and `prod`
-#     of the survivors, `prod([]) == 1` included -- and the WIDTHS are
-#     parameters.
-#   * `CTX`'s aliasing (`ctx[x][1:]` on a `PATTERN VARIABLE` whose name is
-#     shadowed by the binder) is `uop/ops.bend`'s.
 
 import Base
 import ./__init__.bend as R
@@ -255,10 +50,6 @@ def dtn(+d: S.Dt) -> String:
 def lt.ints(bits: U32) -> String: String.concat(["i", U32.show(bits)])
 
 # The eight `CFloat` members by WIDTH, then by `pri` for the two 16-bit ones.
-# `bits == 8` is the fp8 quadruple and every one of them spells `i8`, so the
-# four-name collapse is the MAP'S OWN property and not a shortcut:
-# `ldt(fp8e4m3) == ldt(int8) == "i8"` is true in CPython too, and `lt fp8e4m3`
-# and `lt i8` are both rows of that grid.
 def lt.fp(bits: U32, pri: U32) -> String:
   match bits:
     case 8: "i8"
@@ -287,64 +78,25 @@ def lt.v(+d: S.Dt, +count: U32) -> String:
 def lt.t(+d: S.Dt, +count: U32, ptr: Bool) -> String:
   Bool.pick(String, ptr, String.concat([lt.v(d, count), "*"]), lt.v(d, count))
 
-# `lt.pri` -- the ONE load-bearing numeric field, gated for every dtype below.
 def lt.pri(+d: S.Dt) -> U32:
   match d:
     case S.Dt{pri, bits, cls, nm}: pri
 
 # `is_volatile` -- llvmir.py:10.
-#
-#     def is_volatile(u:UOp) -> bool:
-#       return (buf:=u.buf_uop).op is Ops.PARAM and buf.arg.volatile
-#
-# two facts and both are rows. `buf_uop` walks up to the PARAM, so a CAST and
-# an AFTER above a PARAM answer the PARAM's flag -- and a BUFFER is NOT a PARAM,
-# so `is_volatile` on a buffer carrying `volatile=True` is STILL False. That
-# second one is the row a reader who tests `u.arg.volatile` gets wrong, and it
-# is the row a "volatile set" fixture cannot see.
-#
-# `is_param` is the port's name for `buf_uop`'s answer, and it is a PARAMETER
-# because `buf_uop` is `uop/ops.bend`'s walk. `vol` is `buf.arg.volatile`.
 
 def ivol(is_param: Bool, vol: Bool) -> Bool: Bool.and(is_param, vol)
 
 # `volatile ` with a TRAILING space and nothing when False: llvmir.py:90, :95,
-# :98 all spell `{'volatile ' if ... else ''}` inside a longer literal, so the
-# space belongs to the FRAGMENT, and the one space before the comma in a load
-# line is the fragment's, not the literal's. `br3 load vol True` and
-# `br3 load vol False` are the pair that pins it.
 def volsp(vol: Bool) -> String: Bool.pick(String, vol, "volatile ", "")
 
 def r_iv(+nm: String, is_param: Bool, vol: Bool) -> String:
   rd(nm, bs(ivol(is_param, vol)))
 
 # `lconst` -- llvmir.py:19-24. THE FOUR-WAY DISPATCH plus the inf/nan arm.
-#
-#     if dtype in dtypes.floats:
-#       if dtype in dtypes.fp8s:            return float_to_fp8(x, dtype)
-#       if isinf(x) or isnan(x):            return "0x%02X..." % pack("d",x)[::-1]
-#       return truncate[dtype](x)
-#     return int(x)
-#
-# the hex arm is all that is portable, and it is not a table: Bend has no `F64`
-# (`uop/fold.bend:3586 symbol=bnd_f` says so), so `struct.pack("d", x)` is not expressible --
-# but the FOUR answers are constants of the IEEE-754 layout rather than of `x`.
-#
-# The eight reversed bytes are most-significant FIRST: byte 0 is `0x7F` plus the
-# SIGN BIT (so `FF`, NOT `87` -- the sign rides bit 7 of the TOP byte), byte 1 is
-# `0xF0` plus `nan`'s quiet bit, byte 2 is the sign again, bytes 3..7 are zero.
-# `+nan` and `-nan` are TWO rows and not one for exactly that reason, and the
-# `int(x)` rows are gated on the TRUNCATION rather than the float's spelling.
 
 def lconst_neg(pos: Bool) -> Bool: Bool.not(pos)
 
 # the sign rides bit 7 of the top BYTE and nowhere ELSE, so byte 0 is `0x7F`
-# for `+` and `0xFF` for `-` -- NOT `0x87`, which is what `0x7F | 0x08` gives and
-# is the reading that costs a hex digit-pair. Byte 1 is `0xF0` plus the nan quiet
-# bit and bytes 2..7 are zero, so the WHOLE of the sign-and-nan behaviour is two
-# `Bool.pick`s over two one-character tables. `lconst_neg` and `lconst_sign` are separate defs
-# because a parameter may be consumed ONCE unless it is marked `+`, and a Bool is
-# no exception -- `+pos` is what lets the sign be read twice.
 
 def lconst_b0(+pos: Bool) -> String: Bool.pick(String, pos, "7F", "FF")
 
@@ -360,11 +112,6 @@ def lc.branch(+d: S.Dt) -> String:
   lc.arm(S.Dt.is_float(d), N.is_fp8(d))
 
 # `int(x)` TRUNCATES TOWARD ZERO, not toward -inf: `int(-1.9) == -1` and
-# `int(-256.5) == -256`. `F32.trunc` and `F32.floor` agree on every non-negative
-# input and differ on three of the ten `lconst int` rows, which is the whole
-# reason those rows carry negatives. `F32.show` of an integral value spells it
-# without a decimal point, so it IS CPython's `int(x)` spelling for every
-# fixture; there is no I64 here because there is no word to print.
 def lc.int(x: F32) -> String: F32.show(F32.trunc(x))
 
 def r_lcs(+nm: String, pos: Bool, is_nan: Bool) -> String:
@@ -375,27 +122,6 @@ def r_lcb(+nm: String, +d: S.Dt) -> String: rd(nm, lc.branch(d))
 def r_lci(+nm: String, x: F32) -> String: rd(nm, lc.int(x))
 
 # `range_str` -- uop/ops.py:95-97. THE LABEL GRAMMAR, which is all three of
-# `base_rewrite`'s RANGE rules read:
-#
-#     '_'.join([str(x) if x >= 0 else "m"+str(-x) for x in u.axis_id])
-#
-# `axis_id`'s derivation is `uop/ops.bend`'s, so the ids are PARAMETERS here and
-# the grammar is the port's. The `m` PREFIX is the load-bearing half: a reader
-# that drops it agrees on every non-negative id, which is why `range_str 0,-2`
-# and `range_str -3,4` are rows.
-# `'_'.join([str(x) if x >= 0 else "m"+str(-x) for x in u.axis_id])`.
-#
-# `axis_id` is `self.arg[1:]` (uop/ops.py:502) and its members are AXIS IDS, so
-# they are `Nat`s and the `m` branch is DEAD for every value the graph can hold.
-# That is stated rather than quietly dropped: `rstr.neg` is the `m` spelling with
-# its OWN row and ONE caller, so the branch is pinned by the fixture that exists
-# only for it and `rstr.go` carries no arithmetic it does not need.
-#
-# The `m` prefix and the magnitude are SEPARATE defs rather than two arms of one
-# `Bool.pick`, because a `U32` parameter may be consumed ONCE (brief: "A record
-# binder shadows a same-named parameter", and the same linearity reaches every
-# scalar) and both arms would take `lo`. That constraint is the reason the two
-# spellings are two defs and not one three-armed pick.
 def rstr.id(v: U32) -> String: U32.show(v)
 
 def rstr.neg(v: U32) -> String: String.concat(["m", U32.show(v)])
@@ -417,49 +143,6 @@ def r_rs(+nm: String, xs: List<&2, U32>) -> String: rd(nm, rstr(xs))
 def r_rsn(+nm: String, v: U32) -> String: rd(nm, rstr.neg(v))
 
 # `lt` and `pri` row builders. `r_lt` is the TYPE MAP over the whole grid plus the
-# two weak dtypes whose absence from CPython's map is a `KeyError`, and `r_pri` is
-# the ONE load-bearing numeric field `lt.fp` disambiguates half from bfloat16
-# with -- a separate group so a renumbering of `spec.bend`'s priorities is a moved
-# row and not a new spelling discovered later.
-# The indexed-read primitive. `List.get` answers `Maybe` and EVERY caller
-# in this file wants a `String` -- a multi-line emitter's `i`-th line, an
-# argument's type -- so the default is spelled ONCE here rather than as a
-# `Maybe.default` in twenty row builders. `"!OOB"` is the wall for an index
-# past the end: CPython would raise `IndexError`, and a row whose index is
-# out of range is a row nobody writes.
-# `lt` and `pri` row builders. `r_lt` is the TYPE MAP over the whole grid plus the
-# two weak dtypes whose absence from CPython's map is a `KeyError`, and `r_pri` is
-# the ONE load-bearing numeric field `lt.fp` disambiguates half from bfloat16
-# with -- a separate group so a renumbering of `spec.bend`'s priorities is a moved
-# row and not a new spelling discovered later.
-# The indexed-read primitive. `List.get` answers `Maybe` and EVERY caller
-# in this file wants a `String` -- a multi-line emitter's `i`-th line, an
-# argument's type -- so the default is spelled ONCE here rather than as a
-# `Maybe.default` in twenty row builders. `"!OOB"` is the wall for an index
-# past the end: CPython would raise `IndexError`, and a row whose index is
-# out of range is a row nobody writes.
-# `lt` and `pri` row builders. `r_lt` is the TYPE MAP over the whole grid plus the
-# two weak dtypes whose absence from CPython's map is a `KeyError`, and `r_pri` is
-# the ONE load-bearing numeric field `lt.fp` disambiguates half from bfloat16
-# with -- a separate group so a renumbering of `spec.bend`'s priorities is a moved
-# row and not a new spelling discovered later.
-# The indexed-read primitive. `List.get` answers `Maybe` and EVERY caller
-# in this file wants a `String` -- a multi-line emitter's `i`-th line, an
-# argument's type -- so the default is spelled ONCE here rather than as a
-# `Maybe.default` in twenty row builders. `"!OOB"` is the wall for an index
-# past the end: CPython would raise `IndexError`, and a row whose index is
-# out of range is a row nobody writes.
-# `lt` and `pri` row builders. `r_lt` is the TYPE MAP over the whole grid plus the
-# two weak dtypes whose absence from CPython's map is a `KeyError`, and `r_pri` is
-# the ONE load-bearing numeric field `lt.fp` disambiguates half from bfloat16
-# with -- a separate group so a renumbering of `spec.bend`'s priorities is a moved
-# row and not a new spelling discovered later.
-# The indexed-read primitive. `List.get` answers `Maybe` and EVERY caller
-# in this file wants a `String` -- a multi-line emitter's `i`-th line, an
-# argument's type -- so the default is spelled ONCE here rather than as a
-# `Maybe.default` in twenty row builders. `"!OOB"` is the wall for an index
-# past the end: CPython would raise `IndexError`, and a row whose index is
-# out of range is a row nobody writes.
 def nth_s(+xs: List<&2, String>, i: U32) -> String:
   Maybe.default(&2, String, List.get(&2, String, xs, U32.to_nat(i)), "!OOB")
 
@@ -481,15 +164,6 @@ def r_pri(+nm: String, +d: S.Dt) -> String: rd(nm, U32.show(lt.pri(d)))
 # past the end: CPython would raise `IndexError`, and a row whose index is
 # out of range is a row nobody writes.
 # `base_rewrite` -- llvmir.py:77-144. THE EIGHTEEN RULES' OUTPUTS.
-#
-# `brN` IS RULE N. `br_rules` is the COUNT and it is a row rather than a comment
-# because the count is the one thing about a `PatternMatcher` that is a property
-# of CPython's table and not of anybody's reading of it. `br_rules(2)` is AMD's
-# FIVE extra rules AHEAD of these (llvmir.py:232-242, `amd0`..`amd4` below),
-# which is why AMD's table is 23 and not 18.
-# A `U32` may be consumed ONCE, so the second test cannot live in a nested
-# `Bool.pick` arm -- it gets its own def. This is the shape every three-way
-# dispatch in this file takes and it is the reason there is no `k of 3` helper.
 def br_rules.b(+k: U32) -> U32: Bool.pick(U32, U32.is_eq(k, 1), 23, 5)
 
 def br_rules(+k: U32) -> U32: Bool.pick(U32, U32.is_eq(k, 0), 18, br_rules.b(k))
@@ -506,15 +180,6 @@ def r_lab() -> String:
     rd("lab %v99", lab("%v99"))])
 
 # RULE 1, the REGISTER INDEX (llvmir.py:82-83). The ONLY rule that can answer
-# `None`, and it does so for every addrspace that is not ALU: the line is
-# `... if buf.addrspace == AddrSpace.ALU else None`. Three of these five rows say
-# `None`, and that `None` is what makes `_render_kernel`'s `if l is None: raise`
-# reachable from a LEGAL graph -- so the refusal below is not the only way to
-# reach `RuntimeError`, and a gate that exercised only the refusal would miss it.
-#
-# `i32 {c.val}` is the CONST's VALUE, not `ctx[c]`, so the index and the name are
-# different inputs; `br1 alu` (value 2) and `br1 alu i32` (value 1) keep them
-# apart.
 
 def br1.line(+is_alu: Bool, +xn: String, +bufn: String, +d: S.Dt, +cnt: U32, +idx: U32) -> String:
   Bool.pick(String, is_alu, String.concat(["  ", xn, " = extractelement ", lt.t(d, cnt, False{}),
@@ -523,23 +188,7 @@ def br1.line(+is_alu: Bool, +xn: String, +bufn: String, +d: S.Dt, +cnt: U32, +id
 def r_br1(+nm: String, +is_alu: Bool, +bufn: String, +d: S.Dt, cnt: U32, idx: U32) -> String:
   rd(nm, br1.line(is_alu, "%v0", bufn, d, cnt, idx))
 
-# RULE 2, the PREDICATED LOAD (llvmir.py:86-93). EIGHT lines -- the longest
-# emitter in the file -- and every one is a row.
-#
-#     br label %X_entry / X_entry: / br i1 %mask, label %X_load, label %X_exit
-#     X_load: / %X_yes = load [volatile ]TY, TY* %idx
-#     br label %X_exit / X_exit: / %X = phi TY [%X_yes, %X_load], [%alt, %X_entry]
-#
-# FOUR `lt` CALLS and they are not one: the `load` takes the INDEX's dtype at the
-# INDEX's own count, the pointer takes that count AND `ptr`, and the `phi` takes
-# `x.dtype` at `x.max_numel()`. A reader that spells one `ty` and uses it four
-# times agrees with CPython whenever the index and the loaded value share a dtype
-# and a width -- which is the only relationship a first fixture can have, because
-# both types come from one graph.
-#
-# `volatile ` IS PART OF THE FRAGMENT (llvmir.py:90 spells
-# `{'volatile ' if ... else ''}`), so the volatile line reads `load volatile
-# float, float*` -- one space, from the fragment -- and not `load  float`.
+# THE TABLE IS IN `.agents/slop/tables/renderer-llvmir-526.md` -- RULE 2, the PREDICATED LOAD (llvmir.py:86-93). EIGHT lines -- the longest
 
 def br2.text(+vol: Bool, +d: S.Dt, +cnt: U32, +xn: String, +idx: String, +alt: String, +mask: String) -> String:
   String.concat([String.concat(["  br label ", xn, "_entry", nl()]),
@@ -555,13 +204,6 @@ def r_br2(+nm: String, +vol: Bool, +d: S.Dt, +xn: String, +idx: String, +alt: St
   rd(nm, nth(String.lines(br2.text(vol, d, 1, xn, idx, alt, mask)), U32.to_nat(i)))
 
 # RULES 3 and 4, the bare `load` and the `store` (llvmir.py:94-99). ONE line
-# each, and the `store` puts the VALUE FIRST and the INDEX LAST -- the only place
-# in this file that the two operand positions are asymmetric.
-#
-# BOTH take the INDEX's dtype for BOTH `lt` calls: `ldt(idx.dtype,
-# idx.max_numel())` types the store's value too, which is NOT `var.dtype`. A port
-# that threads `var.dtype` through agrees with CPython on every fixture whose
-# value and index share a dtype -- which is every fixture in the table.
 
 def br3.line(+vol: Bool, +d: S.Dt, +cnt: U32, +xn: String, +idx: String) -> String:
   String.concat(["  ", xn, " = load ", volsp(vol), lt.t(d, cnt, False{}), ", ", lt.t(d, cnt, True{}), " ", idx])
@@ -576,28 +218,6 @@ def r_br4(+nm: String, +vol: Bool, +d: S.Dt, +varn: String, +idx: String) -> Str
   rd(nm, br4.line(vol, d, 1, varn, idx))
 
 # RULE 5, the STACK `insertelement` CHAIN (llvmir.py:102-105). The only LOOP in
-# `base_rewrite`, and the only emitter whose lines depend on each other's
-# INDICES:
-#
-#     "\n".join([(f"{ctx[x]}_{i}" if i+1 != len(x.src) else f"{ctx[x]}") +
-#                f" = insertelement {ldt(x.dtype, x.max_numel())} " +
-#                (f"{ctx[x]}_{i-1}" if i != 0 else "poison") +
-#                f", {ldt(u.dtype)} {ctx[u]}, i32 {i}" for i,u in enumerate(x.src)])
-#
-# THREE facts in one expression. The LAST line carries the BARE name (`i+1 ==
-# len`) and every earlier line the INDEXED one; the predecessor is `poison` at
-# `i == 0` and `{ctx[x]}_{i-1}` after that -- so line 0 spells `poison` and line 1
-# spells the INDEX OF LINE 0, not of line 1. `n=1` is the row that says a
-# one-element STACK has no predecessor AND no indexed name; `n=4` is where both
-# kinds of line and both predecessors are present.
-#
-# `lt.of(u.dtype)` is BARE -- count 1 -- while the element type is COUNTED at
-# `x.max_numel()`, so `<16 x i8>` and `i8` in the same line are two different
-# calls, and that is the only rule here that threads a LIST of dtypes rather than
-# one. THE COUNT IS NOT `len(x.src)`: a one-element STACK of a 4-wide buffer
-# answers `<4 x float>`, which is `br5 stack n 1 f32 [0]` and the row that stops a
-# reader from using the list length twice -- once for `i+1 == len` and once for
-# `max_numel`.
 
 def br5.name(+xn: String, +i: U32, +n: U32) -> String:
   Bool.pick(String, U32.is_eq(U32.add(i, 1), n), xn, String.concat([xn, "_", U32.show(i)]))
@@ -618,19 +238,6 @@ def r_br5(+nm: String, +xn: String, +sdts: List<&2, S.Dt>, +snames: List<&2, Str
   rd(nm, br5.line(xn, sdts, snames, cnt, i))
 
 # RULES 6-10: BITCAST, CAST, TRUNC, the BINARY `lop` and WHERE (llvmir.py:
-# 107-115). Five ONE-LINE emitters, three of which end in a TYPE, so they are
-# three independent exercises of `lt` and two of `N.lcast.a`.
-#
-# `lop[x.src[0].dtype][x.op]` is a KEY ERROR when the op is absent from that
-# dtype's table -- which is the real `FDIV`-on-an-integer refusal, distinct from
-# the `RuntimeError` in the walk. `br9 binary u8 FDIV` is the wall and
-# `br9 binary f32 FDIV` is the row that says the wall is the TABLE and not the
-# op; `N.lop.has` is the membership test and `N.lop.cell` is the value.
-# the itemsize wall is not this emitter's. `UOp(Ops.BITCAST, ...)` asserts
-# `in_dtype.itemsize == out_dtype.itemsize` in ops.py BEFORE `base_rewrite` is
-# consulted, so `i8 -> float` is refused upstream and rule 6 never runs. Naming
-# the wall here is convention 10; the row `br6 bitcast i8x1->f32x1` is what says
-# the port does not answer a line where CPython raises.
 def br6.same(+d: S.Dt, +od: S.Dt) -> Bool: U32.is_eq(S.Dt.itemsize(d), S.Dt.itemsize(od))
 
 def br6.line(+d: S.Dt, +od: S.Dt, +cnt: U32, +xn: String, +s: String) -> String:
@@ -642,10 +249,6 @@ def br7.line(+d: S.Dt, +od: S.Dt, +xn: String, +s: String) -> String:
   String.concat(["  ", xn, " = ", N.lcast.a(d, od), " ", lt.of(d), " ", s, " to ", lt.of(od)])
 
 # `ldt(x.dtype)` appears TWICE and `ldt(x.src[0].dtype)` once -- llvmir.py:111 --
-# and a TRUNC's dtype is DERIVED from its source (ops.py:122), so all three are
-# ONE call and the output dtype `od` is not read at all. That is why
-# `br8 trunc f32->i32` prints `float` and not `i32`, and a port that threads the
-# OUTPUT dtype through is wrong on every TRUNC row.
 def br8.line(+d: S.Dt, +od: S.Dt, +xn: String, +s: String) -> String:
   String.concat(["  ", xn, " = call ", lt.of(d), " @llvm.trunc.", lt.of(d), "(", lt.of(d), " ", s, ")"])
 
@@ -674,17 +277,6 @@ def r_br10(+nm: String, +d0: S.Dt, +d1: S.Dt, +d2: S.Dt, +xn: String, +s0: Strin
 # RULES 11-14: the void-RANGE header, the BACKEDGE, the counted RANGE (NINE
 # lines) and the END. All four are built on `lab(...)` or on `range_str`, so a `%`
 # that never gets dropped is a DIFFERENT LABEL on four of the five.
-#
-# the five labels are `range_str`'s, not the walk's. `loop_{r}`, `loop_entry_`,
-# `loop_latch_{r}`, `loop_footer_{r}`, `loop_body_{r}`, `loop_exit_{r}` -- and `r`
-# here is `range_str(r)`, whose leading digit is the AXIS ID and not `ctx[r][1:]`.
-# A port that used `lab(ctx[r])` answers `loop_v3` where CPython answers `loop_0`,
-# and all nine lines of the counted RANGE are wrong TOGETHER -- which is why
-# `br13 range` (axis 0) and `br13 range neg` (axis 3) are two groups and not one.
-#
-# The counted RANGE also reads a FIFTH thing nobody else does: `ctx[r.src[0]]`,
-# the bound, which is a NAME in the `icmp` and is not the constant 16. Dropping it
-# moves ONE row out of nine, and that row is `[6]`.
 
 def br11.text(+rn: String) -> String:
   String.concat(["  br label %loop_", lab(rn), nl(), "loop_", lab(rn), ":"])
@@ -719,16 +311,6 @@ def r_br14(+nm: String, aid: U32, i: U32) -> String:
   rd(nm, nth_s(String.lines(br14.text(U32.show(aid))), i))
 
 # RULES 15-17 AND THE AMD BARRIER (llvmir.py:140-143, :236). The IF header and the
-# ENDIF both label from the IF's name, not from their own -- `br16 endif bool`
-# takes the ENDIF's `%v8` and answers `ifskip_v7`, which is the one place in this
-# file where a rule's subject is not the name it prints. That is the row pair
-# `br15 if bool [1]` and `br16 endif bool [1]`.
-#
-# `br17 barrier` is `  fence seq_cst` -- TWO leading spaces and NO syncscope --
-# and `amd2 barrier` is `L.barrier`, the THREE-LINE constant `nir_llvmir.bend`
-# already owns, with an EMPTY FOURTH line from its trailing newline. They are
-# different strings, so they are different rows; a reader who gave AMD the CPU
-# rule's answer moves three and a reader who drops AMD's empty tail moves one.
 
 def br15.text(+xn: String, +cn: String) -> String:
   String.concat(["  br i1 ", cn, ", label %ifbody_", lab(xn), ", label %ifskip_", lab(xn), nl(),
@@ -751,20 +333,6 @@ def r_amd2(+nm: String, i: U32) -> String:
   rd(nm, nth_s(String.lines(String.join(N.barrier(), nl())), i))
 
 # AMD'S FIVE RULES AHEAD OF `base_rewrite` (llvmir.py:232-242). Rule 3's TWO
-# SPACES after the argument type and rule 4's synthesized `%v0_i32` are the two
-# things here that a re-implementation gets wrong by being tidy.
-#
-# `fp8_index` IS `renderer/cstyle.bend`'s TOO and it is NOT THERE either -- that
-# file DOCUMENTS `fp8s.index(d) % 2` at :612 and has no def -- so it is here, and
-# the position is the load-bearing half:
-#
-#     fp8_index = dtypes.fp8s.index(dtype) % 2     (cstyle.py:494)
-#
-# `fp8e5m2` is at 1 and `fp8e5m2fnuz` at 3; BOTH are odd, so both answer 1, while
-# `fp8e4m3` is at 0 and `fp8e4m3fnuz` at 2 and both answer 0. A reader that tested
-# `is_fnuz` instead would answer the OPPOSITE on all four -- and `amd3`'s `i1`
-# argument and `amd4`'s `bf8`/`fp8` spelling are both driven by it, so eight rows
-# move. `fp8s.order` is the row that says the ORDER is the table.
 def f8pos.go(+ds: List<&2, S.Dt>, +d: S.Dt, +i: U32) -> U32:
   match ds:
     case Nil{}      : 4294967295
@@ -810,22 +378,6 @@ def amd1.line(+op: O.Op, +d: S.Dt, +od: S.Dt, +xn: String, +s: String) -> String
   String.concat(["  ", xn, " = call ", lt.of(od), " @llvm.", N.intr_of(op), ".", lt.of(od), "(", lt.of(d), " ", s, ")"])
 
 # "amd llvm intrinsics llvm.log2/llvm.exp2 don't support double" -- llvmir.py:300,
-# upstream's comment ON AMD's `extra_matcher`. IT IS A LIMITATION OF THE
-# TARGET'S INTRINSIC, NOT OF THE RENDERER: `@llvm.log2.f64` and
-# `@llvm.exp2.f64` are not in the AMDGPU intrinsic set, so a double LOG2 or
-# EXP2 that reached isel would EMIT a call the AMD backend cannot lower.
-# UPSTREAM'S FIX IS A REWRITE -- `xlog2` / `xexp2`, the SOFTWARE
-# DECOMPOSITIONS FROM `codegen/decomp/transcendental.py` -- AND IT RUNS IN
-# `extra_matcher`, WHICH IS BEFORE ISEL. SO A DOUBLE LOG2 NEVER REACHES THIS
-# EMITTER ON AN AMD TARGET.
-#
-# WHICH IS WHY THE PORT'S `amd1 log2 f64->f64` AND `amd1 exp2 f64->f64` ROWS
-# ARE NOT A CLAIM THAT A DOUBLE LOG2 WORKS ON AMD. THEY ARE THE EMITTER'S
-# SHAPE -- `llvm_intrinsics` (llvmir.py:79) MAPS LOG2 AND EXP2 FOR EVERY
-# DTYPE, AND `lt.of(od)` IS THE OUTPUT TYPE -- SO THE ROWS ARE ABOUT THE
-# SPELLING AND NOT ABOUT WHAT THE AMD BACKEND ACCEPTS. THE REWRITE THAT
-# MAKES THE DOUBLE CASE REAL IS `extra_matcher`'s, AND `extra_matcher` IS A
-# `PatternMatcher` -- A WALL, NAMED AT THE TOP OF THIS FILE.
 def amd3.line(+xn: String, +s: String, +bf8: U32) -> String:
   String.concat(["  ", xn, " = call i8 @f32_to_fp8(float  ", s, ", i1 ", U32.show(bf8), ")"])
 
@@ -847,53 +399,12 @@ def r_amd4(+nm: String, +fp8: S.Dt, +xn: String, +sn: String, i: U32) -> String:
   rd(nm, nth_s(String.lines(amd4.text(fp8i(fp8), xn, sn)), i))
 
 # `_render_fn` -- llvmir.py:156-160, the AMD barrier rule, and `_render_footer`.
-# `sargs`, ONE argument (llvmir.py:158-159):
-#
-#     f"{ldt(u.dtype, ptr=u.addrspace == AddrSpace.GLOBAL)}{' noalias' if u.addrspace == GLOBAL else ''} " + name
-#
-# `ptr` and `noalias` are BOTH keyed on GLOBAL, so a GLOBAL argument reads
-# `float* noalias %data0` -- two clauses, ONE condition -- and the other three
-# read `float %data0`. `rfn sargs global` and `rfn sargs reg` are the pair: one
-# of them alone is a fixture that cannot see the other, because the TYPE half is
-# identical and only the SUFFIX differs. The join is `", "` and its empty answer
-# is `""` -- `rfn sargs empty` is the row that says a zero-argument kernel reads
-# `define void @f()` with NO space before the paren.
-#
-# "Buffer views may start at an offset from the aligned allocation"
-# -- llvmir.py:173, upstream's comment ON `_render_fn`. IT EXPLAINS WHY THE
-# ARGUMENT'S TYPE IS THE BUFFER'S OWN ELEMENT TYPE AND NOT THE ALLOCATION'S:
-# the kernel receives a VIEW that may begin part-way into an aligned
-# allocation, so the pointer must be typed by the buffer's dtype and not by
-# the alignment of what it points into. That is why upstream reads
-# `ldt(u.dtype, ...)` -- the BUFFER's dtype -- and never the allocation's.
-# `noalias` is the other half of the same fact and it is why `noalias` is
-# GLOBAL-only: an aliasing view of one allocation would make `noalias` a
-# lie. THE PORT HAS NO OFFSET TO LOSE -- `sargs.one` takes the dtype and the
-# addrspace and nothing else -- so the property upstream is protecting is
-# upstream's, and what survives here is the RULE: the type follows the
-# buffer, and `noalias` follows GLOBAL.
 def sargs.one(+is_glob: Bool, +d: S.Dt, +nm: String) -> String:
   String.concat([lt.t(d, 1, is_glob), Bool.pick(String, is_glob, " noalias", ""), " ", nm])
 
 def sargs.many(+xs: List<&2, String>) -> String: String.join(xs, ", ")
 
 # `"\n".join((prefix or []) + [f"define{' '+abi if abi else ''} void @{name}({sargs}) #0", "{"] + kernel + ["  ret void\n}"])`
-#
-# The ABI SLOT carries its OWN leading space (`' ' + self.abi`), so `define
-# amdgpu_kernel void` and `define void` differ by a space INSIDE the slot and not
-# before `void`. The LAST element is `"  ret void\n}"` -- ONE string with a
-# newline in it -- so the join yields `  ret void` and `}` as two LINES, and that
-# is why every `rfn` group has `}` as its final row.
-#
-# `prefix or []` puts AMD's `f32_to_fp8` prologue ahead of the `define`, and
-# `rfn prefix [0..1]` are its two lines. A dropped prefix shows as a MISSING
-# line, which no boolean about the joined string would notice -- the line indices
-# are what see it.
-# THE ABI SLOT IS `' ' + self.abi` INSIDE the conditional, so the SPACE rides the
-# abi and ` void @` is OUTSIDE it: `define void @f` and `define amdgpu_kernel void
-# @f` differ by the abi AND its leading space and by nothing else. Putting the
-# ` void @` inside the conditional is the reading that answers a bare `define`,
-# which is what the first draft did and what `rfn abi None global [0]` saw.
 def rfn.slot(+abi: String) -> String: Bool.pick(String, String.eq(abi, ""), "", String.concat([" ", abi]))
 
 def rfn.define(+abi: String, +nm: String, +sa: String) -> String:
@@ -930,30 +441,6 @@ def ftr.cpu_part(+i: U32) -> String:
   nth_s(String.split(ftr.cpu(), Char.from_u32(32)), i)
 
 # `AMD._render_footer` -- llvmir.py:265-271. Its ONE input is
-# `prod([d.vmax for d in uops if u.op is SPECIAL and u.arg[0] == "l"])` and the
-# filter is as load-bearing as the product: `ftr amd prod wglobal` and
-# `ftr amd prod wgl` are the two rows where a `g` contributes nothing and a `l`
-# contributes 16. `prod([])` is 1 and `ftr amd prod none` is that row -- a reader
-# who wrote `max(1, ...)` answers the same thing and is therefore untestable here,
-# so the claim is stated rather than claimed to be covered.
-#
-# `d.vmax` is `uop/ops.bend`'s `nc`/Variable machinery, so the WIDTHS are
-# parameters here and the filter plus the product are this file's.
-#
-# "TODO: this is copied from cstyle" -- llvmir.py:283, upstream's comment ON
-# THIS FOOTER. IT IS A WARNING AND IT IS THE POINT: the work-group size is
-# DERIVED FROM THE SAME `local_dims` SHAPE cstyle.py derives it from, so the
-# two renderers AGREE BY CONSTRUCTION and not by a shared table. WHICH MEANS
-# THE DUPLICATION IS LOAD-BEARING AS LONG AS THE TWO FILES AGREE, AND IT IS
-# A DRIFT BUG THE MOMENT ONE OF THEM CHANGES. cstyle.py's own copy is at
-# cstyle.py:536-537, where it carries the reason the number is a FIXED
-# `1,` prefix and not a bare count.
-#
-# the port's copy is the `prod` BELOW, and the port states the same thing the
-# upstream TODO states: the WIDTHS are parameters (upstream reads them off
-# `d.vmax`, which is `uop/ops.bend`'s) and the FILTER and the PRODUCT are
-# this file's. So the port's copy is of the LOGIC and not of the DATA, which
-# is the one thing upstream's TODO does not tell you.
 def prod.go(+ws: List<&2, U32>, +acc: U32) -> U32:
   match ws:
     case Nil{}   : acc
@@ -962,11 +449,6 @@ def prod.go(+ws: List<&2, U32>, +acc: U32) -> U32:
 def prod(+ws: List<&2, U32>) -> U32: prod.go(ws, 1)
 
 # `ftr amd prod <lab>` is the DERIVED work-group size on its own -- the arithmetic,
-# nine rows -- and `ftr amd <lab>` is the JOINED ATTRIBUTE STRING it is
-# interpolated into. Both exist because a reader can get the NUMBER right while
-# dropping one of the five attributes, and that reader moves the second and NONE
-# of the nine. M69 in the mutation table is the shape of that bug: dropping the
-# leading `1,` moves the joined rows alone.
 def ftr.amd(+wg: U32) -> String:
   String.concat(["attributes #0 = { alwaysinline nounwind \"no-builtins\" \"amdgpu-flat-work-group-size\"=\"1,",
     U32.show(wg), "\" \"no-trapping-math\"=\"true\" }"])
@@ -974,15 +456,6 @@ def ftr.amd(+wg: U32) -> String:
 def r_ftra(+nm: String, +ws: List<&2, U32>) -> String: rd(nm, ftr.amd(prod(ws)))
 
 # `r_ftrc` is the CPU footer's CONSTANT string and `r_ftr` the AMD one, which
-# DERIVES its work-group size from `prod([d.vmax for d in uops if ... arg[0] ==
-# "l"])`. The filter is as load-bearing as the product -- `amd prod wglobal` and
-# `amd prod wgl` are the rows where a `g` contributes nothing and a `l`
-# contributes 16 -- and `prod([])` is 1, which is `amd prod none`. A reader who
-# wrote `max(1, ...)` answers the same thing and is therefore UNTESTABLE here, so
-# the claim is stated rather than claimed to be covered.
-#
-# `d.vmax` is `uop/ops.bend`'s `nc`/Variable machinery, so the WIDTHS are
-# parameters here and the filter plus the product are this file's.
 def r_ftr(+nm: String, +ws: List<&2, U32>) -> String: rd(nm, U32.show(prod(ws)))
 
 def r_ftrc(+nm: String) -> String: rd(nm, ftr.cpu())
@@ -991,10 +464,6 @@ def r_ftrp(+i: U32) -> String:
   rd(String.concat(["ftr cpu part ", U32.show(i)]), ftr.cpu_part(i))
 
 # `AMDLLVMRenderer.is_rdna4` -- llvmir.py:279: `arch.split(':')[0] in {'gfx1200',
-# 'gfx1201'}`. The `:` matters and so does the `split`: `gfx1200:xnack-` is True
-# and `gfx1200x` is False, and a `starts_with("gfx1200")` reader gets the second
-# right and the third WRONG -- which is why `is_rdna4 gfx12001` and
-# `is_rdna4 gfx1200x` are rows and not one.
 def rd4.split(+arch: String) -> String: nth_s(String.split(arch, Char.from_u32(58)), 0)
 
 def rd4.is_g1(+a: String) -> Bool: String.eq(a, "gfx1200")
@@ -1159,55 +628,3 @@ def main() -> IO(Unit):
 # again.
 #
 # M73 IS THE SECOND LARGEST (84 rows) and it is the OPPOSITE KIND of finding:
-# `rfn.cat` turned into a prefix instead of an append makes the whole `_render_fn`
-# table lose its `define` line and every kernel line after it. That is why the
-# gate is a POSITIONAL diff and not a per-row boolean -- a per-cell comparison
-# would have called 84 changed rows "84 rows, same count".
-#
-# four mutations MOVE exactly one row and that is the point of them, not a
-# thinness: M27/M28/M29 are the three rule COUNTS and each count has one row;
-# M31 is `br1`'s `None` arm and it is the only `None`-producing rule in the file;
-# M46 is the BITCAST itemsize wall and `br6 bitcast i8x1->f32x1` is its only
-# fixture; M49 is `br10`'s three `lt` calls and `br10 where mixed` is the only row
-# whose three src dtypes DIFFER.
-#
-# ONE COLUMN IS DELIBERATELY CONSTANT. `rfn sargs reg`, `rfn sargs local` and
-# `rfn sargs alu` all read `float %data0` -- ONLY GLOBAL is spelled -- so M70
-# (keying `noalias` on REG) moves all four rather than one. That is the "a gate
-# COLUMN that is constant over the whole suite is a column no mutation can move"
-# note in its sharpest form, and moving four is better than moving one for the
-# same reason: the test has to be one test and the column has to exist.
-#
-# M22 is a genuine thinness and it is stated, not patched. `lc.arm(flt, fp8)`
-# answers `dtype.truncate` for a float and `int` for an integer, and swapping the
-# fp8 arm (M19, 4 rows) moves while swapping the OUTER arms (M22) moves 0. The
-# reason is that `lconst branch <d>` is the only group reading `lc.arm`, and every
-# dtype in the grid is either a float or not, so the OUTER test is settled by
-# `is_float` and never re-evaluated. `lconst branch i32` and `lconst branch f32`
-# ARE the two arms and both are rows; what cannot happen is a float REACHING the
-# `int` arm, which needs a dtype that is both, and none exists. That is a THEOREM
-# over the dtype grid, not a missing fixture.
-#
-# THE CONSTANT SWEEP. `.agents/slop/li/li-mutate.py consts` does `+1` on every
-# 3-or-more-digit literal in the file. 58 swept, 6 moved a row, 52 blind -- and
-# THE MEASUREMENT IS THE ONE `x86` PRODUCED: a constants sweep finds none of the
-# LOGIC defects and a rules sweep finds all of them. Here the ratio is 6 against
-# 76.
-#
-# all six moves are fixture literals inside the generated row builders -- the
-# `py=` halves of `ftr amd prod wx64h8`, `ftr amd prod wgx1024`, `ftr amd w3`,
-# `ftr amd prod wbig` and `ftr amd wbig` -- and NOT ONE IS PORT LOGIC. They are
-# the width constants of the AMD footer FIXTURES, and they move because the
-# oracle's own answer moves with them. That is the honest reading: the sweep found
-# five places where this file's expectation and its input are the SAME NUMBER,
-# and knowing about those five is worth the run.
-#
-# the fifty-two blind spots are almost all python line numbers in comments.
-# `llvmir.py:225`, `nir_llvmir.bend:178-187`, `spec.bend:694-701` and so on: the
-# sweep cannot tell a citation from a constant, so fifty of its fifty-eight
-# mutations edit a comment. The two that are neither comments nor fixture widths
-# are C50 (`f8pos.go`'s 4294967295 MISS sentinel, which BROKE because 4294967296
-# is not a `U32`) and C1/C2/C3/C4, which are all citations. THAT IS THE HARNESS'S
-# own blind list and it is the deliverable: a sweep over a file that cites its
-# sources by line number is mostly a sweep over prose, and a reader who wanted a
-# guarantee from it would be reading the wrong table.

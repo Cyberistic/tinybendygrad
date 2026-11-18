@@ -1,63 +1,8 @@
-# tinybendygrad/renderer/amd/elf.bend -- port of tinygrad/renderer/amd/elf.py
-#
-# THE PACKER. 111 lines, one function. It scans a linearized instruction list
-# for register occupancy, walks the sink for kernarg / LDS / workgroup ids,
-# pads the text, and writes an ELF whose rodata is an AMD kernel descriptor.
-#
-# THE SPLIT. A def here builds the argument of the pack (pure; the gate checks
-# it). There is no trace and no `@extern`. `Reg` and `FixedBitField` are
-# `D.Rg` and `D.K_FIXED` from `dsl.bend` -- reused, not reimplemented.
-#
+# tinybendygrad/renderer/amd/elf.bend -- THE PACKER: it scans a linearized
 
 # WHAT is not ported, AND the specific blocker for each.
 #
 #   elf.py:16   `insts = [u.arg[0] for u in lin.src]`
-#               BLOCKER: `lin` is a UOp whose `arg[0]` is an autogen `Inst`
-#               (`runtime/autogen/amd/{rdna3,rdna4,cdna}/ins.py`). The scan
-#               below runs on an explicit field list; the UOp-to-Inst
-#               extraction is that generated table.
-#   elf.py:41-46  the sink `toposort`
-#               BLOCKER: `u.addrspace` is `ops.py:896` and IS PORTED -- the port's
-#               `uop/fold.bend:4770 symbol=UOp.addrspace` is it. `u.dtype.itemsize` is
-#               `Dt.itemsize` in `LAWS/spec.bend:174`, not a UOp method.
-#               `u.max_numel` is `mixin/movement.py:55` (`prod(max_shape)`),
-#               not a def in `movement.bend`. `AddrSpace` itself EXISTS as
-#               `S.Addr` (`Aalu`/`ALocal`/`AGlobal`/`AReg`) in
-#               `LAWS/spec.bend:77`. Adding the three missing UOp methods to
-#               `uop/ops.bend` is not local: 56 importers, measured before
-#               this file was written (ops.bend 4977 lines / 509 defs,
-#               spec.bend 3317 / 583, ops_metal.bend 4045 / 466, among
-#               others). Not landed.
-#               The ARITHMETIC each arm does is ported: `param_size` is the
-#               `itemsize if ALU else 8` choice, `lds_sum` is
-#               `numel * itemsize`, `gid_of` is `startswith("gidx")` plus
-#               `int(arg[-1])`. The walk that feeds them is the blocker.
-#   elf.py:47   `inst.to_bytes()`
-#               BLOCKER: the autogen encoder (`dsl.py:416`). The two padding
-#               encodings are constants, called out of CPython, not a general
-#               encoder. `code_len` is therefore a parameter.
-#   elf.py:108-113  the `bytearray` splice
-#               The offsets, sizes and header fields the splice WRITES are
-#               ported and gated against a real `assemble_linear` ELF. The
-#               mutable buffer itself is not a Bend value. A wrong offset is
-#               a wrong section, and that is what the `roff` / `text` rows see.
-#
-# TODO(p3) elf.py:16 symbol=assemble_linear, :41-46 symbol=assemble_linear, :47 symbol=assemble_linear, :108-113 symbol=assemble_linear  the four blockers above.
-#
-# A MEASURED UPSTREAM FACT, because it looks like a bug and it is not one
-# to "fix". elf.py:52 is
-#
-#   text = code_bytes + padding_inst * ((ALIGN - len(code) % ALIGN) % ALIGN)
-#
-# `padding_inst` is 4 bytes (`s_code_end().to_bytes()` and `s_nop_cdna(0)`
-# both, called). `bytes * n` repeats the string n times, so one instruction
-# pads to text size 1012, not 256. A real `assemble_linear` call on gfx1100
-# with one `s_code_end` returned section 0 size 1012 and entry -1012
-# (`.agents/slop/elf_amd_oracle.py`). The gate expects 1012. An "alignment
-# fix" that pads by n bytes moves `text` and `roff`.
-#
-# gfx10 and gfx11 both map to "rdna3" (elf.py:14, called). Swapping those
-# two keys moves no row. Reported, not papered over.
 
 import Base
 import ../../helpers.bend as H
@@ -70,10 +15,6 @@ import ./dsl.bend as D
 # The shifts live in `tinygrad/runtime/autogen/amdgpu_kd.py`, a generated
 # ctypes binding of the LLVM AMDGPU kernel-descriptor header (the
 # `register_fields` call at amdgpu_kd.py:36 and the walrus enums at :12-16).
-# There is no hand-written Python definition of the shift amounts. The
-# citation is the generated binding, which is the definition site in this
-# repo. hsa.py:1104-1105 and libc.py are the same kind of generated binding.
-# amdgpu_kd.py, getattr. elf.py:67-80.
 def SHIFT_VGPR() -> U32: 0      # COMPUTE_PGM_RSRC1_GRANULATED_WORKITEM_VGPR_COUNT_SHIFT
 def SHIFT_SGPR() -> U32: 6      # COMPUTE_PGM_RSRC1_GRANULATED_WAVEFRONT_SGPR_COUNT_SHIFT
 def SHIFT_DENORM() -> U32: 18   # COMPUTE_PGM_RSRC1_FLOAT_DENORM_MODE_16_64_SHIFT
@@ -310,16 +251,6 @@ def Slot.sz(p: Slot) -> U32:
     case Slot{slot, sz}: sz
 
 # elf.py:62, insertion sort by slot index. `strict <`, so a tie appends AFTER
-# the equal key and the sort is stable -- the same as Python's `sorted`.
-# One def, not the `insert`/`insert.go` pair this was: those two were MUTUAL
-# (`insert.go` calls the `insert` written below it), and Bend 2.0.34 refuses a
-# forward reference in safe code, reporting it as `an unfilled law is a dead
-# claim` (references/bend/CHANGELOG.md:214-218). The sanctioned escape is
-# `@unsafe` / `def f?`, which drops the check for good, and the other escape --
-# `insert.go(lt: Bool, ..)` taking the comparison as a parameter -- is what
-# forced the pair in the first place, because `match` may not scrutinize a
-# computed value. `Bool.pick` is that ternary without the split; it is what
-# base's own `List.merge.step` cannot use, and what `param_size` above does.
 def insert(+p: Slot, xs: List<&2, Slot>) -> List<&2, Slot>:
   match xs:
     case Nil{}: [p]
@@ -421,11 +352,6 @@ def roff(text: U32) -> U32:
 def strtab_off(text: U32) -> U32: U32.add(roff(text), KD_SIZE())
 
 # elf.py:85-88. strtab starts with one NUL; each name is ascii plus a NUL.
-# Called: sh_names [1, 7, 15], strtab length 23.
-# elf.py:86's list is three literals. Each step is `at + len(name) + 1`, starting
-# at 1 because the strtab opens with a NUL. Unrolled: a recursive walk of a
-# 3-element literal is the same arithmetic and a nested match on the index is
-# the thing Bend refuses here.
 def sh_step(at: U32, name: String) -> U32:
   U32.add(U32.add(at, U32.from_nat(String.length(name))), 1)
 def sh_name0() -> U32: 1

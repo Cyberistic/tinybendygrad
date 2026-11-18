@@ -1,13 +1,8 @@
-# tinybendygrad/renderer/cstyle.bend -- tinygrad/renderer/cstyle.py.
+# tinybendygrad/renderer/cstyle.bend -- the STRING-BUILDING LAYER: a UOp becomes
+# C, OpenCL, Metal, CUDA or HIP TEXT.
 #
-# THE STRING-BUILDING LAYER. `__init__.bend` holds the conventions and the base;
-# this file is where a UOp becomes C, OpenCL, Metal, CUDA or HIP TEXT, and it is
-# the first renderer file whose output a compiler ever sees. That raises the bar
-# on one thing above everything else in the port: `String.concat` drops a
-# literal SILENTLY. A dropped ", " typechecks, runs, and emits a kernel that is
-# wrong rather than broken. So the gate at the foot of this file is a STRING DIFF
-# against live CPython and never a boolean about a string.
-#
+# `String.concat` DROPS A LITERAL SILENTLY, SO A DROPPED ", " TYPECHECKS, RUNS,
+# AND EMITS A KERNEL THAT IS WRONG RATHER THAN BROKEN.  THAT IS WHY THE GATE AT
 
 # THE DEVICE IS A `U32` TAG, NOT A RECORD. `cstyle.py`'s six renderer classes
 # differ ONLY in class attributes -- `kernel_typedef`, `type_map`, `barrier`,
@@ -32,46 +27,6 @@
 #     it is the device TAG plus a `match` -- `code_for_op.of(dev, op, ..)`. The
 #     tag is the only per-device information the ALU table needs, and it is
 #     MEASURED: the six devices differ on exactly SIX of the twenty-one ops
-#     (SQRT, TRUNC, SIN, LOG2, EXP2, RECIP) plus Clang's FDIV, and every
-#     other op's rendering is the base's on all six.
-#   * `code_for_workitem` is `dict[Literal["g","l"], Callable]`. Same answer: the
-#     workitem id is a `String` argument and the device picks the spelling.
-#   * `extra_matcher` is a `PatternMatcher` over UOps. Those are ARENA REWRITES,
-#     not strings -- the `create_non_native_float_pats` / `pm_manual_bf16_cast`
-#     family -- and they are NOT the same table as `string_rewrite` in the port
-#     even though both are `PatternMatcher`s in Python. A string rule returns a
-#     `String`; a matcher rule returns a UOp. Two concerns, two shapes.
-#
-# the four walls under this file. Three are the substrate's and one is device
-# FFI; each is a `TODO(p3)` with its line.
-#
-#   (a) `Ops.SHRINK` HAS NO DTYPE IN THE FOLD. `uop/fold.bend:1680 symbol=sym_dim.val` defers it with
-#       the comment "`marg` -> `zip` -> `ssimplify`", and `Ops.LOAD` is `thru0`
-#       off a SHRINK so it inherits the gap. MEASURED on a hand-built arena:
-#       `F.fold.dt` answers `None` for SHRINK, LOAD and every ALU above one, so
-#       `Kahn.settled` is False for a real kernel. `render_type` needs a dtype on
-#       EVERY line, so `_render` cannot be run end to end until that arm lands.
-#       `fold.bend`'s to own. The gate below is built so that it is OBVIOUS this
-#       is why: every row drives the string functions with EXPLICIT derived
-#       values, which is exactly what Python's `_render_dtype(dtype, sz,
-#       addrspace, ...)` takes too.
-#   (b) `u.max_numel()` is `prod(to_max_shape(shape))` and `to_max_shape` is a
-#       SYMBOLIC `vmax` (`TODO(p3) ops.py:1896 symbol=to_max_shape`). `max_numel` below is the
-#       product of the CONCRETE dims; a shape carrying a symbolic `SU` is the
-#       case it does not have, and `max_numel_sym` is the marker for it.
-#   (c) `is_image_shape` is `helpers.bend`'s and takes a `ShapeRes`, while the
-#       fold answers `List<&2, O.Sint>`. So the image test is taken as a `Bool`
-#       the CALLER computes, which is Python's own signature (`shape=None` is a
-#       parameter of `_render_dtype`, not a read of a uop) and is what keeps the
-#       wall in one place.
-#   (d) EVERY `__init__` IN cstyle.py IS DEVICE FFI: `ClangCompiler`,
-#       `NVRTCCompiler`, `HIPCompiler`, `MetalCompiler`, `QCOMCompiler`, `comgr`,
-#       `tc.get_cuda` / `tc.get_amd`. None of it is text generation and none of
-#       it is this unit's file. What SURVIVES is the shape of the decision those
-#       `__init__`s make: HIP picks its `string_rewrite` from `is_cdna(arch)` and
-#       `is_cdna4(arch)` (cstyle.py:502-526), and those are two `Bool`s derived
-#       from `self.target.arch`, so `is_cdna` and `is_cdna4` are ported as string
-#       predicates and the rewrite selection they drive is named below.
 
 import Base
 import ./__init__.bend as R
@@ -82,28 +37,6 @@ import ./../helpers.bend as H
 import ./../uop/render.bend as U
 
 # THE DEVICE TAGS. Six renderers plus the abstract `CStyleLanguage`, whose own
-# rows are what every subclass overrides and which the gate needs: cstyle.py's
-# base class is a real, instantiable renderer (`CStyleLanguage(Target())` works,
-# and `_render_dtype` on it is a live row set, not a fiction).
-#
-# THE ORDER IS THIS FILE'S OWN and no claim is made that it is cstyle.py's. The
-# tag is a closed enum and what the differential requires is only that a renderer
-# and its rows agree on it. `render.bend` makes the same argument for the device
-# NAME table and lands in the same place.
-# THE DEVICE TAGS. Six renderers plus the abstract `CStyleLanguage`, whose own
-# rows are what every subclass overrides and which the gate needs: cstyle.py's
-# base class is a real, instantiable renderer (`CStyleLanguage(Target())` works,
-# and `_render_dtype` on it is a live row set, not a fiction).
-#
-# THE ORDER IS THIS FILE'S OWN and no claim is made that it is cstyle.py's. The
-# tag is a closed enum and what the differential requires is only that a renderer
-# and its rows agree on it. `render.bend` makes the same argument for the device
-# NAME table and lands in the same place.
-#
-# and the name is a row like every other option, not a debugging aid: `wgsl.bend`
-# reads its device names out of the same closed set and the two files must not be
-# able to disagree about which U32 is which, so `devname` is a gated row and not
-# a comment.
 
 type Uses is Data:
   Uses{half: Bool, bf16: Bool, fp8: Bool, nonfinite: Bool, special: Bool, half_any: Bool}
@@ -138,22 +71,6 @@ type KUArg is Data:
 # `r` is the rendered text of every uop, stored newest-first behind its own length.
 # cstyle.py keeps it as a dict keyed by UOp, which is O(1) in both directions; a `List` charges the
 # ABSOLUTE INDEX for a lookup and THE WHOLE PREFIX for an append or a set (MEASURED: `rt` 233,235 of the
-# 292,446 list steps a 405-uop render still took after §76, `List_set` another 0.64 ms a turn). Reversed,
-# `st_put` is a CONS, `st_set` on the current uop is index 0, and `rt`'s index is the SRC-TO-CURRENT
-# DISTANCE -- MEASURED on the wire, 72.9 mean against 168.5 absolute. `PARITY.md` §77.
-# the rendered text of a uop is a list of pieces, not a string. measured (`PARITY.md` §93): the renderer
-# fed 77,500 characters to `String.concat` to emit 4,426 -- a 17.5x amplification -- because every expression
-# materialised its text and every parent COPIED it again. Pieces are Consed instead, and the one
-# `String.join` happens at the statement, so a character is copied once (§95 for the design).
-# a 16-way blocked view, with the variable first block measured rather than assumed. `rtp` is called
-# 941 times a render and each call walked the source map to the uop's position -- MEASURED (`PARITY.md`
-# §124): a mean index of 70.8, i.e. ~66,600 cons steps a render for 941 lookups. `ku_at`'s view is
-# block-16 (`§76`), and the source map is APPEND-AT-FRONT (`st_put` prepends), so block 0 holds the newest
-# entries and its length VARIES: it is `((n-1) & 15) + 1`, and every block after it holds sixteen.
-#
-# §120 built this view and reverted it at 0.9978/0.9883 -- with a bug in it: the first version used
-# `block = d / 16`, which is WRONG for a variable first block, and the note records the correction
-# without a re-measurement. THIS IS THE CORRECTED VERSION.
 type Rows is Data:
   Rows{ts: List<&2, List<&2, List<&2, String>>>, n: U32}
 
@@ -165,7 +82,6 @@ def Rows.n(x: Rows) -> U32:
   match x:
     case Rows{ts, n}: n
 
-# block 0's length: the newest `((n-1) & 15) + 1` entries, and every block after it holds sixteen.
 def Rows.b0(+r: Rows) -> U32:
   +n = Rows.n(r)
   Bool.pick(U32, U32.is_zero(n), 0, U32.add(U32.and(U32.sub(n, 1), 15), 1))
@@ -200,14 +116,6 @@ type BArg is Data:
 # the readers. a locally-declared `Data` record has no projection syntax at all,
 # so `BArg.addr(b)` is "a defined name" until `def BArg.addr` is written by hand.
 # MEASURED on 2.0.34 with a three-field record: `BArg.image(b)` and `BArg.name(b)`
-# are both refused, and so is a field whose NAME ENDS IN `_` -- which is the
-# `volatile` escape of bend2-constraints rule 25 turning out to have no
-# projection even after it, so the escape buys the reader and costs nothing else.
-# An IMPORTED record's projections DO exist -- `O.Arena.op(ar, i)` and
-# `O.ParamArg.slot(pa)` are the whole of `renderer/__init__.bend`'s vocabulary --
-# so this is a rule about where the type was DECLARED and not about its kind.
-# Each reader is one `match` naming EVERY field, which is convention 6 and is also
-# why adding a field to one of these records is a one-line change per reader.
 def dev_base() -> U32: 0
 def dev_clang() -> U32: 1
 def dev_opencl() -> U32: 2
@@ -225,16 +133,7 @@ def dev_name(+dev: U32) -> String:
     case 5: "HIP"
     case _: "?"
 
-# the two derived-fact records. `render_kernel` reads facts out of a UOp list
-# (`uops`) and Python gets them by walking; there is no uop list here because
-# there is no fold (wall (a)), so they arrive as records the CALLER fills. That
-# is not a loosening of the port -- it is the same move `_render_dtype(dtype, sz,
-# addrspace, mutable, override_ptr, shape)` already makes, one level up -- and it
-# is what keeps the six `render_kernel` OVERRIDES inside the gate.
-# `bufs` is `list[tuple[str, tuple[UOp, bool]]]`: a name, a uop and a mutability.
-# The uop contributes exactly six things to the emitted string, so those six are
-# the fields. `is_alu` is not one of them: it is `u.addrspace == AddrSpace.ALU`,
-# which `buftype` reads off `addr` rather than carrying a seventh flag.
+# the two derived-fact records.  `render_kernel` READS FACTS OUT OF A UOP LIST
 def BArg.name(b: BArg) -> String:
   match b:
     case BArg{name, dtype, addr, mutable, volatile_, image}: name
@@ -287,15 +186,6 @@ def Uses.half_any(u: Uses) -> Bool:
 #
 # `caller` and `has_prefix` are the `prefix` ARGUMENT, kept as a pair because
 # `prefix=[]` and `prefix=None` are different kernels (cstyle.py:558) and a
-# `List` cannot tell them apart. `vecs`, `ockl` and `ocml` are the uop-derived
-# lines Python appends to `prefix`; see the `TODO(p3)` at the foot for which of
-# them this port produces and which it names.
-#
-# `cdna4` IS NOT A FIELD, and that is worth saying because it is the one value
-# HIP reads that the caller already has: `is_cdna4(self.target.arch)` is a
-# property of the TARGET, not of the uop list, so it travels as the `cdna4`
-# ARGUMENT of `render_kernel` and stops there. Putting it in the record as well
-# would be two spellings of one fact and the gate would only see one of them.
 def Emit_.uses(e: Emit_) -> Uses:
   match e:
     case Emit_{uses, vecs, ockl, ocml, caller, has_prefix}: uses
@@ -321,9 +211,8 @@ def Emit_.has_prefix(e: Emit_) -> Bool:
     case Emit_{uses, vecs, ockl, ocml, caller, has_prefix}: has_prefix
 
 # `Emit_{uses, vecs, ockl, ocml, caller, has_prefix}` -- the `uops=[]`,
-# `prefix=None` case. `emit_of` is the constructor because the gate needs FIVE
-# other `Emit_` values and a record literal per row would repeat the five
-# `Nil{}`s four times each.
+# `prefix=None` case.  `emit_of` IS THE CONSTRUCTOR BECAUSE THE GATE NEEDS FIVE
+# OTHER `Emit_` VALUES.
 def emit_of(u: Uses, vecs: List<&2, String>, ockl: List<&2, String>, ocml: List<&2, String>, caller: List<&2, String>, has_prefix: Bool) -> Emit_:
   Emit_{u, vecs, ockl, ocml, caller, has_prefix}
 
@@ -340,27 +229,6 @@ def emit_min() -> Emit_: emit_of(uses_off(), Nil{}, Nil{}, Nil{}, Nil{}, False{}
 # would be harder to read than the table it replaced.
 #
 # EVERY STRING IS MEASURED against CPython on this `tinygrad/` tree, and the
-# empty ones are as load-bearing as the long ones. `CStyleLanguage.abi` is `""`
-# and `ClangRenderer.abi` is `""` on darwin and `"__attribute__((ms_abi)) "` on
-# win32 (cstyle.py:300-299, a `sys.platform` branch); the port does not take the
-# win32 branch and that is the `TODO(p3)` at the foot.
-# `kernel_typedef` -- tinygrad/renderer/cstyle.py:122, :285, :324, :363, :425, :530 -- IS A
-# HEAD/tail pair around the bound, not one string with a field in it.
-#
-# Python's spelling is a `{launch_bounds}` FORMAT FIELD and
-# `str.format(launch_bounds=..)` substitutes it, and there is no `str.format` in
-# base.bend. The first version of this port spelled the brace in the literal and
-# substituted it with a split-and-join, and that needed FOUR defs and a threaded
-# flag because `String.split` takes one CHAR: splitting on `{` puts the field
-# NAME at the HEAD of the following part, and the part is then read twice (once
-# for `starts_with`, once for `drop`) and the arm gets a `+` binder for it. Two
-# literal halves and one `String.append` is the same answer with no surgery, and
-# it is what `str.format` amounts to when the field appears exactly once -- which
-# it does in all three typedefs that have it, and in the other three the tail is
-# empty. MEASURED: CUDA's is `extern "C" __global__ void __launch_bounds__(N)` and
-# HIP's is `extern "C" __attribute__((global)) void
-# __attribute__((amdgpu_flat_work_group_size(1, N)))` -- note HIP's bound is
-# inside a SECOND attribute, which is why its head ends in `(1, ` and not `(`.
 def kernel_typedef_head(+dev: U32) -> String:
   match dev:
     case 2: "__kernel void"
@@ -379,8 +247,6 @@ def kernel_typedef_tail(+dev: U32) -> String:
 # and the head/tail pair ALONE cannot say so: for the three that do not the head
 # IS the whole typedef and the tail is empty, so `head ++ lb ++ tail` produced
 # `void1` and `__kernel void4`. MEASURED BY THE GATE on all four no-field rows.
-# `str.format` on a template with no field is the IDENTITY, and this `Bool` is
-# what says which of the two cases each typedef is in -- so it is a third thing
 def has_bounds(+dev: U32) -> Bool:
   match dev:
     case 4: True{}
@@ -388,10 +254,6 @@ def has_bounds(+dev: U32) -> Bool:
     case _: False{}
 
 # `f"{typedef.format(launch_bounds=lb)}"`. ONE DEF, NOT THREE: the head and the
-# tail are each read twice across the two `Bool.pick` arms, which is legal on a
-# `+` parameter, so the `.of`/wrapper pairs the tables used to carry were three
-# defs of pure indirection. `has_bounds` is a `Bool` PARAMETER of the `match`
-# rather than a computed value because a `match` may not scrutinise a call.
 def kernel_typedef(+dev: U32, +lb: U32) -> String:
   Bool.pick(String, has_bounds(dev),
     String.concat([kernel_typedef_head(dev), U32.show(lb), kernel_typedef_tail(dev)]), kernel_typedef_head(dev))
@@ -405,11 +267,6 @@ def buffer_prefix.of(+dev: U32) -> String:
     case _: ""
 
 # `smem_prefix` -- tinygrad/renderer/cstyle.py:126, :327, :365, :426, :534. HIP'S SPELLING HAS NO
-# TRAILING SPACE and `render_buffer` concatenates the prefix straight onto the
-# type, so HIP renders `__attribute__((shared, aligned(16)))float L0[1];` with no
-# space at all. That is CPython's output, measured, and it is a gate row
-# precisely BECAUSE it looks like a typo -- a reader that "fixed" it would
-# differ from the oracle on every HIP local.
 def smem_prefix.of(+dev: U32) -> String:
   match dev:
     case 2: "__local "
@@ -435,14 +292,6 @@ def buffer_suffix.of(+dev: U32) -> String:
     case _: ""
 
 # `var_prefix` / `var_suffix` -- tinygrad/renderer/cstyle.py:128-129. THE BASE'S PAIR IS
-# every device's pair: `const ` and `""`. metal does not override either --
-# `MetalRenderer` (cstyle.py:366-372) sets `buffer_prefix`, `extra_args`, the workitem
-# table and the type map, and NOTHING ELSE.
-# - and this used to answer `constant ` and `&` for metal, which was a plausible
-# INVENTION AND A WRONG ONE. MEASURED: the census gate's `opt_varpre_3`/`opt_varsuf_3`
-# rows were RED on exactly this (3 of 346 rows, `const `/`""` upstream vs
-# `constant `/`&` here), so `constant float& alu0 = ...` was text no kernel in this
-# tree ever had.
 def var_prefix.of(+dev: U32) -> String: "const "
 
 def var_suffix.of(+dev: U32) -> String: ""
@@ -496,28 +345,6 @@ def gep_arr_threshold.of(+dev: U32) -> U32:
     case _: 4
 
 # `type_map: dict[DType, str]` -- tinygrad/renderer/cstyle.py:136, :287, :331, :373, :439, :539.
-# The KEY is the dtype's NAME, because two `DType`s with one name are the same
-# `dtypes` singleton in Python, so the name IS the identity -- the same argument
-# `uop/render.bend` makes for `ctx`'s `U32.show(u)` key.
-#
-# the keys are `S.Dt`'s name field and not its attribute name, and that
-# distinction is what this table's five multi-word C VALUES depend on being keyed
-# correctly. It used to read "`dtypes.bfloat16.name` is `"__bf16"` and
-# `dtypes.int8.name` is `"signed char"`, so a table keyed by attribute name would
-# miss every one of them" -- and after tinygrad 793abbb those two facts are
-# FALSE: the name field moved to the rust spellings, so `DType.name` is now
-# `bf16` and `i8` and it EQUALS the attribute again. The keys below moved with it,
-# and the reason to read `dt_name` rather than the constructor is now the fp8
-# group, whose names (`fp8e4m3`) are not C names at all.
-#
-# Read `dt_name`, not the constructor.
-#
-# THE `.get(dtype, dtype.name)` DEFAULT IS LOAD-BEARING. An unmapped dtype
-# renders as ITS OWN C NAME: `float8_e4m3` on CUDA maps to `__nv_fp8_e4m3` but
-# `float8_e4m3fnuz` does not map at all and prints as `float8_e4m3fnuz`, which is
-# a C identifier and not a type -- and that is exactly what CPython emits. A
-# reader that answered "" for an unmapped dtype would be more "correct" and
-# would differ from the oracle on five of the sixteen dtype rows.
 
 def dt_name(+d: S.Dt) -> String:
   match d:
@@ -542,20 +369,9 @@ def type_name(+m: Map<&2, String>, +d: S.Dt) -> String: tm_get.of(tm_get(m, dt_n
 
 # THE SIX MAPS. Every subclass REPLACES `type_map` rather than updating it, so
 # each of these is a whole map and not an overlay -- and an overlay would agree
-# with a replace here ONLY because the base is `{}`, which is worth knowing and
-# is why the base's `{}` is written out rather than left implicit.
+# with a replace here ONLY because the base is `{}`.
 #
-# the entry list is a `Kv` linked list and not a flat `List<&2, String>`, for a
-# measured reason: a three-element cons pattern `case k <> v <> t:` is "expected
-# : cases for Nil, observed : `{}`", so a flat key/value list has no pattern that
-# splits it in the middle. A one-field-per-record list is the shape
-# `uop/render.bend` already uses for its `Bind{k, v}` rows, and it reads like the
-# Python dict literal it replaces.
-# `Kv` IS A `List`-SHAPED `Data` VALUE, NOT A `List` OF `Data`: `case Kv{..}`
-# inside a `match` on a `List<&2, Kv>` is "expected : a constructor of List", so
-# the cons cell has to BE the value. That is the same lesson `Ops` and `Arg` in
-# `uop/ops.bend` carry -- a `match` arm names a constructor of the scrutinee's
-# own type, and a `List`'s constructors are `Nil` and `<>` and nothing else.
+# THE ENTRY LIST IS A `Kv` LINKED LIST AND NOT A FLAT `List<&2, String>`, FOR A
 def Kv.go(ks: Kv, +m: Map<&2, String>) -> Map<&2, String>:
   match ks:
     case KvEnd{}: m
@@ -568,20 +384,6 @@ def tm(ks: Kv) -> Map<&2, String>: Kv.go(ks, Map.new(&2, String))
 # device map as a WHOLE map, which was internally consistent -- `Map.set` over an
 # empty map is the map -- and agreed with every `py=` literal, because those
 # literals were generated against the same wrong reading. MEASURED at HEAD:
-# `CStyleLanguage.type_map` has FOURTEEN entries (cstyle.py:136-139), so a base of
-# `{}` is not a base, it is a hole, and every device inherits the hole.
-#
-# THE fp8 GROUP IS NOT IN THE BASE. `CStyleLanguage.type_map` at cstyle.py:136
-# lists void/bool/i8/u8/i16/u16/i32/u32/i64/u64/f16/bf16/f32/f64 and NOTHING
-# else; only CUDA (cstyle.py:441) and HIP (cstyle.py:542) add fp8 entries. So
-# `type_map[dtypes.fp8e4m3]` is a `KeyError` on four of the six devices and that
-# is the truth, not a gap in this table.
-#
-# EVERY KEY BELOW IS A `DType.name`, NOT A `dtypes.*` ATTRIBUTE. tinygrad 793abbb
-# moved `DType.name` onto the rust spellings, so the keys moved with it and the
-# old C spellings ("signed char", "unsigned char", "__bf16", "half") are the
-# LEGACY ATTRIBUTE names, not the name field, and never were -- which is why the
-# comment this file used to carry at :477 is now wrong rather than merely stale.
 def type_map.base() -> Map<&2, String>:
   tm(Kv{"bool", "bool", Kv{"i8", "signed char", Kv{"u8", "unsigned char",
     Kv{"i16", "short", Kv{"u16", "unsigned short", Kv{"i32", "int",
@@ -608,35 +410,16 @@ def type_map.metal() -> Map<&2, String>:
   type_map_over(Kv{"u32", "uint", Kv{"bf16", "bfloat", KvEnd{}}})
 
 # cstyle.py:441. FOUR entries -- and the two FNUZ fp8 dtypes are NOT among them,
-# so on CUDA `fp8e4m3fnuz` prints as itself while `fp8e4m3` does not.
-# the chain is backwards and that is deliberate. `Kv` is a cons list folded into
-# a `Map`, so entry order is not observable -- `Map.set` is order free and
-# `type_map.get` reads by key. MEASURED on Bend 2.0.34: this table spelled in
-# the source order (`u32`, `bf16`, `fp8e4m3`, `fp8e5m2`) is REFUSED by the parser
-# with "expected : a term, observed ')'" pointing at this line, one line or two,
-# and the identical table spelled innermost-first parses. It is a compiler
-# hazard and not a data one, and the only thing it costs is that the table does
-# not read like cstyle.py's dict literal.
 def type_map.cuda() -> Map<&2, String>:
   type_map_over(Kv{"fp8e5m2", "__nv_fp8_e5m2", Kv{"fp8e4m3", "__nv_fp8_e4m3", Kv{"bf16", "nv_bfloat16", Kv{"u32", "uint", KvEnd{}}}}})
 
 # cstyle.py:520-522. `{CStyleLanguage.type_map, {d: ("hip_fp8","hip_bf8")[fp8_index(d)] for d in fp8s}}`
-# -- and `fp8_index(d) = fp8s.index(d) % 2` with `fp8s` in dtype.py's order
-# (e4m3, e5m2, e4m3fnuz, e5m2fnuz), so the OCP pair and the FNUZ pair are THE
-# SAME pair. That is measured: HIP maps both e4m3 variants to `hip_fp8` and both
-# e5m2 variants to `hip_bf8`, and the duplication is upstream's rather than a
-# port artefact. FOUR entries, then -- AND NOT `bf16`: an earlier revision of
-# this table answered `hip_bfloat16` for bfloat16 on the strength of a comment that
-# said `cstyle.py:542` did, and it does not. MEASURED: the census gate's `rd_5_11`
-# row read `__bf16` upstream against `hip_bfloat16` here, and this was the LAST red
-# row of 346.
 def type_map.hip() -> Map<&2, String>:
   type_map_over(Kv{"fp8e4m3", "hip_fp8", Kv{"fp8e5m2", "hip_bf8",
     Kv{"fp8e4m3fnuz", "hip_fp8", Kv{"fp8e5m2fnuz", "hip_bf8", KvEnd{}}}}})
 
-# THE MAP A DEVICE ANSWERS. Six arms and a `_`, and the `_` is the base rather
-# than a hole: every tag below 6 is a real device and the base is the right
-# default for an unknown one because it is a real fourteen-entry dict.
+# THE MAP A DEVICE ANSWERS. Six arms and a `_`, and the `_` IS THE BASE RATHER
+# THAN A HOLE: THE BASE IS A REAL FOURTEEN-ENTRY DICT.
 def type_map.of(+dev: U32) -> Map<&2, String>:
   match dev:
     case 1: type_map.clang()
@@ -647,82 +430,9 @@ def type_map.of(+dev: U32) -> Map<&2, String>:
     case _: type_map.base()
 
 # `.replace(" ", "_")` -- cstyle.py:189, and it is on the `sz > 1` branch ONLY.
-# A scalar `signed char` prints WITH the space and a vector `signed_char4` does
-# not; both are gate rows, because a reader that underscored unconditionally
-# would print `signed_char` for the scalar and differ from CPython on four
-# dtypes x six devices.
-#
-# `String.replace` IS A WALL (`String.split` splits on ONE CHAR, so a
-# multi-character substring replace has no primitive -- render.bend gap (b)).
-# What the C names actually need is small and closed: FIVE of `DType.name`'s
-# values contain a space and each becomes the same string with the space turned
-# into an underscore.
-#
-# and the five are a `match`, not a split, and that is a measured change. The port used to split
-# the name on ' ' and rejoin it with '_', which is exact -- but the prelude's `String.split` is ONE
-# RECURSION PER CHARACTER, so each split costs two `slice`s and a token concatenation per character.
-# MEASURED on the 642-uop wire: `under_split` 400 times a render, which is 2,620 recursive
-# `String.split` calls and 13,853 `char_len` calls -- the largest remaining term in the turn.
-#
-# the name is from a closed set, and that is the port's own fact. `rd_base_name` reads
-# `rd_base_dev`, which is a `match` on the device over a `match` on the dtype's SHORT CODE, so every
-# name it can produce is one of the twenty-six literals in `rd_base_plain` / `rd_base_clang` /
-# `rd_base_opencl` / `rd_base_metal` / `rd_base_cuda` / `rd_base_hip` -- plus the short code itself,
-# which is the `_` arm's passthrough. EXACTLY FIVE OF THOSE CONTAIN A SPACE (`signed char`,
-# `unsigned char`, `unsigned int`, `unsigned long`, `unsigned short`), and the port's own comment
-# above says so. So the split is a `match` on five literals, and the `_` arm is `nm` UNCHANGED --
-# which is exact, because no other name in the set contains a space.
-#
-# the five, and the underscored form is a literal. `cstyle.py:189` is
-# `name.replace(" ", "_") if sz > 1 else name` -- the replace is UNCONDITIONAL on the `sz > 1` branch,
-# and there is NO "has a space" test upstream. The port had one (`has_space`) because the port's
-# `under` was the general replace and the port wanted to avoid it for a name with no space -- and that
-# test cost a split. - the five are a `match` and the `_` arm is the name unchanged, which is the
-# answer for every other name in the set. So `has_space` is gone: a name with no space is its own
-# underscored form, and the underscored form is what the dtype path needs.
-#
-# and the match is on the short code, not on the c name, and that is the second measured change.
-# a `match` on a String in Bend compiles to per-character compares with a `slice` per character
-# (`PARITY.md` §122), so matching the eleven-character C name `"signed char"` costs eleven slices --
-# which is the same per-character cost the split paid, and MEASURED: the first cut of this change
-# replaced 400 splits with 200 five-arm string matches and the CPU clock read 0.9938, i.e. NOTHING.
-# the short code is two to four characters (`i8`, `u8`, `u16`, `u32`, `u64`, `f32`, ...) and it is
-# what `rd_base_dev` ALREADY matches on, so matching the code is the cheap half of the comparison.
-#
-# the set is closed, and that is the port's own fact: `rd_base_name` reads `rd_base_dev`, which is a
-# `match` on the device over a `match` on the dtype's SHORT CODE, so every name it can produce is one of
-# the twenty-six literals in `rd_base_plain` / `rd_base_clang` / `rd_base_opencl` / `rd_base_metal` /
-# `rd_base_cuda` / `rd_base_hip` -- plus the short code itself, which is the `_` arm's passthrough.
-# EXACTLY FIVE OF THOSE CONTAIN A SPACE (`signed char`, `unsigned char`, `unsigned int`,
-# `unsigned long`, `unsigned short`), and the port's own comment above says so.
-#
-# - and the device matters only WHERE it overrides a spaced code. measured over the six devices:
-# OpenCL overrides ALL FIVE (`i8`->`char`, `u8`->`uchar`, `u16`->`ushort`, `u32`->`uint`, `u64`->`ulong`),
-# Metal and CUDA override `u32` (->`uint`), and Clang, HIP and the base override NONE. So the
-# underscored form is the plain one for every device but OpenCL, Metal and CUDA's `u32` -- and THAT is
-# what `under_code` answers, in a match on the short code.
-#
-# - and the table was checked over every (device, code) pair, not by reading it. The first cut
-# forgot OpenCL's `u32` -- OpenCL maps `u32` to `uint`, which has NO SPACE, so its underscored form is
-# `uint` and not `unsigned_int` -- and the probe over all 120 pairs found it. MEASURED: the probe calls
-# the COMPILED `under_code` and `rd_base_dev` over six devices and twenty codes and compares against a
-# table computed from the port's OWN `rd_base_*` matches; the fixed table is 120 of 120.
-# the general replace, for the one call that needs it. `wmma_name_of` is
-# `f"WMMA_{dims}_{in}_{out}".replace(" ", "_")` -- UNCONDITIONAL, and its parts are `U32.show` and the
-# dtype's SHORT CODE, so they carry no space today -- but "today" is not a proof, and this def is the
-# general one. MEASURED: it is called ONCE a render (the WMMA path), so the general replace is not on
-# the hot path.
 def under_split(nm: String) -> List<&2, String>: String.split(nm, ' ')
 
 # ONE SELF-CALL, and the underscore goes in FRONT of every part after the first.
-# The two-def split (`under_tail` / `under_rest`) would be mutual recursion,
-# because each calls the other on the tail; folding them into one def with a
-# threaded `seen` flag is the shape that terminates, and it is the same move
-# `render.bend`'s `strip_binary_parens` makes with `has_precedence`.
-# The prefix is INLINED into the arm rather than a helper, because a helper would
-# have to be declared ABOVE this def and would then be a second `def` between the
-# reader and its own recursion for the sake of one `Bool.pick`. `Bool.pick`'s
-# order is the one the whole port uses: THIRD argument when the test is true.
 def under_tail.go(parts: List<&2, String>, seen: Bool) -> String:
   match parts:
     case Nil{}: ""
@@ -733,40 +443,6 @@ def under_general(nm: String) -> String: under_tail.go(under_split(nm), False{})
 def under(nm: String) -> String: under_general(nm)
 
 # `_render_dtype` -- cstyle.py:180-190. THE most-read def in the file: it
-# decides the type of every kernel argument, every local, every cast and every
-# pointer, so a dropped character here is a kernel that does not compile and a
-# diagnostic that points nowhere.
-#
-#     def _render_dtype(self, dtype, sz=1, addrspace=AddrSpace.ALU, mutable=True,
-#                       override_ptr=False, shape=None):
-#       if is_image_shape(shape): return f"{'write_only' if mutable else 'read_only'} image2d_t"
-#       prefix, suffix = "", ""
-#       if addrspace in (AddrSpace.LOCAL, AddrSpace.GLOBAL):
-#         if addrspace == AddrSpace.LOCAL and self.smem_prefix_for_cast: prefix = self.smem_prefix
-#         if addrspace == AddrSpace.GLOBAL: prefix = self.buffer_prefix
-#       if addrspace in (AddrSpace.LOCAL, AddrSpace.GLOBAL) or override_ptr: suffix = "*"
-#       if sz > 1: return prefix + self.type_map.get(dtype, dtype.name).replace(" ", "_") + str(sz) + suffix
-#       return prefix + self.type_map.get(dtype, dtype.name) + suffix
-#
-# THE ARGS ARE PYTHON'S OWN. `dtype, sz, addrspace, mutable, override_ptr` are
-# `_render_dtype`'s parameters in Python, and `shape` is the sixth -- reduced here
-# to the `Bool` `is_image_shape(shape)` already computed, because the fold
-# answers `List<&2, O.Sint>` and `is_image_shape` wants a `ShapeRes` (wall (c)).
-# That reduction is why the string layer below is fully gateable even while wall
-# (a) makes `_render` unreachable: every argument is a value the caller supplies,
-# exactly as in Python, so the oracle is a direct method call.
-#
-# five things are LOAD-bearing and all five are quiet when wrong:
-#   * the `type_map.get(.., dtype.name)` default;
-#   * the underscore on the `sz > 1` branch ONLY;
-#   * `str(sz)` appended only when `sz > 1`, so `sz == 0` would print the bare
-#     name -- unreachable, since `sz` is `max_numel` and `prod(()) == 1`;
-#   * `smem_prefix_for_cast`, False on CUDA and HIP and True on the other four,
-#     which is the whole difference between `__shared__ __align__(16) float*` and
-#     `threadgroup __attribute__((aligned(16))) float*` for the same space;
-#   * `is_image_shape` BEATS EVERYTHING, INCLUDING the address space -- an image
-#     in GLOBAL space is `read_only image2d_t` and not `__global read_only
-#     image2d_t`. So the image arm is FIRST and returns whole.
 
 def is_global(+a: S.Addr) -> Bool:
   match a:
@@ -778,9 +454,9 @@ def is_local(+a: S.Addr) -> Bool:
     case S.ALocal{}: True{}
     case _: False{}
 
-# `addrspace in (AddrSpace.LOCAL, AddrSpace.GLOBAL)` -- the SAME set twice in
-# `_render_dtype` (once for the prefix, once for the `*`), so it is one def read
-# by both rather than two spellings that could drift.
+# `addrspace in (AddrSpace.LOCAL, AddrSpace.GLOBAL)` -- THE SAME SET TWICE IN
+# `_render_dtype` (ONCE FOR THE PREFIX, ONCE FOR THE `*`), SO IT IS ONE DEF READ
+# BY BOTH RATHER THAN TWO SPELLINGS THAT COULD DRIFT.
 def is_mem_addr(+a: S.Addr) -> Bool: Bool.or(is_local(a), is_global(a))
 
 # `prefix` -- cstyle.py:183-185. LOCAL contributes `smem_prefix` and only when
@@ -806,20 +482,6 @@ def rd_suffix(+a: S.Addr, override_ptr: Bool) -> String:
   Bool.pick(String, Bool.or(is_mem_addr(a), override_ptr), "*", "")
 
 # THE NAME, with the `sz > 1` underscore. `cstyle.py:189` is
-# `name.replace(" ", "_") if sz > 1 else name`, and there is NO "has a space" test upstream -- the
-# replace is unconditional on the `sz > 1` branch. `under_code` IS that replace (see its own comment),
-# so `rd_name_at(dev, d, True{})` IS the replace and `rd_name_at(dev, d, False{})` IS the plain name.
-# the TYPE name is a match, not a map, and that is a measured change. `type_map.of(dev)` builds the
-# device's fourteen-to-sixteen-entry `Map` on every call, its keys are `String`s, and the port's `Map` is a
-# hashed trie: a profile of the SHIPPED path (`.agents/slop/cpuseam/out/live-*.js`, the artifact the daemon
-# loads) put `nat_divmod` at 17.5% and `char_len` at 7.2%, reached through `Map_bit` / `Map_bit_go` /
-# `Map_seek` / `Map_diff` -- i.e. hashing a dtype name and walking trie levels, once per dtype render.
-#
-# The six maps are the transcription of upstream's six dicts, each an OVERLAY on the base, and the lookup's
-# default is THE NAME ITSELF (`cstyle.py`'s `type_map.get(dtype, dtype.name)`). That is exactly a `match`
-# built before it can be read. the six arms below are the six dicts, entry for entry; the comments that
-# pin each one (the fp8 group ABSENT on OpenCL, `bf16` NOT remapped on HIP, the FNUZ pair on CUDA) live on
-# `type_map.*` above, which is kept as the transcription of record.
 
 def rd_base_plain(nm: String) -> String:
   match nm:
@@ -884,13 +546,11 @@ def rd_base_dev(dev: U32, nm: String) -> String:
     case 5: rd_base_hip(nm)
     case _: rd_base_plain(nm)
 
-# opencl overrides all five spaced codes, so its underscored form is the override's.
 def under_code_opencl(dev: U32, plain: String, opencl: String) -> String:
   match dev:
     case 2: opencl
     case _: plain
 
-# opencl, metal and CUDA override `u32` alone, and the others do not.
 def under_code_u32(dev: U32, plain: String) -> String:
   match dev:
     case 2: "uint"
@@ -911,25 +571,11 @@ def under_code(dev: U32, nm: String) -> String:
 # type map on every call -- a `Map` whose keys are Strings, so each insert hashes a string -- and this line
 # called `rd_base_name` THREE times, while `rd_body` below called `rd_name` in both arms of a `Bool.pick`,
 # i.e. SIX map builds to render ONE dtype. MEASURED with `bun --cpu-prof` on a 405-uop kernel: `render_dtype`
-# was 58% of the whole render and `Map_set` inside `type_map_clang` was 53%, with `char_len` 15% (String-key
-# hashing walks the key a character at a time). Nothing about the answer changes: the same name is looked up
-# once instead of six times.
 def rd_base_name(+dev: U32, +d: S.Dt) -> String: rd_base_dev(dev, dt_name(d))
 
 # `Bool.pick` evaluates both arms, and that is measured. `Bool.pick` is a `match` in the prelude, but
 # the COMPILER turns it into a FUNCTION CALL, so its two arms are JS ARGUMENTS and both are built before
 # the call. MEASURED on the 642-uop wire: `rd_body_at` 100 calls, `rd_name_at` 200 calls --
-# TWICE the number of bodies -- and every one of them built BOTH the underscored name and the plain one.
-# With the split-based `under` that was 400 `under_split` calls a render.
-#
-# - so the arms are chosen with a `match`, which the compiler makes a real `if`. a `match` on a
-# `Bool` is a branch, and only the taken arm runs.
-#
-# - and the underscored arm takes the device and the short code, not the c name. The c name is up to
-# thirteen characters (`"unsigned short"`) and a `match` on it is a per-character compare with a `slice`
-# per character; the SHORT CODE is two to four (`u16`) and it is what `rd_base_dev` already matches on.
-# So the underscored arm reads the code and the device -- MEASURED: `under_code` 83 calls a render
-# and the whole underscored arm costs a handful of slices each.
 def rd_name_at(+dev: U32, +d: S.Dt, vect: Bool) -> String:
   match vect:
     case True{}: under_code(dev, dt_name(d))
@@ -948,7 +594,6 @@ def rd_name(+dev: U32, +d: S.Dt, vect: Bool) -> String: rd_name_at(dev, d, vect)
 # `acall_tail` and that `bend2-constraints.md` rule 7 already records.
 # THE `sz > 1` TEST IS A BRANCH, NOT A `Bool.pick`. `Bool.pick`'s arms are eager (see `rd_name_at`),
 # so the old line built the vector spelling AND the scalar spelling for EVERY body. MEASURED: `rd_body_at`
-# 100 calls and `rd_name_at` 200 -- twice the number of bodies. A `match` on the test runs one arm.
 def rd_body_at(+dev: U32, +d: S.Dt, +sz: U32, vect: Bool) -> String:
   match vect:
     case True{}: String.concat([rd_name_at(dev, d, True{}), U32.show(sz)])
@@ -957,7 +602,6 @@ def rd_body_at(+dev: U32, +d: S.Dt, +sz: U32, vect: Bool) -> String:
 def rd_body(+dev: U32, +d: S.Dt, +sz: U32) -> String:
   rd_body_at(dev, d, sz, U32.is_gt(sz, 1))
 
-# `is_image_shape(shape)` -- wall (c), so the test arrives as a `Bool`.
 def rd_image(mutable: Bool) -> String:
   Bool.pick(String, mutable, "write_only image2d_t", "read_only image2d_t")
 
@@ -990,22 +634,12 @@ def is_alu_addr(+a: S.Addr) -> Bool:
     case _: False{}
 
 # `idx.op is Ops.CAST and idx.src[0].op is Ops.CONST` -- the CONST-INDEX test,
-# and it is two arena reads. It guards BOTH ALU sub-branches, so it is one def
-# rather than two spellings that could drift.
+# and it is two arena reads.  IT GUARDS BOTH ALU SUB-BRANCHES, SO IT IS ONE DEF
+# RATHER THAN TWO SPELLINGS THAT COULD DRIFT.
 def idx_is_const_idx(+ar: O.Arena, +idx: U32) -> Bool:
   Bool.and(is_cast(O.Arena.op(ar, idx)), is_const(O.Arena.op(ar, O.Arena.src0(ar, idx))))
 
-# `'xyzwabcd'[val]`. The literal is INLINED rather than named for two measured
-# reasons: a method call on a call result -- `letters().get(n)` -- is a parse
-# error ("expected : 'def', 'type' or 'law', observed : '.'", because a `def` body
-# is a TERM and a term may not be a method call); and `String.get(s, n)` answers
-# a `Maybe<&2, Char>`, not a `String`, so the character has to be read out of a
-# list anyway. `String.to_list` + `List.get` + `Maybe.default` is the shape the
-# substrate has, and the default is the FIRST letter -- see the wall note above.
-# `Char.to_string` DOES NOT EXIST on 2.0.34 -- "expected : a defined name" -- so
-# a `Char` becomes a one-element `String` the only way the substrate allows:
-# `String.from_list` over the list holding it. `Char.to_u32` is the other half
-# of the pair and is what `helpers.bend` uses for the same purpose.
+# `'xyzwabcd'[val]`. THE LITERAL IS INLINED RATHER THAN NAMED FOR TWO MEASURED
 def swizzle_char.of(m: Maybe<&2, Char>) -> String:
   match m:
     case Some{c}: String.from_list([c])
@@ -1025,11 +659,9 @@ def swizzle_val(+ar: O.Arena, +idx: U32) -> U32: swizzle_val.of(O.Arena.arg(ar, 
 def swizzle_letter(+ar: O.Arena, +idx: U32) -> String:
   String.concat([".", swizzle_char(U32.to_nat(swizzle_val(ar, idx)))])
 
-# `f"[{idx.src[0].val}]"` -- the array form, over the SAME CONST.
 def const_idx_str(+ar: O.Arena, +idx: U32) -> String:
   String.concat(["[", U32.show(swizzle_val(ar, idx)), "]"])
 
-# `buf.max_numel() > self.gep_arr_threshold`
 def gep_uses_idx(+dev: U32, numel: U32) -> Bool: U32.is_gt(numel, gep_arr_threshold.of(dev))
 
 def is_add(op: O.Op) -> Bool:
@@ -1058,8 +690,6 @@ def is_add(op: O.Op) -> Bool:
 # had no row anywhere. `gates/cstyle_render_census-mutate.py`'s M8 ("render_index never strips
 # parens") moved 0 of 358 rows, which is how the gap was found; `ri_lit_*` now drives
 # `AOpLit{OpsADD{}}` -- the shape `upat.py:26`'s `UOp(Ops.PYLITERAL, arg=self.op[0])` builds --
-# and M8 moves 3. A fix that makes a branch UNREACHED is indistinguishable from a fix that
-# makes it unreachable, and only a mutation tells them apart.
 def idx_arg_is_add(+a: O.Arg) -> Bool:
   match a:
     case O.AOpLit{op}: is_add(op)
@@ -1076,35 +706,15 @@ def render_index.alu2(ok: Bool, +ar: O.Arena, +dev: U32, +bname: String, +iname:
   Bool.pick(String, ok, render_index.alu(ar, dev, bname, iname, idx, bnumel, lane),
     String.concat(["(", bname, "+", Bool.pick(String, idx_arg_is_add(O.Arena.arg(ar, idx)), H.strip_parens(iname), iname), ")"]))
 
-# THE WHOLE DEF. Python takes `x, buf, idx` and reads `x` for nothing at all --
-# it is in the signature so the `base_rewrite` arm can pass `kwargs` -- and it
-# reads `buf` for its ADDRESS SPACE, its NAME and its ELEMENT COUNT, all three of
-# which the port takes as parameters. What is left of `buf` is nothing, and what
-# is left of the signature is the INDEX node alone -- which is why the third
-# parameter is `idx` and not `bidx`: the name `bidx` claimed to be the buffer
-# index and the buffer is not in this def at all.
+# THE WHOLE DEF. PYTHON TAKES `x, buf, idx` AND READS `x` FOR NOTHING AT ALL
+# -- IT IS IN THE SIGNATURE SO THE `base_rewrite` ARM CAN PASS `kwargs` -- AND
+# IT READS `buf` FOR ITS ADDRESS SPACE, ITS NAME AND ITS ELEMENT COUNT, ALL
+# THREE OF WHICH THE PORT TAKES AS PARAMETERS.  WHAT IS LEFT OF THE SIGNATURE
+# IS THE INDEX NODE ALONE -- WHICH IS WHY THE THIRD PARAMETER IS `idx` AND NOT
 def render_index(+ar: O.Arena, +dev: U32, idx: U32, baddr: S.Addr, bname: String, iname: String, bnumel: U32, lane: Bool) -> String:
   render_index.alu2(is_alu_addr(baddr), ar, dev, bname, iname, idx, bnumel, lane)
 
 # `render_buffer` -- cstyle.py:175-178, the `Ops.BUFFER` arm of `base_rewrite`.
-#
-#     prefix = f"{self.smem_align}{self.smem_prefix}" if x.addrspace == AddrSpace.LOCAL else ""
-#     suffix = f"[{x.max_numel()}]"
-#     return f"{prefix}{self._render_dtype(x.dtype)} {self[x]}{suffix};"
-#
-# FOUR THINGS, and the first produces the row that LOOKS wrong:
-#   * the prefix is `smem_align` FOLLOWED BY `smem_prefix`, and HIP's
-#     `smem_prefix` has no trailing space, so the two concatenate into
-#     `__attribute__((shared, aligned(16)))float` with NO space before the type.
-#     Measured, and a gate row precisely because a reader would "fix" it.
-#   * `_render_dtype(x.dtype)` is the DEFAULT ARGUMENT SHAPE -- `sz=1`,
-#     `addrspace=ALU` -- so a LOCAL buffer's type carries NO `*` even though a
-#     LOCAL POINTER does. The address space is consumed by the PREFIX here, not
-#     by the type. That is why the type argument is `S.Aalu{}` and not `a`.
-#   * `x.max_numel()` is a BUFFER's element count, which is `ParamArg.size`: a
-#     concrete int, so wall (b) does not apply here.
-#   * the trailing `;` lives in `render_buffer` and NOT in the `Ops.BUFFER` rule,
-#     because the rule's string is also the DECLARATION `_render` emits.
 
 def rb_prefix.of(+dev: U32, +a: S.Addr) -> String:
   match a:
@@ -1117,25 +727,6 @@ def render_buffer(+dev: U32, +d: S.Dt, numel: U32, +a: S.Addr, name: String) -> 
   String.concat([rb_prefix(dev, a), rd_base_name(dev, d), " ", name, "[", U32.show(numel), "];"])
 
 # `code_for_op` -- cstyle.py:142-150, and the per-device overrides at :288-291,
-# :376, :432-438 and :532-533. `dict[Ops, Callable]`, so the ARM is a match on the
-# op and the DEVICE is the tag -- there is no closure to store.
-#
-# two shapes in the python and both matter:
-#   * UNARY (`x, dtype`) and BINARY (`a, b, dtype`) and TERNARY (`a, b, c,
-#     dtype`). `Ops.WHERE` is the only ternary, and it is the only arm whose
-#     arity differs, so a reader that threaded one argument list would emit
-#     `(a?b)` for WHERE. The `xs` parameter is the whole src list and the arms
-#     pick from it, so the arity is visible in the arm.
-#   * the `dtype` argument is READ by exactly six ops on CUDA (`h`/`htrunc`/
-#     `hsin`/`hlog2`/`hexp2`/`hsqrt`/`hrcp` for half and bfloat16) and by Clang's
-#     `SQRT`/`TRUNC`/`FDIV` (the `f64` variants). Everywhere else it is ignored,
-#     so it is a parameter of the def rather than a per-arm read.
-#
-# the device split is measured and it is small: Clang drops `EXP2`, `SIN`, `LOG2`
-# and `RECIP` entirely (they become libcalls the compiler lowers, cstyle.py:
-# :288) and adds `FDIV`; CUDA and HIP keep all twenty-one and override six; Metal
-# overrides one (`SIN` -> `precise::sin`); OpenCL and QCOM change nothing. A
-# dropped op is a `KeyError` in Python, so the dropped arm is a gate row.
 
 def cfo_unary(nm: String, +x: List<&2, String>) -> List<&2, String>: List.concat(&2, String, [[nm, "("], x, [")"]])
 
@@ -1144,7 +735,6 @@ def cfo_unary(nm: String, +x: List<&2, String>) -> List<&2, String>: List.concat
 # `cfo_prefixed("", x)` would be `f"-{x}"` by accident and `cfo_prefixed("1/", x)`
 # would be `f"-1/({x})"` -- the unary template has the parens INSIDE, so neither
 # spelling of a prefix template reaches these two. MEASURED by the oracle:
-# RECIP is `(1/X)` and NEG is `-X`.
 def cfo_recip(+x: List<&2, String>) -> List<&2, String>: List.concat(&2, String, [["(1/"], x, [")"]])
 
 def cfo_neg(+x: List<&2, String>) -> List<&2, String>: List.concat(&2, String, [["-"], x])
@@ -1153,23 +743,12 @@ def cfo_bin(+a: List<&2, String>, sym: String, +b: List<&2, String>) -> List<&2,
 
 def cfo_tern(+a: List<&2, String>, +b: List<&2, String>, +c: List<&2, String>) -> List<&2, String>: List.concat(&2, String, [["("], a, ["?"], b, [":"], c, [")"]])
 
-# A DROPPED ARM IS CPython's `code_for_op[x.op]` AND THAT RAISES. Bend is total and cannot
-# raise, so the answer has to be a STRING, and `""` is the one string that is BOTH a silent
-# wrong answer and a spelling no C compiler accepts silently: `base_rewrite`'s ALU arm wraps
-# the answer in `f"..."` at the operator's own precedence, so an empty one deletes the
-# operand and leaves a kernel that is wrong rather than broken -- the exact shape this file's
-# own header names as the dangerous one. So the refusal NAMES ITS CAUSE, and it is
-# `wgsl.bend`'s spelling and not a new one: `renderer/wgsl.bend:464 symbol=code_for_op.of` answers `UNHANDLED(Ops.X)` for
-# the same `KeyError` on the same twenty inherited arms, and `THE PORT's `renderer/wgsl.bend` HEADER` says those arms
-# MOVE HERE when cstyle lands. Two spellings of one refusal is FINDING 2 in `wgsl_render_census-gate.py`,
-# which is why this reuses the sibling's token instead of inventing a third.
+# A DROPPED ARM IS CPython's `code_for_op[x.op]` AND THAT RAISES.  BEND IS
+# TOTAL AND CANNOT RAISE, SO THE ANSWER HAS TO BE A STRING, AND `""` IS THE ONE
+# STRING THAT IS BOTH A SILENT WRONG ANSWER AND A SPELLING NO C COMPILER
 def cfo_unhandled(op: O.Op) -> List<&2, String>: [String.concat(["UNHANDLED(Ops.", O.Ops.name.of(op), ")"])]
 
 # `xs` is the src-name list, `xs0`/`xs1`/`xs2` its three positional reads. `nd` is
-# the number of srcs, which is the arity test: WHERE has three and everything
-# else has two or one, and `head`/`nth` on an empty list is the BOTTOM of the
-# list rather than a crash -- so an op reached with the wrong arity renders a
-# visibly wrong string instead of a wrong type.
 def xs_at(xs: List<&2, List<&2, String>>, n: Nat) -> List<&2, String>:
   Maybe.default(&2, List<&2, String>, List.get(&2, List<&2, String>, xs, n), ["?"])
 
@@ -1183,12 +762,6 @@ def cfo_xs3(xs: List<&2, List<&2, String>>) -> List<&2, String>: xs_at(xs, 2n)
 # op match is a single `match` and Python's dict has no arity to distinguish it.
 # the base table has no `Ops.FDIV` arm and that is correct, not an omission:
 # cstyle.py:142-150 is a dict literal of TWENTY-ONE keys and `FDIV` is not one of
-# them -- Clang ADDS it (cstyle.py:291) and no other device has it. A reader that
-# gave the base an `FDIV` arm would answer `(X/Y)` where CPython raises
-# `KeyError`, and the `_` arm is that raise, totalised by `cfo_unhandled`. MEASURED BY THE
-# GATE: with an `FDIV` arm in the base, the mutation "delete Clang's explicit FDIV arm" moved NO
-# ROW, because Clang then fell through to a base arm that should not have been
-# there. Removing it makes the Clang arm load-bearing, which is what it is.
 def code_for_base.of(op: O.Op, +xs: List<&2, List<&2, String>>) -> List<&2, String>:
   match op:
     case O.OpsSQRT{}: cfo_unary("sqrt", cfo_xs1(xs))
@@ -1223,30 +796,6 @@ def code_for_base.of(op: O.Op, +xs: List<&2, List<&2, String>>) -> List<&2, Stri
 # "C promotes uchar and ushort to int, WGSL holds them in u32 and PTX holds
 # uchar in u16, so the ops that wrap compute in uint and narrow after"
 # -- cstyle.py:85, upstream's comment ON `pm_narrow_uint`. THE THREE
-# TARGETS DISAGREE ABOUT WHAT A NARROW INTEGER **IS**, AND THE DISAGREEMENT
-# IS ABOUT **PROMOTION**:
-#   * C PROMOTES `uchar` AND `ushort` TO `int` IN EVERY EXPRESSION. SO
-#     `(uchar)a + (uchar)b` IS AN `int` ADD AND THE RESULT IS TRUNCATED BACK
-#     TO `uchar` ONLY BY THE ASSIGNMENT. A `uchar` ADD THAT WRAPPED IN 8
-#     BITS WOULD BE A DIFFERENT ANSWER.
-#   * WGSL HOLDS THEM IN `u32` -- SO A `u8` ADD IS A `u32` ADD THAT IS
-#     NARROWED AT THE END, WITH NO PROMOTION HAPPENING AT ALL.
-#   * PTX HOLDS `uchar` IN `u16` -- A THIRD WIDTH, AGAIN.
-#
-# SO THE SIX OPS THAT WRAP -- `ADD`, `SUB`, `MUL`, `NEG`, `SHL`, `MULACC` --
-# MUST COMPUTE IN THE **WIDER** TYPE AND NARROW AFTERWARDS, AND THE SIX
-# ARMS ABOVE ARE WHAT THEY COMPUTE. THE REWRITE IS NOT IN THOSE ARMS: IT IS
-# IN `pm_narrow_uint`, WHICH IS A `PatternMatcher` -- A WALL, NAMED IN THE
-# HEADER OF THIS FILE ("`extra_matcher` is a `PatternMatcher` over UOps ...
-# not strings"). SO THE PORT EMITS `a + b` FOR A `u8` ADD, WHICH IS CORRECT
-# FOR EVERY WIDTH THE PORT EMITS AND IS NOT THE SAME SHAPE AS UPSTREAM'S
-# POST-REWRITE GRAPH.
-#
-# THE CONSEQUENCE, AND IT IS THE GOTCHA: THE PORT'S `u8` ADD IS AN `int` ADD
-# IN C (BY C'S OWN PROMOTION) AND A `u32` ADD IN WGSL (BY WGSL'S OWN), SO
-# THE PORT'S OUTPUT IS RIGHT FOR BOTH -- BUT ONLY BECAUSE BOTH LANGUAGES
-# PROMOTE, NOT BECAUSE THE PORT DID ANYTHING. A TARGET THAT DID NOT PROMOTE
-# WOULD NEED THE REWRITE, AND THE PORT HAS NO WAY TO ASK.
 
 def is_half(+d: S.Dt) -> Bool:
   Bool.or(O.eq_dt(d, S.half()), O.eq_dt(d, S.bfloat16()))
@@ -1255,23 +804,6 @@ def is_f64(+d: S.Dt) -> Bool: O.eq_dt(d, S.double())
 
 # THERE IS NO `is_f32`, and the absence is load-bearing rather than an omission:
 # Clang's suffix rule is `f` UNLESS f64 (cstyle.py:288-289) and HIP's `_ocml` map
-# is `{half:16, double:64}.get(dtype, 32)` with 32 as the DEFAULT -- so `float`
-# reaches both by falling through, and a third predicate would be a fourth way to
-# spell "not one of those two".
-# CLANG: `SQRT` and `TRUNC` pick the `f64` spelling by dtype, `FDIV` is ADDED,
-# and `EXP2`/`SIN`/`LOG2`/`RECIP` are DELETED (cstyle.py:288-291). The
-# comprehension is `{k:v for k,v in base.items() if k not in [EXP2, SIN, LOG2,
-# trunc, recip]}` and then trunc and fdiv and sqrt are re-set, so trunc
-# SURVIVES and the other three do not. The deletion is the load-bearing half and
-# `cfo_unhandled` is its answer -- a `KeyError` in Python, and here a token that names
-# the op and cannot compile. THOSE FOUR ARMS STAY EXPLICIT even though all four now
-# answer the same thing, because they are the only thing standing between Clang and the
-# base's `exp2`/`sin`/`log2`/`(1/x)` arms; deleting them renders four ALU ops upstream
-# refuses to render. MEASURED: the mutation that deletes all four moves 4 rows.
-#
-# THE SUFFIX IS `f` UNLESS THE DTYPE IS f64, and there is no separate f32 case:
-# Clang emits `__builtin_sqrtf(X)` for float AND for half and
-# `__builtin_sqrt(X)` for double. MEASURED, all three.
 def ocml_or(+base: String, suf: String, f64: Bool) -> String:
   Bool.pick(String, f64, base, String.concat([base, suf]))
 
@@ -1339,9 +871,9 @@ def code_for_cuda.of(op: O.Op, +xs: List<&2, List<&2, String>>, +d: S.Dt) -> Lis
     case O.OpsRECIP{}: cuda_rcp(is_half(d), cfo_xs1(xs))
     case _: code_for_base.of(op, xs)
 
-# THE DISPATCH. Five devices and the base, and OpenCL and QCOM are the BASE --
-# measured: neither overrides a single ALU op, and the gate's `cfo` rows are
-# what says so rather than a comment.
+# THE DISPATCH. Five devices and the base, and OpenCL and QCOM ARE THE BASE --
+# MEASURED: NEITHER OVERRIDES A SINGLE ALU OP, AND THE GATE's `cfo` ROWS ARE
+# WHAT SAYS SO RATHER THAN A COMMENT.
 def code_for_op.of(+dev: U32, op: O.Op, xs: List<&2, List<&2, String>>, +d: S.Dt) -> List<&2, String>:
   match dev:
     case 1: code_for_clang.of(op, xs, d)
@@ -1351,25 +883,6 @@ def code_for_op.of(+dev: U32, op: O.Op, xs: List<&2, List<&2, String>>, +d: S.Dt
     case _: code_for_base.of(op, xs)
 
 # `code_for_workitem` -- tinygrad/renderer/cstyle.py:131, :330, :370, :431, :531. Five devices
-# spell the workitem id and the BASE and Clang have an EMPTY dict, so a SPECIAL on
-# either is a `KeyError` in Python -- MEASURED, `CStyleLanguage.code_for_workitem` and
-# `ClangRenderer.code_for_workitem` are both `{}`, and `code_for_workitem["g"]` raises
-# `KeyError('g')` on both. The refusal NAMES THE MISSING KEY, which is what CPython's
-# `KeyError` argument is, and it is not reachable for a real kernel: every GPU renderer
-# defines both entries.
-#
-# `""` was the port's marker until this arm was made loud, and it was the worst of the
-# three: `base_rewrite`'s SPECIAL arm is `f"{...}; /* ... */"`, so `""` emits a bare `;`
-# -- a statement that computes NOTHING and compiles. `cfw_0_g` and `cfw_0_l` were also
-# byte-identical to each other, which is a row whose `k` argument could not move it.
-#
-# THE THREE SPELLINGS, and the third is the interesting one: Metal and CUDA
-# INDEX A MEMBER BY ASCII -- `chr(120 + int(x))` on a STRING argument, so `x` is
-# the workitem index as a decimal string and `int(x)` is 0, 1 or 2. HIP and
-# OpenCL pass the string STRAIGHT INTO the builtin, so `get_group_id(0)` is
-# literally that. The port keeps the `U32` and formats it, which is the same
-# answer for 0..2 and is stated because `int("07")` in Python is 7 and
-# `U32.show(7)` is `"7"`.
 
 def witem_xyz(n: U32) -> String: String.from_list([Char.from_u32(U32.add(120, n))])
 
@@ -1384,21 +897,6 @@ def code_for_workitem.g(+dev: U32, +k: String, n: U32) -> String:
     case _: witem_miss(k)
 
 # `_wmma_name` -- cstyle.py:113-117, and the one place a NAME is built from a
-# dtype and sanitised.
-#
-#     return f"WMMA_{'_'.join(map(str, u.arg[0]))}_{u.arg[1].name}_{u.dtype.name}".replace(" ", "_")
-#
-# the sanitise is the whole point and it is not conditional: `int8.name` is
-# `"signed char"`, so without the replace the name is
-# `WMMA_16_16_16_signed char_float`, which is not a C identifier. With it, the
-# name is `WMMA_16_16_16_signed_char_float`. The same replace machinery as
-# `_render_dtype` serves both, and the gate's `wmma_*` rows pin the space case
-# specifically -- an implementation that reused the C NAME spelling but dropped
-# the replace would produce a name no compiler accepts.
-#
-# `u.dtype` is the OUTPUT dtype and `u.arg[1].name` the INPUT, and they are
-# spelled from different places, so a reader that used one for both would be right
-# on the three fixtures where they coincide and wrong on the rest.
 
 def wmma_dims_go(ds: List<&2, U32>, acc: List<&2, String>) -> List<&2, String>:
   match ds:
@@ -1407,13 +905,11 @@ def wmma_dims_go(ds: List<&2, U32>, acc: List<&2, String>) -> List<&2, String>:
 
 def wmma_dims(ds: List<&2, U32>) -> String: String.join(wmma_dims_go(ds, Nil{}), "_")
 
-# `'_'.join(map(str, u.arg[0]))` -- the arg is `AWmma{dims, dt, threads, tc}`.
 def wmma_dims.of(+a: O.Arg) -> String:
   match a:
     case O.AWmma{dims, dt, threads, tc}: wmma_dims(dims)
     case _: ""
 
-# `u.arg[1].name` -- the INPUT dtype.
 def wmma_in.of(+a: O.Arg) -> String:
   match a:
     case O.AWmma{dims, dt, threads, tc}: dt_name(dt)
@@ -1475,10 +971,6 @@ def KUArg.is_const(a: KUArg) -> Bool:
 
 # A BOOL CONST IS AN INT CONST. The `boolean()` arm of `ku_const_cast_int` was ALREADY WRITTEN
 # (`"0"`/`"1"`, which is cstyle.py:31's `lambda ctx,c: "1" if c.val else "0"`), but nothing could reach
-# it: this only matched `CInt`, so a `CBool` fell through const_int -> const_float -> the GENERIC cast
-# and rendered as `((_Bool)())` -- an EMPTY expression. MEASURED 2026-11-03: `exp` is the only kernel in
-# the 31-case battery that still diverged, and its C was `3782 B` against upstream's `3742 B` on exactly
-# two lines, each `!=((_Bool)())` where upstream has `!=1`.
 def ku_const_int(c: O.Const) -> Maybe<&1, H.I64>:
   match c:
     case O.CInt{i}: Some{i}
@@ -1574,16 +1066,6 @@ def KUArg.special_nm(a: KUArg) -> String:
     case _: "lidx0"
 
 # THE PREFIX TABLE. Upstream's `cstyle.py:242-244`:
-#
-#     prefix = {Ops.WMMA: "wmma", Ops.BUFFER: "buf", Ops.CAST: "cast", Ops.BITCAST: "cast",
-#               Ops.STACK: "cast", Ops.INDEX: "bidx", Ops.LOAD: "val"}.get(u.op, "alu")
-#     r[u] = f"{prefix}{c[prefix]}"
-#
-# six prefixes, so six counters, and the counter is a list indexed by the
-# PREFIX'S NUMBER -- not a `Map`, because the key set is CLOSED and a number is
-# a number. `c[prefix]` is the counter and it is only incremented when the
-# UOP BECAME A STATEMENT (`cstyle.py:261`: `if prefix: c[prefix] += 1`), which
-# is why an INLINED uop does NOT BURN A NUMBER.
 
 def ku_pfx_ix(op: O.Op) -> U32:
   match op:
@@ -1628,8 +1110,6 @@ def rt(+r: Rows, +i: U32) -> String: String.join(rtp(r, i), "")
 # two pieces -- the same answer as `H.strip_parens` on the joined string, without joining it (§95.1).
 # a 16-way blocked view, because `List.get` is o(INDEX) and this list is indexed 1,915 times per
 # RENDER. `ku_at` was 292,722 of the 805,127 list steps a 405-uop render took (MEASURED, `PARITY.md` §76).
-# Sixteen is the block that minimises `i/16 + i%16` at this length: MEASURED off the wire, the mean source
-# index costs 168.5 steps flat and 17.9 blocked. `chunks_of` builds it in one forward pass.
 def chunk_close(+cur: List<&2, KU>, +done: List<&2, List<&2, KU>>) -> List<&2, List<&2, KU>>:
   match cur:
     case Nil{}: done
@@ -1655,10 +1135,6 @@ def ku_at(+kus: List<&2, List<&2, KU>>, +i: U32) -> Maybe<&2, KU>:
   ku_at.go(List.get(&2, List<&2, KU>, kus, U32.to_nat(U32.shrn(i, 4n))), U32.to_nat(U32.and(i, 15)))
 
 # every `match` in this block has a parameter for its scrutinee, because Bend
-# REFUSES A COMPUTED VALUE: `match ku_at(kus, i):` IS REFUSED ("a match cannot
-# scrutinize a computed value"), AND SO IS A NESTED `match` ON A CALL. THE
-# `.go` shape is therefore the house style here: the helper takes the `Maybe`
-# as a parameter and the caller passes the call.
 def ku_op_at.go(m: Maybe<&2, KU>) -> O.Op:
   match m:
     case Some{k}: KU.op(k)
@@ -1682,33 +1158,6 @@ def ku_op_at(+kus: List<&2, List<&2, KU>>, i: U32) -> O.Op: ku_op_at.go(ku_at(ku
 # a match on two scrutinees compiles to nested tag comparisons (measured in the generated code:
 # `if (_x_0.$ === "OpsA") { if (_y_0.$ === "OpsA") ... }`), - SO THE AVERAGE COST IS TWO
 # COMPARISONS INSTEAD OF 152.
-#
-# - and this is a local spelling because `ops.bend`'s own `eq_op` is not mine to change (another
-# unit has an uncommitted edit in it), - and the 24 call sites in this file are.
-#
-# --- the op predicates, one per literal, and each is one comparison.
-#
-# --- why they exist, and it is measured. `eq_op` is a match on two scrutinees, and a
-# match in this language is a linear chain of tag comparisons -- 75 arms -- --- --- so
-# `eq_op(op, O.OpsADD{})` pays the chain position of `OpsADD` compares, which is 30 at
-# the enum's order. --- --- and at 18 of the 19 call sites the second argument is a
-# literal, --- --- --- so the question is *is this op's tag the constant `OpsADD`?* -- which is
-# one comparison when it is written as a match on the variable with the literal as the
-# ONLY ARM, WHICH IS WHAT `is_add(op)` IS.
-#
-# --- --- measured, in one program, on the same workload (the eleven ops the render sees, each
-# compared against eleven literals), by CPU time: `eq_op` 1537 us and the predicates
-# 293 us -- a ratio of 0.1906, so the predicates cost 80.9% less. --- --- --- and
-# the two forms' answers agree (measured, `same T`), so this is not a semantic change.
-#
-# --- --- and why a generic helper is not the shape: a `match` cannot scrutinize a computed
-# value ("give it its own def"), and a nested `match` on a call is refused too -- --- --- ---
-# so the literal must be its own arm, which is why there is one predicate per literal and not
-# ONE HELPER.
-#
-# --- --- AND FOUR OF THEM ALREADY EXIST (`is_index`, `is_cast`, `is_const`, `is_add`), SO
-# this is the house pattern and not a new one -- --- --- --- --- and `eq_op` is the
-# LEFTOVER THAT NONE OF THEM REPLACED.
 def is_and(op: O.Op) -> Bool:
   match op:
     case O.OpsAND{}: True{}
@@ -1969,10 +1418,6 @@ def ku_strips(+op: O.Op) -> Bool:
     Bool.or(is_xor(op), Bool.or(is_or(op), is_and(op))))
 
 # the walk -- the port of `cstyle.py:208-266`'s body. the state is six things
-# and they are six things because BEND has no mutable map: `r` (the name/text
-# map, INDEXED BY THE UOP'S POSITION), `kernel` (the emitted lines), `bufs` (the
-# kernel's arguments), `c` (the six prefix counters), `depth` (the indent) and
-# `name` (the kernel's name, from the SINK).
 
 def St.r(s: St) -> Rows:
   match s:
@@ -2001,8 +1446,8 @@ def St.name(s: St) -> String:
 def St.of(+r: Rows, +kernel: List<&2, String>, +bufs: List<&2, BArg>,
           +c: List<&2, U32>, depth: U32, name: String) -> St: St{r, kernel, bufs, c, depth, name}
 
-# `r` grows by one entry per uop, including the skipped ones, because `r` is
-# indexed by the uop's position and the positions of the later uops must not
+# `r` GROWS BY ONE ENTRY PER UOP, INCLUDING THE SKIPPED ONES, BECAUSE `r` IS
+# INDEXED BY THE UOP's POSITION AND THE POSITIONS OF THE LATER UOPS MUST NOT
 # MOVE.
 def st_put.r(+ps: List<&2, String>, n: U32, mode: Nat, +st: St) -> St:
   match mode:
@@ -2041,9 +1486,6 @@ def st_set(+st: St, i: U32, x: String) -> St: st_set.p(st, i, [x])
 # and `List.append([x], acc)` is o(1). - and `st_kernel` was the o(n) form, and it is called once
 # per emitted line. measured, the census of the `List.append` entry calls (the recursion excluded):
 # `st_kernel` 407 CALLS COPYING 82,039 ELEMENTS (MAX 404), `chunk_close` 49/1,176, `List_concat`
-# 2,897/3,890, and every other site under 1,000. - so `st_kernel` is 90% of the ~91,000 elements
-# copied a render, and `$List_append`'s self time is 0.979 ms a turn -- half the port's 1.99 ms.
-# - and the prepended list is reversed once, at the one reader that cares about the order (`:2983`).
 def st_kernel(+st: St, x: String) -> St:
   St.of(St.r(st), List.append(&2, String, [x], St.kernel(st)), St.bufs(st), St.c(st), St.depth(st), St.name(st))
 
@@ -2051,29 +1493,6 @@ def st_bufs(+st: St, x: BArg) -> St:
   St.of(St.r(st), St.kernel(st), List.append(&2, BArg, St.bufs(st), [x]), St.c(st), St.depth(st), St.name(st))
 
 # "NOTE: this relies on bufs dict preserving order" -- cstyle.py:275,
-# upstream's comment ON THE `bufs` HAND-BACK, AND IT IS A GOTCHA ABOUT
-# PYTHON'S DICT THAT THE PORT DOES NOT HAVE AND MUST NOT INHERIT BLINDLY.
-#
-# UPSTREAM'S `bufs` IS A `dict[UOp, tuple[str, tuple[UOp, bool]]]` AND
-# `_render` RETURNS `list(bufs.values())` -- AND THE ORDER OF THAT LIST IS
-# THE ORDER THE KERNEL'S ARGUMENTS ARE DECLARED IN. PYTHON 3.7+ DICTS
-# PRESERVE INSERTION ORDER, SO THE ORDER IS THE ORDER THE `Ops.PARAM` NODES
-# APPEAR IN THE WALK, AND THE WALK IS TOPOLOGICAL. UPSTREAM'S NOTE IS
-# SAYING: THIS ORDER IS NOT AN ACCIDENT AND NOT A SORT -- IT IS THE
-# INSERTION ORDER, AND THE EMITTED FUNCTION SIGNATURE DEPENDS ON IT.
-#
-# THE PORT'S `st_bufs` APPENDS, SO IT HAS THE SAME PROPERTY AND IT HAS IT
-# FOR THE SAME REASON: `List.append` PUTS THE NEW `BArg` AT THE END, SO THE
-# PORT'S `St.bufs` IS IN THE ORDER THE PARAMS WERE SEEN. THE PORT SAYS SO
-# HERE BECAUSE THE PROPERTY IS INVISIBLE IN A SINGLE-BUFFER KERNEL AND A
-# REVERSED ORDER WOULD STILL COMPILE.
-#
-# AND THE PORT'S ORDER IS NOT QUITE UPSTREAM'S, WHICH IS STATED RATHER THAN
-# PAPERED OVER: UPSTREAM'S LIST IS IN WALK ORDER, AND THE PORT'S WALK IS
-# ALSO TOPOLOGICAL, BUT THE PORT'S `_render` VISITS A `Params` ARM THROUGH
-# `_render.go`'s CHUNKED WALK, AND THE PARAM ARM IS REACHED IN WALK ORDER --
-# SO THE TWO AGREE, AND THE ROW THAT WOULD SEE IT IS THE KERNEL SIGNATURE
-# ROW, WHICH IS A STRING AND NOT A COUNT.
 
 def st_c(+st: St, +ix: U32) -> St:
   St.of(St.r(st), St.kernel(st), St.bufs(st),
@@ -2093,14 +1512,6 @@ def ku_indent.go(depth: Nat, acc: String) -> String:
     case 1n+p: ku_indent.go(p, String.concat([acc, "  "]))
 
 # THE CHILD COUNT -- cstyle.py:212:
-#   `child_count = Counter(v for ru in uops for v in ru.src)`
-# it is the histogram of "how many times is this uop a source", and it is the
-# WHOLE OF THE INLINE-vs-STATEMENT DECISION.
-#
-# IT IS COUNTED ON THE WIRE, NOT HERE. `List.get` is O(index) and `List.set` rebuilds the prefix, so
-# computing this list cost 104,946 list steps per 405-uop render and reading it back another 154,915 --
-# 32% of every `List.get` step the renderer takes (MEASURED, `PARITY.md` §75). It is a pure function of
-# `srcs`, Python has an array, and `KU.cc` makes the read a field access.
 def ku_indent(depth: U32) -> String:
   ku_indent.go(U32.to_nat(depth), "")
 
@@ -2109,12 +1520,10 @@ def ku_inline2a(+op: O.Op, k: KU, +kus: List<&2, List<&2, KU>>) -> Bool:
     Bool.or(Bool.or(is_index(op), is_shrink(op)),
       Bool.or(is_customi(op), is_refparam(op))))
 
-# `(u.op is Ops.LOAD and u.src[0].addrspace == AddrSpace.REG and child_count[u] == 1)`
 def ku_inline2b2a(+op: O.Op, +k: KU) -> Bool:
   Bool.and(Bool.or(is_cast(op), is_bitcast(op)),
     Bool.or(is_global(KU.addr(k)), is_local(KU.addr(k))))
 
-# `(u.op in {Ops.STACK, *(GroupOp.ALU-{Ops.WHERE}), Ops.CAST, Ops.BITCAST} and child_count[u] == 1)`
 def cc_at(k: KU) -> U32: KU.cc(k)
 
 def ku_src_is_reg.go(m: Maybe<&2, KU>) -> Bool:
@@ -2173,60 +1582,6 @@ def uops_to_dtypes.has(+x: DtN, +acc: List<&2, DtN>) -> Bool:
         uops_to_dtypes.has(x, t))
 
 # `render_vector_prefix` -- cstyle.py:302-306:
-#   `alignment = dt.itemsize if self.target.device == "CPU" else (...)`
-#   `vec = self._render_dtype(dt, count, AddrSpace.REG)`
-#   `return f"typedef {self.render_dtype(dt)} {vec} __attribute__((aligned({alignment}),ext_vector_type({count})));"`
-#
-# "round (down) to power of two (this is actually the default clang behavior)"
-# -- cstyle.py:311, upstream's comment ON THE ALIGNMENT. TWO FACTS IN IT AND
-# THE SECOND IS THE SURPRISE:
-#   * THE ALIGNMENT IS THE **PRODUCT** `dt.itemsize * count` ROUNDED **DOWN**
-#     TO A POWER OF TWO: `2**int(math.log2(dt.itemsize * count))`. THE ROUND
-#     IS DOWN AND NOT UP BECAUSE THE ATTRIBUTE IS A **MINIMUM** ALIGNMENT: A
-#     VECTOR OF 3 FLOATS IS 12 BYTES AND 8 IS THE LARGEST POWER OF TWO THAT
-#     DIVIDES 12, SO `aligned(8)` IS HONEST AND `aligned(16)` WOULD BE A
-#     LIE. A `log2` WITHOUT A FLOOR WOULD GIVE 16.
-#   * "THIS IS ACTUALLY THE DEFAULT CLANG BEHAVIOR" -- SO THE `aligned(...)`
-#     IS NOT THERE TO ASK FOR SOMETHING CLANG WOULD NOT DO. IT IS THERE
-#     BECAUSE CLANG'S DEFAULT IS THE **VECTOR'S OWN** ELEMENT ALIGNMENT AND
-#     NOT THE WHOLE-VECTOR ALIGNMENT, AND THE WHOLE-VECTOR ONE IS WHAT A
-#     `float4` LOAD ACTUALLY NEEDS. THE ATTRIBUTE IS AN OVERRIDE OF A
-#     DEFAULT THAT IS ALREADY RIGHT, NOT A FIX FOR A BROKEN ONE.
-#
-# ⚠ AND THIS USED TO BE A PORT DEFECT, AND IT IS FIXED. `ku_align` BELOW
-# TOOK NO `count` AND ANSWERED A CONSTANT `4` OFF-CPU, WHERE UPSTREAM
-# ANSWERS `2**int(math.log2(dt.itemsize * count))`. FOR A `float4` --
-# `itemsize` 4, `count` 4 -- UPSTREAM ANSWERS **16** AND THE PORT ANSWERED
-# **4**, SO THE ALIGNMENT WAS TOO SMALL FOR EVERY VECTOR WIDER THAN ONE
-# ELEMENT, AND TOO LARGE FOR A `bool` VECTOR (UPSTREAM ANSWERS `1` FOR
-# `dtypes.is_bool`, THE PORT ANSWERED `4`). THE DEFECT WAS LATENT: THE
-# `aligned(...)` CLAUSE APPEARS IN **NONE** OF THE CORPUS's 38 OUTPUTS
-# (MEASURED: `grep -rho "aligned([0-9]*)" runs/graphcmp/D/` IS EMPTY), SO
-# THE CORPUS COULD NOT SEE IT AND NO GRAPH's OUTPUT MOVED WHEN IT WAS
-# FIXED. THE GATE THAT SEES IT IS `gates/cstyle_render_census-gate.py`'s
-# `rvp_*` ROWS, WHICH DRIVE THE PORT's OWN `render_vector_prefix` AGAINST
-# CPython's REAL `render_vector_prefix`.
-#
-# THE TWO ARMS, AND WHY EACH IS WHAT IT IS:
-#   * CPU -> `dt.itemsize`. UPSTREAM'S `self.target.device == "CPU"` IS A
-#     WHOLE-VECTOR RULE THAT DOES NOT APPLY ON THE CPU, WHERE THE ELEMENT
-#     ALIGNMENT IS THE ONLY ONE THAT MATTERS. THE PORT's `cpu` FLAG IS THE
-#     SAME PREDICATE, THREADED IN.
-#   * OTHERWISE -> `1` FOR A `bool`, ELSE THE GREATEST POWER OF TWO THAT IS
-#     `<= dt.itemsize * count`. THE `bool` ARM IS UPSTREAM'S `dtypes.is_bool`
-#     TEST AND ANSWERS `1` REGARDLESS OF `count`, BECAUSE A `_Bool` VECTOR
-#     IS A BIT VECTOR AND ITS ALIGNMENT IS ONE BYTE.
-#
-# THE POWER OF TWO IS `U32.shln(1, U32.log2(n))`. `U32.log2` IS THE FLOOR
-# OF `log2` -- IT IS THE INDEX OF THE HIGHEST SET BIT -- SO `1 << log2(n)`
-# IS THE GREATEST POWER OF TWO `<= n`, WHICH IS EXACTLY WHAT UPSTREAM'S
-# `2**int(math.log2(n))` ANSWERS. MEASURED AGAINST CPython ON THE WHOLE
-# TABLE: `12 -> 8`, `3 -> 2`, `5 -> 4`, `6 -> 4`, `24 -> 16`, `28 -> 16`,
-# `20 -> 16`, `1 -> 1`, `2 -> 2`, `4 -> 4`, `16 -> 16`, `32 -> 32`. THE
-# PORT's OWN IDIOM FOR THIS IS `runtime/support/memory.bend`'s `shl1`
-# (`U32.shln(1, U32.to_nat(x))` THERE, BECAUSE THAT CALL SITE ALREADY HAD
-# A `U32` IN HAND), AND `frag_sz_max` THERE IS THE SAME FUNCTION UNDER A
-# DIFFERENT NAME: "THE BIGGEST POWER OF TWO `<= sz`".
 def ku_align(cpu: Bool, +dt: S.Dt, +count: U32) -> U32:
   Bool.pick(U32, cpu, S.Dt.itemsize(dt),
     Bool.pick(U32, S.Dt.is_bool(dt), 1, U32.shln(1, U32.log2(U32.mul(S.Dt.itemsize(dt), count)))))
@@ -2249,17 +1604,6 @@ def ku_range_name(+arg: KUArg) -> String:
   String.concat([axis_letter(KUArg.range_axis(arg)), "idx", range_str(KUArg.range_ids(arg))])
 
 # the text of one uop -- the port of `base_rewrite` (cstyle.py:11-77), for the
-# ops the CPU lane needs. the order is upstream's order, and the order is the
-# RULE: the CONST arms come BEFORE the generic CAST arm, and that is what
-# decides `56` AND NOT `(int)(56)`.
-#
-# `r` is the name/text map and it is indexed by the uop's position, because the
-# uop list is POST-ORDER. `rt` READS IT.
-# one `rt` and one `strip_parens`, not two of each. The old spelling was
-# `Bool.pick(String, cond, strip_parens(rt(r, h)), rt(r, h))`: STRICT, so `rt` ran twice -- and `rt` is a
-# `List.get` by src-to-current distance -- and `strip_parens` scanned the source even when its result was
-# discarded. The bool as a parameter means the scan happens only on the branch that keeps it (§39's cure).
-# MEASURED: the ALU catch-all is 0.55 ms of the render (`PARITY.md` §89) and this is its per-operand work.
 def ku_alu_srcs.go(+op: O.Op, k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows,                    +ss: List<&2, U32>, +acc: List<&2, List<&2, String>>) -> List<&2, List<&2, String>>:
   match ss:
     case Nil{}: acc
@@ -2291,8 +1635,9 @@ def ku_is_decl(+k: KU) -> Bool:
 def _render.plain(dev: U32, i: U32, +k: KU, kus: List<&2, List<&2, KU>>,
                   +st: St, +l: List<&2, String>, nm: String, ix: U32) -> St:
   +st0 = _render.pop(st, k)
-  # the semicolon is the whole difference, so it is chosen as a string (two literals, free) and the line is
-  # assembled ONCE. The previous spelling built two `st_kernel` calls and discarded one.
+  # the semicolon is the whole difference, so it is chosen as a string (two literals,
+  # free) and the line is assembled ONCE.  THE PREVIOUS SPELLING BUILT TWO
+  # `st_kernel` CALLS AND DISCARDED ONE.
   +st1 = st_kernel(st0, String.concat([ku_indent(St.depth(st0)), String.join(l, ""),
     Bool.pick(String, is_cast(KU.op(k)), ";", "")]))
   +st2 = st_c(st1, ix)
@@ -2309,8 +1654,6 @@ def ku_inline2b2(+op: O.Op, +k: KU) -> Bool:
 # `numel > 1` is applied here, not only at emit time, and the bytes are unchanged because the list has
 # ONE CONSUMER. `_render_defines.go` asks `U32.is_gt(DtN.n(h), 1)` and emits nothing for the rest, so a
 # pair with `n == 1` was collected, deduped and scanned to produce nothing. MEASURED (`PARITY.md` §117): the
-# shipped 405-uop kernel has 315 ALU-addr uops of which ONE has `numel > 1`, and the pass still spent 2,559
-# `has` calls and ~8,800 `DtN` accessor calls -- 18% of every call in the walk -- to emit ONE typedef row.
 def uops_to_dtypes.one(+k: KU, +acc: List<&2, DtN>) -> List<&2, DtN>:
   Bool.pick(List<&2, DtN>,
     Bool.and(Bool.and(is_alu_addr(KU.addr(k)), Bool.not(O.eq_dt(KU.dtype(k), S.void()))),
@@ -2322,7 +1665,6 @@ def ku_inline2b(+op: O.Op, +k: KU, +kus: List<&2, List<&2, KU>>) -> Bool:
 def ku_inline2(+op: O.Op, +k: KU, +kus: List<&2, List<&2, KU>>) -> Bool:
   Bool.or(ku_inline2a(op, k, kus), ku_inline2b(op, k, kus))
 
-# `(u.op is Ops.CAST and u.src[0].op is Ops.CONST) or u.op in {Ops.INDEX, Ops.SHRINK, Ops.CUSTOMI, Ops.REFPARAM}`
 def ku_inline(+op: O.Op, +k: KU, +kus: List<&2, List<&2, KU>>) -> Bool:
   Bool.and(Bool.or(Bool.not(is_cast(op)), U32.is_eq(KU.numel(k), 1)),
     ku_inline2(op, k, kus))
@@ -2334,15 +1676,6 @@ def BArg.image(b: BArg) -> Bool:
 # `uops_to_dtypes(uops)` and the four `any(...)` scans in the six `render_kernel`
 # overrides, each reduced to the Bool it is tested for. `nonfinite` is the CAST
 # of a non-finite CONST (cstyle.py:559) and `special` is `any(Ops.SPECIAL)`
-# (cstyle.py:561) -- both are one `any` in Python and one `Bool` here.
-#
-# `half_any` is a second half flag and not a typo. OpenCL tests
-# `any(uop.dtype == dtypes.f16 for uop in uops)` over EVERY uop (cstyle.py:349)
-# while CUDA and HIP test the ALU-FILTERED `used_dtypes` (cstyle.py:458, :558) --
-# and `uops_to_dtypes` drops anything that is not `AddrSpace.ALU`
-# (cstyle.py:113). MEASURED: a kernel whose only half is a half BUFFER gets
-# OpenCL's `#pragma` and NOT CUDA's `#include <cuda_fp16.h>`. One Bool would have
-# to be wrong for one of them, and `kern2H` is the row that says which.
 def barrier.of(+dev: U32) -> String:
   match dev:
     case 1: "__atomic_thread_fence(__ATOMIC_SEQ_CST);"
@@ -2353,23 +1686,6 @@ def barrier.of(+dev: U32) -> String:
     case _: ""
 
 # `float4` -- cstyle.py:136, :276, :329, :369, :429, :538. THE BASE IS `None`,
-# AND `""` IS NOT `None`: the `Ops.STACK` rule (cstyle.py:55-56) does
-# `self.float4.replace('float4', render_type(x))`, so `None` there is an
-# `AttributeError` and `""` would emit a bare `float4{...}` with no constructor.
-# THE ANSWER IS THE STRING `"None"`, and that is `dsl.bend`'s standing rule for an
-# ABSENT value rather than a refusal -- `_variant_suffix` answers a suffix or `None`,
-# and `dsl.bend:1553-1555` records that "an empty string is NOT the same answer, so the
-# port prints `None`". CPython prints `None` too (`str(None)`), so this row now AGREES
-# instead of being a declared divergence.
-#
-# what it still does not buy: the stack arm is not ported, so nothing reads it yet, and
-# `"None"` is still a string rather than an absence -- `.replace` on it is a no-op where
-# CPython raises `AttributeError`. That gap is named rather than papered over with a
-# `has_float4` Bool that nothing reads.
-#   TODO(p3) cstyle.py:55-56  `base_rewrite`'s `Ops.STACK` arm. It needs
-#   `float4` to be `None`-distinguishable, which is the one place a `Data` cannot
-#   carry the answer and a device TAG cannot either: the base is the only `None`
-#   and the tag already says it. Unblocked when the arena rewrite lands.
 def render_dtype(+dev: U32, +d: S.Dt, sz: U32, +a: S.Addr, mutable: Bool, override_ptr: Bool, img: Bool) -> String:
   Bool.pick(String, img, rd_image(mutable),
     String.concat([rd_prefix(dev, a), rd_body(dev, d, sz), rd_suffix(a, override_ptr)]))
@@ -2382,7 +1698,7 @@ def render_dtype_legacy(+dev: U32, +d: S.Dt) -> String:
   render_dtype(dev, d, 1, S.AReg{}, True{}, False{}, False{})
 
 # `render_type` / `render_ptr` / `render_access` / `render_cast` -- cstyle.py:
-# 192-200. Four defs, and together they are the pointer/cast vocabulary every
+# 192-200.  Four defs, and together they are the pointer/cast vocabulary every
 # load and store is written in.
 #
 #     def render_type(self, u): return self._render_dtype(u.dtype, u.max_numel(), u.addrspace,
@@ -2394,17 +1710,16 @@ def render_dtype_legacy(+dev: U32, +d: S.Dt) -> String:
 #     def render_access(self, u): return f"*{self.render_ptr(u)}"
 #     def render_cast(self, u, val): return f"({self.render_type(u)})({val})"
 #
-# `render_type` is the one that needs the FOLD (dtype, addrspace, shape, op) and
-# so it is where wall (a) bites; it is ported with those as PARAMETERS, which is
-# the same argument as `_render_dtype` and for the same reason. The Python
-# signature takes a `u`, and the values Python reads off it are exactly these
-# four, so the port's signature is the same set of facts with the read moved to
-# the caller -- which is where the fold lives.
+# `render_type` IS THE ONE THAT NEEDS THE FOLD (dtype, addrspace, shape, op) AND
+# SO IT IS WHERE WALL (a) BITES; IT IS PORTED WITH THOSE AS PARAMETERS, WHICH IS
+# THE SAME ARGUMENT AS `_render_dtype` AND FOR THE SAME REASON.  THE PYTHON
+# SIGNATURE TAKES A `u` AND THE VALUES PYTHON READS OFF IT ARE EXACTLY THESE
+# FOUR, SO THE PORT's SIGNATURE IS THE SAME SET OF FACTS WITH THE READ MOVED TO
+# THE CALLER -- WHICH IS WHERE THE FOLD LIVES.
 #
-# `override_ptr=u.op is Ops.INDEX and u.addrspace is AddrSpace.REG` is the one to
-# watch: a REG-space INDEX is a VECTOR REGISTER and renders as a pointer, so
-# `render_type` of a REG INDEX is `float4*` and not `float4`. That is measured
-# and it is a gate row on its own.
+# `override_ptr=u.op is Ops.INDEX and u.addrspace is AddrSpace.REG` IS THE ONE TO
+# WATCH: A REG-SPACE INDEX IS A VECTOR REGISTER AND RENDERS AS A POINTER, SO
+# `render_type` OF A REG INDEX IS `float4*` AND NOT `float4`.  THAT IS MEASURED
 
 def render_type(+dev: U32, +d: S.Dt, +numel: U32, +a: S.Addr, op: O.Op, img: Bool) -> String:
   render_dtype(dev, d, numel, a, True{}, Bool.and(is_index(op), is_reg(a)), img)
@@ -2419,21 +1734,6 @@ def render_type(+dev: U32, +d: S.Dt, +numel: U32, +a: S.Addr, op: O.Op, img: Boo
 # UPSTREAM'S ONE-LINE FRAMING OF THE SAME THING -- "the address of an access,
 # vector-cast if the access reads/writes more lanes than the pointer's scalar
 # type" (cstyle.py:206) -- IS WORTH THE PORT'S ATTENTION BECAUSE IT SAYS
-# WHY THE FUNCTION EXISTS AT ALL. `render_ptr` IS NOT A CAST HELPER: IT IS
-# THE **ADDRESS** OF AN ACCESS, AND THE CAST IS THERE ONLY BECAUSE THE
-# ACCESS'S WIDTH AND THE POINTER'S WIDTH CAN DISAGREE.
-#
-# THE DISAGREEMENT HAS TWO SOURCES AND UPSTREAM'S SENTENCE NAMES ONE OF
-# THEM ("MORE LANES THAN THE POINTER'S SCALAR TYPE" -- THE `max_numel() > 1`
-# HALF) AND NOT THE OTHER (THE DTYPE HALF). THE PORT KEEPS BOTH AND NAMES
-# THEM `vec` AND `diff` ABOVE, WHICH IS WHY THE PORT'S ARM NAMES ARE
-# DIFFERENT FROM UPSTREAM'S SENTENCE.
-#
-# AND THE POINT OF THE WHOLE THING: A CAST POINTER IS NOT FREE, SO THE CAST
-# IS ONLY EMITTED WHEN IT IS NEEDED. A PORT THAT ALWAYS CAST WOULD BE RIGHT
-# ON EVERY WIDE ACCESS AND RIGHT ON EVERY WIDE ACCESS THAT IS **NOT** AN
-# ACCESS -- AND IT WOULD PUT A `((float*)(buf))` IN EVERY SINGLE-SCALAR LOAD
-# OF EVERY KERNEL. THAT IS WHY THE `else` ARM IS THE BARE NAME.
 def render_ptr(+dev: U32, +d: S.Dt, +numel: U32, +a: S.Addr, sdt: S.Dt, +name: String, op: O.Op, img: Bool) -> String:
   Bool.pick(String, Bool.or(U32.is_gt(numel, 1), Bool.not(O.eq_dt(d, sdt))),
     String.concat(["((", render_dtype(dev, d, numel, a, True{}, True{}, img), ")(", name, "))"]), name)
@@ -2448,174 +1748,11 @@ def render_cast_p(+dev: U32, +d: S.Dt, numel: U32, +a: S.Addr, op: O.Op, img: Bo
   List.concat(&2, String, [[String.concat(["(", render_type(dev, d, numel, a, op, img), ")("])], val, [")"]])
 
 # `render_index` -- cstyle.py:168-173. SIX branches in Python and they reduce to
-# TWO, and the reduction is the interesting part of this def:
-#
-#     if buf.addrspace == AddrSpace.ALU:
-#       if not (idx.op is Ops.CAST and idx.src[0].op is Ops.CONST): return f"({self[buf]})[{self[idx]}]"
-#       return self[buf]+(f"[{idx.src[0].val}]" if buf.max_numel() > self.gep_arr_threshold
-#                         else f".{'xyzwabcd'[idx.src[0].val]}")
-#     return f"({self[buf]}+{strip_parens(self[idx]) if idx.arg == Ops.ADD else self[idx]})"
-#
-# the alu branch has three outcomes, not two. The "this is lane access in c"
-# comment above it covers the array form, but a CONST index BELOW the threshold
-# is rendered as a SWIZZLE -- `buf.x` -- and that is neither `buf[i]` nor
-# `buf[0]`. `gep_arr_threshold` decides which, and it is read in the direction
-# that is easy to get backwards: above it, index; at or below it, swizzle. So
-# Clang's 0 means a ONE-ELEMENT buffer still gets `.x` (0 > 0 is false) and
-# CUDA's 8 means an EIGHT-ELEMENT buffer still gets `[0]` (8 > 8 is false). Both
-# are measured and both are gate rows.
-#
-# `'xyzwabcd'[val]` IS A STRING INDEX and a CONST's value is a `U32`. A value of
-# 8 or more is an `IndexError` in Python; the port's `String.get` is total with a
-# default, and the default is the FIRST letter. Stated because it is a
-# difference, not because it is reachable -- tinygrad never swizzles past `d`.
 
 def wmma_name(+a: O.Arg, dout: S.Dt) -> String:
   wmma_name_of(wmma_dims.of(a), wmma_in.of(a), dt_name(dout))
 
 # `uops_to_dtypes` -- cstyle.py:112-113.
-#
-#     return dedup((u.dtype, u.max_numel()) for u in uops if u.addrspace in (AddrSpace.ALU, None) and u.dtype != dtypes.void and u._shape is not None)
-#
-# three filters and they are not independent. `addrspace in (ALU, None)` is the
-# one that keeps a REGISTER value out (a `val0` on a GPU is ALU, a `gid` is
-# REG), `dtype != void` drops a SINK, and `_shape is not None` drops a node the
-# fold could not shape. The port's `addr` is `S.Addr` and Python's `None` is not
-# one of its four values -- it is what `fold.addr` answers for a node whose
-# sources disagree -- so the port's filter is `ALU` alone and the `None` arm is
-# the `TODO(p3)` at the foot.
-#
-# `dedup` RETAINS LIST ORDER (helpers.py:23, `list(dict.fromkeys(x))`) and the
-# order is the gate, because the RESULT FEEDS `ClangRenderer._render_defines`
-# and the `typedef`s come out in it.
-# `uops_to_dtypes` ITSELF IS NOT HERE, and the two filters it applies are not
-# separate defs either: both are already one Bool each in the `Uses` record
-# above (`is_alu_addr` is the ALU filter and `is_void` is `dtype != dtypes.void`),
-# so a def per filter would be a second spelling of a field.
-#   TODO(p3) cstyle.py:110-113  `uops_to_dtypes`. Needs the fold (wall (a)); its
-#   result ORDER feeds `ClangRenderer._render_defines`, so it is not a set.
-# `render_kernel` -- cstyle.py:154-166. THE function that assembles a whole
-# kernel, and the only place in this file that reads nine options at once.
-#
-#     buftypes = [(name, ("volatile_ " if u.arg.volatile_ else "")+
-#                    (self.var_prefix if u.addrspace == AddrSpace.ALU else "")+
-#                    self._render_dtype(u.dtype, sz=1, addrspace=u.addrspace, mutable=mutable, shape=u._shape)+
-#                    (self.var_suffix if u.addrspace == AddrSpace.ALU else self.buffer_suffix))
-#                for name,(u,mutable) in bufs]
-#     local_dims = [u.src[0] for u in uops if u.op is Ops.SPECIAL and u.arg[0] == "l"]
-#     launch_bounds = prod([d.vmax for d in local_dims])
-#     prg = ''.join([f"{self.kernel_typedef.format(launch_bounds=launch_bounds)} {function_name}(",] +
-#               [', '.join([f'{t} {name}' for name,t in buftypes] + self.extra_args)] +
-#               [") {\n" + tmp] + ['\n'.join(kernel), "\n}"])
-#     return prg if prefix is None else "\n".join(prefix)+f"\n{prg}"
-#
-# five things, and the third is the one that says a dropped literal is a dropped
-# LITERAL RATHER THAN A COMPILE ERROR:
-#   * `launch_bounds = prod([d.vmax for d in local_dims])` and `prod(())` is 1 --
-#     so a kernel with NO local SPECIAL gets `__launch_bounds__(1)`, not 0. The
-#     gate's `kern nolocal` row is exactly that case, and a reader that started
-#     the accumulator at 0 would emit `(0)`.
-#   * `prefix is None` is the WHOLE BRANCH, and `[]` is not `None`: an empty
-#     prefix list must NOT gain a leading newline. Metal's prefix is
-#     non-empty and CUDA's is four lines, so the two cases both occur.
-#   * `extra_args` is Metal's THREE lines (cstyle.py:372) and it is appended to
-#     the SAME `', '.join` as the buffer types, so Metal's kernel signature is
-#     `kernel void E_4(device float* data0_4, constant args_t& args
-#     [[buffer(0)]], uint3 gid [[...]], uint3 lid [[...]])`. The port takes
-#     `extra_args` as a `List<&2, String>` and joins it into the same list.
-#   * `launch_bounds` comes from `d.vmax` -- a SYMBOLIC maximum, and the
-#     `TODO(p3) ops.py:1092 symbol=UOp.vmax` wall again. It is a `U32` PARAMETER here, and the
-#     SPECIAL's `vmax` on a linearized kernel is its CONST end.
-#   * `kernel_typedef.format(launch_bounds=..)` is a `str.format`, and there is no
-#     `format` in base.bend, so the `{launch_bounds}` FIELD is substituted by a
-#     split on the literal and a join -- `render.bend`'s shape for a Python
-#     f-string the port cannot evaluate.
-# `local_dims = [u.src[0] for u in uops if u.op is Ops.SPECIAL and u.arg[0]=="l"]`
-# and then `prod([d.vmax ...])`: `launch_bounds` is a `U32` PARAMETER above, and
-# this is where it would be computed. NEITHER HALF IS PORTED and the reason is
-# the same on both sides: the fold (wall (a)) owns the uop list, and `d.vmax` is
-# the SYMBOLIC maximum that is `TODO(p3) ops.py:1092 symbol=UOp.vmax`. The SPECIAL filter itself
-# is one string test on the arg -- `arg[0]` of `("l", 0, "lidx0", "l")` is `"l"`
-# -- so it is a `head_char` over an `AStr` once the arena is walkable, and the
-# gate's `kern lb 1` rows are the no-local case it has to agree with.
-#   TODO(p3) cstyle.py:162 symbol=render_kernel, :163 -- BLOCKED. needs `local_dims` (py:162) and `launch_bounds` (py:163) -- two kernel-shape helpers: MEASURED, both NO DEF under `cstyle.bend` (comments excluded). They are the last two `TODO` markers left in this file's wall list.
-#
-# landed 2026-10-27. `_render` and `render_kernel` are here. what follows is
-# the port, and the two paragraphs that say what it is.
-#
-# WHAT `_render` DOES UPSTREAM -- `tinygrad/renderer/cstyle.py:208-266`.
-#
-#     def _render(self, uops:list[UOp]) -> tuple[str, list[str], list[tuple[str,tuple[UOp,bool]]]]:
-#
-# IT IS THE UOP LIST -> C BODY RENDERER. It takes the uop list and answers
-# THREE THINGS: the kernel's NAME, the kernel BODY as a list of source LINES,
-# and the BUFFER list -- the kernel's ARGUMENT LIST. It is ONE left-to-right
-# walk (`for u in uops:`, :221) and per uop it does four things:
-#
-#   * it SKIPS the uops that render to nothing (:222-223): `NOOP`, `CONST`,
-#     `CUSTOM_FUNCTION`, and an empty `STACK`;
-#   * it ALIASES `AFTER` onto its first source (:224-227): `r[u] = r[u.src[0]]`;
-#   * it NAMES the uop (:238-244): a `SPECIAL` names itself, a `RANGE` names
-#     itself `f"{axis_letters[u.axis_type]}idx{range_str(u)}"`, and everything
-#     else takes a PREFIX out of `{WMMA:"wmma", BUFFER:"buf", CAST:"cast",
-#     BITCAST:"cast", STACK:"cast", INDEX:"bidx", LOAD:"val"}` and otherwise
-#     `"alu"`, with a PER-PREFIX COUNTER, so the second ALU is `alu1`;
-#   * and it RENDERS it with the `base_rewrite` matcher (:11-77), deciding
-#     INLINE vs STATEMENT by a `child_count` HISTOGRAM (:212,
-#     `Counter(v for ru in uops for v in ru.src)`): a uop used EXACTLY ONCE is
-#     INLINED into its consumer, and a uop used TWICE OR MORE becomes a
-#     STATEMENT `"{type} {name} = {text};"` at the current INDENT DEPTH
-#     (:249-262). The depth is a counter: `IF` and `RANGE` push a level,
-#     `ENDIF`/`END`/`BACKEDGE` pop one (:249, :262), and every emitted line is
-#     prefixed with `"  "*depth` (:260).
-#
-# the `r` map is one map with two jobs, and that is the load-bearing detail:
-# `r[u]` is the NAME before the rewrite and the TEXT after it, but only in the
-# INLINE case (:255). In the STATEMENT case `r[u]` STAYS THE NAME, so a later
-# uop that reads `r[u]` reads `"alu0"`, not the text. The PORT's `r` IS A LIST
-# indexed by the uop's position, because the list is post-order (every uop's
-# srcs sit at a lower index) -- which is the same property
-# `.agents/slop/cpuseam/`'s oracle relies on.
-#
-# WHAT `render_kernel` DOES UPSTREAM -- `tinygrad/renderer/cstyle.py:155-167`.
-#
-#     def render_kernel(self, function_name:str, kernel:list[str], bufs:list[tuple[str,tuple[UOp,bool]]], uops:list[UOp], prefix=None) -> str:
-#
-# IT IS THE KERNEL-BODY ASSEMBLER: it takes the three things `_render`
-# answered and emits the C FUNCTION. It builds each buffer's TYPE from the
-# device's `var_prefix`/`buffer_prefix`/`buffer_suffix` and `_render_dtype`
-# (:159-161), computes `launch_bounds = prod([d.vmax for d in local_dims])`
-# where the `local_dims` are the `SPECIAL`s with axis `"l"` (:162-163) -- and
-# `prod(())` is 1, NOT 0 (:1338-1341) -- and writes
-# `f"{kernel_typedef} {function_name}({', '.join(buf_types + extra_args)}) {{\n{tmp}\n{body}\n}}"`
-# (:164-166), prefixing the whole thing with `prefix` when `prefix` is not
-# `None` -- and `[]` is not `None`, so an EMPTY prefix list must NOT gain a
-# leading newline (:167).
-#
-# AND `ClangRenderer` OVERRIDES IT (:312-314): the C it emits carries the
-# VECTOR TYPEDEFS (`typedef float float2 __attribute__((aligned(4),
-# ext_vector_type(2)));`) BEFORE the function, and they come from
-# `_render_defines` (:308) -> `uops_to_dtypes` (:110-111) ->
-# `render_vector_prefix` (:302-306). `uops_to_dtypes` KEEPS ITS LIST ORDER
-# (`dedup` is `list(dict.fromkeys(x))`, helpers.py:23) and the ORDER IS THE
-# GATE, because the typedefs come out in it.
-#
-# what they must do here. the same two functions, over the port's own uop
-# representation. and the derived facts travel with the uop, which is what
-# `BArg` ALREADY DOES FOR THE BUFFER ARGUMENTS (this file's :131-146: "they
-# arrive as records the CALLER fills"). THE FOLD CANNOT SUPPLY THEM: wall
-# (a) (this file's :49-54) says `F.fold.dt` answers `None` for `Ops.SHRINK`,
-# `Ops.LOAD` and every ALU above one, so `render_type` cannot be run end to end
-# on a REAL kernel, and the REAL kernels are what `render_kernel` is FOR.
-#
-# - THE SPELLINGS REUSED, BY NAME: `render_dtype` (:780), `render_type`
-# (:828), `render_ptr` (:837), `render_access` (:841), `render_cast` (:844),
-# `render_buffer` (:1013), `code_for_op.of` (:1206), `code_for_workitem.g`
-# (:1241), `type_map.of` (:620), `kernel_typedef.of` (:346),
-# `buffer_prefix.of` (:352), `buffer_suffix.of` (:383), `var_prefix.of` (:391),
-# `var_suffix.of` (:396), `smem_prefix.of` (:364), `smem_align.of` (:375),
-# `float4.of` (:445), `gep_arr_threshold.of` (:470), `infinity.of` (:405),
-# `nan.of` (:410), `barrier.of` (:418), `H.strip_parens`.
 
 def ku_const_val(+kus: List<&2, List<&2, KU>>, i: U32) -> U32: ku_const_val.go(ku_const_int_at(kus, i))  # =========================================================================== # THE CONST-OF-A-CONST CAST -- cstyle.py:25-37. THE ARMS, IN ORDER:
 #   1. a FLOAT dtype and a NON-FINITE value -> `(INFINITY)` / `(NAN)` / `(-INFINITY)`
@@ -2630,12 +1767,6 @@ def ku_const_val(+kus: List<&2, List<&2, KU>>, i: U32) -> U32: ku_const_val.go(k
 #  10. EVERYTHING ELSE -> `{val}`
 # ARM 1 IS A `None` FOR A FINITE FLOAT, so arm 2 takes it, and arm 10 takes
 # every INTEGER: THAT is why the port's `i32` const renders as `56` AND NOT
-# `(int)(56)`, and it is the FIRST thing a port gets wrong.
-#
-# measured 2026-10-27: the five upstream CPU kernels have no FLOAT CONST at
-# ALL (the census is over `.agents/slop/cpuseam/uops/*.rows`: 100 `const`
-# rows, 0 with a `.` in the value), so the FLOAT ARMS ARE NOT EXERCISED BY
-# the oracle and are named as a gap rather than claimed.
 def ku_cast_wrapped(dev: U32, d: S.Dt, v: String) -> String:
   String.concat(["(", render_cast(dev, d, 1, S.Aalu{}, O.OpsCAST{}, False{}, v), ")"])
 
@@ -2643,11 +1774,6 @@ def ku_cast_wrapped(dev: U32, d: S.Dt, v: String) -> String:
 # FOUR arms of the chain below and `Bool.pick` evaluates every arm, so the port was rendering the same cast
 # four times per integer constant and using one -- and a cast render is a `render_cast` -> `render_dtype`,
 # i.e. a whole dtype render each time. MEASURED in `PARITY.md` §34.
-# one arm builds one string; the chain built nine and threw eight away. `Bool.pick` is strict, so the
-# old spelling evaluated `s + "l"`, `s + "ul"`, `U32.show(lo) + "u"` and `ku_cast_wrapped` for EVERY integer
-# constant and kept one. MEASURED (`PARITY.md` §98): CAST is the renderer's most expensive class at 0.89 ms
-# of a 4.7 ms turn, 19%, and this is its per-constant work. A Nat code answers the dispatch and `match` runs
-# exactly one arm -- §39's cure, on the arm that runs.
 def dtw(+d: S.Dt) -> Nat:
   Bool.pick(Nat, O.eq_dt(d, S.int64()), 0n,
     Bool.pick(Nat, O.eq_dt(d, S.uint64()), 1n,
@@ -2684,18 +1810,10 @@ def ku_const_cast_int_at(+s: String, +dt: S.Dt, +dev: U32, k: KU, +i: H.I64) -> 
 # the decimal is computed once and passed in, and that is a measured change. `Bool.pick` is strict here,
 # so every arm of the chain below is EVALUATED and one is chosen: this def used to call `H.i64_dec(i)` SEVEN
 # times per integer constant, six of whose results were discarded. MEASURED on the shipped path
-# (`PARITY.md` §33): with the decimal hoisted the 405-uop render drops by the amount in §33, and the C is
-# byte-identical because the four redundant conversions were computing the same string.
 def ku_const_cast_int(+dt: S.Dt, +dev: U32, k: KU, +i: H.I64) -> String:
   ku_const_cast_int_at(H.i64_dec(i), dt, dev, k, i)
 
 # A NON-FINITE FLOAT IS NOT `repr(v) + "f"`. `cstyle.py:26` spells the const as
-# `f"({ctx.render_cast(x, ctx.nan if math.isnan(v) else ctx.infinity if v > 0 else f'-{ctx.infinity}')})"`,
-# so upstream emits `((float)(__builtin_inff()))` / `((float)(-__builtin_inff()))` /
-# `((float)(__builtin_nanf("")))`. The port emitted `U.f32_repr(f) ++ "f"`, which is `inff` and
-# `-inff` -- UNDECLARED IDENTIFIERS. MEASURED 2026-11-03: `exp`, `log2` and `sin` fail to COMPILE on
-# `use of undeclared identifier 'inff'`, and the rendered C is 3406 B against upstream's 3742 B.
-# `infinity.of` / `nan.of` (line 419) already carry the two `__builtin_` spellings, so this reuses them.
 def f32_nonfinite(+f: F32) -> Bool: U32.is_eq(U32.and(F32.bits(f), 2139095040), 2139095040)
 def f32_is_nan(+f: F32) -> Bool:
   Bool.and(f32_nonfinite(f), Bool.not(U32.is_eq(U32.and(F32.bits(f), 8388607), 0)))
@@ -2714,11 +1832,6 @@ def ku_const_cast_f32(+dt: S.Dt, +dev: U32, k: KU, +f: F32) -> String:
           Bool.pick(String, O.eq_dt(d, S.half()), ku_cast_wrapped(dev, d, String.concat([U.f32_repr(f), "f"])),
             Bool.pick(String, O.eq_dt(d, S.bfloat16()), ku_cast_wrapped(dev, d, String.concat([U.f32_repr(f), "f"])),
               # THE FALLBACK IS BARE, NOT CAST-WRAPPED. cstyle.py:39 is
-              # `(UPat.cvar("c").cast(), lambda ctx,c: str(c.val))` -- the DEFAULT arm writes the value
-              # with no cast at all. MEASURED 2026-11-03, found by extending ksweep to f64: upstream emits
-              # `((double)(val0[0]))*2.0` and the port emitted `*((double)(2.0))`, one divergence in 37
-              # kernels. `double` is the only dtype that reaches this arm (f32 -> `f`, half/bf16 -> a
-              # cast of `{val}f`, fp8 -> the same), which is why nothing caught it before.
               U.f32_repr(f)))))
 
 # THE GENERIC CAST: `f"({ctx.render_cast(x, ctx[x.src[0]])})"` (cstyle.py:40).
@@ -2727,23 +1840,6 @@ def ku_cast_generic(dev: U32, +k: KU, +r: Rows) -> List<&2, String>:
     False{}, rtp(r, KU.src0(k))), [")"]])
 
 # `render_index` -- cstyle.py:169-174. THE `KU`-WORLD TWIN OF THIS FILE'S
-# `render_index` (:982), AND THE DIFFERENCE IS THE INPUT: the arena-bound one
-# reads the INDEX's arg and its CONST index OUT OF AN `O.Arena`, and the `KU`
-# LIST CARRIES BOTH. The TEXT is the same, arm for arm.
-#
-#     def render_index(self, x:UOp, buf:UOp, idx:UOp):
-#       if buf.addrspace == AddrSpace.ALU:
-#         if not (idx.op is Ops.CAST and idx.src[0].op is Ops.CONST): return f"({self[buf]})[{self[idx]}]"
-#         return self[buf]+(f"[{idx.src[0].val}]" if buf.max_numel() > self.gep_arr_threshold else f".{'xyzwabcd'[idx.src[0].val]}")
-#       return f"({self[buf]}+{strip_parens(self[idx]) if idx.arg == Ops.ADD else self[idx]})"
-#
-# three arms and the first is the one that decides `val1[0]`:
-#   * the ALU arm with a CONST-cast index is `buf[idx]`, and `buf[idx]` NOT
-#     `buf.x` ONLY because CLANG's `gep_arr_threshold` is 0 (cstyle.py:283) and
-#     the buffer's element count is 2, so `2 > 0`;
-#   * the ALU arm with any OTHER index is `(buf)[idx]`;
-#   * the GLOBAL arm is `(buf+idx)`, and the index's parens are stripped ONLY
-#     when the index's OWN arg is `Ops.ADD`.
 
 def ku_const_cast_flt.go(m: Maybe<&1, F32>, dev: U32, +k: KU, +r: Rows) -> List<&2, String>:
   match m:
@@ -2818,16 +1914,6 @@ def ku_text_cast(+dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> L
   ku_const_cast(dev, k, kus, r)
 
 # `BITCAST` -- cstyle.py:41-43 (the BASE's two rules), :338 (OpenCL `as_<dt>`), :386
-# (Metal `as_type<dt>`) and :445 (HIP `tg_bitcast<dt>`). FOUR SPELLINGS OF ONE OP, and the
-# three device ones are `string_rewrite` arms, which is why they win over `base_rewrite`; each
-# returns None for a GLOBAL/LOCAL addrspace, and THAT is what falls through to the base's first
-# rule, `(({_render_dtype(dtype, addrspace)})({val}))`.
-#
-# the ku renderer had no arm at all and therefore fell to the alu catch-all, which never saw an
-# ALU spelling for the op and answered `UNHANDLED(Ops.BITCAST)`. MEASURED on `bitcast(a)+1`:
-# CPython renders `as_type<float>((uint)((as_type<uint>((float)(val0.x))+1u)))` and the port
-# rendered nothing that compiles. The op is already on the INLINE lists (:1573, :1686), so this
-# arm only has to say what the text is.
 def ku_dt_at.go(m: Maybe<&2, KU>) -> S.Dt:
   match m:
     case Some{k}: KU.dtype(k)
@@ -2862,10 +1948,6 @@ def bitcast_text(+dev: U32, +a: S.Addr, +d: S.Dt, +sd: S.Dt, +s: String) -> Stri
     case _: bitcast_named(dev, d, sd, s)
 
 # `f"(({ctx.param_type(x)})({ctx[x.src[1]]}))"` (cstyle.py:44), where `param_type` is
-# `_render_dtype(x.dtype, 1, x.addrspace, mutable=True, override_ptr=x.addrspace != ALU)` (cstyle.py:277):
-# the pointer spelling comes from the ADDRSPACE, never from a buffer. REFPARAM exists only since the
-# packed-args ABI (`codegen/__init__.py:422-427`), which rewrites every non-ALU param read to
-# `REFPARAM(p.src[0], <load from args>)`.
 def ku_text_refparam(+dev: U32, +k: KU, +r: Rows) -> String:
   String.concat(["((", render_dtype(dev, KU.dtype(k), 1, KU.addr(k), True{}, Bool.not(is_alu_addr(KU.addr(k))), False{}),
     ")(", String.join(rtp(r, KU.src1(k)), ""), "))"])
@@ -2911,15 +1993,6 @@ def ku_stack_srcs(+k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> List<&2, St
   ku_stack_srcs.go(KU.srcs(k), kus, r, Nil{})
 
 # cstyle.py:52-54 -- `f"{ctx.float4.replace('float4', ctx.render_type(x))}"`. THE REPLACE IS
-# the whole point and it was missing: the device's maker is spelled with the literal
-# `float4`, and the STACK's OWN type replaces it, so a two-lane STACK is `float2(...)` and
-# NOT `float4(...)`. MEASURED: without it the port's WMMA call read
-# `__WMMA_8_8_8_f32_f32(val0, val4, float4(...))` against upstream's `float2(...)` -- one
-# token, sixteen lines, the last difference in the kernel.
-# `String.replace` is a wall here (`String.split` splits on ONE CHAR), so the five device
-# spellings in `float4.of` are answered directly; each contains exactly one `float4`
-# token, in the position below, which is why this is the same answer and not a rewriting
-# of it. The `_` arm is `float4.of`'s `"None"`, which holds no token to replace.
 def float4_with(+dev: U32, +t: String) -> String:
   match dev:
     case 1: String.concat(["(", t, ")"])
@@ -2958,12 +2031,6 @@ def ku_text.go(op: O.Op, dev: U32, i: U32, k: KU, +kus: List<&2, List<&2, KU>>, 
 
 # `for (;;) {` FOR A VOID RANGE AND `for ({dt} {name} = 0; {name} < {src0}; {name}++) {`
 # OTHERWISE -- cstyle.py:17-19.
-# `UPat(Ops.STACK, name="x")` -- cstyle.py:52-54:
-#   `f"{ctx.float4.replace('float4', ctx.render_type(x))}" + f"{ctx.float4_style[0]}{','.join([ctx[y] for y in x.src])}{ctx.float4_style[1]}"`
-# cstyle.py:47 -- `f"{ctx.code_for_workitem[x.arg[0]](x.arg[-1])}; /* {(x.src[0]).render()} */"`.
-# IT IS A STATEMENT, not an expression: the workitem id, a `;`, and a comment holding the
-# SPECIAL's SOURCE's rendered text (`/* 32 */`). `code_for_workitem.g` already answers the
-# id and already refuses base/Clang, which is what CPython's empty dict does.
 def ku_text_special(+dev: U32, +k: KU, +r: Rows) -> String:
   String.concat([code_for_workitem.g(dev, KUArg.special_axis(KU.arg(k)), KUArg.special_n(KU.arg(k))),
     "; /* ", rt(r, KU.src0(k)), " */"])
@@ -2972,36 +2039,6 @@ def ku_text(dev: U32, i: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) ->
   ku_text.go(KU.op(k), dev, i, k, kus, r)
 
 # THE WRITABLE PARAMS -- cstyle.py:214-215:
-#   `writable_params = {u for u in UOp.sink(*[u.src[0] for u in uops if u.op is Ops.STORE]).toposort(...) if u.op is Ops.PARAM}`
-# i.e. the params a STORE reaches. the port walks backward from each STORE's
-# BUFFER through the indexing ops, which is the same set.
-#
-# "find which PARAMs are stored to with a single toposort" -- cstyle.py:223,
-# upstream's comment ON THIS LINE, AND THE ADJECTIVE IS THE POINT: **A
-# SINGLE** TOPOSORT. THE OBVIOUS READING IS "ONE TOPOSORT PER STORE", AND
-# THAT IS NOT WHAT UPSTREAM DOES: IT SOCKETS ALL THE STORES' ADDRESSES INTO
-# ONE `UOp.sink(...)` AND TOPOSORTS THAT ONCE.
-#
-# WHY IT MATTERS AND IT IS NOT A MICRO-OPTIMISATION: A TOPOSORT IS NOT A
-# SET OPERATION, IT IS A WALK, AND A WALK HAS A **FUEL BOUND**. SOCKETS ALL
-# THE STORES INTO ONE SINK AND THE WALK IS O(SIZE OF THE WHOLE GRAPH); WALK
-# EACH STORE SEPARATELY AND IT IS O(SIZE OF THE GRAPH) **PER STORE**, SO A
-# KERNEL WITH k STORES IS k TIMES THE WORK. UPSTREAM'S SINGLE SINK IS THE
-# CHEAP FORM.
-#
-# AND THE FILTER IS NOT A FILTER ON THE RESULT BUT ON THE **WALK**: THE
-# `toposort` PREDICATE IS `lambda u: u.op not in {Ops.END, Ops.BACKEDGE}`,
-# SO THE WALK IS PRUNED AT THE LOOP STRUCTURE AND THE RESULT IS A SET OF
-# NODES THAT CANNOT REACH A PARAM THROUGH A LOOP. WHICH IS WHY A PARAM
-# WRITTEN ONLY INSIDE A LOOP IS NOT IN THE SET -- AND WHY THE PRUNE IS NOT
-# COSMETIC: WITHOUT IT THE WALK WOULD LOOP FOREVER ON A BACKEDGE.
-#
-# THE PORT DOES NOT DO THIS AT ALL: `ku_is_writable` BELOW ANSWERS `False{}`
-# UNCONDITIONALLY, AND THE COMMENT BELOW SAYS WHY -- THE FLAG IS READ ONLY BY
-# `_render_dtype` FOR AN **IMAGE**, AND NO CPU KERNEL IS AN IMAGE. SO THE
-# PORT'S ANSWER IS CORRECT FOR WHAT IT EMITS AND THE COST IS THAT THE
-# PORT CANNOT EMIT AN IMAGE'S `write_only`/`read_only`. THAT IS THE GAP,
-# AND IT IS STATED HERE RATHER THAN INHERITED AS A SILENT `False`.
 def ku_is_writable(kus: List<&2, List<&2, KU>>, k: KU) -> Bool: False{}
 def _render.param(dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, st: St) -> St:
   +nm = ku_param_name(k)
@@ -3009,10 +2046,6 @@ def _render.param(dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, st: St) -> St:
     KUArg.param_volatile(KU.arg(k)), False{}})
 
 # `mutable` IS `u in writable_params` UPSTREAM (cstyle.py:214-215), AND
-# `mutable` IS READ BY `_render_dtype` FOR AN IMAGE ONLY (cstyle.py:182:
-# `if is_image_shape(shape): return f"{'write_only' if mutable else 'read_only'} image2d_t"`).
-# no CPU kernel is an image, so the flag is not read by the c the port emits --
-# and the port says so instead of guessing a backward walk.
 def _render.decl(dev: U32, i: U32, +k: KU, kus: List<&2, List<&2, KU>>,
                  +st: St, +l: List<&2, String>, nm: String, ix: U32, +semi: Bool) -> St:
   +st0 = _render.pop(st, k)
@@ -3122,10 +2155,6 @@ def _render_defines.go(+xs: List<&2, DtN>, +dev: U32, +cpu: Bool, +acc: List<&2,
         _render_defines.go(t, dev, cpu, acc))
 
 # `render_kernel` -- cstyle.py:155-167 (THE BODY) AND cstyle.py:312-314 (THE
-# clang override). two functions, because upstream has two.
-#
-# THE BODY: the buffer TYPES, the function SIGNATURE, and the braces.
-# the clang override: the vector typedefs before it and the entry after it.
 
 def _render_defines(dev: U32, cpu: Bool, +kus: List<&2, KU>) -> List<&2, String>:
   _render_defines.go(uops_to_dtypes(kus), dev, cpu, Nil{})
@@ -3152,20 +2181,6 @@ def render_kernel_body(+dev: U32, +fn: String, +kernel: List<&2, String>,
     String.join(kernel, "\n"), "\n}"])
 
 # METAL'S KERNEL SIGNATURE -- cstyle.py:366-372 AND :390-403. Metal is the one
-# device whose buffers do NOT become parameters: `MetalRenderer.render_kernel`
-# prepends the stdlib preamble, appends one `__WMMA_<name>` helper per WMMA op,
-# builds `struct args_t { <type> <name>; ... }` from the buffer list, and calls
-# upstream's base `render_kernel` with `bufs = []` and the UNPACKING LINE in
-# front of the body, so the signature is `extra_args` alone:
-#
-#     kernel void r(constant args_t& args [[buffer(0)]],
-#                   uint3 gid [[threadgroup_position_in_grid]],
-#                   uint3 lid [[thread_position_in_threadgroup]]) {
-#       device float* data0_1024 = args.data0_1024; ...
-#
-# - and nothing downstream of the signature can match until this does, which is
-# why it is ported before the WMMA helper: every line after it is indented text
-# that differs only by what the signature put there.
 
 def metal_extra_args() -> List<&2, String>:
   ["constant args_t& args [[buffer(0)]]", "uint3 gid [[threadgroup_position_in_grid]]",
@@ -3182,7 +2197,6 @@ def metal_args(+bs: List<&2, BArg>) -> List<&2, String>:
     case Nil{}: Nil{}
     case h <> t: String.concat([ku_buftype(3, h), " ", BArg.name(h), " = args.", BArg.name(h), ";"]) <> metal_args(t)
 
-# `"  " + " ".join(f"{t} {n} = args.{n};" for n, t in args)`, prepended to the body
 def metal_unpack(+bs: List<&2, BArg>) -> String:
   String.concat(["  ", String.join(metal_args(bs), " ")])
 
@@ -3206,15 +2220,6 @@ def wmma_helper(+dt_in: S.Dt, +dt_out: S.Dt, +nm: String) -> String:
 # IS OUTSIDE IT. Two mistakes were measured here and both are the same class:
 #   * `Bool.pick(..., recurse(t, acc+[helper]), recurse(t, acc))` made TWO recursive
 #     calls per uop -- the kept one AND the discarded one -- which is 2^n. MEASURED: it
-#     hung the Metal render for over 90 s on a 510-uop kernel with no output.
-#   * splitting it into `one`/`go` made them MUTUALLY recursive, which Bend refuses.
-# - so the FOLD recurses once and the branch lives in `add`, whose scrutinee is the op
-# PARAMETER. One call per uop, and no forward reference.
-# AND THE HELPERS ARE DEDUPED, which `wmma_args` does upstream (`dedup(...)`,
-# cstyle.py:118): sixteen WMMA uops with the same dims and dtypes are ONE helper, and
-# without this the block was emitted sixteen times (MEASURED: 13 063 bytes against
-# upstream's 6 012). Deduping on the TEXT is the same test as on the name, because the
-# name is inside the text.
 def wmma_has(+t: String, +xs: List<&2, String>) -> Bool:
   match xs:
     case Nil{}: False{}
@@ -3240,12 +2245,6 @@ def metal_prefix(+bs: List<&2, BArg>, +kus: List<&2, KU>) -> List<&2, String>:
     [String.concat(["struct args_t { ", String.join(metal_fields(bs, Nil{}), " "), " };"])])
 
 # cstyle.py:312-314 IS THE CLANG OVERRIDE: it emits the vector typedefs. METAL DOES
-# NOT -- `MetalRenderer.render_kernel` calls the BASE, which has no `_render_defines`
-# at all, which is why upstream's Metal text has native `float2` and no `typedef`.
-# `Bool.pick` is strict, so this used to build the metal prefix on the clang lane and throw it away
-# -- `metal_prefix` walks every uop (`wmma_helpers.go`) and `metal_unpack`/`metal_args` build a string per
-# buffer. The arm is now chosen by a `match` on a Bool PARAMETER, which is the only form Bend evaluates
-# lazily (a `match` cannot scrutinize a computed value). MEASURED, `PARITY.md` §112.
 def render_kernel.go(m: Bool, +dev: U32, cpu: Bool, +fn: String, +kernel: List<&2, String>,
                      +bufs: List<&2, BArg>, +kus: List<&2, KU>, +lb: U32) -> String:
   match m:
@@ -3264,11 +2263,10 @@ def render_kernel(+dev: U32, +cpu: Bool, +fn: String, +kernel: List<&2, String>,
 # one-line case (no linear bodies, no extern declarations).
 def render(+dev: U32, cpu: Bool, +kus: List<&2, KU>) -> String:
   +st = _render(dev, kus)
-  # - and the reverse happens here, once, because `st_kernel` prepends. the other readers of
-  # `St.kernel` COPY the list through unchanged, so they are not affected.
+  # - and the reverse happens here, once, because `st_kernel` prepends.  the other
+  # readers of `St.kernel` COPY the list through unchanged, so they are not affected.
   render_kernel(dev, cpu, St.name(st), List.reverse(&2, String, St.kernel(st)), St.bufs(st), kus, 1)
 
-# THE NAME/TEXT MAP, EXPOSED -- the walk's `r`, so a harness can read one slot.
 # THE NAME/TEXT MAP, EXPOSED -- the walk's `r`, so a harness can read one slot.
 def joins(+ps: List<&2, List<&2, String>>, +acc: List<&2, String>) -> List<&2, String>:
   match ps:
