@@ -640,7 +640,10 @@ def fwd_prog() -> RZ.RZProg:
   +e = MX.mxw_expand(x, [3, 3])
   +f1 = T.tn_rop(T.Tensor.ar(e), T.Tensor.u(e), O.OpsADD{}, [0, 1])
   +a1 = RZ.rz_after(h, T.tn_new(O.Found.ar(f1), O.Found.i(f1)))
-  +hf = T.tn_new(O.Found.ar(a1), O.Found.i(a1))
+  # THE POSITIVE CONTROL: read the hidden numbers through a PARAM-shaped view instead of through
+  # the AFTER. If kernel B then SPLITS, the defect is `INDEX` over an `AFTER`; if it does not, it
+  # is not the AFTER at all. (The view is on its own slot, so this is a control and not the fix.)
+  +hf = RZ.rz_input(O.Found.ar(a1), 5, 784, [1, 1, 28, 28])
   +lhs = MX.mxw_reshape.go(hf, [1, 1, 784])
   +rhs = MX.mxw_permute.go(MX.mxw_reshape.go(w, [1, 784, 10]), [0, 2, 1])
   +m = T.tn_mul(lhs, rhs)
@@ -819,7 +822,10 @@ def fwd_ids() -> String:
   +f1 = T.tn_rop(T.Tensor.ar(e), T.Tensor.u(e), O.OpsADD{}, [0, 1])
   +a1 = RZ.rz_after(h, T.tn_new(O.Found.ar(f1), O.Found.i(f1)))
   +o = RZ.rz_input(O.Found.ar(a1), 2, 10, [1, 10])
-  +hf = T.tn_new(O.Found.ar(a1), O.Found.i(a1))
+  # THE POSITIVE CONTROL: read the hidden numbers through a PARAM-shaped view instead of through
+  # the AFTER. If kernel B then SPLITS, the defect is `INDEX` over an `AFTER`; if it does not, it
+  # is not the AFTER at all. (The view is on its own slot, so this is a control and not the fix.)
+  +hf = RZ.rz_input(O.Found.ar(a1), 5, 784, [1, 1, 28, 28])
   # THE ARENA MUST BE CHAINED, NOT FORKED: `o` was built on `a1`'s arena and returned a GROWN one,
   # and building `w` on `a1`'s again made the two SIBLING copies -- `o`'s nodes and `w`'s nodes then
   # occupied the same indices, and the MUL mixed them (MEASURED: the weight folded to a lone CONST).
@@ -859,6 +865,23 @@ def rz_row() -> String:
                  " after1=", RR.rr_node_str(T.Tensor.ar(t2), T.Tensor.u(t2)), " {", RR.rr_dump(T.Tensor.ar(t2), T.Tensor.u(t2)), "}",
                  " after2=", RR.rr_node_str(T.Tensor.ar(t3), T.Tensor.u(t3)), " {", RR.rr_dump(T.Tensor.ar(t3), T.Tensor.u(t3)), "}"])
 
+# THE REDUCE's num_axes AND ITS RANGE MAP ENTRY, PRE-APPLY, for the linear's reduce.
+def rd_row.go(+ar: O.Arena, +ns: List<&2, U32>, acc: U32) -> U32:
+  match ns:
+    case Nil{}: acc
+    case x <> t: rd_row.go(ar, t, Bool.pick(U32, O.eq_op(O.Arena.op(ar, x), O.OpsREDUCE{}), x, acc))
+
+def rd_row() -> String:
+  +q = RZ.rz_rebuild(fwd_prog(), False{}, False{})
+  +ar = RZ.RZProg.ar(q)
+  +tb = F.Folded.t(F.folded(ar))
+  +sk = RZ.RZProg.sink(q)
+  +rd = rd_row.go(ar, O.UOp.toposort(O.Arena.budget(ar), ar, sk), 0)
+  String.concat(["red=", RR.rr_node_str(ar, rd), " num=", U32.show(RR.rr_ap_red_num(ar, rd)),
+                 " nsrc=", U32.show(O.Arena.nsrc(ar, rd)),
+                 " dims=", RR.rr_dims_str(IX.rr_dims(ar, tb, rd)),
+                 " [", RR.rr_rngm_row(ar, sk, rd), "]"])
+
 def main() -> IO(Unit):
   do IO<Unit>:
     _ : Unit <- IO.print(String.concat(["pool_rr=", pool_rr()]))
@@ -886,6 +909,7 @@ def main() -> IO(Unit):
     _ : Unit <- IO.print(String.concat(["pool_rl=", rl_row(RZ.rz_rebuild(pool_prog(), False{}, False{}))]))
     _ : Unit <- IO.print(String.concat(["fw_rl=", rl_row(RZ.rz_rebuild(fw_prog(), False{}, False{}))]))
     _ : Unit <- IO.print(String.concat(["xp_rm=", rm_row(RZ.rz_rebuild(xp_prog(), False{}, False{}))]))
+    _ : Unit <- IO.print(String.concat(["rd_row=", rd_row()]))
     _ : Unit <- IO.print(String.concat(["rz_row=", rz_row()]))
     _ : Unit <- IO.print(String.concat(["mb_row=", mb_row()]))
     _ : Unit <- IO.print(String.concat(["fwd_ids=", fwd_ids()]))

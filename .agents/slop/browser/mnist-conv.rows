@@ -24,19 +24,20 @@ fw_sd=dst=RESHAPE:none:PARAM,STACK dst_dims=1,1,7,7 st_dims=
 pool_rl=STORE:none:RESHAPE,REDUCE:none
 fw_rl=STORE:none:RESHAPE,RESHAPE:none
 xp_rm=33:REDUCE:other:PERMUTE,35:STORE:none:RESHAPE,EXPAND
+rd_row=red=REDUCE:other:PERMUTE num=1 nsrc=1 dims=1,10 [rm=False True in=4,2,3 out=2,3 tbl=36]
 rz_row=empty=RESHAPE:none:BUFFER,STACK {RESHAPE:none:BUFFER,STACK;BUFFER:other:CONST;STACK:none:CONST,CONST;CONST:cother:;CONST:cother:} after1=RESHAPE:none:BUFFER,STACK {RESHAPE:none:BUFFER,STACK;BUFFER:other:CONST;STACK:none:CONST,CONST;CONST:cother:;CONST:cother:} after2=RESHAPE:none:BUFFER,STACK {RESHAPE:none:BUFFER,STACK;BUFFER:other:CONST;STACK:none:CONST,CONST;CONST:cother:;CONST:cother:}
 mb_row=buf_u=2 buf=BUFFER:other:CONST buf_dump=BUFFER:other:CONST;CONST:cother: | res_u=6 res=RESHAPE:none:BUFFER,STACK res_dump=RESHAPE:none:BUFFER,STACK;BUFFER:other:CONST;STACK:none:CONST,CONST;CONST:cother:;CONST:cother:;CONST:cother:
-fwd_ids=o_u=19 o=BUFFER:other:CONST | w_u=23 w=BUFFER:other:CONST | st=STORE:none:BUFFER,REDUCE st.src0_u=19 st.src0=BUFFER:other:CONST | w_sub=BUFFER:other:CONST;CONST:cother: | o_sub=BUFFER:other:CONST;CONST:cother:
+fwd_ids=o_u=19 o=RESHAPE:none:RESHAPE,STACK | w_u=23 w=RESHAPE:none:BUFFER,STACK | st=STORE:none:RESHAPE,REDUCE st.src0_u=19 st.src0=RESHAPE:none:RESHAPE,STACK | w_sub=RESHAPE:none:BUFFER,STACK;BUFFER:other:CONST;STACK:none:CONST,CONST;CONST:cother:;CONST:cother: | o_sub=RESHAPE:none:RESHAPE,STACK;RESHAPE:none:BUFFER,STACK;STACK:none:CONST,CONST,CONST;BUFFER:other:CONST;STACK:none:CONST,CONST,CONST,CONST;CONST:cother:;CONST:cother:;CONST:cother:
 buf_row=b10=RESHAPE:none:BUFFER,STACK nsrc=2 buf=BUFFER:other:CONST buf_nsrc=1 | b7840 buf_nsrc=1
-sk_row=SINK:none:AFTER,AFTER;AFTER:none:PARAM,STORE;AFTER:none:PARAM,STORE;PARAM:other:CONST;STORE:none:RESHAPE,REDUCE;PARAM:other:CONST;STORE:none:RESHAPE,REDUCE;CONST:cother:;RESHAPE:none:PARAM,STACK;REDUCE:other:EXPAND;CONST:cother:;RESHAPE:none:PARAM,STACK;REDUCE:other:PERMUTE;STACK:none:CONST,CONST,CONST,CONST;EXPAND:none:RESHAPE,STACK;STACK:none:CONST,CONST;PERMUTE:none:MUL,STACK;CONST:cother:;CONST:cother:;RESHAPE:none:PARAM,STACK;STACK:none:CONST,CONST;MUL:none:RESHAPE,PERMUTE;STACK:none:CONST,CONST,CONST;PARAM:other:CONST;CONST:cother:;RESHAPE:none:AFTER,STACK;PERMUTE:none:RESHAPE,STACK;CONST:cother:;CONST:cother:;STACK:none:CONST,CONST,CONST;RESHAPE:none:PARAM,STACK;STACK:none:CONST,CONST,CONST;PARAM:other:CONST;STACK:none:CONST,CONST,CONST;CONST:cother:
+sk_row=SINK:none:AFTER,AFTER;AFTER:none:PARAM,STORE;AFTER:none:PARAM,STORE;PARAM:other:CONST;STORE:none:RESHAPE,REDUCE;PARAM:other:CONST;STORE:none:RESHAPE,REDUCE;CONST:cother:;RESHAPE:none:PARAM,STACK;REDUCE:other:EXPAND;CONST:cother:;RESHAPE:none:PARAM,STACK;REDUCE:other:PERMUTE;STACK:none:CONST,CONST,CONST,CONST;EXPAND:none:RESHAPE,STACK;STACK:none:CONST,CONST;PERMUTE:none:MUL,STACK;CONST:cother:;CONST:cother:;RESHAPE:none:PARAM,STACK;STACK:none:CONST,CONST;MUL:none:RESHAPE,PERMUTE;STACK:none:CONST,CONST,CONST;PARAM:other:CONST;CONST:cother:;RESHAPE:none:PARAM,STACK;PERMUTE:none:RESHAPE,STACK;CONST:cother:;CONST:cother:;PARAM:other:CONST;STACK:none:CONST,CONST,CONST;RESHAPE:none:PARAM,STACK;STACK:none:CONST,CONST,CONST;PARAM:other:CONST;STACK:none:CONST,CONST,CONST;CONST:cother:
 st_rows=dst=1,1,28,28 val=1,1,28,28[rm=True True in=22,23,24,25 out=0,0,20,21 tbl=36] | dst=1,10 val=1,10[rm=True True in=2,3 out=0,1 tbl=36]
 pm_row=st2[rm=True True in=2,3 out=0,1 tbl=36] v2[rm=False True in=4,2,3 out=2,3 tbl=36] v2.src0[rm=False True in=5,6,7 out=4,2,3 tbl=36] v2.src0.src0[rm=False True in=8,9,10 out=5,6,7 tbl=36]
 pv_row=aft2=AFTER:none:PARAM,STORE dims=10 | st2=STORE:none:RESHAPE,REDUCE dims=1,10 | v2=REDUCE:other:PERMUTE dims=1,10
 sh_row=v=OTHER:other: SHAPE-NONE[rm=False False in= out= tbl=1] | RED=OTHER:other: SHAPE-NONE[rm=False False in= out= tbl=1] | RD.src0=OTHER:other: SHAPE-NONE[rm=False False in= out= tbl=1]
 sw_row=OTHER:other: dims=
 fbd_row=st=OTHER:other: closed=0 vdims=0 guard=False
-fwd_lk=2/CALL>SINK STORE>INDEX
-fwd_kg=SINK:none:AFTER,AFTER;AFTER:none:PARAM,CALL;AFTER:none:PARAM,END;PARAM:other:CONST;CALL:none:SINK,PARAM,PARAM;PARAM:other:CONST;END:none:STORE,RANGE;CONST:cother:;SINK:other:END;PARAM:other:CONST;CONST:cother:;STORE:none:INDEX,REDUCE;RANGE:other:CONST;END:none:STORE,RANGE,RANGE;INDEX:none:PARAM,OTHER;REDUCE:other:MUL,RANGE;STORE:none:INDEX,REDUCE;RANGE:other:CONST;RANGE:other:CONST;OTHER:none:ADD,OTHER;MUL:none:INDEX,INDEX;RANGE:other:CONST;INDEX:none:PARAM,OTHER;REDUCE:other:INDEX,RANGE,RANGE;CONST:cother:;ADD:none:RANGE,MUL;OTHER:other:CONST;INDEX:none:AFTER,OTHER;INDEX:none:PARAM,OTHER;PARAM:other:CONST;OTHER:none:ADD,OTHER;INDEX:none:PARAM,OTHER;RANGE:other:CONST;RANGE:other:CONST;MUL:none:OTHER,CONST;OTHER:none:ADD,OTHER;PARAM:other:CONST;OTHER:none:ADD,OTHER;ADD:none:RANGE,ADD;OTHER:other:CONST;PARAM:other:CONST;CONST:cother:;CONST:cother:;ADD:none:RANGE,ADD;CONST:cother:;ADD:none:RANGE,ADD;OTHER:other:CONST;ADD:none:MUL,ADD;ADD:none:MUL,MUL;ADD:none:MUL,MUL;MUL:none:OTHER,RANGE;MUL:none:OTHER,CONST;MUL:none:OTHER,RANGE;MUL:none:OTHER,CONST;OTHER:other:CONST
+fwd_lk=2/CALL>SINK CALL>SINK
+fwd_kg=SINK:none:AFTER,AFTER;AFTER:none:PARAM,CALL;AFTER:none:PARAM,CALL;PARAM:other:CONST;CALL:none:SINK,PARAM,PARAM;PARAM:other:CONST;CALL:none:SINK,PARAM,PARAM,PARAM;CONST:cother:;SINK:other:END;PARAM:other:CONST;CONST:cother:;SINK:other:END;PARAM:other:CONST;PARAM:other:CONST;END:none:STORE,RANGE,RANGE;END:none:STORE,RANGE;CONST:cother:;STORE:none:INDEX,REDUCE;RANGE:other:CONST;RANGE:other:CONST;STORE:none:INDEX,REDUCE;RANGE:other:CONST;INDEX:none:PARAM,OTHER;REDUCE:other:INDEX,RANGE,RANGE;CONST:cother:;INDEX:none:PARAM,OTHER;REDUCE:other:MUL,RANGE;PARAM:other:CONST;OTHER:none:ADD,OTHER;INDEX:none:PARAM,OTHER;RANGE:other:CONST;RANGE:other:CONST;PARAM:other:CONST;OTHER:none:ADD,OTHER;MUL:none:INDEX,INDEX;RANGE:other:CONST;ADD:none:RANGE,ADD;OTHER:other:CONST;PARAM:other:CONST;CONST:cother:;ADD:none:RANGE,MUL;OTHER:other:CONST;INDEX:none:PARAM,OTHER;INDEX:none:PARAM,OTHER;ADD:none:MUL,ADD;MUL:none:OTHER,CONST;OTHER:none:ADD,OTHER;PARAM:other:CONST;OTHER:none:ADD,OTHER;MUL:none:OTHER,RANGE;ADD:none:MUL,MUL;CONST:cother:;ADD:none:RANGE,ADD;ADD:none:RANGE,ADD;OTHER:other:CONST;OTHER:other:CONST;MUL:none:OTHER,CONST;ADD:none:MUL,MUL;MUL:none:OTHER,RANGE;MUL:none:OTHER,CONST
 fwd_c=--k0:
 void test(float* restrict data0_784, float* restrict data1_784) {
   float buf0[1];
@@ -54,8 +55,17 @@ void test(float* restrict data0_784, float* restrict data1_784) {
   }
 }
 --k1:
-void test(float* restrict data2_10) {
+void test(float* restrict data0_10, float* restrict data1_784, float* restrict data2_7840) {
+  float buf0[1];
   for (int Lidx0 = 0; Lidx0 < 10; Lidx0++) {
+    int cast0 = ((int)(Lidx0));
+    *buf0 = 0;
+    for (int Lidx1 = 0; Lidx1 < 784; Lidx1++) {
+      int cast1 = ((int)(Lidx1));
+      *buf0 = (buf0+((data1_784+((cast1+(784*0)+(784*0))%784))*(data2_7840+((cast0+(10*cast1)+(7840*0))%7840))));
+    }
+    *(data0_10+((cast0+(10*0))%10)) = buf0;
+  }
 }
 xw_lk=1/CALL>SINK
 xw_c=
