@@ -761,6 +761,21 @@ def pv_row() -> String:
                  " | st2=", RR.rr_node_str(ar, st2), " dims=", RR.rr_dims_str(IX.rr_dims(ar, tb, st2)),
                  " | v2=", RR.rr_node_str(ar, v2), " dims=", RR.rr_dims_str(IX.rr_dims(ar, tb, v2))])
 
+# THE CORRECTLY-WIRED COMPARISON: the range map of the PRE-APPLY sink, for the pre-apply value
+# and its two INDEX srcs -- what `rr_ap_bcast` will hand the index builder.
+def pm_row() -> String:
+  +q = RZ.rz_rebuild(fwd_prog(), False{}, False{})
+  +ar = RZ.RZProg.ar(q)
+  +sk = RZ.RZProg.sink(q)
+  +aft2 = SCH.sc_src(ar, sk, 1)
+  +st2 = SCH.sc_src(ar, aft2, 1)
+  +v2 = SCH.sc_src(ar, st2, 1)
+  +m = SCH.sc_src0(ar, v2)
+  String.concat(["st2[", RR.rr_rngm_row(ar, sk, st2), "]",
+                 " v2[", RR.rr_rngm_row(ar, sk, v2), "]",
+                 " v2.src0[", RR.rr_rngm_row(ar, sk, m), "]",
+                 " v2.src0.src0[", RR.rr_rngm_row(ar, sk, SCH.sc_src0(ar, m)), "]"])
+
 def main() -> IO(Unit):
   do IO<Unit>:
     _ : Unit <- IO.print(String.concat(["pool_rr=", pool_rr()]))
@@ -788,6 +803,7 @@ def main() -> IO(Unit):
     _ : Unit <- IO.print(String.concat(["pool_rl=", rl_row(RZ.rz_rebuild(pool_prog(), False{}, False{}))]))
     _ : Unit <- IO.print(String.concat(["fw_rl=", rl_row(RZ.rz_rebuild(fw_prog(), False{}, False{}))]))
     _ : Unit <- IO.print(String.concat(["xp_rm=", rm_row(RZ.rz_rebuild(xp_prog(), False{}, False{}))]))
+    _ : Unit <- IO.print(String.concat(["pm_row=", pm_row()]))
     _ : Unit <- IO.print(String.concat(["pv_row=", pv_row()]))
     _ : Unit <- IO.print(String.concat(["sh_row=", sh_row()]))
     _ : Unit <- IO.print(String.concat(["sw_row=", String.join(sw_row(), " | ")]))
