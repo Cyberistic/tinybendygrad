@@ -47,8 +47,10 @@ machine-readable rows (with `label_says` and `label_true`) are `census.rows`; th
 | 15 | numbers | `execgap` (fixture) + `pipelinecensus/execfull` (scheduler) | – | `execgate-gate.py` | **0 PASS** (10 rows, 3 plants RED) | "the binary's own stdout" | TRUE on the fixture path; the scheduler path stops at `cc` |
 
 **The one sentence the table says:** every link from the SINK to the numbers has an
-implementation, and every one of them is reachable only through `runtime/device.bend`'s
-`compile_sink`, which has **0 shipped callers**.
+implementation, and not one of them is reachable from the Tensor API. Of the **11 implemented
+links**, **6 have ZERO shipped callers** (`rz_built`, `eng_stages`, `rr_kernel_graph`,
+`pm_add_loads`, `body_kus`, `compile_sink`) and the other **5 have exactly one shipped caller
+each, and it is inside `runtime/device.bend`** — the lane whose own entry has zero.
 
 ## 2. DEFECTS, EACH WITH THE COMMAND THAT SHOWS IT
 
