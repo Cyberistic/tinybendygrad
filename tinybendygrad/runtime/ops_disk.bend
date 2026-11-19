@@ -43,7 +43,7 @@
 #    (:86) is a live mmap base address, and it is what every consumer of a Disk
 #    buffer reaches a buffer through. The port carries a 0 and names it;
 #    `Rc.addr` is the field and `dk_alloc_addr` is the row.
-#    TODO(p3) helpers.py:576  symbol=mv_address  -- mv_address -> the mapping's base address.
+#    TODO(p3) helpers.py:569  symbol=mv_address  -- mv_address -> the mapping's base address.
 #
 # 2. THE io_uring mmaps (:57-61). Their LENGTHS are `p.sq_off.array +
 #    p.sq_entries * 4`, `p.cq_off.cqes + p.cq_entries * sizeof(cqe)` and

@@ -146,7 +146,7 @@
 #    `Word(64n)`, so the delta is not computable here. `timing.scale` ports the
 #    factors that ARE expressible -- the ns->s divisor and the `OSX_TIMING_RATIO`
 #    -- and the subtraction is the seam's.
-#    TODO(p3) runtime/ops_cl.py:139  symbol=_wait_signal -- the u64 nanosecond delta -- upstream's old `OSX_TIMING_RATIO` form is GONE at this pin and the u64 profiling timestamps are read here.
+#    TODO(p3) runtime/ops_cl.py:130  symbol=_wait_signal -- the u64 nanosecond delta -- upstream's old `OSX_TIMING_RATIO` form is GONE at this pin and the u64 profiling timestamps are read here.
 #    TODO(p3) runtime/ops_cuda.py:104  symbol=__init__ -- the f32 millisecond elapsed -- upstream's `ret.value * 1e-3` is GONE at this pin and the clock is `time.perf_counter_ns()` here.
 #
 # 3. `ctypes.create_string_buffer` / `ctypes.string_at` (:29-32, :105-116) are a
@@ -237,7 +237,7 @@
 #      `self.dev.synchronize()` and `_copyin` does NOT -- that asymmetry is
 #      `copy.copyin` / `copy.copyout` and it is two rows in the gate.
 #   3. `TinyELF.signature` is `tuple[(name, slot, DType, shape)]` and
-#      `TinyELF.iter_sig` (`tinygrad/device.py:352 symbol=iter_sig`) is the `round_up(offset, dt.itemsize)`
+#      `TinyELF.iter_sig` (`tinygrad/device.py:359 symbol=iter_sig`) is the `round_up(offset, dt.itemsize)`
 #      walk. hp:41 calls it, and so does `hcq2.layout_args` for CUDA -- the SAME
 #      walk in two of the three vendors. `iter_sig` is not in any of the three
 #      files, so this file carries a local copy with device.py named as owner.
@@ -250,7 +250,7 @@
 #      VAL COUNT AND NOTHING ELSE.
 #
 # cstyle.bend owes, and this is the interesting half:
-#   1. `OpenCLRenderer` (`tinygrad/renderer/cstyle.py:324 symbol=OpenCLRenderer`) is the renderer cl:118 registers. Its
+#   1. `OpenCLRenderer` (`tinygrad/renderer/cstyle.py:332 symbol=OpenCLRenderer`) is the renderer cl:118 registers. Its
 #      kernel text names the arguments `data0_4, data1_4` in BUFFER ORDER, and
 #      kernel text names the arguments `data0_4, data1_4` in BUFFER ORDER, and cl:56's
 #      the SAME order. So `clSetKernelArg(kernel, i, ...)` with `i` the ENUMERATE

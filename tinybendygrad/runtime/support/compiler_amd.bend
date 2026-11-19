@@ -85,7 +85,7 @@
 #
 # WALL 4 -- the artifact read-back. `pathlib.Path(libf.name).read_bytes()`
 #   returns bytes, and bend has no name to read and no `.hsaco` to name.
-#   TODO(p3) compiler_amd.py:108 -- `read_bytes()`.
+#   TODO(p3) compiler_amd.py:94 -- `read_bytes()`.
 import Base
 
 # THE TRACE. Which toolchain call the Python makes, in what order, with which

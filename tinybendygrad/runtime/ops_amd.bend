@@ -71,7 +71,7 @@
 # 4. THE UOp MATCHER. AT THIS PIN upstream's `Compiled.pm_encode` is tinygrad/runtime/ops_amd.py:1026 and its TWO rules match SINK nodes
 #    carrying `KernelInfo("amd_compute_submit")` / `KernelInfo("amd_copy_submit")` -- NOT `CUSTOM_FUNCTION` nodes, which is what
 #    the OLD `AMDDevice.pm_encode` matched. `pm_bufferize` is GONE at this pin (upstream 9ff6db7b0, "hcq2 no tags"): the
-#    surviving construct is `Compiled.link_bufs` (`tinygrad/device.py:377 symbol=link_bufs`), which upstream fills at
+#    surviving construct is `Compiled.link_bufs` (`tinygrad/device.py:383 symbol=link_bufs`), which upstream fills at
 #    `tinygrad/runtime/ops_amd.py:862` (scratch) and `tinygrad/runtime/ops_amd.py:872` (the four profiling names). The port carries the three rules'
 #    PATTERNS and their first-wins fold and the profiling rules' four names, in order; a rule's body is a UOp graph
 #    and building one needs `./uop/ops.bend` and the HCQ2 lowering this file does not own. `amd_pmb_order` and
@@ -83,10 +83,10 @@
 #
 # 5. THE HANG PATH. AT THIS PIN `on_device_hang` is KFDIface's (tinygrad/runtime/ops_amd.py:675-688 symbol=on_device_hang) -- the one that builds the
 #    report out of `queue_event_arr[i].memory_exception_data.failure`, whose `_real_fields_` it walks by name -- PCIIface's
-#    (tinygrad/runtime/ops_amd.py:774-777 symbol=on_device_hang) and AMDDevice's `on_device_hang` (tinygrad/runtime/ops_amd.py:1024 symbol=on_device_hang). A field NAME is a
+#    (tinygrad/runtime/ops_amd.py:774-777 symbol=on_device_hang) and AMDDevice's `on_device_hang` (tinygrad/runtime/ops_amd.py:1025 symbol=on_device_hang). A field NAME is a
 #    Python string table and a walk over it is a `dict`, so the port keeps the two refusal MESSAGES and the trace
 #    truncation and nothing of the report's body.
-# | WALL(p3) tinygrad/runtime/ops_amd.py:676 symbol=on_device_hang  `_str(st)` over `st._real_fields_`. -- BLOCKED: needs `_str(st)` over `st._real_fields_` -- PYTHON REFLECTION over a ctypes struct's field list, which a compiled language does not expose.
+# | WALL(p3) tinygrad/runtime/ops_amd.py:679 symbol=on_device_hang  `_str(st)` over `st._real_fields_`. -- BLOCKED: needs `_str(st)` over `st._real_fields_` -- PYTHON REFLECTION over a ctypes struct's field list, which a compiled language does not expose.
 # | wall(p3) runtime/ops_amd.py:714  the mmu-fault f-string. -- blocked: an mmu-fault f-string inside a signal-handler path the port does not have; the format is not the blocker.
 #    TODO(p3) runtime/ops_amd.py:685  symbol=on_device_hang  the HW-fault f-string.
 #

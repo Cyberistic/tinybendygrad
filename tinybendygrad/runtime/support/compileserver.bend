@@ -23,7 +23,7 @@
 #      response is a VALID frame carrying ZERO bytes, and the diagnostic goes to
 #      stderr. So the reader cannot distinguish "the compiler failed" from "the
 #      compiler returned an empty library" by the protocol -- which is exactly
-#      what `tinygrad/device.py:339 symbol=CompileError` relies on when it raises `CompileError` on an empty
+#      what `tinygrad/device.py:328 symbol=CompileError` relies on when it raises `CompileError` on an empty
 #      read. MEASURED end to end: a frame set of four requests where two fail
 #      still answers four frames, and the server's exit code is 0.
 #   3. the LOOP is driven by the pipe, not by eof on the source. a zero-length
@@ -55,7 +55,7 @@
 #   TODO(p3) compileserver.py:8  -- `sys.stdin.buffer.read(n)`.
 #   TODO(p3) compileserver.py:12 -- `sys.stdout.buffer.write(...)`.
 #   TODO(p3) compileserver.py:13 -- `sys.stdout.buffer.flush()`.
-#   TODO(p3) device.py:335  symbol=server      -- the Popen that holds the pipe open.
+#   TODO(p3) device.py:340  symbol=server      -- the Popen that holds the pipe open.
 #
 # `ast.literal_eval` is the other unported piece: it parses a Python literal
 # from a STRING, and bend has no parser (and writing one is Turing

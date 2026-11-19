@@ -123,10 +123,10 @@
 # be checked without them and does not pretend otherwise.
 #
 # device.bend owes:
-#   1. `Compiled.__init__` (tinygrad/device.py:379 symbol=__init__) is handed
+#   1. `Compiled.__init__` (tinygrad/device.py:385 symbol=__init__) is handed
 #      `arch="shader-f16" * (… in features)` at :190. `dev.init` produces that
 #      arch string and the feature list; whoever wires the device records it.
-#   2. `Program.__call__` (tinygrad/device.py:360 symbol=__call__) is called from
+#   2. `Program.__call__` (tinygrad/device.py:367 symbol=__call__) is called from
 #      tinygrad/engine/realize.py:167 -- the `ets.append(rt(*args, ...))` line -- with `bufs` = `ast.arg.globals` resolved
 #      this file needs the BUFFER list AND the val count AND nothing ELSE --
 #      they are what `bgl.of` turns into entries. See the layout derivation.
@@ -146,7 +146,7 @@
 #      keys the type off the addrspace (`'Uniform' if a is AddrSpace.alu else 'Storage'`), and
 #      tinygrad/renderer/wgsl.py:116 keys it off the addrspace too. They agree because both key off the
 #      addrspace, not because every `ProgramInfo.globals` entry is
-#      global (tinygrad/uop/ops.py:1347 symbol=globals).
+#      global (tinygrad/uop/ops.py:1313 symbol=globals).
 #   3. `@workgroup_size(...)` (wgsl.py:118). `Program.__call__` takes a
 #      `local_size` and ops_webgpu.py never reads it -- the workgroup size comes
 #      from the wgsl attribute. `prog.call` takes `local_size`, records it in
@@ -172,7 +172,7 @@
 #
 # so the shader declares 1+len(bufs) bindings, in the order `bufs` was handed to
 # it (cstyle.py:264 "this relies on bufs dict preserving order"), and
-# `ProgramInfo.globals` (tinygrad/uop/ops.py:1347 symbol=globals, sorted+deduped by slot) is that same order.
+# `ProgramInfo.globals` (tinygrad/uop/ops.py:1313 symbol=globals, sorted+deduped by slot) is that same order.
 # `pass.uniforms` binds layout entry k+1 to bufs[k]. that is the whole interface
 # between this file and wgsl.bend, and a divergence there is silent in both.
 #

@@ -143,13 +143,13 @@
 # approximated and nothing here is faked: a row that cannot be computed prints
 # the wall's name, so a diff can tell a wall from a value.
 #
-# W1. `graph_rewrite` -- ops.py:1886 symbol=graph_rewrite, called FOUR TIMES at prepare.py:280-283.
+# W1. `graph_rewrite` -- ops.py:1851 symbol=graph_rewrite, called FOUR TIMES at prepare.py:280-283.
 #     It is a fixpoint over a worklist: rewrite every node, push the result
 #     back, repeat until nothing fires. Bend refuses mutual recursion and a
 #     worklist with a REBUILT todo is not a subterm, so ONE pass per table is
 #     the most this file can spell. The per-step rows are labelled `1p` (one
 #     pass) and a one-pass row is not a fixpoint row.
-# W2. `UOp.substitute` -- ops.py:514 symbol=substitute, and `dict_map` / `dict_map.update` at
+# W2. `UOp.substitute` -- ops.py:506 symbol=substitute, and `dict_map` / `dict_map.update` at
 #     prepare.py:11-21 symbol=forward_call_outputs. `forward_call_outputs`'s `placed` map and
 #     `resolve_function`'s `flat_storage` are both substitutions, so both inherit
 #     W1.

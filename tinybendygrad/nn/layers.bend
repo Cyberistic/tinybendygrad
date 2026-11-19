@@ -18,13 +18,13 @@
 #     symbol=tn_mul), `M.mo_sum` (mixin/op.bend:840 symbol=mo_sum),
 #     `M.mo_cast_t` (mixin/op.bend:386 symbol=mo_cast_t),
 #     `DT.least_upper_dtypes` (dtype.bend:252 symbol=least_upper_dtypes). The UPSTREAM
-#     half of those six is tinygrad/uop/ops.py:799 symbol=_mop, whose
+#     half of those six is tinygrad/uop/ops.py:775 symbol=_mop, whose
 #     `Ops.RESHAPE`/`Ops.PERMUTE` arms build the first two and whose
 #     `Ops.REDUCE` arm (tinygrad/uop/ops.py:641; the enum member is DECLARED at
 #     tinygrad/uop/__init__.py:97 symbol=Ops.REDUCE) builds the third;
 #     the cast is tinygrad/uop/ops.py:422 (the group is DECLARED at
 #     tinygrad/uop/__init__.py:104 symbol=GroupOp.Unary), and the
-#     least-upper-dtype rule is tinygrad/dtype.py:193 symbol=least_upper_dtype.
+#     least-upper-dtype rule is tinygrad/dtype.py:197 symbol=least_upper_dtype.
 #     WMMA is
 #     `dot`'s HANDLER, and the layer's own arithmetic never selects it.
 #   `nn/__init__.bend:220` -- `x.conv2d` "SIDE B, not built". `mixin/op.bend`'s

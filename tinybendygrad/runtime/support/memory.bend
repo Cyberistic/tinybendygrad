@@ -13,10 +13,10 @@
 #     fields and `map_range` builds it with THREE POSITIONAL and three keyword
 #     arguments, so a field swap is a silent remapping. `blocks`' 4-tuple is
 #     `(size, next, prev, is_free)` (:39) and `pt_stack`'s is
-#     `(pt, pte_idx, pte_size)` (tinygrad/runtime/support/memory.py:127 symbol=__init__) -- upstream's `pt_stack` -- while `next()` YIELDS the five-tuple
+#     `(pt, pte_idx, pte_size)` (tinygrad/runtime/support/memory.py:117 symbol=__init__) -- upstream's `pt_stack` -- while `next()` YIELDS the five-tuple
 #     `(off, pt, pte_idx, entries, pte_covers)` (:175) -- three different
 #     orders in 136 lines.
-#   * the TWO REVERSALS in `MemoryManager.__init__` (tinygrad/runtime/support/memory.py:187 symbol=__init__) -- upstream's `pte_covers`:
+#   * the TWO REVERSALS in `MemoryManager.__init__` (tinygrad/runtime/support/memory.py:176 symbol=__init__) -- upstream's `pte_covers`:
 #     `pte_covers = [1 << x for x in va_shifts][::-1]` and
 #     `pte_cnt = [1 << (lvl_msb[i+1] - lvl_msb[i]) for ...][::-1]`. Both are
 #     `[::-1]` and a port that drops one computes a page table one level off,

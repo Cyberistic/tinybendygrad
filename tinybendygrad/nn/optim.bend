@@ -62,7 +62,7 @@ import ./../dtype.bend as DT
 #   * `where` -- elementwise.py:436 (`Ops.WHERE` ternary), optim.py:115, :175.
 #   * `sum` -- mixin/reduce.py:20, optim.py:113, :114, :173, :174. `.sum()`, no axis.
 #   * `detach` -- elementwise.py:43 (`Ops.DETACH`), optim.py:60, :113, :117, :171.
-#   * `newton_schulz` -- mixin/op.py:1889 symbol=newton_schulz, optim.py:123. P3 and BIG.
+#   * `newton_schulz` -- mixin/op.py:1912 symbol=newton_schulz, optim.py:123. P3 and BIG.
 #   * `reshape` -- mixin/movement.py, optim.py:123.
 # My gate needs NONE of them: a layer's graph is a graph whether or not the mixin
 # method that builds it has landed, and every row below is a graph SHAPE over the

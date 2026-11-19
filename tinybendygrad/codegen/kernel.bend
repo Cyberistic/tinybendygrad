@@ -96,7 +96,7 @@
 # node per element. That is a cartesian product whose size is the node's numel,
 # and this architecture has no product and no way to name "the i-th element of a
 # STACK". `movement.bend` owns `UOp.index` as `mp_index`, and movement.bend:235
-# carries a `TODO(p3) ... def index` marker -- TODO(p3) ops.py:559  symbol=index --
+# carries a `TODO(p3) ... def index` marker -- TODO(p3) ops.py:549  symbol=index --
 # `UOp.index` is DECLARED at ops.py:559 and its `return UOp(Ops.INDEX, ...)` is at
 # ops.py:562 -- and even it answers one index, not a product.
 #
@@ -209,7 +209,7 @@ def kn_nsrc_ge(+ar: O.Arena, i: U32, n: U32) -> Bool:
 #     (UPat((Ops.SIN, Ops.LOG2, Ops.EXP2, Ops.SQRT, Ops.RECIP), src=(UPat(name="x"),), name="u"),
 #      lambda u,x: u.replace(src=(x.cast(u.dtype),)) if x.dtype != u.dtype else None)
 #
-# `# TODO(p3) __init__.py:242  x.dtype != u.dtype` -- the guard, and the `cast` it
+# `# TODO(p3) __init__.py:225  x.dtype != u.dtype` -- the guard, and the `cast` it
 # wraps, need an `S.Dt` as a VALUE: `x.cast(u.dtype)` is
 # `UOp(Ops.CAST, src=(x,), arg=dtype)` and `u.dtype` comes out of `fold.dt` as a
 # `Maybe<&2, S.Dt>`. bend 2.0.34 mis-parses `Maybe<&2, S.Dt>` in a def signature
@@ -460,7 +460,7 @@ def kn_range_map_n(+tb: F.Table, +ar: O.Arena) -> U32:
 #
 # `u.shape != u.src[0].shape` is the WALL -- it is the double-`Maybe` of the fold's
 # shape and the deferred `_ranges`-alike shape comparison, and movement.bend's
-# `shp_same` is the reader that would answer it. `# TODO(p3) __init__.py:221  symbol=is_shape_changing_bitcast
+# `shp_same` is the reader that would answer it. `# TODO(p3) __init__.py:204  symbol=is_shape_changing_bitcast
 # u.shape != u.src[0].shape`. What IS here is the op test, and `bitcast_op` is its
 # row: a rule that read only `u.op is BITCAST` and dropped the shape half would
 # fire on every bitcast, which is Python's `and` with the second conjunct missing.
@@ -527,7 +527,7 @@ def al_1(+tb: F.Table, +ar: O.Arena, +self: U32) -> Ker:
 # The table: `pm_add_loads`, __init__.py:223-227. TWO rules, and the first is a
 # GroupOp over `{REDUCE, WMMA, STACK}` plus every Elementwise op -- an op SET this
 # port cannot name, because `GroupOp.Elementwise` is a computed membership over 60
-# ops and `ops.bend`'s `Op` is a closed enumeration. `# TODO(p3) __init__.py:224  symbol=pm_add_loads
+# ops and `ops.bend`'s `Op` is a closed enumeration. `# TODO(p3) __init__.py:206  symbol=pm_add_loads
 # GroupOp.Elementwise`: `al_0`'s `ops` list therefore holds the three NAMED ops and
 # `al_elem_len` is the row for what that costs.
 def al_table() -> List<&2, O.PMEntry>:
@@ -581,7 +581,7 @@ def ib_local(+tb: F.Table, +ar: O.Arena, +i: U32) -> Bool:
 #     (UPat(Ops.AFTER, name="after"),   add_raw_barrier)   # :267  -- :247-253
 #     (UPat((Ops.END, Ops.BACKEDGE), name="end"), add_war_barrier)  # :268  -- :255-264
 #
-# `# TODO(p3) __init__.py:251  symbol=add_raw_barrier  UOp.sink(...).toposort(gate=...)` -- BOTH bodies open
+# `# TODO(p3) __init__.py:230  symbol=add_raw_barrier  UOp.sink(...).toposort(gate=...)` -- BOTH bodies open
 # with a toposort over the node's deps (`add_raw_barrier` gates out BARRIERs,
 # `add_war_barrier` walks `backward_slice_with_self`), and a rule here cannot run a
 # fixpoint: that is the whole of movement.bend's header. What IS here is the OP
@@ -633,7 +633,7 @@ def pm_alloc_to_buf(+ar: O.Arena, +self: U32) -> Ker:
 # no rule in `ops.bend`'s `pm_rewrite` can, so `lw_step` answers `(answer, list)`
 # as a `Data` and the list is threaded through the accumulator.
 #
-# `# TODO(p3) __init__.py:411  replaced.get(x, x)` -- the substitution map is a
+# `# TODO(p3) __init__.py:396  replaced.get(x, x)` -- the substitution map is a
 # mutable dict and this architecture has no store, so it is a LIST threaded as an
 # accumulator. That is a CHANGE OF SHAPE and not a change of meaning, because the
 # walk is in toposort order and each key is written once: `lw_subst` finds the
@@ -753,7 +753,7 @@ def lw_go(lst: List<&2, U32>, +subs: List<&2, Sub>, +acc: List<&2, U32>, +ar: O.
     case Nil{}   : Line{subs, acc}
     case +u <> t : lw_go(t, Line.subs(lw_step(subs, acc, fired, ar, u)), Line.out(lw_step(subs, acc, fired, ar, u)), ar, fired)
 
-# `# TODO(p3) __init__.py:409  replaced: dict[UOp, UOp]` -- a mutable dict becomes a
+# `# TODO(p3) __init__.py:394  replaced: dict[UOp, UOp]` -- a mutable dict becomes a
 # threaded LIST of `Sub`. That is a CHANGE OF SHAPE and not of meaning, because the
 # walk is in toposort order and each key is written once, so `lw_find`'s FIRST match
 # is the only match. `lw_three` is the row that exercises it, and `lw_key` is the
@@ -780,7 +780,7 @@ def line_rewrite(+lst: List<&2, U32>, +ar: O.Arena, fired: Maybe<&2, Ker>) -> Li
 #
 # THE FLAGS THEMSELVES are env reads and `helpers.bend` owns those, so they are not
 # names here: what this file owns is the COUNT and the ORDER, and the count is what
-# the cache key hashes. `# TODO(p3) __init__.py:508  to_program_config` -- the flags
+# the cache key hashes. `# TODO(p3) __init__.py:505  to_program_config` -- the flags
 # are `ContextVar`s in Python and a worker-scoped value here, which is a runtime
 # concern and not a codegen one.
 def cfg_len() -> U32:
@@ -806,7 +806,7 @@ def cfg_ctx_len() -> U32:
 # key is `(nsrc, is_ins)` and NOT the src count alone: `tp_tag` returns 2 and 4 from
 # the same arity and `tp_stage` is the row that says so.
 #
-# `# TODO(p3) __init__.py:442  UOp(Ops.LINEAR, src=tuple(lst))` -- `do_linearize`'s
+# `# TODO(p3) __init__.py:444  UOp(Ops.LINEAR, src=tuple(lst))` -- `do_linearize`'s
 # body is `linearize(sink)` from `late/linearizer.py`, which is not a claimed file,
 # and the LINEAR node's `arg=to_function_name(...)` is a string. The TABLE is
 # therefore exact and the BODIES are all `codegen/late/` and the renderer, i.e. the

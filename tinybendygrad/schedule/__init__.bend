@@ -93,18 +93,18 @@
 #
 # THREE properties this file needs from ops.py AND does not get for free.
 #
-# * `gate_kernel_sink` (ops.py:1915 symbol=gate_kernel_sink) is three lines and its `arg is
+# * `gate_kernel_sink` (ops.py:1880 symbol=gate_kernel_sink) is three lines and its `arg is
 #   KernelInfo` is a `match` on `O.Arg`, so `sc_gate` is three defs. It is a def and not a
 #   parameter because a Python `Callable` is not a Bend value, and `sc_topo` inlines it -- the
 #   same bill `Topo.step` pays for having no gate.
-# * `UOp.is_bound_var` (ops.py:1015 symbol=is_bound_var) reads `is_variable` (ops.py:1020), whose
+# * `UOp.is_bound_var` (ops.py:981 symbol=is_bound_var) reads `is_variable` (ops.py:1020), whose
 #   last conjunct is `self._shape == ()`. For a PARAM that is ops.py:323 symbol=_shape, which is
 #   `image`/`size` off the arg and nothing else -- so it is `fold.bend`'s `param_shape`, NOT the
 #   fold table, and no `Folded` is threaded anywhere in this file.
 #   TODO(p3) ops.py:323  `UOp._shape` -- STAYS IN ops.bend.
 #   (ops.py:1756 DOES NOT EXIST at the pin: `tinygrad/uop/ops.py` is 1926 lines there. `_shape` is
 #   ops.py:323 and `shape` is ops.py:439.)
-# * `UOp.buf_uop` (ops.py:911 symbol=buf_uop) is a fuel fold here and NOT the recursive property it
+# * `UOp.buf_uop` (ops.py:886 symbol=buf_uop) is a fuel fold here and NOT the recursive property it
 #   is in Python, because of the two arms that CONSTRUCT:
 #       if self.op is Ops.MSELECT: return self.src[0].buf_uop.mselect(self.arg)
 #       if self.op is Ops.MSTACK: return UOp(Ops.MSTACK, src=tuple(x.buf_uop for x in self.src))
@@ -266,8 +266,8 @@ def sc_fuel(+ar: O.Arena) -> Nat:
 # `sc_store` is `UOp.new(ar, OpsSTORE, (self, val) or (self, val, gate),
 # ANone, TNone)` with the gate folded, and `g_body` in this file's own gate
 # already builds a STORE by hand, so this is that literal made a def.
-#   TODO(p3) ops.py:543  `UOp.body`  -- LOCAL COPY; ops.bend has no def.
-#   TODO(p3) ops.py:594  `UOp.store` -- LOCAL COPY; ops.bend has no def.
+#   TODO(p3) ops.py:533  `UOp.body`  -- LOCAL COPY; ops.bend has no def.
+#   TODO(p3) ops.py:585  `UOp.store` -- LOCAL COPY; ops.bend has no def.
 
 def sc_body.of(op: O.Op, src0: U32) -> Maybe<&2, U32>:
   match op:

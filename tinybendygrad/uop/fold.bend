@@ -1298,7 +1298,7 @@ def perm_ds(+ar: O.Arena, i: U32, +ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
 # `GroupOp.Movement` is FIVE ops -- `tinygrad/uop/__init__.py:117 symbol=Movement`
 # `tinygrad/mixin/movement.py:233 symbol=flip` -- of `_mop(Ops.PAD, ...)`,
 # ops.py:402-404 symbol=_shape -- `if sorted(self.marg) != list(range(len(ps))):
-# `case Ops.PERMUTE: return self.arg` (ops.py:796 symbol=marg); `perm_ds` is that arm.
+# `case Ops.PERMUTE: return self.arg` (ops.py:768 symbol=marg); `perm_ds` is that arm.
 
 def pair_ds.put(+pad: Bool, x: Maybe<&1, Pairs>, +ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
   match x:
@@ -4612,33 +4612,33 @@ def main() -> IO(Unit):
 # on EVERY entry, and one entry (`ops.py:1013 def variable`) named a function
 # the one line that covers many: `simplify` (ops.py:495) is `graph_rewrite(self,
 # TODO(p3) ops.py:199  __call__ (ucache key)   -- PORTED, as the `dtype_key` gate row:
-# TODO(p3) ops.py:211  class recursive_property -- PORTED as the fold itself.
-# TODO(p3) ops.py:239  def dtype                -- PORTED, as `UOp.dtype` over a table.
-# TODO(p3) ops.py:261  def key                  -- `hashlib.sha256`. Bend has no rotate
+# TODO(p3) ops.py:206  class recursive_property -- PORTED as the fold itself.
+# TODO(p3) ops.py:233  def dtype                -- PORTED, as `UOp.dtype` over a table.
+# TODO(p3) ops.py:254  def key                  -- `hashlib.sha256`. Bend has no rotate
 # TODO(p3) ops.py:272  def backward_slice       -- a `toposort(enter_calls=False)` plus
-# TODO(p3) ops.py:284  def _bool_slice          -- a `frozenset` union down the srcs. It
-# TODO(p3) ops.py:316  def tuplize              -- `repr(self.arg)` for the sort, and
+# TODO(p3) ops.py:276  def _bool_slice          -- a `frozenset` union down the srcs. It
+# TODO(p3) ops.py:308  def tuplize              -- `repr(self.arg)` for the sort, and
 # TODO(p3) ops.py:323  def _shape               -- PORTED, with `UOp.shape` over a table.
 # TODO(p3) ops.py:439  def shape                -- `if (ret:=self._shape) is None: raise`,
-# TODO(p3) ops.py:444  def shard_shape          -- `self.device`, `self.axis` and
+# TODO(p3) ops.py:436  def shard_shape          -- `self.device`, `self.axis` and
 # TODO(p3) ops.py:453  def ended_ranges         -- PORTED, as `UOp.ended_ranges`.
 # TODO(p3) ops.py:465  def _ranges              -- PORTED, and the set algebra is NOT the
-# TODO(p3) ops.py:479  def ranges               -- PORTED with it, as the reader
-# TODO(p3) ops.py:484  def axis_id              -- PORTED, and NOT a fold property:
-# TODO(p3) ops.py:489  def axis_type            -- PORTED, same reason. `UOp.axis_type`.
+# TODO(p3) ops.py:471  def ranges               -- PORTED with it, as the reader
+# TODO(p3) ops.py:476  def axis_id              -- PORTED, and NOT a fold property:
+# TODO(p3) ops.py:481  def axis_type            -- PORTED, same reason. `UOp.axis_type`.
 # TODO(p3) ops.py:495  def simplify             -- `graph_rewrite`. STILL NOT PORTED, and
-# TODO(p3) ops.py:502  def ssimplify            -- PARTIAL, and the partial is measured.
+# TODO(p3) ops.py:494  def ssimplify            -- PARTIAL, and the partial is measured.
 #   PARAM/SPECIAL (symbolic.py:269 is the only `symbolic` rule naming either, and
 #   MEASURED, `ssimplify` moves an `AFTER` to its `PARAM` and re-associates an `ADD`,
-# TODO(p3) ops.py:503                        -- the body is the line above.
+# TODO(p3) ops.py:494                        -- the body is the line above.
 # TODO(p3) ops.py:526  def trace_num            -- replaces the UOps in a tag tuple with
-# TODO(p3) ops.py:543  def body                 -- PORTED, inlined into `ended_of.call`:
+# TODO(p3) ops.py:533  def body                 -- PORTED, inlined into `ended_of.call`:
 # PORTED -- `ops.py:646 get_idx` is ported as `UOp.get_idx`. The reason this line
 # TODO(p3) ops.py:696  def axis                 -- `self.arg` for a movement op, so it is
-# TODO(p3) ops.py:762  def base                 -- PORTED, as `UOp.base` over the table.
+# TODO(p3) ops.py:743  def base                 -- PORTED, as `UOp.base` over the table.
 # DONE(p3) ops.py:769  def unsharded_base        -- PORTED, and PORTED TWICE, and the
 #   {Movement, DETACH, UNSHARD} goes PAST it. MEASURED on
-# TODO(p3) ops.py:782  def storage_base         -- PORTED, as `Derived.sbase`, the
+# TODO(p3) ops.py:758  def storage_base         -- PORTED, as `Derived.sbase`, the
 # PORTED -- ops.py:786 `as_shape`, all three arms, through `sym_dim`. `shape_to_shape_arg`
 #   (ops.py:106-110) hands a `UOp` dim over verbatim, so the third arm is a live arm and
 # PORTED -- ops.py:792 `marg`, all three arms, and the `as_shape` under it is what the
@@ -4646,12 +4646,12 @@ def main() -> IO(Unit):
 # DONE(p3) ops.py:891  def is_virtual           -- PORTED, as `UOp.is_virtual`, and
 #   `dtypes.weaks` is `(weakint, weakfloat)` (dtype.py:160) and `S.Cls` names
 # DONE(p3) ops.py:896  def addrspace            -- PORTED, as `UOp.addrspace`.
-# TODO(p3) ops.py:999 def is_realized          -- `has_buffer_identity`, a graph walk
-# TODO(p3) ops.py:1009 def is_variable        -- `self.op is Ops.PARAM and
+# TODO(p3) ops.py:968 def is_realized          -- `has_buffer_identity`, a graph walk
+# TODO(p3) ops.py:977 def is_variable        -- `self.op is Ops.PARAM and
 #   said `ops.py:1013 def variable`; the body it quotes is the `is_variable`
 #   DIFFERENT function with a different body. A marker whose name and whose
-# TODO(p3) ops.py:1037 def variables            -- the `unbind`/`unbind_all` set walk.
-# TODO(p3) ops.py:1048 def const_factor         -- `divides` on a symbolic factor list,
+# TODO(p3) ops.py:1003 def variables            -- the `unbind`/`unbind_all` set walk.
+# TODO(p3) ops.py:1014 def const_factor         -- `divides` on a symbolic factor list,
 # DONE(p3) ops.py:1090 def vmin                 -- LANDED as `UOp.vmin`, a reader over the
 # DONE(p3) ops.py:1092 def vmax                 -- same, and the same two rows.
 # DONE(p3) ops.py:1094 def _min_max             -- THE BOUND, THE OP TABLE,
@@ -4661,14 +4661,14 @@ def main() -> IO(Unit):
 #       and the paragraph's claim was FALSE, which is the part worth keeping. It said
 #       dtype with it and the default arm has nothing to compute from. MEASURED, not
 #     3. `Ops.CAST` -- `truncate` (dtype.py:297) is half a C-effect seam in `dtype.bend`
-# TODO(p3) ops.py:1158 def _sym_fxn             -- `exec` of generated source. P3/P6.
-# TODO(p3) ops.py:1188 def alloc                -- `new_buffer`, which is P6's device
-# TODO(p3) ops.py:1218 def param                -- P6, same reason.
-# TODO(p3) ops.py:1395 def __reduce__           -- pickling; the arena is monotone and
+# TODO(p3) ops.py:1124 def _sym_fxn             -- `exec` of generated source. P3/P6.
+# TODO(p3) ops.py:1154 def alloc                -- `new_buffer`, which is P6's device
+# TODO(p3) ops.py:1183 def param                -- P6, same reason.
+# TODO(p3) ops.py:1361 def __reduce__           -- pickling; the arena is monotone and
 # DONE(p3) ops.py:1402 def safe_exp2            -- PORTED, and NOT HERE: it is
 #   `symbolic.bend`'s `f32_exp2` (`F32.pow(2.0, x)`), and `ops.py:1402` is what
 # DONE(p3) ops.py:1406 def safe_pow             -- the same, as `symbolic.bend`'s
-# TODO(p3) ops.py:1422 def exec_alu             -- its tuple operand case is a
+# TODO(p3) ops.py:1388 def exec_alu             -- its tuple operand case is a
 #      op, and MEASURED that refusal is right (`AFTER` and `ADD` are the counter-examples).
 # THE MUTATION TABLE for the src ORDER fix, MEASURED, run both ways.
 # with a `List.reverse` -- and it is a real defect, MEASURED by
@@ -4676,7 +4676,7 @@ def main() -> IO(Unit):
 # answered False for `(32,32,4)`, and helpers.py:37 says True. `is_image_shape.four` is
 # MEASURED by `.agents/slop/notes/probe-sized-consumers.bend`, and REPORTED NOT FIXED by
 # | M9 | `count_of`: `case O.SU{u}: None{}` -> `Some{0}` | nothing (0) | a fixture gap, and its old reason is dead. This entry used to read "an unreachable state: nothing in this tree can mint an `O.SU`", which was true until `sym_dim` landed and made `SInt.uop` (ops.bend:816) its first caller. The state is reachable now and the mutation still moves nothing, because no pad/shrink/bitcast fixture carries a symbolic dim -- and the wall that stops one is a different one: upstream's `resolve` defaults TRUE over the sums (ops.py:64) while `Tri.of`'s `count_of` refuses a `SU`. `mv_padsym` is that row and `mv_padsym_pos` is the fixture this entry asks for. a `0` is a request for a fixture and this is one. |
-# | M12 | `order_arg`: answer `Nil{}` instead of the `ATuple` | `mv_perm` `mv_permrep` `mv_permlen` (3) | `marg` for PERMUTE is `self.arg` (ops.py:796 symbol=marg), so reading anything else empties the arg. It moves THREE rows; the two FLIP rows it used to move are gone with the op, and what is left is the half of `GroupOp.Movement` that is about the ARG and not the srcs. |
+# | M12 | `order_arg`: answer `Nil{}` instead of the `ATuple` | `mv_perm` `mv_permrep` `mv_permlen` (3) | `marg` for PERMUTE is `self.arg` (ops.py:768 symbol=marg), so reading anything else empties the arg. It moves THREE rows; the two FLIP rows it used to move are gone with the op, and what is left is the half of `GroupOp.Movement` that is about the ARG and not the srcs. |
 # | M14 | `sym_dim.range`: the point arm answers `SU` instead of `SI{lo}` | `mv_reshsym_pt` `mv_reshbare_pt` (2) | the "just return su" fix, and it is wrong. a PARAM whose interval is a point is folded to a CONST by symbolic.py:269, so `ssimplify` hands back the int; answering `SU` instead leaves `(3,1)` as `(U(Ops.PARAM:p),1)`. Two rows, and they are the only two with no `U` in the correct answer -- which is the point: a fixture whose dims are all symbolic cannot tell this mutation from a correct simplifier. |
 # | M16 | `reshape_ok`: `sym` read as `False` -- the OLD wall back | `mv_reshsym_nm` `mv_reshbare` `mv_reshbare_dis` (3) | `resolve(..., False)` is a DEFAULT, so an unprovable product does not raise (ops.py:409-410). Reading it as an inequality is what made every symbolic marg a refusal; three rows go from a named shape to `ABSENT`. This is the mutation that says the fix is in `reshape_ok` and not only in `sym_dim`. |
 # THE MUTATION TABLE for `_min_max`'s OP TABLE, MEASURED.

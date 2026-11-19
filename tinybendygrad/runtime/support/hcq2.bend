@@ -23,14 +23,14 @@
 #                                            `:455-477 bufferize_cmdbuf PORTED
 #                                            pad128/rt_patch/dword_at` and none of
 #                                            those three names is a def here.
-#   hcq2.py:416 `hoist_links`            WALL 1  a UPat over an AFTER symbol=hoist_links
-#   hcq2.py:423 `pm_lift_deps`           WALL 1  the old `pm_renumber` row symbol=pm_lift_deps
+#   hcq2.py:427 `hoist_links`            WALL 1  a UPat over an AFTER symbol=hoist_links
+#   hcq2.py:434 `pm_lift_deps`           WALL 1  the old `pm_renumber` row symbol=pm_lift_deps
 #   hcq2.py:461 `lower_call`             WALL 1  the input TABLE is GONE
 #                                            (`cff94ae88`) and with it the
 #                                            128-byte merge, so this row's old
 #                                            `slots_of` claim had no counterpart
-#   hcq2.py:535 `hcq_compile`            PORTED  `compile_seq` -- THE INIT ORDER symbol=hcq_compile
-#   hcq2.py:552 `hcq_link`               PORTED  `link_seq` symbol=hcq_link
+#   hcq2.py:543 `hcq_compile`            PORTED  `compile_seq` -- THE INIT ORDER symbol=hcq_compile
+#   hcq2.py:557 `hcq_link`               PORTED  `link_seq` symbol=hcq_link
 #
 # THE WALLS, named once each with the `hcq2.py` line that owns them.
 #
@@ -52,14 +52,14 @@
 #    WALL(p3) tinygrad/runtime/support/hcq2.py:141   `pm_replace_buffers` symbol=pm_replace_buffers -- BLOCKED: needs the shaped `UOp.param` (`view_as` absent).
 #    WALL(p3) tinygrad/runtime/support/hcq2.py:148   `pm_unwrap_multi` symbol=pm_unwrap_multi -- BLOCKED: rule body unwritten here (`UOp.mselect`/`UOp.replace` are defs at `ops.bend`; no `def pm_unwrap_multi` in this file).
 #    WALL(p3) tinygrad/runtime/support/hcq2.py:180   `pm_insert_copy_staging` symbol=pm_insert_copy_staging -- BLOCKED: needs `Buffer`/`_resolve`/`lower_and_compile`.
-#    WALL(p3) tinygrad/runtime/support/hcq2.py:336   `q_rewrite` symbol=q_rewrite -- BLOCKED: needs the `HWQueue` device methods (`exec`/`copy`/`encdec`)..
+#    WALL(p3) tinygrad/runtime/support/hcq2.py:345   `q_rewrite` symbol=q_rewrite -- BLOCKED: needs the `HWQueue` device methods (`exec`/`copy`/`encdec`)..
 #    WALL(p3) tinygrad/runtime/support/hcq2.py:458   `pm_encode` -- BLOCKED: `pm_hcq_encode` is GONE upstream at this pin (`ad189c030`) and the matcher is `Compiled.pm_encode`; it needs `hcq_fence` (the `UPat.custom_function` target), `unwrap_view`/`patch`/`timeline`/`timeline_value` (the body's helpers): MEASURED, zero defs of each across `tinybendygrad/`.
 #
-#    WALL(p3) tinygrad/runtime/support/hcq2.py:423   `pm_lift_deps` symbol=pm_lift_deps -- BLOCKED: rule body unwritten here (`graph_rewrite` x3 / `UOp.after` x27 / `dedup` x2 are all defs; no `def pm_lift_deps` in this file).
+#    WALL(p3) tinygrad/runtime/support/hcq2.py:434   `pm_lift_deps` symbol=pm_lift_deps -- BLOCKED: rule body unwritten here (`graph_rewrite` x3 / `UOp.after` x27 / `dedup` x2 are all defs; no `def pm_lift_deps` in this file).
 #    WALL(p3) tinygrad/runtime/support/hcq2.py:452   -- BLOCKED: needs the shaped `UOp.param` and
 #    `UOp.substitute` (uop/ops.bend:514 symbol=GroupOp.commutative, open TODO) -- the row `pm_lift`.
 #    WALL(p3) tinygrad/runtime/support/hcq2.py:458   -- BLOCKED: needs `HCQInfo`; `CallInfo` has no `aux` (`uop/ops.bend:1157`) -- the row `pm_encode`.
-#    TODO(p3) runtime/support/hcq2.py:552  symbol=hcq_link -- `Compiled.pm_link` -- the link matcher upstream declares at module level (upstream line 478) and rewrites with in `hcq_link`.
+#    TODO(p3) runtime/support/hcq2.py:557  symbol=hcq_link -- `Compiled.pm_link` -- the link matcher upstream declares at module level (upstream line 478) and rewrites with in `hcq_link`.
 #
 #    THREE names that were on this list and are not any more, each because
 #    upstream RENAMED it and one because upstream DELETED it. The rename is not
@@ -95,7 +95,7 @@
 #    `SOME PROOFS FAIL`; this file follows the ops_webgpu lane instead and records
 #    the call in a `Tr`, so it is ALL PROOFS CHECK and the seam stays greppable.
 #    TODO(p3) tinygrad/runtime/support/hcq2.py:125   `ccall` symbol=ccall -- `ctypes` marshalling.
-#    TODO(p3) runtime/support/c.py:66  symbol=_resolve -- `cfield` is GONE upstream at this pin; `Field._resolve` is the shape that replaced it -- the ctypes field descriptor, not a `getattr`.
+#    TODO(p3) runtime/support/c.py:67  symbol=_resolve -- `cfield` is GONE upstream at this pin; `Field._resolve` is the shape that replaced it -- the ctypes field descriptor, not a `getattr`.
 #    `cfunc_buf` WAS ON THIS LIST AND IS DELETED, not renamed. Upstream
 #    `bdddaad21` ("ccall by symbol", #18521) deleted the function AND its caller
 #    in `device.py` (`pm_bufferize`'s third rule), because `ccall` no longer needs

@@ -6070,18 +6070,18 @@ def t_len_dec() -> U32: Bool.to_u32(U32.is_eq(U32.from_nat(sym_table_len()), t_l
 def t_len_dec_rm() -> U32: Bool.to_u32(U32.is_eq(U32.from_nat(rm_table_len()), t_len_rm()))
 
 #   :194's `x.cast(uint64)` IS the node `x` sits under, because `mixin/dtype.py:19`'s
-# TODO(p3) symbolic.py:207 def lt_folding -- `u.const_factor()` (-> `divides` ->
+# TODO(p3) symbolic.py:214 def lt_folding -- `u.const_factor()` (-> `divides` ->
 #   three are `_min_max` (ops.py:1104, the largest single piece `fold.bend`
-# TODO(p3) symbolic.py:214 def canonicalize_simplex -- `u.vmin >= 0` and
-# TODO(p3) symbolic.py:233 def fold_where_closure -- `bool_slice`
+# TODO(p3) symbolic.py:221 def canonicalize_simplex -- `u.vmin >= 0` and
+# TODO(p3) symbolic.py:240 def fold_where_closure -- `bool_slice`
 #   (ops.py:290, a frozenset union down the srcs), `op_in_backward_slice_with_self`
 # TODO(p3) symbolic.py:240-325  symbol=symbolic  -- ALL 47. Every one of the 47
 # TODO(p3) symbolic.py:328-386 parse_valid / uop_given_valid / _valid_priority /
 #   `UOp.variable` (ops.py:1013) for the fake variables. Four functions, none
-# TODO(p3) symbolic.py:390 def reduce_mul_chain -- `backward_slice` and `vmin`.
+# TODO(p3) symbolic.py:402 def reduce_mul_chain -- `backward_slice` and `vmin`.
 # TODO(p3) symbolic.py:400-403 def drop_and_clauses + pm_drop_and_clauses --
-# TODO(p3) symbolic.py:427 def gated_given_valid -- `IMAGE.value`, a
-# TODO(p3) symbolic.py:451  symbol=sym  the `xpow` rule -- `xpow` is
+# TODO(p3) symbolic.py:441 def gated_given_valid -- `IMAGE.value`, a
+# TODO(p3) symbolic.py:463  symbol=sym  the `xpow` rule -- `xpow` is
 #   `tinygrad/codegen/decomp/transcendental.py`, a foreign import (symbolic.py:12
 # TODO(p3) symbolic.py:454-462 the four load/store folding rules -- `UOp.index`,
 # TODO(p3) symbolic.py:465-467  symbol=sym  the three `1 - d` reciprocal rules -- and the wall is

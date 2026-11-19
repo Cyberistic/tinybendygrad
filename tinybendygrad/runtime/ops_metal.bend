@@ -58,7 +58,7 @@
 # PORTED, DEF BY DEF.
 #
 # THREE defs were written and nothing reached them, and that is the finding this session started
-# from. `icb_keep` -- upstream's `icbs` (tinygrad/runtime/ops_metal.py:267 symbol=new_icb) --,
+# from. `icb_keep` -- upstream's `icbs` (tinygrad/runtime/ops_metal.py:248 symbol=new_icb) --,
 # `dev.sync_scan`'s list (`sync_starts`, :276-281) and `cns_string` (:23, `to_ns_str`) each
 # carried a comment saying a row checked it, and each was DEAD: correct, unread, and unreachable
 # from `main`. A file whose gate prints 332 rows had a `Dev.nics` that was always 0, a profile scan

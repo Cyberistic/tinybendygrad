@@ -50,7 +50,7 @@
 #     `render`'s label table, jump backpatch table and the little-endian signed
 #     four-byte patch. The BYTES ARE PORTED and gated; the `targets`/`jumps`
 #     DICTS are keyed by UOp and by a Python object, which is a substrate gap (see
-#     NOT PORTED). `TODO(p3) x86.py:761 symbol=render`.
+#     NOT PORTED). `TODO(p3) x86.py:782 symbol=render`.
 #
 #   STAGE 3b `to_int` and `is_two_address`           py:199, 725           DONE
 #     20 + 88 rows. `to_int` is asked with a DTYPE OBJECT -- `S.half()`, `S.single()`,
@@ -70,12 +70,12 @@
 #   *rewrites* these lambdas express (`bool CMPNE is XOR`, `-x -> 0 - x`,
 #   `x % y -> x - y*floor(x/y)`) are pure and are recorded as a TODO rather than
 #   half-built, because a matcher that cannot match is not a partial port, it is a
-#   different program. `TODO(p3) x86.py:92 symbol=extra_matcher`.
+#   different program. `TODO(p3) x86.py:141 symbol=extra_matcher`.
 #
-# * `pre_isel_matcher` (py:156-170, 15 lines) -- same wall. `TODO(p3) x86.py:156 symbol=pre_isel_matcher`.
+# * `pre_isel_matcher` (py:156-170, 15 lines) -- same wall. `TODO(p3) x86.py:205 symbol=pre_isel_matcher`.
 # * `isel_matcher` (py:312-450, 139 lines) -- THE BULK OF THE FILE, and it is
 #   EIGHTY-FIVE `PatternMatcher` entries. Same wall; this is why 350 and not 700.
-#   `TODO(p3) x86.py:312 symbol=isel_matcher`.
+#   `TODO(p3) x86.py:355 symbol=isel_matcher`.
 # * `pre_regalloc_matcher` (py:469-472) and `post_regalloc_matcher`
 #   (py:502-516) -- patterns again, and their rewrites
 #   (`flag_rematerialize`, `alloc_buffer`, `lower_range`, `lower_end`,
@@ -83,32 +83,32 @@
 #   (`ctx.lock`, `ctx.stack_size`, `ctx.stack_allocated`, `ctx.loop_label`), which
 #   is a `Ref`-per-field context record. `alloc_stack` is NOT IN upstream at this
 #   pin: the stack allocation is `alloc_buffer` and `ctx.stack_size`.
-#   `TODO(p3) x86.py:456 symbol=flag_rematerialize, :464 symbol=alloc_buffer, :476 symbol=lower_range, :490 symbol=lower_end, :496 symbol=lower_loop, :502 symbol=post_regalloc_matcher`.
+#   `TODO(p3) x86.py:493 symbol=flag_rematerialize, :464 symbol=alloc_buffer, :476 symbol=lower_range, :490 symbol=lower_end, :496 symbol=lower_loop, :502 symbol=post_regalloc_matcher`.
 #
 # * `scratch_buffer` (py:135) -- `UOp.placeholder` and `AddrSpace.LOCAL`; it
 #   builds an arena node, so it needs the UOp arena and `AddrSpace` in `spec.bend`.
-#   `TODO(p3) x86.py:135 symbol=scratch_buffer`.
+#   `TODO(p3) x86.py:184 symbol=scratch_buffer`.
 # * `gated_load` (py:137-143) and `gated_store` (py:144-146) -- both build a
 #   FOUR-node `AFTER` subtree and read `ctx` for a slot number. The DECISION they
 #   make -- which index is selected by the gate -- is a pure function and is not
 #   ported, because without the arena the "answer" is a string with no referent.
-#   `TODO(p3) x86.py:137 symbol=gated_load, :144 symbol=gated_store`.
+#   `TODO(p3) x86.py:186 symbol=gated_load, :144 symbol=gated_store`.
 # * `flag_gate` (py:152-153) -- ONE LINE and it is pure: `None` unless the op is a
 #   comparison on a non-float, else `m != const(0, int)`. It needs `Ops`' comparison
 #   set and `dtypes.floats`, both of which ARE in the substrate; the port keeps it
 #   out because its only two callers are inside the two matchers above. Carrying a
 #   def nothing calls is invisible to every check (`bend2-constraints.md` line
 #   1502 records three such defs in `schedule/indexing.bend`).
-#   TODO(p3) x86.py:152 symbol=flag_gate -- upstream's `flag_gate` is that one line.
+#   TODO(p3) x86.py:201 symbol=flag_gate -- upstream's `flag_gate` is that one line.
 # * `def_reg` (py:162) and `undef` (py:164) -- NOT IN upstream at this pin: upstream
 #   DELETED both (the `DEFINE` placeholder went with it, and `undef()` became an
 #   inline `UOp(Ops.NOOP)`), and `stack_pointer` is now
 #   `UOp.placeholder((1,), dtypes.uint64, slot=-1, addrspace=AddrSpace.REG).replace(
 #   tag=(RSP,))` (py:192). So this hole is GONE, not carried: there is no `def_reg` to
 #   port, and the gate's `reg.stackptr` row asks the register and not the node.
-#   `TODO(p3) x86.py:192 symbol=stack_pointer`.
+#   `TODO(p3) x86.py:243 symbol=stack_pointer`.
 # * `base` / `lane` (py:197-198) -- both read `x.src[i]`'s src1.src0.val through
-#   `Ops.INDEX`. Arena reads. `TODO(p3) x86.py:197 symbol=base`.
+#   `Ops.INDEX`. Arena reads. `TODO(p3) x86.py:251 symbol=base`.
 # * `asm_str` is DONE (py:737-758, STAGE 7) and so is `_format` / `_mem_adress`. One
 #   limit inside it is a WALL and not an omission: `AsmMem.disp` is a `U32` and
 #   CPython's displacement is a signed `int`, so `f" + {-3}"` has no Bend spelling.
@@ -122,38 +122,38 @@
 #   rather than ported alone. MEASURED while writing STAGE 7: `imm`'s `.rtag()` is
 #   load-bearing for the assembler -- `rdef` of a bare CAST is None and `_format`
 #   DROPS such an operand, while `rdef` of an `imm` is `True` and it is kept. The two
-#   differ only in the tag. `TODO(p3) x86.py:200 symbol=imm`.
+#   differ only in the tag. `TODO(p3) x86.py:254 symbol=imm`.
 # * `cmp` (py:208-210) / `mask` (py:212-214) -- build `x.ins(...)` nodes; `cmp`
 #   also RAISES on a float src[0], which is a wall, not a return.
-#   `TODO(p3) x86.py:208 symbol=cmp`.
+#   `TODO(p3) x86.py:263 symbol=cmp`.
 # * `vinsertps` (py:219-223) / `vpins` (py:227-229) / `idiv` (py:231-241) /
 #   `shift` (py:244-247) -- all `functools.reduce` chains over `x.ins(...)`.
-#   `TODO(p3) x86.py:219 symbol=vinsertps`.
+#   `TODO(p3) x86.py:274 symbol=vinsertps`.
 # * `fold_address` (py:250-261) / `lea` (py:264) / `_is_vec_xmm` (py:278-279) --
 #   pure DECISIONS over `x.op`, `x.src`, `base.dtype` and `x.vmin`; every input is an
 #   arena read. `is_address` (py:261-265 in the old upstream) is GONE -- upstream
 #   deleted it -- so this hole is one function smaller than it was.
-#   `TODO(p3) x86.py:250 symbol=fold_address`.
+#   `TODO(p3) x86.py:305 symbol=fold_address`.
 # * `abi` (py:265-273) -- `_stack_arg` builds nodes and reads
 #   `ctx.func_args`, which is a `sorted(...)` over `sink.toposort()`.
-#   `TODO(p3) x86.py:265 symbol=abi`.
+#   `TODO(p3) x86.py:320 symbol=abi`.
 # * `alloc_vregs` (py:293-307) -- reads `ctx.reg_n`, calls `ctx.vreg`, which
-#   MINTS a `Register` with `itertools.count()`. `alloc_vregs` -- `TODO(p3) x86.py:293 symbol=alloc_vregs`.
+#   MINTS a `Register` with `itertools.count()`. `alloc_vregs` -- `TODO(p3) x86.py:336 symbol=alloc_vregs`.
 # * `X86LinearContext` (py:681-707) and `assign_spill_slot` (py:703-707) -- the
 #   `lock` / `stack_allocated` / `stack_size` state above -- `X86LinearContext`. `TODO(p3) x86.py:681-707 symbol=X86LinearContext`.
 # * `X86Renderer.__init__` (py:720-724) -- the arch check is `arch.split(",")[0]
 #   != "x86_64"` (one `String.split`, P3) and then `from
 #   tinygrad.runtime.support.compiler_cpu import X86Compiler`, which is a Clang
-#   PROCESS SPAWN. FFI. `TODO(p3) x86.py:720 symbol=X86Renderer.__init__`.
+#   PROCESS SPAWN. FFI. `TODO(p3) x86.py:741 symbol=X86Renderer.__init__`.
 # * `is_two_address` (py:725) / `copy` (py:726) -- `is_two_address` IS ported
 #   (88 rows). `copy` is `x.ins(MOV, src=(x,), tag=reg)`: one node.
-#   `TODO(p3) x86.py:726 symbol=copy`.
+#   `TODO(p3) x86.py:747 symbol=copy`.
 # * `spill` (py:728-731) / `fill` (py:733-735) -- build nodes from `fold_address`
 #   and read `rdef(x).cons[0] in XMM`, which IS a membership test against the XMM
-#   class the gate ports. The node build is not. `TODO(p3) x86.py:728 symbol=spill`.
+#   class the gate ports. The node build is not. `TODO(p3) x86.py:749 symbol=spill`.
 # * `render`'s `targets` / `jumps` DICT (py:761-762, 776) -- keyed by a UOp and by
 #   a Python `object`. The patch arithmetic is ported; the keying is a substrate
-#   change. `TODO(p3) x86.py:761 symbol=render`.
+#   change. `TODO(p3) x86.py:782 symbol=render`.
 
 import Base
 import ./../../LAWS/spec.bend as S

@@ -23,7 +23,7 @@
 #    `mem_numel` reads `ParamArg.size` and is exact for every node this file can see.
 #    `mem_raw` is the honest spelling of the product and is what the peak fold uses.
 # 3. The return, `linear.substitute(replace_map, name="memory plan", walk=True)`
-#    (memory.py:61), needs `UOp.substitute` (ops.py:514 symbol=substitute) and `UOp.new_buffer` (ops.py:835 symbol=new_buffer,
+#    (memory.py:61), needs `UOp.substitute` (ops.py:506 symbol=substitute) and `UOp.new_buffer` (ops.py:835 symbol=new_buffer,
 #    a P6 device). `mem_replace_map` builds the map and the count of arenas is gated; the
 #    substitute is the wall. See the TODO block at the foot.
 

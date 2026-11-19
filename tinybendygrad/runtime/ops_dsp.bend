@@ -20,8 +20,8 @@
 #    `pathlib.Path(f.name).read_bytes()` after it. `args` IS ported -- it is a
 #    string function of `mock` -- and so is the whole command line, as
 #    `compile_cmd`. The spawn and the byte buffer are not.
-#    TODO(p3) runtime/ops_dsp.py:118  symbol=compile -- the clang spawn and the .so read-back.
-#    TODO(p3) runtime/ops_dsp.py:125  symbol=disassemble -- cpu_objdump / llvm-objdump.
+#    TODO(p3) runtime/ops_dsp.py:119  symbol=compile -- the clang spawn and the .so read-back.
+#    TODO(p3) runtime/ops_dsp.py:126  symbol=disassemble -- cpu_objdump / llvm-objdump.
 #
 # 2. THE ION AND MMAP SYSCALLS (:81-83, :88, :132, :172). `os.open('/dev/ion')`,
 #    `qcom_dsp.ION_IOC_ALLOC`, `libc.mmap`, `os.close('/dev/adsprpc-smd')`. Every
@@ -74,7 +74,7 @@
 #                      dtypes have `fmt is None` -- void, weakint, weakfloat, all
 #                      four fp8s and bfloat16 -- and `unwrap` on that is a hard
 #                      failure. bfloat16 is the interesting one: `fmt is None` with
-#                      itemsize 2, and `supported_dtypes` (tinygrad/runtime/ops_dsp.py:45 symbol=supported_dtypes) exists to keep it
+#                      itemsize 2, and `supported_dtypes` (tinygrad/runtime/ops_dsp.py:46 symbol=supported_dtypes) exists to keep it
 #                      out of the signature. That is the whole reason :46 is there.
 #   `dt_itemsize` (:68)  the WIDTH `struct.pack` writes, hence how many of an
 #                      8-byte slot's eight bytes it touches. weakint/weakfloat are
@@ -158,7 +158,7 @@
 #
 #   * `ClangRenderer(Target("DSP","CLANG","hexagonv65,hexagonv65"))` RAISES
 #     `RuntimeError: unsupported arch: 'hexagonv65'` from ClangCompiler (tinygrad/runtime/support/compiler_cpu.py:15).
-#     That is WHY `DSPRenderer.__init__` (tinygrad/runtime/ops_dsp.py:17 symbol=__init__) does not call
+#     That is WHY `DSPRenderer.__init__` (tinygrad/runtime/ops_dsp.py:18 symbol=__init__) does not call
 #     `super().__init__`: a DSP target must never build the host CPU clang
 #     compiler. `dsp_no_super_init` pins that the compiler is the DSP one.
 #   * `rpc_sc(2,2,1,0)` is 33685760 and the listener's `sc=0x04020200` is 67240448.

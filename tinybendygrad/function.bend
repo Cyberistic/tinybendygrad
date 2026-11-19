@@ -14,7 +14,7 @@
 #   function.py:101-113 `function` + two overloads both decorator spellings
 #
 # WHAT IS A SEAM, with the owner and the Python line, at Section I:
-#   `UOp.param_like`  ops.py:1228-1234 symbol=param_like  `UOp.substitute`  ops.py:514 symbol=substitute
+#   `UOp.param_like`  ops.py:1228-1234 symbol=param_like  `UOp.substitute`  ops.py:506 symbol=substitute
 #   `UOp.call_with_outputs` ops.py:1260 symbol=call_with_outputs  `UOp.replace`     ops.py:245
 #   `get_state_dict((args, kwargs))`     `Context(...)`    `time.perf_counter`
 #   `self.fxn(*args, kwargs)`          `__get__`         `functools.partial`
@@ -215,7 +215,7 @@ def fn_implicit(+f: O.Found, start: U32) -> Bool:
           Bool.or(O.eq_op(fn_op(f), O.OpsBUFFER{}), fn_implicit.alloc(f, start)))
 
 # SECTION B -- `UOp.buf_uop` (ops.py:911). `ops.bend` carries it as
-# `# TODO(p3) ops.py:911  def buf_uop`, and it is not optional here: it is the
+# `# TODO(p3) ops.py:886  def buf_uop`, and it is not optional here: it is the
 # identity `add_to_ctx` refuses on and the value `invalid_outputs` collects. It
 # is ported locally and the owner is named above, which is what `mixin/rand.bend`
 # does for `op_pad`/`op_shr`.

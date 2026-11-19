@@ -13,7 +13,7 @@
 #     []       -> self.renderers                               device.py:396
 #     None     -> self.runtime_t                               device.py:396
 #
-# THE ARGUMENT NOBODY EXPECTS. `renderers or [Renderer]` at tinygrad/device.py:382 symbol=__init__ is an
+# THE ARGUMENT NOBODY EXPECTS. `renderers or [Renderer]` at tinygrad/device.py:385 symbol=__init__ is an
 # `or`, and `[]` is FALSY, so `NpyDevice` is NOT the renderer-less device its
 # source line suggests -- it is handed `[Renderer]`, the same default every
 # `Compiled` without a renderer gets. MEASURED: `[r.__name__ for r in
@@ -23,10 +23,10 @@
 # the second thing the four lines say, by what they do not contain:
 # `RDMADevice.__init__` (ops_rdma.py:70) calls `self._select_iface(device)`.
 # `NpyDevice.__init__` does not. So:
-#   * `self.iface` is never set, and `peer_group` (tinygrad/device.py:384 symbol=__init__) falls all the
+#   * `self.iface` is never set, and `peer_group` (tinygrad/device.py:385 symbol=__init__) falls all the
 #     way through `getattr(getattr(self,'iface',None),'peer_group', …)` to
 #     `device.split(":")[0]` -- the head, "NPY".
-#   * `device_id` comes from `Compiled.__init__` (tinygrad/device.py:383 symbol=__init__) and NOT from
+#   * `device_id` comes from `Compiled.__init__` (tinygrad/device.py:385 symbol=__init__) and NOT from
 #     `_select_iface` (tinygrad/device.py:469 symbol=_select_iface), which sets it FIRST and then asserts on
 #     the deprecated `NPY_IFACE` env var. Two lines of Python set the same
 #     field and only one of them can run here.
@@ -34,7 +34,7 @@
 #     which for a local peer group is the string "CPU".
 #   * `arch` is None, so `_select_renderer` (tinygrad/device.py:462 symbol=_select_renderer) passes NO `arch`
 #     kwarg at all: `({"arch": self.arch} if self.arch else {})`.
-#   * `NpyDevice.ifaces` is `[]`, inherited from `Compiled` (tinygrad/device.py:363 symbol=ifaces).
+#   * `NpyDevice.ifaces` is `[]`, inherited from `Compiled` (tinygrad/device.py:370 symbol=ifaces).
 #
 # THE PORTABLE END-TO-END DEVICE. The brief asked for a judgement here and the
 # answer is yes, with one correction to the premise.
@@ -52,7 +52,7 @@
 # from it, and it is the only one that needs no `import "./x.c"`.
 #
 # WHAT IS PORTED, DEF BY DEF. The first block is `ops_npy.py` and the second is
-# `HostAllocator` (tinygrad/device.py:293 symbol=HostAllocator), which is the surface those four lines
+# `HostAllocator` (tinygrad/device.py:300 symbol=HostAllocator), which is the surface those four lines
 # expose and which nothing else in `runtime/` re-implements.
 #
 # ops_npy.py
@@ -79,17 +79,17 @@
 #
 # THE THREE WALLS.
 #
-# 1. MMAP (tinygrad/device.py:297 symbol=_alloc). `mmap.mmap(-1, size, access=ACCESS_WRITE)` is a
+# 1. MMAP (tinygrad/device.py:301 symbol=_alloc). `mmap.mmap(-1, size, access=ACCESS_WRITE)` is a
 #    syscall and this file reaches host memory the way `device.bend` reaches
 #    it -- by NAMING the call in a trace. `mmap`/`munmap`/`memcpy` and
-#    `to_mv` (tinygrad/helpers.py:575 symbol=to_mv, `ctypes.from_address`) are FFI seams.
-#    TODO(p3) device.py:297  symbol=_alloc  mmap.mmap -- the mapping syscall.
-#    TODO(p3) helpers.py:575  symbol=to_mv  to_mv -- `memoryview((ctypes.c_uint8*sz).from_address(ptr))`.
+#    `to_mv` (tinygrad/helpers.py:568 symbol=to_mv, `ctypes.from_address`) are FFI seams.
+#    TODO(p3) device.py:301  symbol=_alloc  mmap.mmap -- the mapping syscall.
+#    TODO(p3) helpers.py:568  symbol=to_mv  to_mv -- `memoryview((ctypes.c_uint8*sz).from_address(ptr))`.
 # 2. `cpu_profile` (device.py:315,:317). A `with` around the copy that writes a
 #    profile event and re-reads `DEBUG`. It wraps the copy, it does not change
 #    it, and the three calls inside it are what the gate pins.
-#    TODO(p3) device.py:310  symbol=_copyin  cpu_profile -- the `with` and its profile event.
-# 3. `Device[buf.device]` (tinygrad/device.py:315 symbol=_map). Opening a device by string is a
+#    TODO(p3) device.py:315  symbol=_copyin  cpu_profile -- the `with` and its profile event.
+# 3. `Device[buf.device]` (tinygrad/device.py:321 symbol=_map). Opening a device by string is a
 #    registry lookup and a hardware open. `device.bend` OWES this file the
 #    already-opened set, so the port compares host NAMES rather than
 #    interning a device object -- and the host names are interned into two tags

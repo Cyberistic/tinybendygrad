@@ -14,7 +14,7 @@
 #
 # THE `min`/`max`/`sum`/`prod` HOISTS ARE reduce.py's LINES AND THEY MOVE BACK WITH
 # `mixin/reduce.bend`, WHICH DOES NOT EXIST YET; `tensor.bend` SETS THAT PRECEDENT BY HOISTING
-# `_mop` (ops.py:799 symbol=_mop) AND `_rop` (ops.py:633 symbol=_rop). `mo_reduce` HERE IS
+# `_mop` (ops.py:775 symbol=_mop) AND `_rop` (ops.py:633 symbol=_rop). `mo_reduce` HERE IS
 # `T.tn_rop` PLUS `_reduce`'s TWO LINES AROUND IT (mixin/reduce.py:13-18).
 #
 # THE EIGHT WALLS, each named at its Python line, ARE IN
@@ -75,7 +75,7 @@
 # shape.
 #
 # `commit_dtype` (tinygrad/mixin/dtype.py:16) ANSWERS A `Maybe` BECAUSE `UOp._min_max`
-# (ops.py:239 symbol=dtype) IS NOT PORTED, AND `mixin/dtype.bend` MEASURES THAT REFUSAL RATHER
+# (ops.py:233 symbol=dtype) IS NOT PORTED, AND `mixin/dtype.bend` MEASURES THAT REFUSAL RATHER
 # THAN GUESSING. `_reduce` (reduce.py:13 symbol=_reduce) READS IT, AND THE HONEST TOTALISATION IS
 # THE NODE's OWN DTYPE -- WHICH MAKES THE `cast` THE IDENTITY. A WEAKINT NODE IS THEREFORE NOT
 # COMMITTED, AND `t_commit_weak` SAYS SO.
@@ -107,8 +107,8 @@
 # rather than a graph Python can be asked for. They are listed here rather than filtered silently.
 #
 # the two-rules-claim-one-node row is `t_two_rules`. `softmax` (op.py:663) and `log_softmax`
-# (op.py:686 symbol=log_softmax) are TWO defs that both call `_softmax`, so the thirteen nodes
-# `_softmax` (op.py:657 symbol=_softmax) builds are interned ONCE. `log_softmax` prints 18 over a
+# (op.py:709 symbol=log_softmax) are TWO defs that both call `_softmax`, so the thirteen nodes
+# `_softmax` (op.py:680 symbol=_softmax) builds are interned ONCE. `log_softmax` prints 18 over a
 # graph whose shared prefix is 13 nodes -- MEASURED on both sides: the first thirteen op names of
 # the longer row are the shorter row minus its last two -- and the tails are `RECIP MUL` against
 # `LOG2 CONST MUL MUL ADD`. The row prints BOTH signatures from ONE arena. See its own comment for
@@ -126,7 +126,7 @@
 #
 #   M6  reduce.py:45's trailing half/bfloat16/fp8 cast, inverted. NEGATIVE for a float32 fixture,
 #       and the gate says so -- it is the only way to know the cast is guarded rather than applied.
-#   M7  `smax(n - correction, 0)` (uop/ops.py:74 symbol=smax) with the saturation dropped. Both
+#   M7  `smax(n - correction, 0)` (uop/ops.py:73 symbol=smax) with the saturation dropped. Both
 #       arms agree at `correction=0`, which is what `t_var0c0` uses. A float32 fixture cannot see
 #       `smax`, and saying so is the measurement.
 #   M8  `log_softmax` reading `_softmax`'s `e` instead of its `m` (op.py:706). UNFALSIFIABLE, and
@@ -318,7 +318,7 @@ def mo_commit_dt(+fx: F.Folded, +t: T.Tensor) -> S.Dt:
 # "float32")`, which is a `Config` read and `Config` is P6; the DEFAULT is float32
 # and no caller in this file's range overrides it, which is the same argument
 # fold.bend makes for `least_upper_float` (fold.bend:320 symbol=least_upper_float).
-# TODO(p3) tinygrad/dtype.py:213  sum_acc_dtype's `getenv("SUM_DTYPE")` -- a
+# TODO(p3) tinygrad/dtype.py:217  sum_acc_dtype's `getenv("SUM_DTYPE")` -- a
 #   `Config` read (P6). The default float32 is what `mo_sum_acc` uses and what every
 #   gate fixture needs.
 def mo_sum_acc.cls(cls: S.Cls, +dt: S.Dt) -> S.Dt:

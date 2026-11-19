@@ -14,7 +14,7 @@
 #      HAPPENS HERE, ONLY NAME RESOLUTION -- which is exactly the kind of
 #      table this project gates best, because a wrong entry is a silent
 #      wrong kernel and a table gates in both directions.
-#   2. `flag` (tinygrad/runtime/ops_qcom.py:298 symbol=flag) over the four kgsl `_SHIFT`/`_MASK` pairs.
+#   2. `flag` (tinygrad/runtime/ops_qcom.py:296 symbol=flag) over the four kgsl `_SHIFT`/`_MASK` pairs.
 #   3. The six DERIVED program sizes (:232-237), pure U32 arithmetic over
 #      `pvtmem`, `shmem`, `fregs`, `hregs`, `tex_cnt`, `ibo_cnt`, `samp_cnt`.
 #
@@ -31,12 +31,12 @@
 #   :19  `BUFTYPE_BUF`             PORTED  the port's own buftype_names, both directions
 #   :35-40 `_qreg_exec`/`qreg`     PORTED  the port's own mesa_name/qreg_name
 #   :35-40 `_qreg_exec`            PORTED  the port's own qregs/qfields/qreg.of
-#   tinygrad/runtime/ops_qcom.py:42  ctz               PORTED  `ctz` (see THE Ctz PRECONDITION) symbol=ctz
+#   tinygrad/runtime/ops_qcom.py:40  ctz               PORTED  `ctz` (see THE Ctz PRECONDITION) symbol=ctz
 #   :44-46 parity                 PORTED  `parity`
-#   tinygrad/runtime/ops_qcom.py:48  pkt7_hdr          PORTED  `pkt7_hdr` symbol=pkt7_hdr
-#   tinygrad/runtime/ops_qcom.py:50  pkt4_hdr          PORTED  `pkt4_hdr` symbol=pkt4_hdr
+#   tinygrad/runtime/ops_qcom.py:46  pkt7_hdr          PORTED  `pkt7_hdr` symbol=pkt7_hdr
+#   tinygrad/runtime/ops_qcom.py:48  pkt4_hdr          PORTED  `pkt4_hdr` symbol=pkt4_hdr
 #   :52  `_read_lib`              PORTED  the port's own read_lib (little-endian u32)
-#   tinygrad/runtime/ops_qcom.py:298 flag              PORTED  `kgsl_flags`, both directions, `flag` symbol=flag
+#   tinygrad/runtime/ops_qcom.py:296 flag              PORTED  `kgsl_flags`, both directions, `flag` symbol=flag
 #   :8   the `kgsl`/`mesa`/`libc` import  PORTED  the MESA_*/KGSL_* constants (62)
 #
 # NOT YET PORTED, and every one of these is a SEAM or a later stage:

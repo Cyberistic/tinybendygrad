@@ -100,7 +100,7 @@
 #    `@extern`; they are steps in the trace, so the trace stays greppable.
 #      :150-164  `executor()`  -- exists(), stat(), hashlib, subprocess.run
 #               over ./bin/bend, os.replace. The build and the cache.
-#      tinygrad/helpers.py:575 symbol=to_mv  `to_mv(b, nb)` -- a ctypes memoryview over a device pointer.
+#      tinygrad/helpers.py:568 symbol=to_mv  `to_mv(b, nb)` -- a ctypes memoryview over a device pointer.
 #      :217      `pkt.write_text(...)` -- the PACKET.in on disk.
 #      :222      `subprocess.run([exe, pkt, gx, gy, gz, vals...])` -- the launch.
 #      :225      `read_text()` of PACKET.out.
@@ -115,7 +115,7 @@
 # it is a VIEW over bytes the caller already owns. The port keeps the extent,
 # which is what `in_bufs` is, and drops the pointer.
 #
-# `has_local = False` (tinygrad/renderer/__init__.py:68 symbol=has_local) is a CONSTANT the scheduler consults
+# `has_local = False` (tinygrad/renderer/__init__.py:70 symbol=has_local) is a CONSTANT the scheduler consults
 # (opt/heuristic.py:163), so it is a `def` and not a field: a def nothing calls
 # is invisible to every other check, and `bend_has_local` is its only reader.
 #

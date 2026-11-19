@@ -2,7 +2,7 @@
 # arithmetic and the `marg` reader.
 #
 # THE SPLIT IN THIS FILE IS PYTHON'S. `mixin/movement.py` is a `MovementMixin` over `Tensor` AND
-# over `UOp` (ops.py:233 symbol=UOp), and the two halves are not the same.
+# over `UOp` (ops.py:228 symbol=UOp), and the two halves are not the same.
 #
 # WHAT IS PORTED HERE, gated against CPython, IS IN
 # `.agents/slop/tables/mixin-movement-7.md`.
@@ -36,7 +36,7 @@
 # READ-ONLY here, so the arms are SUPPLIED as a function the consumer calls rather than installed
 # in the fold; that is the one structural cost of this answer. and the arm that does not close is
 # named, not hidden: a symbolic shape puts a `UOp(PARAM)` in the marg and `ssimplify(PARAM)` is
-# `graph_rewrite(PARAM, symbolic)` (`graph_rewrite`, ops.py:501 symbol=simplify), so `mxm_marg`
+# `graph_rewrite(PARAM, symbolic)` (`graph_rewrite`, ops.py:487 symbol=simplify), so `mxm_marg`
 # answers `None{}` and the row is `mxm_sym_NONE`. That is a WALL in `uop/symbolic.py`, another
 # unit.
 #

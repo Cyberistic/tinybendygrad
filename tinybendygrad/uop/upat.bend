@@ -1130,8 +1130,8 @@ def get_code(+pat: O.Pat, +u: O.UPat, has_ctx: Bool) -> Maybe<&2, Code>:
   get_code.broken(broken_of(u), pat, u, has_ctx, fuel(pat))
 
 # upat_compile -- upat.py:173. `@functools.cache` and the `exec` are the wall.
-# TODO(p3) ops.py:1561 def upat_interpret -- `types.FunctionType(
-# TODO(p3) ops.py:1433 def get_location -- `sys._getframe`, the
+# TODO(p3) ops.py:1526 def upat_interpret -- `types.FunctionType(
+# TODO(p3) ops.py:1398 def get_location -- `sys._getframe`, the
 # TODO(p3) upat.py:181  upat_compile -- exec -- `namespace["compiled_match"]`. The rendered `Code`
 
 def upat_compile(+pat: O.Pat, i: U32, has_ctx: Bool) -> Maybe<&2, Code>:

@@ -855,7 +855,7 @@ def needs_compile(ck: Bool, hit: Bool) -> Bool:
 # `iter_sig` is a pure ADDRESS ARITHMETIC over itemsizes with no address space
 # in it -- because the address space decides the SLOT, not the SIZE, and the
 # slot is assigned by the caller that knows the kernel's ABI.
-# TODO(p3) device.py:344  TinyELF.lib -- `bytes`. WALL: a byte buffer. The C
+# TODO(p3) device.py:351  TinyELF.lib -- `bytes`. WALL: a byte buffer. The C
 #   effect behind `Compiler.compile_server` would hand one back.
 # `round_up` is `(n+a-1)//a*a` (helpers.py:69).
 # `(num+amt-1)//amt*amt` (helpers.py:69). The amount is read THREE times and

@@ -6,7 +6,7 @@
 #       `renderer`'s CAST arm, `str(x.dtype)[7:]` (render.py:102), which strips
 # `tinygrad/uop/spec.py:41` now PRINTS `render_uir(lst)` under `DEBUG >= 3` instead of
 # EXECUTING a rendered string. `render_uir` is `tinygrad/uop/render.py:65
-# (tinygrad/uop/ops.py:1181 symbol=render_uir). So there is NO upstream round trip to port, and
+# (tinygrad/uop/ops.py:1147 symbol=render_uir). So there is NO upstream round trip to port, and
 # DEPENDENCIES. `render.py:3-4` imports NINE names -- eight from `uop.ops` and
 #                             consumer's identity (`render.py:163`:
 # so all four were open until now. Everything below is MEASURED, and every
@@ -1131,9 +1131,9 @@ def pyr_buffer.pa(a: O.Arg) -> Bool:
     case _: False{}
 
 #   ops.py:497` in ops.bend. `multirange_str` and `range_str` ARE ported here
-#   `a.render()`, and `render` is `# TODO(p3) ops.py:1173  def render` in ops.bend; it needs
+#   `a.render()`, and `render` is `# TODO(p3) ops.py:1139  def render` in ops.bend; it needs
 #   `simplify()` (`# TODO(p3) ops.py:495  def simplify`) and the whole `renderer` matcher, whose
-#   by ordering. `render_marg` itself is `x.marg`, which is `# TODO(p3) ops.py:792  def marg`.
+#   by ordering. `render_marg` itself is `x.marg`, which is `# TODO(p3) ops.py:768  def marg`.
 # TODO(p3) render.py:7   def pretty_print
 # no ranges, and MEASURED, BUF, ADD and C1 all have `ranges == []` here. A node that
 def pa1() -> O.ParamArg:

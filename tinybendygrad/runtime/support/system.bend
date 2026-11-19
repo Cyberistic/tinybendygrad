@@ -30,7 +30,7 @@
 #    (`paddr.mask_hi = 0x7ffffff`, `paddr.mask_lo = 0xffffffff`) and gates BOTH
 #    halves against CPython, because a mask with one wrong half selects the wrong
 #    physical pages and nothing else notices.
-#    TODO(p3) runtime/support/system.py:95  symbol=system_paddrs  -- the u64 pagemap read.
+#    TODO(p3) runtime/support/system.py:103  symbol=system_paddrs  -- the u64 pagemap read.
 #    TODO(p3) runtime/support/system.py:174  symbol=pci_setup_usb_bars -- the u64 BAR size.
 #    TODO(p3) runtime/support/system.py:445 -- `struct.unpack('<Q', data)[0]`.
 #
@@ -43,8 +43,8 @@
 #    because `String.concat` will happily drop a literal and still make two
 #    strings that differ agree on a length.
 #    TODO(p3) runtime/support/system.py:58  symbol=write_sysfs  -- `os.system(cmd)`.
-#    TODO(p3) runtime/support/system.py:74  symbol=vfio  -- `os.system("sudo modprobe ...")`.
-#    TODO(p3) runtime/support/system.py:195  symbol=flock_acquire -- `os.system("sudo lsof ...")`, in a message.
+#    TODO(p3) runtime/support/system.py:55  symbol=vfio  -- `os.system("sudo modprobe ...")`.
+#    TODO(p3) runtime/support/system.py:198  symbol=flock_acquire -- `os.system("sudo lsof ...")`, in a message.
 #
 #    THE TWO UPSTREAM WHY-S OF `flock_acquire`, kept because the LOCK is the one
 #    thing in this file that is about SAFETY rather than about plumbing, and
@@ -64,7 +64,7 @@
 #        does not own. So the port's lock is not "create if missing"; it is
 #        "open if present, create only when absent", and the ORDER of the
 #        existence test and the open is the claim.
-#    TODO(p3) runtime/support/system.py:244  symbol=reset -- `os.system(...)`, in `PCIDevice.reset`.
+#    TODO(p3) runtime/support/system.py:251  symbol=reset -- `os.system(...)`, in `PCIDevice.reset`.
 #
 # 3. THE CTYPES LIBRARY GATE, tinygrad/runtime/support/system.py:61-65 and tinygrad/runtime/support/system.py:88. `atomic_lib` is
 #    `ctypes.CDLL(ctypes.util.find_library('atomic')) if sys.platform == "linux"
@@ -75,9 +75,9 @@
 #    tinygrad/runtime/support/system.py:88 and it is pure, so it is ported as `cap.barrier_lib` -- upstream's `memory_barrier` -- and the gate asks
 #    the question twice: which library, and whether it is a real fence at all.
 #    `ctypes.CDLL` and `find_library` are the FFI and are the trace.
-#    TODO(p3) runtime/support/system.py:61  symbol=atomic_lib -- `ctypes.CDLL(find_library('atomic'))`.
-#    TODO(p3) runtime/support/system.py:64  symbol=libsys -- `ctypes.CDLL(find_library("System"))`.
-#    TODO(p3) runtime/support/system.py:88  symbol=memory_barrier -- `lib.atomic_thread_fence(5)`.
+#    TODO(p3) runtime/support/system.py:63  symbol=atomic_lib -- `ctypes.CDLL(find_library('atomic'))`.
+#    TODO(p3) runtime/support/system.py:66  symbol=libsys -- `ctypes.CDLL(find_library("System"))`.
+#    TODO(p3) runtime/support/system.py:78  symbol=memory_barrier -- `lib.atomic_thread_fence(5)`.
 #
 # 4. THE OSX PROPERTY READ, :108-112. `read_prop` is CoreFoundation: a CFString
 #    key, a `CFDataRef`, an 8-byte `c_uint8` buffer and `int.from_bytes(...,
@@ -85,9 +85,9 @@
 #    that is this file's own logic is the 8-byte little-endian read, which
 #    `pci.read_prop` ports. Everything above it is CoreFoundation, so the whole
 #    `OSX` half of `pci_scan_bus` is FFI and only the LINUX half is a trace.
-#    TODO(p3) runtime/support/system.py:109  symbol=read_prop -- the ctypes cast chain.
-#    TODO(p3) runtime/support/system.py:109  symbol=read_prop -- `IORegistryEntryCreateCFProperty`.
-#    TODO(p3) runtime/support/system.py:110  symbol=read_prop -- `CFDataGetBytes` into `(c_uint8*8)()`.
+#    TODO(p3) runtime/support/system.py:118  symbol=read_prop -- the ctypes cast chain.
+#    TODO(p3) runtime/support/system.py:118  symbol=read_prop -- `IORegistryEntryCreateCFProperty`.
+#    TODO(p3) runtime/support/system.py:118  symbol=read_prop -- `CFDataGetBytes` into `(c_uint8*8)()`.
 #
 # WHAT IS FFI, WHOLE. Stated once so the short file is not read as a short port:
 # `FileIOInterface` (:18-48) is a file descriptor and nothing else; `libc.mmap`
@@ -106,7 +106,7 @@
 # upstream's `struct.calcsize(self.fmt)`, tinygrad/runtime/support/system.py:367
 # symbol=RemoteMMIOInterface) and `post_args` (this file's own name for
 # upstream's `struct.pack(REMOTE_REQ, ...)`,
-# tinygrad/runtime/support/system.py:415 symbol=_post) --
+# tinygrad/runtime/support/system.py:433 symbol=_post) --
 # which are this file's own arithmetic and are ported and gated; and
 # `BumpAllocator`, `MMIOInterface`, `VirtMapping` and `AddrSpace` are
 # `support/memory.py`, `CustomASM24Controller` and `USB3` are `support/usb.py`,

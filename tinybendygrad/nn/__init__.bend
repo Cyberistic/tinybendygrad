@@ -214,15 +214,15 @@ def nn_glorot(fan_in: F32, fan_out: F32) -> F32: F32.sqrt(F32.div(6.0, F32.add(f
 #   `randstate`. The CONST `low=-scale, high=scale` needs the F32 values above and
 #   those need `U32.to_f32`, an UNFILLED LAW (tensor.bend's header names it), which is
 #   why the three formulas take `F32` factors.
-# TODO(p3) mixin/op.py:1254  x.linear           -- `linear_with_vars` (movement.py) is
+# TODO(p3) mixin/op.py:1277  x.linear           -- `linear_with_vars` (movement.py) is
 #   P3 and mixin/op.bend's W8 already names the WMMA lowering as its own wall.
-# TODO(p3) mixin/op.py:1678  x.batchnorm        -- mixin/op.bend SIDE B, not built.
-# TODO(p3) mixin/op.py:1661  x.layernorm        -- SIDE B, not built.
+# TODO(p3) mixin/op.py:1701  x.batchnorm        -- mixin/op.bend SIDE B, not built.
+# TODO(p3) mixin/op.py:1684  x.layernorm        -- SIDE B, not built.
 # TODO(p3) mixin/op.py       x.conv2d           -- SIDE B, not built.
 # TODO(p3) mixin/op.py       x.conv_transpose2d -- SIDE B, not built.
 # TODO(p3) mixin/movement.py x.reshape / x.permute / x.squeeze -- `GroupOp.movement`
 #   exists in ops.bend but `movement.bend`'s defs are a separate unit's.
-# TODO(p3) mixin/op.py:166   x.arange           -- and mixin/op.bend's W4 says `_pool`
+# TODO(p3) mixin/op.py:189   x.arange           -- and mixin/op.bend's W4 says `_pool`
 #   is buildable but not CHECKABLE, so everything reaching it inherits that.
 # TODO(p3) mixin/reduce.py:20  symbol=sum  -- x.sum (`x.mean` is mixin/op.py:496) --
 #   `mo_sum`/`mo_mean` EXIST in mixin/op.bend (the reduce.py:20 and op.py:496 hoists)

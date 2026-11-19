@@ -32,7 +32,7 @@
 #   jit.py:44      `JitError`              the exception CLASS -> `Maybe<&2,String>`
 #   jit.py:46-51   `_check_no_non_tensor_return`   the walk and its message
 #   jit.py:55-63 symbol=CapturedJit   CapturedJit fields, `linear`
-#   jit.py:67 symbol=_jit_bufs   `_jit_bufs` IS UPSTREAM AT THE PIN: `_written_uops` IS GONE
+#   jit.py:60 symbol=_jit_bufs   `_jit_bufs` IS UPSTREAM AT THE PIN: `_written_uops` IS GONE
 #   jit.py:70-72   `_symbolic_ret`         upstream's `CapturedJit` HAS IT at the pin:
 #                                           the upstream revision `a26c50b01` (2026-10-05)
 #                                           REMOVED `_written_uops` AND ADDED

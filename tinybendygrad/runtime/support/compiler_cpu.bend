@@ -72,12 +72,12 @@
 #   TODO(p3) compiler_cpu.py:21 -- `getenv("CC", 'clang')`.
 #
 # WALL 4 -- `CCACHE`. `Compiler.__init__` is
-#   `self.cachekey = cachekey if CCACHE else None` (tinygrad/device.py:324 symbol=__init__), so the key
+#   `self.cachekey = cachekey if CCACHE else None` (tinygrad/device.py:331 symbol=__init__), so the key
 #   the port builds is the one that EXISTS only when CCACHE is on -- and CCACHE
 #   is a `ContextVar`, which is the same cached `getenv`. So `cpu.x86key` is
 #   `None` on this host ONLY because... it is measured, and the port's
 #   `X86Compiler.key` carries the `None` as an empty string.
-#   TODO(p3) device.py:324  symbol=__init__ -- `cachekey if CCACHE else None`.
+#   TODO(p3) device.py:331  symbol=__init__ -- `cachekey if CCACHE else None`.
 import Base
 
 # :7  the assert. `len(arch) >= 2`, and the message interpolates

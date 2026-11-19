@@ -16,7 +16,7 @@
 #
 # `nr.has_copy_queue` is a NULL fact -- `ops_null.py` does not override
 # `@property def has_copy_queue` at all, so NULL inherits `Compiled`'s `True` while
-# `tinygrad/runtime/ops_cpu.py:68 symbol=has_copy_queue` returns `False`. `C.cpu.has_copy_queue` is the other half of that
+# `tinygrad/runtime/ops_cpu.py:61 symbol=has_copy_queue` returns `False`. `C.cpu.has_copy_queue` is the other half of that
 # pair and it lives in `ops_cpu.bend` beside the comment explaining why two rows exist.
 #
 # ONE FILE IN HERE IS NOT MINE TO MOVE. `pk`/`Pk`/`fx_pk`/`pkend` and the `pk_*` rows

@@ -234,7 +234,7 @@ def pool_nd(+t: T.Tensor, +q: W4) -> T.Tensor:
 # with `self.commit_dtype().min`, and `_pad_constant`'s `value != 0` arm
 # (op.py:290) is `MovementMixin.pad(X.const_like(True, dtypes.bool), pads)`
 # `.where(base, value)`, which `mixin/rand.bend:328 symbol=op_padc` records as
-# `TODO(p3) mixin/op.py:282 _pad_constant's ... value != 0 arm ... and needs
+# `TODO(p3) mixin/op.py:305 _pad_constant's ... value != 0 arm ... and needs
 # identity_element (ops.py:61)`. `identity_element` is not a def in this tree.
 # A `max_pool2d` padded with ZERO would be wrong for any negative input, so the
 # padded arm is REFUSED rather than built wrong -- see `pool_maxpool_padded`.

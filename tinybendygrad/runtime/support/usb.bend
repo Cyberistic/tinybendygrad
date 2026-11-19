@@ -23,7 +23,7 @@
 # burned on -- `ops_nv`'s audit found 33 of 219 constants wrong in a file already
 # printing 590 green rows, and `ops_rdma` shipped `BNXT_VENDOR` as 5356 where the
 # header says 5348. `struct_libusb_transfer`'s thirteen field names, in order, are
-# what `usb_chunks` (tinygrad/runtime/support/usb.py:368 symbol=usb_chunks) addresses three times by name, so a transposed pair
+# what `usb_chunks` (tinygrad/runtime/support/usb.py:369 symbol=usb_chunks) addresses three times by name, so a transposed pair
 # is a silently wrong transfer.
 #
 
@@ -32,7 +32,7 @@
 # the PORT's own `ops_amd.bend` records WALL 3 ("USB3, USBIface"), and upstream's
 # `USB3.list_devices` (tinygrad/runtime/ops_amd.py:786) IS the enumeration it names,
 # with `dma_view` and the `0/4096/20480` controller window, with
-# `TODO(p3) runtime/ops_amd.py:786  symbol=__init__  USB3.list_devices` and
+# `TODO(p3) runtime/ops_amd.py:789  symbol=__init__  USB3.list_devices` and
 # `TODO(p3) runtime/ops_amd.py:798  symbol=ctrl  pci_dev.dma_view(40960, 544768)`. This file
 # closes:
 #
@@ -47,7 +47,7 @@
 #     sizes that make them. `usb_win_*` is that derivation.
 #   * AND A CORRECTION TO CARRY BACK. ops_amd's 4096 is `0x1000`, which is NOT
 #     `usb_cq`'s offset: `usb_cq` is `usb_asm24[0x100c:0x1010]` = 4108..4112, and
-#     0x1000 is `USB3`'s own CONTROL buffer size (tinygrad/runtime/support/usb.py:41 symbol=USB3, `alloc_cbuffer(0x1000)`). Both
+#     0x1000 is `USB3`'s own CONTROL buffer size (tinygrad/runtime/support/usb.py:20 symbol=USB3, `alloc_cbuffer(0x1000)`). Both
 #     are real, they are different numbers, and this file rows both -- so a port
 #     that conflated them shows up as a disagreement rather than as a plausible
 #     constant. `usb_sram_win_fits_asm24` is the row that says the SRAM pair EXACTLY
@@ -1675,7 +1675,7 @@ def Tr.has(+cs: List<&2, Call>, +pat: List<&2, Call>) -> Bool:
   Tr.has.go(List.length(&2, Call, cs), List.length(&2, Call, pat), cs, pat, 0n)
 
 # THE ENUMERATION. `USB3.list_devices` (:30-37) is ONE loop and it is the wall
-# ops_amd.bend records as `TODO(p3) runtime/ops_amd.py:786  symbol=__init__  USB3.list_devices`.
+# ops_amd.bend records as `TODO(p3) runtime/ops_amd.py:789  symbol=__init__  USB3.list_devices`.
 #
 # THE SELECTION IS A PURE PREDICATE and the trace is the walk: the port compares
 # `(idVendor, idProduct) == (vendor, dev)` from the descriptor fields it has

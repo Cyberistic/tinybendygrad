@@ -107,8 +107,8 @@
 #     _prof_readback -- PMA. The register-write ADDRESS ARITHMETIC
 #     (`SM_REG`, `GPC_BASE + gpc*0x4000 + ...`) is PORTED because it is pure;
 #     the ioctl that carries it is the seam.
-#   TODO(p3) ops_nv.py:22 -- BLOCKED. needs `extra.nv_gpu_driver` -- an FFI seam that lives behind the `IOCTL` flag: MEASURED, zero defs anywhere in the port. The conditional `if getenv("IOCTL"):` is the line that keeps the normal import free of it.
-#   TODO(p3) ops_nv.py:24  `if getenv("IOCTL"): import extra.nv_gpu_driver`.
+#   TODO(p3) ops_nv.py:741 -- BLOCKED. needs `extra.nv_gpu_driver` -- an FFI seam that lives behind the `IOCTL` flag: MEASURED, zero defs anywhere in the port. The conditional `if getenv("IOCTL"):` is the line that keeps the normal import free of it.
+#   TODO(p3) ops_nv.py:20  `if getenv("IOCTL"): import extra.nv_gpu_driver`.
 #   TODO(p3) ops_nv.py:50-62  `QMD.fields` is a 181-row and a 296-row table
 #     generated from `nv_gpu.__dict__`. MEASURED: NO field in EITHER table is
 #     wider than 32 bits and NONE straddles a 32-bit word boundary, which is

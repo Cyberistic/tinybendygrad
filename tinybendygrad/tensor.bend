@@ -891,7 +891,7 @@ def tn_wrap_uop(+ar: O.Arena, uop: U32) -> Tensor:
   tn_new(ar, uop)
 
 # `const` -- tensor.py:122. `Tensor(UOp.const(b, dtype))`.
-# TODO(p3) tensor.py:122  const's `dtype` -- ops.bend's `UOp.const` is the BARE CONST, because
+# TODO(p3) tensor.py:120  const's `dtype` -- ops.bend's `UOp.const` is the BARE CONST, because
 # `dtypes.from_py` and `truncate` are P3 (ops.py:632). A CONST of a CONCRETE dtype is ONE node
 # here and `CONST`+`CAST` in Python; the value arrives already truncated and the dtype is the
 # CONST's own.
@@ -918,7 +918,7 @@ def tn_hash(+t: Tensor) -> U32:
   Tensor.u(t)
 
 # `__bool__` -- tensor.py:136. `raise TypeError("__bool__ on Tensor is not defined")`.
-# TODO(p3) tensor.py:136  __bool__ -- a pure Bend def cannot raise and there is no exception form
+# TODO(p3) tensor.py:134  __bool__ -- a pure Bend def cannot raise and there is no exception form
 # to defer to. A def that must NOT be called is not a def that can be written; the refusal is the
 # absence, and `tn_len` below is the shape of the same refusal made expressible as a `Maybe`.
 def tn_len.first(ds: List<&2, O.Sint>) -> Maybe<&2, U32>:
@@ -1692,7 +1692,7 @@ def tn_backward.of(+ar: O.Arena, +ts: List<&2, U32>, +root: U32, root_grad: U32)
 def tn_backward(+ar: O.Arena, +root: U32, scope: Tensors, root_grad: U32) -> Bwd:
   tn_backward.of(ar, tn_need_grad(ar, root, scope), root, root_grad)
 
-# TODO(p3) tensor.py:492  backward's other three arms -- `g.clone(device=t.device)` is
+# TODO(p3) tensor.py:447  backward's other three arms -- `g.clone(device=t.device)` is
 # WALL 2 (`UOp.clone` is ops.py:882), `:493`'s `else` is `assign` plus `__add__`, and
 # `mixin/op.py:468`'s `const_like(1.0)` seed needs the float CONST MINTED HERE. The
 # PORT CAN: a literal is an `F32` and `nn/optim.bend` builds `CFloat{...}` nine

@@ -39,8 +39,8 @@
 #   collects; it cannot hold a duplex pipe open. This is the one seam in the
 #   whole unit that `Process.run` does NOT close, and it is why
 #   `compileserver.py` gets its own file.
-#   TODO(p3) device.py:335  symbol=server -- `subprocess.Popen(..., stdout=PIPE, stdin=PIPE)`.
-#   TODO(p3) device.py:337  symbol=compile_server -- `compile_server`'s write/read/read.
+#   TODO(p3) device.py:340  symbol=server -- `subprocess.Popen(..., stdout=PIPE, stdin=PIPE)`.
+#   TODO(p3) device.py:343  symbol=compile_server -- `compile_server`'s write/read/read.
 #   TODO(p3) compiler_qcom.py:35 -- `self.compile_server(src, self.compiler_process)`.
 #
 # WALL 3 -- bytes. `lib[off:off+4]` is a four-byte slice; bend has no byte

@@ -2347,7 +2347,7 @@ def cxn(k: List<&2, U32>) -> U32: U32.from_nat(mu_len(k))
 # it is named at the foot and not a field here.
 #
 # THE THREE TABLES, and there are three because Python has three objects.
-# `PatternMatcher.__add__` (ops.py:1598 symbol=__add__) is `self.patterns+more.patterns`, so `multi_pm` is
+# `PatternMatcher.__add__` (ops.py:1563 symbol=__add__) is `self.patterns+more.patterns`, so `multi_pm` is
 # NINETEEN own rules with `replace_allreduce`'s SIX APPENDED, and `replace_allreduce` is
 # `_early_allreduce`'s ONE prepended when `LATE_ALLREDUCE` is off. That composition moves
 # every tag after the prefix, so `mu_table` CONCATENATES rather than counts, and `mt_own_n`,

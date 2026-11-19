@@ -42,33 +42,33 @@
 #    four bytes (`b'\x7fELF'`, MEASURED); the port takes the ANSWER as a Bool, which
 #    is all any caller needs since `jit_loader` is a seam either way, and `cpu.elfmag`
 #    names the four bytes as a hex STRING so the constant is auditable.
-#    TODO(p3) runtime/ops_cpu.py:21  symbol=_load -- the first FOUR bytes of `lib` against `b'\x7fELF'`.
+#    TODO(p3) runtime/ops_cpu.py:18  symbol=_load -- the first FOUR bytes of `lib` against `b'\x7fELF'`.
 # 3. THE `dt.fmt` STRUCT FORMATS. `:70`'s `struct.pack_into(f'<{dt.fmt}', ...)` writes
 #    at a dtype-dependent offset. The OFFSETS are portable -- they are
 #    `TinyELF.iter_sig(...)`, which device.bend already ports -- the BYTES are a WALL.
-#    TODO(p3) runtime/ops_cpu.py:59  symbol=__call__  -- struct.pack_into('<{dt.fmt}', ...).
+#    TODO(p3) runtime/ops_cpu.py:47  symbol=__call__  -- struct.pack_into('<{dt.fmt}', ...).
 # 4. WHAT NULL DOES NOT COMPUTE. Its kernels are never run and `NullRenderer.asm`
 #    refuses anything that is not `gfx`. There is nothing to port in a result because
 #    there is nothing there: `nr.asm_msg` says so -- the emulated device WRITES
 #    NOTHING into a stream with no TIMESTAMP word -- rather than inventing a result.
 #
 # WHAT device.bend AND helpers.bend LEND, AND WHAT IS OWED BACK.
-# LENT: `D.isig.go` (the offset-carrying body of `TinyELF.iter_sig`, tinygrad/device.py:352 symbol=iter_sig --
+# LENT: `D.isig.go` (the offset-carrying body of `TinyELF.iter_sig`, tinygrad/device.py:359 symbol=iter_sig --
 # device.bend's `iter_sig` entry point hard-codes 0, so BOTH uses here need `go`;
 # REPORTED, not fixed, device.bend is read-only to this unit); the port's `D.dev_id`
-# (upstream's `device_id`, tinygrad/device.py:383 symbol=Compiled.__init__,
+# (upstream's `device_id`, tinygrad/device.py:385 symbol=Compiled.__init__,
 # inherited by both); the port's `D.timeline_bytes` (upstream's `timeline`,
-# `tinygrad/runtime/ops_null.py:65 symbol=timeline` IS that call);
+# `tinygrad/runtime/ops_null.py:66 symbol=timeline` IS that call);
 # `H.round_up_u32`, `H.u32_list_eq`, `H.dedup_str`.
 # OWED: the renderer ORDER is the policy -- `Compiled._select_renderer` (tinygrad/device.py:462 symbol=_select_renderer)
 # walks it and the FIRST INITIALISED renderer wins, and `cpu.renderers`/`ndev.renderers`
 # are those two orders transcribed and both are rows. `Compiled.has_copy_queue` is True
-# (tinygrad/device.py:391 symbol=has_copy_queue) and
-# `tinygrad/runtime/ops_cpu.py:68 symbol=has_copy_queue` overrides it to False while
-# upstream's `NullDevice` (tinygrad/runtime/ops_null.py:63 symbol=NullDevice) does NOT, so
+# (tinygrad/device.py:397 symbol=has_copy_queue) and
+# `tinygrad/runtime/ops_cpu.py:61 symbol=has_copy_queue` overrides it to False while
+# upstream's `NullDevice` (tinygrad/runtime/ops_null.py:64 symbol=NullDevice) does NOT, so
 # `cpu_has_copy_queue` and `nr_has_copy_queue_inherited` are two rows with DIFFERENT
 # answers -- either constant could be wrong without the other noticing.
-# `Compiled.peer_group` (tinygrad/device.py:384 symbol=Compiled.__init__) means a CPU device with no remote and no iface
+# `Compiled.peer_group` (tinygrad/device.py:385 symbol=Compiled.__init__) means a CPU device with no remote and no iface
 # answers its own device-class prefix -- `Device['CPU:1'].peer_group == 'CPU'`, MEASURED
 # -- and ops_cpu.py:92 overwrites it with the REMOTE's when there is one;
 # `cpu.peer_of` is that two-arm choice and both arms are rows. `Compiled.wait_timeout_ms`
@@ -110,7 +110,7 @@
 #    hoisting the matcher means a shared module both backends import, which is a decision
 #    about the tree's shape. The four defs are generic in `List<&2, Call>` and lift
 #    unchanged if the coordinator wants them hoisted.
-# 2. `int(parts[2])` (`tinygrad/runtime/ops_cpu.py:73 symbol=__init__`) is a DECIMAL PARSE and is a WALL: `String.to_u32` does not
+# 2. `int(parts[2])` (`tinygrad/runtime/ops_cpu.py:63 symbol=__init__`) is a DECIMAL PARSE and is a WALL: `String.to_u32` does not
 #    exist in 2.0.34, so a parse is a fold over `String.to_list(s)` feeding
 #    `U32.add(U32.mul(acc,10), Char.to_u32(c)-48)` and it raises on a non-numeric port --
 #    a refusal this file does not model. The peer-group STRING beside it is ported,

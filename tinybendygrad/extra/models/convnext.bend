@@ -43,7 +43,7 @@ import ./../datasets/__init__.bend as D
 #   it a `get_state_dict` (nn/state.bend:308) node.
 #   and the second line is a harder miss: `:8 self.norm = LayerNorm(dim,
 #   eps=1e-6)`. `Tensor.layernorm` does not exist. The port says so in its own
-#   words at `nn/__init__.bend:219`: "TODO(p3) mixin/op.py:1661 x.layernorm --
+#   words at `nn/__init__.bend:219`: "TODO(p3) mixin/op.py:1684 x.layernorm --
 #   SIDE B, not built", and that line is still true even though the conv2d and
 #   linear lines beside it stopped being true.
 #   so the honest first blocker is the constructor, and the honest first

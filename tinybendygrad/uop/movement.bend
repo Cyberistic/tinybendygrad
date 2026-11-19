@@ -203,7 +203,7 @@ def const_is(m: Maybe<&2, H.I64>, n: Nat) -> Bool:
     case None{}: False{}
 
 # `UOp.index` -- ops.py:559. Three of these nine rules call it and it belongs in ops.bend
-# the next time that file is edited (`# TODO(p3) ops.py:559  def index`).
+# the next time that file is edited (`# TODO(p3) ops.py:549  def index`).
 def mp_index.pick(sel: Maybe<&1, U32>, ar: O.Arena, self: U32) -> U32:
   match sel:
     case Some{v}: mp_src(ar, self, v)

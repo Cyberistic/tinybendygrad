@@ -1,5 +1,5 @@
 # mixin/creation.bend -- tinygrad/mixin/creation.py, all 165 lines. `CreationMixin`,
-# which is ALSO `UOp.empty` / `UOp.empty_like` / `UOp.const_like` (ops.py:581 symbol=const_like, :603,
+# which is ALSO `UOp.empty` / `UOp.empty_like` / `UOp.const_like` (ops.py:572 symbol=const_like, :603,
 # MEASURED: `UOp.empty.__qualname__ == "CreationMixin.empty"`).
 #
 
@@ -15,7 +15,7 @@
 # op.bend` already owns op.py's half. So the WHOLE of creation.py is eleven bodies
 # plus one `raise NotImplementedError`, and they are the ones `examples/
 # beautiful_mnist.bend`'s W3 wall is built FROM: `full` is the ONLY `expand` in
-# `creation.py` (creation.py:112 symbol=zeros) and `zeros`/`ones`/`*_like` are all `full`.
+# `creation.py` (creation.py:115 symbol=zeros) and `zeros`/`ones`/`*_like` are all `full`.
 #
 
 # the walls. W1 and W2 are mine; W3 and W4 are other files' and named twice because
@@ -27,7 +27,7 @@
 #      unless the device is a TUPLE, and the tuple case is W2, so every ALLOC in this
 #      file has NO srcs -- `row_empty23_g` (`ALLOC/0`) is the row that says so.
 #   W2 mixin/creation.py:16 `_multi_like` -- `fxn` is a Python CALLBACK and the body
-#      needs `shard`/`unshard`/`mstack`/`shard_shape`/`axis` (ops.py:635 symbol=axis/692/757/773),
+#      needs `shard`/`unshard`/`mstack`/`shard_shape`/`axis` (ops.py:681 symbol=axis/692/757/773),
 #      none of which is ported. `_multi_like` is the whole reason `full_like` has a
 #      device-tuple arm, so `cr_full_like` is single-device and the tuple arm is a
 #      `TODO(p3)`.
@@ -39,7 +39,7 @@
 #      `D.commit_dtype` and passes the two bounds in.
 #      WHAT IT DOES PASS IS `fill_value` ITSELF, and that is exact rather than a
 #      substitute: Python's graph here is `EXPAND(CONST v)` and `_min_max` on that is
-#      the CONST arm `(self.val, self.val)` (ops.py:40 symbol=val). `fill_value` IS that
+#      the CONST arm `(self.val, self.val)` (ops.py:245 symbol=val). `fill_value` IS that
 #      `val`, so the bound is `cr_bounds(v)` and the fold is not needed.
 #      TODO(p3) mixin/creation.py:68 symbol=full  `full` with a `fill_value` that is a UOp -- then
 #        `dt` is `fill_value.dtype` and the bounds really are `UOp._min_max` over an

@@ -50,14 +50,14 @@
 #    reachable only when the storage word is narrower than the dtype: f16/bf16/fp8 (2 or 1
 #    bytes) or i64/u64 (8). The v1 lanes are i32, u32, f32 and bool, where `w == dtype.itemsize`
 #    always, so that arm is DEAD here and the four lanes take the first branch verbatim.
-#    `truncate` has the same shape: tinygrad/dtype.py:289 symbol=truncate answers float16,
+#    `truncate` has the same shape: tinygrad/dtype.py:293 symbol=truncate answers float16,
 #    bfloat16, the four fp8s, float64, six narrow ints and int64/uint64 through ctypes and
 #    struct, and only bool/int32/uint32/float32 are pure in Bend. So CAST is ported for those
 #    four and REFUSES the rest -- a 64-bit truncate has no U32 image and an F32 cannot hold a
 #    half. This file refuses rather than emulating half a width.
 #    TODO(p3) runtime/ops_python.py:21  symbol=_load -- the multi-word bitcast load arm.
 #    TODO(p3) runtime/ops_python.py:33  symbol=_store -- the multi-word store arm.
-#    TODO(p3) tinygrad/dtype.py:289  symbol=truncate -- `truncate` for the ten C widths.
+#    TODO(p3) tinygrad/dtype.py:293  symbol=truncate -- `truncate` for the ten C widths.
 #
 # 2. TENSOR CORES. `wmma` (tinygrad/runtime/ops_python.py:35 symbol=wmma) needs three-way
 #    fragment layout, and its `arg` is a `(dims, dtype_in, threads)` tuple. There is no v1
@@ -66,7 +66,7 @@
 #
 # 3. `Ops.FDIV` AND `Ops.THREEFRY` -- see MEASURED FACT 2.
 #
-# 4. THE TUPLE OPERAND BRANCH. `exec_alu`'s body (tinygrad/uop/ops.py:1422 symbol=exec_alu) opens
+# 4. THE TUPLE OPERAND BRANCH. `exec_alu`'s body (tinygrad/uop/ops.py:1388 symbol=exec_alu) opens
 #    with `if any(isinstance(x, tuple) for x in operands)` and it recurses per lane.
 #    symbolic.bend ports only the scalar spine, so `alu1/2/3` below call the same two lanes
 #    directly -- `exec_alu_i32` and `exec_alu_f32` -- and choose between them the way

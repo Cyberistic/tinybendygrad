@@ -258,7 +258,7 @@ def op_shr(+t: T.Tensor, lo: List<&2, U32>, hi: List<&2, U32>) -> T.Tensor:
 # so `pA = 0`, `pB = i - 1` and `s = i`, and the node's marg is `((i-1, 2i-1),)` -- CPython
 # prints `((2, 5),)` for `arange(3, dtype=dtypes.u32)`, which `arange3`'s toposort pins.
 # Both numbers come out of `PK` because the pad's offsets are `(k-1, 0)` and the axis is `i`.
-# TODO(p3) mixin/op.py:282  `_pad_constant`'s negative-pad arm (`has_neg`, op.py:284) and
+# TODO(p3) mixin/op.py:305  `_pad_constant`'s negative-pad arm (`has_neg`, op.py:284) and
 #   its `value != 0` arm, which is `MovementMixin.pad(X.const_like(True, bool), pads)
 #   .where(base, value)` (op.py:290) and needs `identity_element` (ops.py:61).
 def op_padc(+t: T.Tensor, +q: PK) -> T.Tensor: op_pad(t, [U32.sub(PK.k(q), 1)], [PK.i(q)])
@@ -377,7 +377,7 @@ def op_arange(+ar: O.Arena, n: U32, +dev: S.Dev) -> T.Tensor:
 # spelled as the two's complement `4294967295` because `H.i64_of_i32` sign-extends a
 # `U32` AND `-1` IS NOT A `U32` LITERAL -- `mixin/op.bend:593`'s `mo_neg` SPELLS IT THE
 # SAME WAY.
-# TODO(p3) mixin/op.py:190  `commit_int(lo, hi)` -- the DTYPE IS CHOSEN, NOT GIVEN, and
+# TODO(p3) mixin/op.py:213  `commit_int(lo, hi)` -- the DTYPE IS CHOSEN, NOT GIVEN, and
 #   `mixin/dtype.bend`'s `commit_int` is not ported; `int32` is HARD-CODED HERE AND IS
 #   correct for every `n` that fits in an `int32` and wrong for `n > 2**31`.
 def op_arange_neg(+ar: O.Arena, n: U32, +dev: S.Dev) -> T.Tensor:
@@ -564,7 +564,7 @@ def rd_bits(+ar: O.Arena, +key: T.Tensor, +ctr: T.Tensor, n: U32, +dev: S.Dev) -
 # on the exponent and answered 0 for float32, which `ref_nmant_f32` and `ref_shift_f32`
 # caught and which is the recorded "`case 8:` claims 8, 16, 32" trap arriving through a
 # different door: the arms were not misordered, they were the WRONG NUMBER.
-# TODO(p3) tinygrad/dtype.py:113  `finfo` -- the eight-member table; `rd_nmant` answers
+# TODO(p3) tinygrad/dtype.py:116  `finfo` -- the eight-member table; `rd_nmant` answers
 #  half and refuses the rest.
 # TODO(p3) tinygrad/dtype.py:302  `bitcast(1.0, in_dtype, out_dtype)` for float64 /
 #  bfloat16 / the fp8 family: a 64-bit CONST is not expressible in this port.
@@ -689,7 +689,7 @@ def rd_rand(contig: Bool, +ar: O.Arena, +key: T.Tensor, +ctr: T.Tensor, +ds: Lis
 #   before  `_next_counter("PYTHON", 6)` returns [0, 0] with counter [0, 0] stored as [6, 0]
 #   dropping the write            returned [4294967290, 0]  -- the counter MINUS `num`
 # Gated by `st_six_v`, `st_wrap_v` and `st_max_v`, which print the VALUE.
-# TODO(p3) tinygrad/tensor.py:468  `counter.assign(...)` -- the DEVICE write itself, the
+# TODO(p3) tinygrad/tensor.py:234  `counter.assign(...)` -- the DEVICE write itself, the
 #   STORE the AFTER spine writes. It needs `Tensor.assign` (tensor.py:236) in full, whose
 #   other eight arms want a `Buffer`, `has_buffer_identity`, `is_realized` and `UOp.clone`;
 #   `mixin/tensor.bend` records it as its own `TODO(p3)`. WHAT IS LEFT IS EXACTLY THE STORE:
