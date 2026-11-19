@@ -369,26 +369,47 @@ def late_apply(+ar: O.Arena, +root: U32) -> O.Found:
   +q = lt_r2(lt_r2(lt_r2(lt_round(ar, root))))
   O.Found{LtR.ar(q), LtR.i(q)}
 
-# WALL(p3) `body_low` DOES NOT RUN `pm_add_loads`, AND ADDING IT IS NOT A ONE-LINE WIRING.
-# upstream's `codegen/__init__.py:301` runs `symbolic_simple+pm_expand_broadcast+pm_add_loads`
-# before the devectorizer; this def runs `wk_commit`, `lower_reduce_all`, `late_apply` and
-# `alloc_to_buf_all` and NOT that pass.
+# `pm_add_loads` -- THE PASS `body_low` WAS MISSING, and why the first wiring died.
 #
-# THE SYMPTOM IS MEASURED AND IT IS THE ONE THAT BLOCKS PIXELS: the port's own scheduled kernel
-# carries ZERO `LOAD` nodes and `cc` refuses its C -- `invalid operands to binary expression
-# ('float *' and 'float *')`, 3x (`.agents/slop/pipelinecensus/probe_lin.bend`,
-# `execfull.bend`). `.agents/slop/execgap/` is green only because `graphcmp.bend:g_lin`
-# HAND-BUILDS the six loads a real lowerer would insert.
+# upstream `codegen/__init__.py:301` runs `symbolic_simple+pm_expand_broadcast+pm_add_loads`
+# before the devectorizer. `body_low` ran `wk_commit`, `lower_reduce_all`, `late_apply` and
+# `alloc_to_buf_all` and not this pass, so the port's own scheduled kernel carried ZERO `LOAD`
+# nodes and `cc` refused its C -- `invalid operands to binary expression ('float *' and
+# 'float *')`, 3x (`.agents/slop/pipelinecensus/REPORT.md`). `.agents/slop/execgap/` is green
+# only because `graphcmp.bend:g_lin` HAND-BUILDS the six loads a real lowerer would insert.
 #
-# AND THE OBVIOUS FIX WAS TRIED AND DID NOT TERMINATE, so it is written down instead of
-# guessed at a second time. Wiring a pass that calls `KR.pm_add_loads` per node over
-# `O.UOp.toposort` -- once with a fold per node, once with one fold per round -- was
-# `KILLED-ON-MEMORY` at **3099 MB and 3162 MB** on a 50-node kernel (`checks/bounded.py
-# --mb 3000`, `rc=-9`). `pm_add_loads`' rule 0 matches every op that is not a bitcast
-# (`codegen/kernel.bend:527-534`) and maps ALL srcs through `kn_map_load`, so a SECOND round
-# re-walks the loads the first round added; upstream's `graph_rewrite` is idempotent there and
-# the port's `kn_map_load`/`maybe_load` pair has to be shown to be before this can be wired.
-# THE NEXT STEP IS A `pm_add_loads` IDEMPOTENCE ROW, not another wiring attempt.
+# IT IS ONE ROUND AND NOT A FIXPOINT, AND THAT WAS A MEASURED 3 GB MISTAKE FIRST.
+# `kn_load_one` (`codegen/kernel.bend:499-505`) wraps a source in `Ops.LOAD` whenever the
+# source's addrspace is GLOBAL/LOCAL/REG, and it HAS NO "already a LOAD" GUARD -- so a LOAD
+# itself still reads as loadable and the next round wraps it again. A fixpoint (`al_r2`, two
+# rounds) was `KILLED-ON-MEMORY` at 3099 MB and 3162 MB on a 50-node kernel. UPSTREAM DOES NOT
+# ITERATE HERE EITHER: `pm_add_loads` is one `graph_rewrite` in a pipeline that runs once, and
+# the guard is unnecessary because the graph it is handed still has BUFFERs for leaves. So the
+# faithful shape is the single round, and the guard belongs to a caller that re-runs it.
+# `at = 0` IS "NO REWRITE" AND NOT AN INDEX. `pm_add_loads` is `al_scan` (`codegen/kernel.bend`
+# :565), whose accumulator STARTS at `Ker{ar, 0}` and only reaches `ker_self` through
+# `al_try.go` -- so a node no rule claims comes back as `at=0`. Mapping `u -> 0` records every
+# unclaimed node as a NOOP and the rebuilt body collapses to `NOOP[] SINK[0]`, MEASURED.
+def al_keep(none: Bool, +al: KR.Ker, +u: U32, +st: Lt) -> Lt:
+  match none:
+    case True{} : Lt{KR.Ker.ar(al), Lt.rs(st), Lt.fired(st)}
+    case False{}: Lt{KR.Ker.ar(al), List.append(&2, LateRep, Lt.rs(st), [LateRep{u, KR.Ker.at(al)}]), True{}}
+
+def al_step(+fx0: F.Folded, +u: U32, +st: Lt) -> Lt:
+  +al = KR.pm_add_loads(fx0, u)
+  al_keep(Bool.or(U32.is_zero(KR.Ker.at(al)), U32.is_eq(KR.Ker.at(al), u)), al, u, st)
+
+def al_pass.go(+fx0: F.Folded, +us: List<&2, U32>, st: Lt) -> Lt:
+  match us:
+    case Nil{}: st
+    case u <> t: al_pass.go(fx0, t, al_step(fx0, u, st))
+
+# THE FOLD IS TAKEN ONCE FOR THE ROUND: per node was the FIRST O(n^2) attempt, and the fold of
+# an append-only arena is the expensive part of this pass, not the rule.
+def add_loads(+ar: O.Arena, +root: U32) -> O.Found:
+  +q = lt_round.fin(root,
+    al_pass.go(F.folded(ar), O.UOp.toposort(O.Arena.budget(ar), ar, root), Lt{ar, Nil{}, False{}}))
+  O.Found{LtR.ar(q), LtR.i(q)}
 
 def body_low(+ar: O.Arena, +b: U32) -> O.Found:
   +w = WK.wk_commit(ar, b)
