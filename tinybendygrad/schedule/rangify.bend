@@ -1647,6 +1647,96 @@ def rr_wall_count.go(+ns: List<&2, U32>, +ar: O.Arena, +ctx: IX.IxCtx, acc: U32)
     case x <> t:
       rr_wall_count.go(t, ar, ctx, U32.add(acc, Bool.to_u32(rr_ap_wall_hit(ar, ctx, x))))
 
+# THE POST-APPLY END WIDENING -- `bufferize_to_store`'s AFTER ARM (`rangeify.py:222`,
+# `end_rngs = sorted(dedup(tuple(store_target.ranges) + tuple(rngs)))`) as the SHAPE IT HAS TO BE.
+#
+# TWO EARLIER FORMS WERE MEASURED AND REVERTED, and both are worth recording:
+#   * the same computation INSIDE `rr_ap_end_src` changed nothing: at build time the store's
+#     subtree still carries the PRE-apply ranges, so `all - aft - closed` came out EMPTY while the
+#     post-apply subtree holds EIGHT ranges;
+#   * a `pm_add_buffers` RULE on `Ops.END` hung the compiler (`rc=124`, zero bytes) because a rule
+#     re-fires on the graph it just grew.
+#
+# So it is a PASS over the rebuilt graph: one bottom-up rebuild with the replace map, and an END is
+# widened as it is rebuilt -- by which time its srcs ARE the rebuilt ones, which is the whole point.
+type WRep is Data:
+  WRep{old: U32, new: U32}
+
+def rw_get.go(+k: U32, +rs: List<&2, WRep>) -> U32:
+  match rs:
+    case Nil{}: k
+    case WRep{old, new} <> t: Bool.pick(U32, U32.is_eq(old, k), new, rw_get.go(k, t))
+
+def rw_get(+rs: List<&2, WRep>, +k: U32) -> U32: rw_get.go(k, rs)
+
+def rw_srcs.go(+ss: List<&2, U32>, +rs: List<&2, WRep>, +acc: List<&2, U32>) -> List<&2, U32>:
+  match ss:
+    case Nil{}: acc
+    case x <> t: rw_srcs.go(t, rs, List.append(&2, U32, acc, [rw_get(rs, x)]))
+
+def rg_rngs.go(+ar: O.Arena, +ns: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
+  match ns:
+    case Nil{}: acc
+    case n <> t:
+      +u = Bool.pick(List<&2, U32>,
+             Bool.and(O.eq_op(O.Arena.op(ar, n), O.OpsRANGE{}), Bool.not(F.mem_u32(acc, n))),
+             List.append(&2, U32, acc, [n]), acc)
+      rg_rngs.go(ar, t, u)
+
+def rg_afts.go(+ar: O.Arena, +tb: F.Table, +ns: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
+  match ns:
+    case Nil{}: acc
+    case n <> t:
+      +u = Bool.pick(List<&2, U32>, O.eq_op(O.Arena.op(ar, n), O.OpsAFTER{}),
+                     F.set_union(acc, F.Rng.rs(F.UOp.ranges(ar, F.rng_sweep(ar, tb), n))), acc)
+      rg_afts.go(ar, tb, t, u)
+
+def rg_minus.go(+xs: List<&2, U32>, +ds: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
+  match xs:
+    case Nil{}: acc
+    case x <> t:
+      rg_minus.go(t, ds, Bool.pick(List<&2, U32>, F.mem_u32(ds, x), acc, List.append(&2, U32, acc, [x])))
+
+def rw_ranges(+ar: O.Arena, +e: U32) -> List<&2, U32>:
+  rg_rngs.go(ar, O.UOp.toposort(O.Arena.budget(ar), ar, e), Nil{})
+
+def rw_ended(+ar: O.Arena, +e: U32) -> List<&2, U32>:
+  rg_rngs.go(ar, O.Arena.src_from(ar, e, 1), Nil{})
+
+def rr_widen.end(+ar: O.Arena, +e: U32, +tb: F.Table) -> O.Found:
+  +ns = O.UOp.toposort(O.Arena.budget(ar), ar, e)
+  +closed = rw_ended(ar, e)
+  +extra = rg_minus.go(rg_minus.go(rw_ranges(ar, e), rg_afts.go(ar, tb, ns, Nil{}), Nil{}), closed, Nil{})
+  O.UOp.end(ar, O.Arena.src0(ar, e), List.concat(&2, U32, [closed, extra]))
+
+def rr_widen.node(+ar: O.Arena, +n: U32, +rs: List<&2, WRep>) -> O.Found:
+  O.UOp.new(ar, O.Arena.op(ar, n), rw_srcs.go(O.Arena.srcs(ar, n), rs, Nil{}), O.Arena.arg(ar, n), O.Arena.tag(ar, n))
+
+def rr_widen.op2(+b: O.Found, isend: Bool, +tb: F.Table) -> O.Found:
+  match isend:
+    case True{} : rr_widen.end(O.Found.ar(b), O.Found.i(b), tb)
+    case False{}: b
+
+def rr_widen.op(+ar: O.Arena, +n: U32, +rs: List<&2, WRep>, +tb: F.Table) -> O.Found:
+  rr_widen.op2(rr_widen.node(ar, n, rs), O.eq_op(O.Arena.op(ar, n), O.OpsEND{}), tb)
+
+def rr_widen.one(+n: U32, p: (O.Arena & List<&2, WRep>), +tb: F.Table) -> (O.Arena & List<&2, WRep>):
+  (+ar, +rs) = p
+  +f = rr_widen.op(ar, n, rs, tb)
+  (O.Found.ar(f), List.append(&2, WRep, rs, [WRep{n, O.Found.i(f)}]))
+
+def rr_widen.go(+ns: List<&2, U32>, p: (O.Arena & List<&2, WRep>), +tb: F.Table) -> (O.Arena & List<&2, WRep>):
+  match ns:
+    case Nil{}: p
+    case n <> t: rr_widen.go(t, rr_widen.one(n, p, tb), tb)
+
+def rr_widen.all.fin(p: (O.Arena & List<&2, WRep>), +root: U32) -> O.Found:
+  (+a, +rs) = p
+  O.Found{a, rw_get(rs, root)}
+
+def rr_widen.all(+ar: O.Arena, +root: U32, +tb: F.Table) -> O.Found:
+  rr_widen.all.fin(rr_widen.go(O.UOp.toposort(O.Arena.budget(ar), ar, root), (ar, Nil{}), tb), root)
+
 def rr_run_rangeify.go(p: (O.Arena & RrMap), sink: U32, +tb: F.Table) -> O.Found:
   (+ar, +m) = p
   +sk = sink
@@ -1655,7 +1745,7 @@ def rr_run_rangeify.go(p: (O.Arena & RrMap), sink: U32, +tb: F.Table) -> O.Found
   +ns = O.UOp.toposort(O.Arena.budget(ar), ar, sk)
   +rep = rr_ap_walk(ar, tb, tbl, ctx, ns)
   +root = rr_ap_root(ApFin.fin(rep), sk)
-  O.Found{ApFin.ar(rep), root}
+  rr_widen.all(ApFin.ar(rep), root, tb)
 
 def rr_run_rangeify(+ar: O.Arena, sink: U32) -> O.Found:
   +sk = sink

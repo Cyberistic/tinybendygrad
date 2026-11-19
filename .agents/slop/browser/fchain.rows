@@ -1,0 +1,2 @@
+fc_lk=4/CALL>SINK CALL>SINK CALL>SINK CALL>SINK
+end_rows=val=STORE:none:INDEX,REDUCE ended=379,378,380,381 open= gate=True nall=54 | val=STORE:none:INDEX,WHERE ended=379,378,417,418,419,420,415,416 open= gate=True nall=32 | val=STORE:none:INDEX,REDUCE ended=439,438,417,418,440,441,442,443,444,445,380,381 open= gate=True nall=48 | val=STORE:none:INDEX,REDUCE ended=110,475,476,417,418,440,441,442,443,444,445,477,478,474 open= gate=True nall=46
