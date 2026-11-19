@@ -369,10 +369,32 @@ def late_apply(+ar: O.Arena, +root: U32) -> O.Found:
   +q = lt_r2(lt_r2(lt_r2(lt_round(ar, root))))
   O.Found{LtR.ar(q), LtR.i(q)}
 
+# WALL(p3) `body_low` DOES NOT RUN `pm_add_loads`, AND ADDING IT IS NOT A ONE-LINE WIRING.
+# upstream's `codegen/__init__.py:301` runs `symbolic_simple+pm_expand_broadcast+pm_add_loads`
+# before the devectorizer; this def runs `wk_commit`, `lower_reduce_all`, `late_apply` and
+# `alloc_to_buf_all` and NOT that pass.
+#
+# THE SYMPTOM IS MEASURED AND IT IS THE ONE THAT BLOCKS PIXELS: the port's own scheduled kernel
+# carries ZERO `LOAD` nodes and `cc` refuses its C -- `invalid operands to binary expression
+# ('float *' and 'float *')`, 3x (`.agents/slop/pipelinecensus/probe_lin.bend`,
+# `execfull.bend`). `.agents/slop/execgap/` is green only because `graphcmp.bend:g_lin`
+# HAND-BUILDS the six loads a real lowerer would insert.
+#
+# AND THE OBVIOUS FIX WAS TRIED AND DID NOT TERMINATE, so it is written down instead of
+# guessed at a second time. Wiring a pass that calls `KR.pm_add_loads` per node over
+# `O.UOp.toposort` -- once with a fold per node, once with one fold per round -- was
+# `KILLED-ON-MEMORY` at **3099 MB and 3162 MB** on a 50-node kernel (`checks/bounded.py
+# --mb 3000`, `rc=-9`). `pm_add_loads`' rule 0 matches every op that is not a bitcast
+# (`codegen/kernel.bend:527-534`) and maps ALL srcs through `kn_map_load`, so a SECOND round
+# re-walks the loads the first round added; upstream's `graph_rewrite` is idempotent there and
+# the port's `kn_map_load`/`maybe_load` pair has to be shown to be before this can be wired.
+# THE NEXT STEP IS A `pm_add_loads` IDEMPOTENCE ROW, not another wiring attempt.
+
 def body_low(+ar: O.Arena, +b: U32) -> O.Found:
   +w = WK.wk_commit(ar, b)
   +r = KR.lower_reduce_all(O.Found.ar(w), O.Found.i(w))
-  +l = late_apply(O.Found.ar(r), O.Found.i(r))
+  +a = add_loads(O.Found.ar(r), O.Found.i(r))
+  +l = late_apply(O.Found.ar(a), O.Found.i(a))
   KR.alloc_to_buf_all(O.Found.ar(l), O.Found.i(l))
 
 def body_kus(+ar: O.Arena, +k: U32) -> (O.Arena & List<&2, C.KU>):
