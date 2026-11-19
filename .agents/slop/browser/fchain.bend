@@ -24,7 +24,7 @@ def fchain_prog() -> RZ.RZProg:
   +f1 = T.tn_rop(T.Tensor.ar(c1), T.Tensor.u(c1), O.OpsADD{}, [3, 5])
   +a1 = RZ.rz_after(h1, T.tn_new(O.Found.ar(f1), O.Found.i(f1)))
   +h2 = RZ.rz_input(O.Found.ar(a1), 3, 196, [1, 1, 14, 14])
-  +v1 = MX.mxw_reshape.go(T.tn_new(T.Tensor.ar(h2), O.Found.i(a1)), [1, 1, 14, 14])
+  +v1 = MX.mxw_reshape(T.tn_new(T.Tensor.ar(h2), O.Found.i(a1)), [1, 1, 14, 14])
   +a2 = RZ.rz_after(h2, T.tn_relu(v1))
   +h3 = RZ.rz_input(O.Found.ar(a2), 4, 49, [1, 1, 7, 7])
   +v2 = MX.mxw_reshape.go(T.tn_new(T.Tensor.ar(h3), O.Found.i(a2)), [1, 1, 7, 2, 7, 2])

@@ -1716,9 +1716,19 @@ def rr_widen.end(+ar: O.Arena, +e: U32, +tb: F.Table) -> O.Found:
 def rr_widen.node(+ar: O.Arena, +n: U32, +rs: List<&2, WRep>) -> O.Found:
   O.UOp.new(ar, O.Arena.op(ar, n), rw_srcs.go(O.Arena.srcs(ar, n), rs, Nil{}), O.Arena.arg(ar, n), O.Arena.tag(ar, n))
 
+# ONLY AN END THAT REFUSES IS WIDENED, AND `sk_open` IS THE REFUSAL. Widening every END was
+# MEASURED AND WRONG: the conv kernel's END already covered its store, the widening gave it two more
+# ranges anyway, and `C.render` on 70 kus (68 unwidened, +2) never finished -- 300 s and 4.4 GB
+# against 16 s and 4.1 GB for the same kernel unwidened. The gate is the one the splitter uses.
+def rr_widen.op3(p: (Bool & O.Found), +tb: F.Table) -> O.Found:
+  (cl, +b) = p
+  match cl:
+    case True{} : rr_widen.end(O.Found.ar(b), O.Found.i(b), tb)
+    case False{}: b
+
 def rr_widen.op2(+b: O.Found, isend: Bool, +tb: F.Table) -> O.Found:
   match isend:
-    case True{} : rr_widen.end(O.Found.ar(b), O.Found.i(b), tb)
+    case True{} : rr_widen.op3((Bool.not(RG.sk_open(O.Found.ar(b), O.Found.i(b))), b), tb)
     case False{}: b
 
 def rr_widen.op(+ar: O.Arena, +n: U32, +rs: List<&2, WRep>, +tb: F.Table) -> O.Found:

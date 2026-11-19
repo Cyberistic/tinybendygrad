@@ -26,7 +26,7 @@ def fchain_prog() -> RZ.RZProg:
   +f1 = T.tn_rop(T.Tensor.ar(c1), T.Tensor.u(c1), O.OpsADD{}, [3, 5])
   +a1 = RZ.rz_after(h1, T.tn_new(O.Found.ar(f1), O.Found.i(f1)))
   +h2 = RZ.rz_input(O.Found.ar(a1), 3, 196, [1, 1, 14, 14])
-  +v1 = MX.mxw_reshape.go(T.tn_new(T.Tensor.ar(h2), O.Found.i(a1)), [1, 1, 14, 14])
+  +v1 = MX.mxw_reshape(T.tn_new(T.Tensor.ar(h2), O.Found.i(a1)), [1, 1, 14, 14])
   +a2 = RZ.rz_after(h2, T.tn_relu(v1))
   +h3 = RZ.rz_input(O.Found.ar(a2), 4, 49, [1, 1, 7, 7])
   +v2 = MX.mxw_reshape.go(T.tn_new(T.Tensor.ar(h3), O.Found.i(a2)), [1, 1, 7, 2, 7, 2])
@@ -47,7 +47,8 @@ def kg() -> O.Found:
   RR.rr_kernel_graph(RZ.RZProg.ar(q), RZ.RZProg.sink(q))
 
 
-# THE RENDER: every kernel the LINEAR holds, with its brace count and its parameter list.
+# THE RENDER OF ALL FOUR KERNELS, WITH ONE `kg()` AND ONE `schedule`: the fixture is ~30 s per build
+# (MEASURED: `fchain.bend`'s two rows take 26-37 s), so the kernels are rendered from ONE LINEAR.
 def mk_emit(p: (O.Arena & List<&2, C.KU>), +i: U32, +acc: List<&2, String>) -> (O.Arena & List<&2, String>):
   (ar, +kus) = p
   (ar, List.append(&2, String, acc,
@@ -66,23 +67,11 @@ def mk_all(p: (O.Arena & List<&2, String>)) -> String:
   (ar, acc) = p
   String.join(acc, "\n")
 
-# ONE KERNEL AT A TIME: the whole chain's four renders take minutes (the END-widening pass costs
-# ~30 s per `rr_kernel_graph`, MEASURED), so the row renders the kernel it is asked for.
-def mk_get.go(+ks: List<&2, U32>, +ar: O.Arena, +j: U32, +want: U32, acc: U32) -> U32:
-  match ks:
-    case Nil{}: acc
-    case k <> t: mk_get.go(t, ar, U32.add(j, 1), want, Bool.pick(U32, U32.is_eq(j, want), k, acc))
-
-def mk_get(+ks: List<&2, U32>, +ar: O.Arena, +j: U32, +want: U32) -> U32:
-  mk_get.go(ks, ar, j, want, 0)
-
-def chain_c(+want: U32) -> String:
+def chain_c() -> String:
   +k = kg()
   +lin = SCH.schedule(O.Found.ar(k), O.Found.i(k))
-  +ks = SCH.lin_kernels(lin)
-  mk_all(mk_step((SCH.lin_ar(lin), Nil{}), mk_get(ks, SCH.lin_ar(lin), 0, want), want))
+  mk_all(mk_go(SCH.lin_kernels(lin), (SCH.lin_ar(lin), Nil{}), 0))
 
 def main() -> IO(Unit):
   do IO<Unit>:
-    _ : Unit <- IO.print(String.concat(["k0=", chain_c(0)]))
-    IO.print(String.concat(["k3=", chain_c(3)]))
+    IO.print(String.concat(["chain_c=", chain_c()]))
