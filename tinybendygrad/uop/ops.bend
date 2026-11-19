@@ -499,7 +499,7 @@ type Const is Data:
   CFloat{f: F32}
   CInvalid{}
 
-# `Sint` is ops.py:1923 symbol=sint -- `sint = int|UOp`, spelled out. It is the element type
+# `Sint` is ops.py:1888 symbol=sint -- `sint = int|UOp`, spelled out. It is the element type
 type Sint is Data:
   SI{i: H.I64}
   SU{u: U32}
@@ -2082,6 +2082,30 @@ def UOp.new.param(+ar: Arena, +op: Op, n: Maybe<&2, U32>, arg: Arg, tag: Tag) ->
   +f = shape_to_shape_arg.of(ar, ar, n)
   UOp.new(Found.ar(f), op, [Found.i(f)], arg, tag)
 
+# `new_buffer` -- ops.py:809-815. THE NODE IS PORTED AND THE HOST ALLOCATION IS NOT:
+# `Buffer(device, size * dtype.itemsize)` is CPython allocating, and the port's
+# `ParamArg.buffer` is an allocator SLOT (`Maybe<U32>`, its own field at ops.bend:537), so a
+# caller holding a device supplies the slot and this builds the node that refers to it.
+#
+# THE SLOT IS A PARAMETER AND NOT `next(UOp.unique_num)`. MEASURED: `grep -n "unique_num"
+# tinybendygrad/uop/ops.bend` answers NOTHING -- the port has no mutable global counter,
+# because an arena is threaded linearly. Upstream's `num=None` default is therefore not
+# available here, and a caller that wants a fresh slot gets it from wherever it mints them.
+#
+# THE THREE UPSTREAM GUARDS ARE NOT SPELLED: a weak dtype, a non-storage dtype and a
+# non-concrete size all `raise` upstream, and this file has no exceptions. A caller passes a
+# concrete `size` and a storage `dtype`; `mxw_buf` in `mixin/movement.bend` is the f32/GLOBAL
+# convenience the Tensor path uses.
+def UOp.new_buffer.pa(+dev: S.Dev, size: U32, +dt: S.Dt, num: Maybe<&2, U32>) -> ParamArg:
+  match num:
+    case Some{n}: ParamArg{n, dt, None{}, None{}, None{}, S.AGlobal{}, Some{dev}, False{},
+      None{}, None{}, False{}, None{}}
+    case None{}:  ParamArg{0, dt, None{}, None{}, None{}, S.AGlobal{}, Some{dev}, False{},
+      None{}, None{}, False{}, None{}}
+
+def UOp.new_buffer(+ar: Arena, dev: S.Dev, +size: U32, dt: S.Dt, num: Maybe<&2, U32>) -> Found:
+  UOp.new.param(ar, OpsBUFFER{}, Some{size}, AParam{UOp.new_buffer.pa(dev, size, dt, num)}, TNone{})
+
 # THE READER, and the reason it takes the OWNER. `ops.py:353-357`:
 # reason upstream's `size_of(owner)` takes a `UOp` (`.agents/slop/graphcmp.py:703`).
 def ParamArg.size.const(arg: Arg) -> Maybe<&2, U32>:
@@ -2264,7 +2288,7 @@ def UOp.backward_slice_with_self(fuel: Nat, +ar: Arena, +self: U32) -> List<&2, 
 
 # topovisit -- ops.py:309. "NOTE: this shares a lot of code with toposort". It
 # `src` normalisation -- ops.py:1456-1461, the `permutations` line:
-# OR, XOR, all of them. Arity >= 3 is TODO(p3) ops.py:1457  def UPat.__init__ --
+# OR, XOR, all of them. Arity >= 3 is TODO(p3) ops.py:1409  def UPat.__init__ --
 def all_same.from(+h: U32, t: List<&2, U32>) -> Bool:
   match t:
     case Nil{}: True{}
@@ -2909,16 +2933,16 @@ def pm_r_alloc_m.at(+ctx: CTX, n: Nat) -> Maybe<&2, U32>:
 def pm_r_alloc_m(+ctx: CTX, +ar: Arena, +self: U32) -> Maybe<&2, U32>:
   pm_r_alloc_m.at(ctx, 2n)
 
-# THE OPS.PY RULE TABLES -- ops.py:1898 symbol=_substitute,
-# ops.py:1899 symbol=_pm_resolve_params, ops.py:1908 symbol=pm_drop_after, and
+# THE OPS.PY RULE TABLES -- ops.py:1863 symbol=_substitute,
+# ops.py:1864 symbol=_pm_resolve_params, ops.py:1873 symbol=pm_drop_after, and
 # tinygrad/uop/spec.py:207 symbol=spec_program. The FOURTH is NOT IN upstream's
 # `ops.py:1591-1593` symbol=PatternMatcher.__init__ is where a `PMEntry` comes from, and it is three lines:
-# SET, and it is `ops.py:1601` symbol=PatternMatcher.rewrite's
+# SET, and it is `ops.py:1565` symbol=PatternMatcher.rewrite's
 # shortcut. `ops.py:1469-1470` symbol=UPat.__init__ computes `upat_match` and
-# `ops.py:1604` symbol=PatternMatcher.rewrite's `if not early_reject.issubset(ler): continue`
-# `tuple(Ops)` -- the claim of ops.py:1898 symbol=_substitute's
+# `ops.py:1565` symbol=PatternMatcher.rewrite's `if not early_reject.issubset(ler): continue`
+# `tuple(Ops)` -- the claim of ops.py:1863 symbol=_substitute's
 # `UPat(tuple(Ops), name="x")` and of tinygrad/uop/spec.py:207 symbol=spec_program's
-# (tinygrad/uop/__init__.py:134 symbol=GroupOp.All), measured by CPython:
+# (tinygrad/uop/__init__.py:137 symbol=GroupOp.All), measured by CPython:
 def all_ops() -> List<&2, Op>:
   [OpsSPECIAL{} OpsBUFFER{} OpsALLOC{} OpsNOOP{} OpsREWRITE_ERROR{} OpsPARAM{} OpsREFPARAM{} OpsCALL{} OpsPROGRAM{} OpsLINEAR{} OpsSOURCE{} OpsBINARY{},
    OpsSINK{} OpsAFTER{} OpsSTACK{} OpsGETADDR{} OpsINDEX{} OpsSHRINK{} OpsLOAD{} OpsSTORE{} OpsWMMA{} OpsCAST{},
@@ -2934,11 +2958,11 @@ def tag_is_none(t: Tag) -> Bool:
     case TNone{}: True{}
     case _: False{}
 
-# TAG 40 -- ops.py:1908 symbol=pm_drop_after. `pm_drop_after`:
+# TAG 40 -- ops.py:1873 symbol=pm_drop_after. `pm_drop_after`:
 def pm_r_drop_m(+ctx: CTX, +ar: Arena, +self: U32) -> Maybe<&2, U32>:
   Some{Arena.src(ar, self, 0)}
 
-# TAG 42 -- ops.py:1899 symbol=_pm_resolve_params. `_pm_resolve_params`:
+# TAG 42 -- ops.py:1864 symbol=_pm_resolve_params. `_pm_resolve_params`:
 def pm_r_rp_m.slot(arg: Arg) -> U32:
   match arg:
     case AParam{pa}: ParamArg.slot(pa)
@@ -2990,7 +3014,7 @@ def pm_scan_m(+ts: PMEntrys, +ar: Arena, +self: U32, todo: List<&2, PMEntry>, ac
 def pm_rewrite_m(+ts: PMEntrys, +ar: Arena, +self: U32, +ctx: CTX) -> Maybe<&2, U32>:
   pm_scan_m(ts, ar, self, PMEntrys.es(ts), None{}, ctx)
 
-# linearity. `ops.py:1600` symbol=PatternMatcher.rewrite and `ops.py:1698` symbol=TrackedPatternMatcher.rewrite type the pass's `ctx` as `ctx=None`, and each lambda
+# linearity. `ops.py:1565` symbol=PatternMatcher.rewrite and `ops.py:1663` symbol=TrackedPatternMatcher.rewrite type the pass's `ctx` as `ctx=None`, and each lambda
 # already paid for: `remove_all_tags` MINTS. `ops.py:245-249` symbol=UOp.replace returns
 # TAG 41 -- tinygrad/uop/spec.py:207 symbol=spec_program. `remove_all_tags`:
 # `ops.py:245-249` symbol=UOp.replace is what `replace(tag=None)` is:
@@ -3002,8 +3026,8 @@ def pm_r_tag_m(+ctx: CTX, +ar: Arena, +self: U32) -> Maybe<&2, Found>:
   pm_r_tag_m.of(tag_is_none(Arena.tag(ar, self)),
     UOp.new(ar, Arena.op(ar, self), Arena.srcs(ar, self), Arena.arg(ar, self), TNone{}))
 
-# TAG 43 -- ops.py:1898 symbol=_substitute. `_substitute`:
-# The ctx is `dvars: dict[UOp, UOp]` (`ops.py:514` symbol=UOp.substitute), so it is keyed by the NODE
+# TAG 43 -- ops.py:1863 symbol=_substitute. `_substitute`:
+# The ctx is `dvars: dict[UOp, UOp]` (`ops.py:506` symbol=UOp.substitute), so it is keyed by the NODE
 def pm_sub_m.of(r: Sigma<&1, &1, Map<&2, U32>, _ => U32>, s: Sigma<&1, &1, Map<&2, U32>, _ => Bool>) -> Maybe<&2, U32>:
   match r, s:
     case Tuple{m, v}, Tuple{n, b}: Bool.pick(Maybe<&2, U32>, b, Some{v}, None{})
@@ -3203,13 +3227,13 @@ def UOp.split_uop.pop(fuel: Nat, +ar: Arena, +sep: Op, w: Wk) -> Wk:
 def UOp.split_uop(fuel: Nat, +ar: Arena, self: U32, +sep: Op) -> List<&2, U32>:
   Wk.out(UOp.split_uop.pop(fuel, ar, sep, Wk{[self], Nil{}}))
 
-# `sint_to_uop` -- ops.py:1895 symbol=sint_to_uop. `UOp.const(x, dtype=dtypes.weakint)`, and the
+# `sint_to_uop` -- ops.py:1860 symbol=sint_to_uop. `UOp.const(x, dtype=dtypes.weakint)`, and the
 def UOp.sint_to_uop(ar: Arena, s: Sint) -> Found:
   match s:
     case SU{u}: Found{ar, u}
     case SI{i}: UOp.new(ar, OpsCONST{}, Nil{}, APy{CInt{i}}, TNone{})
 
-# `gate_kernel_sink` -- ops.py:1915 symbol=gate_kernel_sink. Three arms, two of them NEGATIVE tests, and
+# `gate_kernel_sink` -- ops.py:1880 symbol=gate_kernel_sink. Three arms, two of them NEGATIVE tests, and
 def gate_kernel_sink.arg(arg: Arg) -> Bool:
   match arg:
     case AKernel{ki}: False{}
@@ -3223,80 +3247,81 @@ def gate_kernel_sink.arg(arg: Arg) -> Bool:
 #     ops.py:329 UOp._shape        -> fold.shape.of / dt_shape  (fold.bend:882)
 #     ops.py:456 UOp.shape         -> UOp.shape                (fold.bend:3994)
 #     ops.py:470 UOp.ended_ranges  -> UOp.ended_ranges         (fold.bend:3969)
-# TODO(p3) ops.py:76  def srender
-# TODO(p3) ops.py:1169  def sym_infer
+# TODO(p3) ops.py:75  def srender
+# TODO(p3) ops.py:1135  def sym_infer
 # WALL(p3) ops.py:212  def __init__ -- BLOCKED. STORE A FUNCTION IN A DATA FIELD -- `recursive_property.__init__` keeps `self.fxn`. The
 #   `Data`, MEASURED. (A function as a PARAMETER is fine -- `bend guide:69` says functions may
-# TODO(p3) ops.py:216  def __get__
+# TODO(p3) ops.py:211  def __get__
 # WALL(p3) ops.py:240  def __del__ -- BLOCKED. NO GARBAGE COLLECTOR TO CALL IT. `bend guide:646` -- "values are affine, a `match` frees
 # WALL(p3) ops.py:244  def __reduce__ -- BLOCKED. THE PICKLE PROTOCOL. `return UOp, (op, src, arg, tag, metadata)` is a `__reduce__`: an
-# TODO(p3) ops.py:261  def key
+# TODO(p3) ops.py:254  def key
 # wall(p3) ops.py:284  def _bool_slice -- blocked. needs `fold`'s walk and a dtype predicate, so it lives downstream of this file like
-# TODO(p3) ops.py:287  def bool_slice
+# TODO(p3) ops.py:279  def bool_slice
 # wall(p3) ops.py:316  def tuplize -- blocked. the mechanism is replaced, not missing. `tuplize` builds `(op.value, repr(arg), dtype, *(src
 #   consumers are outside ops.py anyway -- `codegen/late/linearizer.py:36` (a sort) and
 #   `uop/symbolic.py:225` (a rewrite rule) -- and neither is ported.
-# TODO(p3) ops.py:444  def shard_shape
-# TODO(p3) ops.py:450  def max_shard_shape
+# TODO(p3) ops.py:436  def shard_shape
+# TODO(p3) ops.py:442  def max_shard_shape
 # PORTED -- `ops.py:481 _ranges` and `ops.py:495 ranges` are `fold.bend`'s
-# TODO(p3) ops.py:479  def ranges
+# TODO(p3) ops.py:471  def ranges
 # TODO(p3) ops.py:495  def simplify
 # DONE(p3) ops.py:92 def ssimplify -- `ssimplify_of` and `UOp.ssimplify_val` /
 #   documented wall in this file (`ops.py:511`, "* uop evaluation *") and 3,679 lines of
 # done(p3) ops.py:521 def _eval -- and it was misfiled here, which is the finding. `_eval` needs
-# TODO(p3) ops.py:511  def __bool__   -- DONE, same gate (`bool_true`, `bool_false`,
-# TODO(p3) ops.py:512  def __int__    -- DONE, same gate (`int_weakint`, `int_i32`,
-# TODO(p3) ops.py:513  def __float__  -- DONE, same gate (`float_weakfloat`,
-# TODO(p3) ops.py:514  def substitute
-# TODO(p3) ops.py:521  def __index__
+# TODO(p3) ops.py:503  def __bool__   -- DONE, same gate (`bool_true`, `bool_false`,
+# TODO(p3) ops.py:504  def __int__    -- DONE, same gate (`int_weakint`, `int_i32`,
+# TODO(p3) ops.py:505  def __float__  -- DONE, same gate (`float_weakfloat`,
+# TODO(p3) ops.py:506  def substitute
+# TODO(p3) ops.py:513  def __index__
 # TODO(p3) ops.py:526  def trace_num
 # WALL(p3) ops.py:563  def __getitem__ -- BLOCKED. PYTHON'S SLICE PROTOCOL. The body calls `super(UOp, self).__getitem__(idx)`,
 # done(p3) ops.py:597 def _uop -- and the honest answer is that there is nothing to
 #   names `Tensor.u` as `_uop -- tensor.py:118` and every graph-building method there
 # done(p3) ops.py:599 def _wrap_uop -- same reason, and it is the stronger one.
-# TODO(p3) ops.py:581  def const_like
-# TODO(p3) ops.py:587  def ufix
-# TODO(p3) ops.py:594  def store
-# TODO(p3) ops.py:603  def ins
-# TODO(p3) ops.py:604  def contract
-# TODO(p3) ops.py:621  def cconst
+# TODO(p3) ops.py:572  def const_like
+# TODO(p3) ops.py:578  def ufix
+# TODO(p3) ops.py:585  def store
+# TODO(p3) ops.py:594  def ins
+# TODO(p3) ops.py:595  def contract
+# TODO(p3) ops.py:612  def cconst
 #   ops.py:610 -- a FORCED CAST is needed for bool because the ordinary cast
-# TODO(p3) ops.py:630  def wmma
+# TODO(p3) ops.py:621  def wmma
 #   ops.py:622 -- the input dtype lives in the arg, not in `src[0].dtype`,
 # PORTED -- `ops.py:652 _rop` is `tensor.bend`'s `tn_rop`, which is
-# TODO(p3) ops.py:644  def invalid
+# TODO(p3) ops.py:635  def invalid
 # DONE(p3) ops.py:664 def valid -- `UOp.where` and `UOp.valid_of` above, gated at
 #   `gates/ops-core-gate.py` in FOUR rows. `where` is `mixin/elementwise.py:426`'s
 #   finds a different node -- I read `ANone{}` out of three srcs that were there all along. MEASURED
-# TODO(p3) ops.py:646  def get_idx
-# TODO(p3) ops.py:652  def reduce
-# TODO(p3) ops.py:661  def overflows
+# TODO(p3) ops.py:637  def get_idx
+# TODO(p3) ops.py:643  def reduce
+# TODO(p3) ops.py:652  def overflows
 # WALL(p3) ops.py:670  def unshard -- BLOCKED. `def _shard` IS ABSENT -- checked as a definition, comments excluded. `unshard` builds a
 #   ops.py:663-665 -- an UNSHARD carries one sharding RANGE per sharded axis;
 # WALL(p3) ops.py:690  def bounds -- BLOCKED. `def max_numel` IS ABSENT, and `bounds` also reads `self.axis` and a device COUNT
-# TODO(p3) ops.py:715  def axis
-# TODO(p3) ops.py:728  def _shard
+# TODO(p3) ops.py:681  def axis
+# TODO(p3) ops.py:713  def _shard
 # WALL(p3) ops.py:734  def shard -- BLOCKED. `def _shard` IS ABSENT -- the same one `unshard` needs. `copy_to_device` IS present, so
-# TODO(p3) ops.py:746  def store_call  -- BLOCKED, and is `self.param_like(0).store(...).call(self, src)`.
-# TODO(p3) ops.py:755  def on_disk  -- BLOCKED, and is `device.startswith("DISK")`.
-# TODO(p3) ops.py:756  def on_creation_device  -- BLOCKED, and is `device.startswith(...)`.
+# TODO(p3) ops.py:729  def store_call  -- BLOCKED, and is `self.param_like(0).store(...).call(self, src)`.
+# TODO(p3) ops.py:736  def on_disk  -- BLOCKED, and is `device.startswith("DISK")`.
+# TODO(p3) ops.py:737  def on_creation_device  -- BLOCKED, and is `device.startswith(...)`.
 # PORTED -- `ops.py:818 _mop` is `tensor.bend`'s `tn_mop`, which is
-# TODO(p3) ops.py:835  def new_buffer
-# TODO(p3) ops.py:843  def from_buffer
+# PORTED -- `ops.py:809-815 new_buffer` is `UOp.new_buffer` above. The node is thedef; the
+# host `Buffer` it would allocate is CPython's, and the port's `ParamArg.buffer` is a slot.
+# TODO(p3) ops.py:817  def from_buffer
 #   ops.py:821 -- both the storage identity and the dtype interpretation are
-# TODO(p3) ops.py:849  def empty_like  -- BLOCKED, and opens `canonicalize_device(...)`.
-# TODO(p3) ops.py:867  def clone  -- BLOCKED, and opens `canonicalize_device(...)` then tests `is_disk_device`.
-# TODO(p3) ops.py:855  def _frompy
+# TODO(p3) ops.py:823  def empty_like  -- BLOCKED, and opens `canonicalize_device(...)`.
+# TODO(p3) ops.py:841  def clone  -- BLOCKED, and opens `canonicalize_device(...)` then tests `is_disk_device`.
+# TODO(p3) ops.py:829  def _frompy
 # DONE(p3) ops.py:902 def is_virtual -- `wk_is_virtual` in `weak.bend`, `no_dev` beside it.
 #   the claim that no DEF in the port sets it was FALSE. measured 2026-10-30:
-# TODO(p3) ops.py:931  def contiguous_view
-# TODO(p3) ops.py:941  def contiguous_view_offset  -- BLOCKED, and is `None if (view := self.contiguous_view()) is None`.
-# TODO(p3) ops.py:957  def _buffer_view  -- BLOCKED, and raises on `self.contiguous_view() is None`.
+# TODO(p3) ops.py:895  def contiguous_view
+# TODO(p3) ops.py:916  def contiguous_view_offset  -- BLOCKED, and is `None if (view := self.contiguous_view()) is None`.
+# TODO(p3) ops.py:926  def _buffer_view  -- BLOCKED, and raises on `self.contiguous_view() is None`.
 # TODO(p3) ops.py:950  def _base_buffer_is_realized  -- BLOCKED, and walks the AFTER chain then reads `u.base.realized`.
-# TODO(p3) ops.py:988  def realized  -- BLOCKED, and ANSWERS a Buffer.
-# TODO(p3) ops.py:999  def is_realized  -- BLOCKED, and is `self.base.realized is not None`.
-# TODO(p3) ops.py:757  def needs_storage  -- BLOCKED, and is `not is_virtual and (storage_base.op is ALLOC or base.realized)`.
-# TODO(p3) ops.py:974  def buffer
+# TODO(p3) ops.py:957  def realized  -- BLOCKED, and ANSWERS a Buffer.
+# TODO(p3) ops.py:968  def is_realized  -- BLOCKED, and is `self.base.realized is not None`.
+# TODO(p3) ops.py:738  def needs_storage  -- BLOCKED, and is `not is_virtual and (storage_base.op is ALLOC or base.realized)`.
+# TODO(p3) ops.py:932  def buffer
 # PORTED -- `ops.py:1015 UOp.variable` is `UOp.variable` (this file), four `vrn_*`
 # `is_variable` (ops.py:1020) is STILL BLOCKED and this does not change that: its
 #   ops.py:1020  def is_variable
@@ -3307,29 +3332,29 @@ def gate_kernel_sink.arg(arg: Arg) -> Bool:
 #   ops.py:1039  def unbound
 #   ops.py:1043  def unbind
 #   ops.py:1046  def unbind_all
-#     `bsl.go`'s shape and readable; `substitute` (ops.py:514 symbol=UOp.substitute) is not ported, and
+#     `bsl.go`'s shape and readable; `substitute` (ops.py:506 symbol=UOp.substitute) is not ported, and
 #   ops.py:1049  def variables
 # AND `const_factor` IS DONE -- MEASURED 2026-11-08: `def UOp.const_factor(fuel, ar, i) ->
 # DONE(p3) ops.py:1048 def const_factor -- `UOp.const_factor` above, FLATTENED: the def and
 # DONE(p3) ops.py:1082 def pop_const -- `UOp.pop_const_val` / `UOp.pop_const_hits` above, with
-# TODO(p3) ops.py:1073  def gcd
-# TODO(p3) ops.py:1079  def divide_exact
-# TODO(p3) ops.py:1090  def vmin
-# TODO(p3) ops.py:1092  def vmax
+# TODO(p3) ops.py:1032  def gcd
+# TODO(p3) ops.py:1038  def divide_exact
+# TODO(p3) ops.py:1049  def vmin
+# TODO(p3) ops.py:1051  def vmax
 # TODO(p3) ops.py:1106  def _min_max
-# TODO(p3) ops.py:1168  def _sym_fxn
-# TODO(p3) ops.py:1169  def sym_infer
-# TODO(p3) ops.py:1173  def render
-# TODO(p3) ops.py:1181  def render_uir  -- upstream's `pyrender` was DELETED before this pin.
+# TODO(p3) ops.py:1124  def _sym_fxn
+# TODO(p3) ops.py:1135  def sym_infer
+# TODO(p3) ops.py:1139  def render
+# TODO(p3) ops.py:1147  def render_uir  -- upstream's `pyrender` was DELETED before this pin.
 # TODO(p3) ops.py:1188  def alloc  -- BLOCKED, and ends `ret.view_as(shape)`.
-# TODO(p3) ops.py:1194  def alloc_like  -- BLOCKED, and delegates to `alloc`.
-# TODO(p3) ops.py:1206  def placeholder  -- BLOCKED, and ends `view_as`.
-# TODO(p3) ops.py:1208  def placeholder_like  -- BLOCKED, and delegates to `placeholder`.
+# TODO(p3) ops.py:1160  def alloc_like  -- BLOCKED, and delegates to `alloc`.
+# TODO(p3) ops.py:1163  def placeholder  -- BLOCKED, and ends `view_as`.
+# TODO(p3) ops.py:1173  def placeholder_like  -- BLOCKED, and delegates to `placeholder`.
 # PORTED -- `ops.py:1224 UOp.set` is `UOp.set` (this file). The def, its fixture,
 #   THE STALE ARENA. The first draft was
 # done(p3) ops.py:1229 def param -- the shape-less arm only, and it is in `weak.bend`. the third
-# TODO(p3) ops.py:1228  def param_like
-# TODO(p3) ops.py:1236  def view_as
+# TODO(p3) ops.py:1193  def param_like
+# TODO(p3) ops.py:1201  def view_as
 # custom_function -- ops.py:1258 upstream. `UOp(Ops.CUSTOM_FUNCTION, src=src,
 # arg=CustomFunction(name, dtype))`. The pin's spelling was ops.py:1256 and took no
 def gate_kernel_sink.of(op: Op, +arg: Arg) -> Bool:
@@ -3345,13 +3370,13 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 def UOp.custom_function(+ar: Arena, name: String, +srcs: List<&2, U32>, dt: S.Dt) -> Found:
   UOp.new(ar, OpsCUSTOM_FUNCTION{}, srcs, ACustom{CustomFunction{name, dt}}, TNone{})
 
-# TODO(p3) ops.py:1247  def call
+# TODO(p3) ops.py:1212  def call
 # WALL(p3) ops.py:1274  def call_with_outputs -- BLOCKED. ENDS IN THE `alloc` CHAIN: the body binds output ALLOCs through `mint` below, and `mint`
 # WALL(p3) ops.py:1280  def mint -- BLOCKED. CALLS `UOp.alloc` ("`buf = UOp.alloc(...)`"), and `alloc` ends in `ret.view_as(shape)`
 # WALL(p3) ops.py:1298  def call_with_output -- BLOCKED. IS `UOp.call_with_outputs((self,), *srcs)`, one line over the marker above it, so it is
 # wall(p3) ops.py:1299  def custom_kernel -- blocked. builds its placeholders with `UOp.placeholder_like`, and `placeholder_like` delegates to
-# TODO(p3) ops.py:1312  def to_elf
-# TODO(p3) ops.py:1319  def uopfunc
+# TODO(p3) ops.py:1277  def to_elf
+# TODO(p3) ops.py:1284  def uopfunc
 # done(p3) ops.py:1229 def param -- the shape-less arm only, and it is in `weak.bend`. the third
 # WALL(p3) ops.py:1323  def outlined -- BLOCKED. PYTHON INTROSPECTION OF A CALLABLE: `inspect.signature(fn).bind(*args, kwargs)`,
 # DONE(p3) ops.py:1352 def launch_dims -- `ProgramInfo.launch_dims` is
@@ -4574,8 +4599,8 @@ def UOp.expr(+ar: Arena, +self: U32) -> Maybe<&2, String>:
 #   DONE  ops.py:1082 `pop_const` -- `UOp.pop_const_val` (:7738) / `UOp.pop_const_hits`
 #   TODO  ops.py:1073 `gcd`
 #   TODO  ops.py:1079 `divide_exact`
-# TODO(p3) ops.py:1073  def gcd
-# TODO(p3) ops.py:1079  def divide_exact
+# TODO(p3) ops.py:1032  def gcd
+# TODO(p3) ops.py:1038  def divide_exact
 #   `__floordiv__`. `const_like` is ops.py:572 and is NOT ported (:5441): it is
 # ==== ops.py:1015  `UOp.variable` =========================================
 # three siblings had each invented one. MEASURED: `variable("i",0,10).arg.slot` is
