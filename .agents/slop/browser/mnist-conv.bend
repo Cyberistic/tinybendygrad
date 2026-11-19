@@ -967,6 +967,22 @@ def end_rows() -> List<&2, String>:
   +ar = O.Found.ar(kg)
   end_rows.go(ar, F.Folded.t(F.folded(ar)), O.UOp.toposort(O.Arena.budget(ar), ar, O.Found.i(kg)), Nil{})
 
+# THE RELU's own node PRE-APPLY (the elementwise MAX the late table turns into CMPLT+WHERE): its
+# range-map entry. A fresh `out` pair means `rr_p2` realised it and the apply owed it a STAGE.
+def mx_row.go(+ar: O.Arena, +ns: List<&2, U32>, +acc: U32) -> U32:
+  match ns:
+    case Nil{}: acc
+    case x <> t: mx_row.go(ar, t, Bool.pick(U32, Bool.and(U32.is_zero(acc), O.eq_op(O.Arena.op(ar, x), O.OpsMAX{})), x, acc))
+
+def mx_row() -> String:
+  +q = RZ.rz_rebuild(fchain_prog(), False{}, False{})
+  +ar = RZ.RZProg.ar(q)
+  +tb = F.Folded.t(F.folded(ar))
+  +sk = RZ.RZProg.sink(q)
+  +m = mx_row.go(ar, O.UOp.toposort(O.Arena.budget(ar), ar, sk), 0)
+  String.concat(["val=", RR.rr_node_str(ar, m), " dims=", RR.rr_dims_str(IX.rr_dims(ar, tb, m)),
+                 " [", RR.rr_rngm_row(ar, sk, m), "]"])
+
 def main() -> IO(Unit):
   do IO<Unit>:
     _ : Unit <- IO.print(String.concat(["pool_rr=", pool_rr()]))
@@ -1007,6 +1023,7 @@ def main() -> IO(Unit):
     _ : Unit <- IO.print(String.concat(["sw_row=", String.join(sw_row(), " | ")]))
     _ : Unit <- IO.print(String.concat(["fbd_row=", fbd_row()]))
     _ : Unit <- IO.print(String.concat(["fchain_dump=", fchain_dump()]))
+    _ : Unit <- IO.print(String.concat(["mx_row=", mx_row()]))
     _ : Unit <- IO.print(String.concat(["end_rows=", String.join(end_rows(), " | ")]))
     _ : Unit <- IO.print(String.concat(["fchain_kg=", fchain_kg()]))
     _ : Unit <- IO.print(String.concat(["fc_lk=", fc_lk()]))
