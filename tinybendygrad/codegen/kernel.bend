@@ -556,10 +556,28 @@ def al_next(h: Ker, r: Ker) -> Ker:
   match h r:
     case Ker{ha, hn} Ker{ra, rn}: Ker{ra, b2u(hn, rn)}
 
+# `GroupOp.Elementwise` AS A PREDICATE, WHICH IS THE WHOLE OF WHAT `al_table` COULD NOT SPELL.
+# upstream's rule 0 matches `GroupOp.Elementwise.union({REDUCE, WMMA, STACK})`, and
+# `Elementwise` is `Unary | Binary | Ternary` (`ops.py`'s GroupOp). The port HAS those three
+# sets (`ops.bend:268/279/302`); what it lacked was their union, so `al_table` listed the three
+# NAMED ops and `pm_claimed` gated entry 0 on them alone -- MEASURED: an elementwise kernel
+# got ZERO `LOAD` nodes from `pm_add_loads` while the matmul got its six, because the matmul's
+# parent is a REDUCE and a shader's parents are ADD/SQRT/MAX.
+#
+# `CAST` IS NOT ELEMENTWISE HERE AND UPSTREAM AGREES: `_shape` spells
+# `GroupOp.Unary.union({Ops.CAST})`, so CAST had to be ADDED to Unary there and is therefore
+# not in it. Entry 1 (STORE) is not unary/binary/ternary either, so the union cannot claim it.
+def al_elemwise(+ar: O.Arena, i: U32) -> Bool:
+  +op = O.Arena.op(ar, i)
+  Bool.or(O.GroupOp.unary(op), Bool.or(O.GroupOp.binary(op), O.GroupOp.ternary(op)))
+
+def al_ok(+ops: List<&2, O.Op>, +ar: O.Arena, +self: U32) -> Bool:
+  Bool.or(O.pm_claimed(ops, ar, self), al_elemwise(ar, self))
+
 def al_scan(rs: List<&2, O.PMEntry>, +tb: F.Table, +ar: O.Arena, +self: U32, +h: Ker) -> Ker:
   match rs:
     case Nil{}  : h
-    case +e <> t: al_scan(t, tb, ar, self, al_next(h, al_try.go(O.pm_claimed(O.PMEntry.ops(e), ar, self),
+    case +e <> t: al_scan(t, tb, ar, self, al_next(h, al_try.go(al_ok(O.PMEntry.ops(e), ar, self),
                                                                O.PMEntry.tag(e), tb, ar, self)))
 
 def pm_add_loads(+fx: F.Folded, self: U32) -> Ker:
