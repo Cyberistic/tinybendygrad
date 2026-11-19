@@ -404,7 +404,7 @@ def al_pass.go(+fx0: F.Folded, +us: List<&2, U32>, st: Lt) -> Lt:
     case Nil{}: st
     case u <> t: al_pass.go(fx0, t, al_step(fx0, u, st))
 
-# THE PASS WORKS AND IS NOT WIRED, AND THE TWO FACTS ARE SEPARATE. `shaders/loadable-probe.bend`
+# THE PASS WORKS AND IS NOT WIRED, AND THE TWO FACTS ARE SEPARATE. `shaders/index-loadable.bend`
 # measures it firing: `mul_at_src0_op=Ops.LOAD` on `MUL(INDEX, INDEX)`, with `at=10` inside an
 # arena of `next=11`. Wired into `body_low` it reaches `KILLED-ON-MEMORY` at **3217 MB** on the
 # 50-node matmul kernel -- so the remaining problem is the SIZE of the term this builds, not the

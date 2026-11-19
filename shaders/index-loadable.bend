@@ -1,4 +1,4 @@
-# shaders/loadable-probe.bend -- IS `INDEX` LOADABLE? ONE PREDICATE, ASKED IN ISOLATION.
+# shaders/index-loadable.bend -- IS `INDEX` LOADABLE? ONE PREDICATE, ASKED IN ISOLATION.
 #
 # `pm_add_loads` now runs (`.agents/slop/pipelinecensus/execfull.bend`'s `c_len` 17 -> 721) and
 # still adds NO `LOAD`, so `kn_load_one`'s test returned False for every INDEX operand and the
