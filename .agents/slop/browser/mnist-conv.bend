@@ -941,14 +941,25 @@ def fchain_kg() -> String:
 # open through its srcs. An END whose `open` is not empty is a store `split_store` refuses.
 # (`F.Ranged`/`F.RTable` cannot be PARAMETER types from another module -- only accessor calls on a
 # value the module itself built -- so the range table is rebuilt per node; n is ~30.)
+def rg_str.go(+ar: O.Arena, +rs: List<&2, U32>, +acc: List<&2, String>) -> List<&2, String>:
+  match rs:
+    case Nil{}: acc
+    case r <> t: rg_str.go(ar, t, List.append(&2, String, acc, [String.concat([U32.show(r), ":", RR.rr_node_str(ar, r)])]))
+
+def rg_str(+ar: O.Arena, +rs: List<&2, U32>) -> String: String.join(rg_str.go(ar, rs, Nil{}), " ")
+
+# EVERY END IN THE CHAIN'S KERNEL GRAPH: the ranges it ENDS, the ones `_ranges` still sees open
+# through its srcs, and each open range's OWN node (so the source is visible, not a number).
 def end_rows.go(+ar: O.Arena, +tb: F.Table, +ns: List<&2, U32>, +acc: List<&2, String>) -> List<&2, String>:
   match ns:
     case Nil{}: acc
     case x <> t:
       end_rows.go(ar, tb, t, Bool.pick(List<&2, String>, O.eq_op(O.Arena.op(ar, x), O.OpsEND{}),
         List.append(&2, String, acc,
-          [String.concat(["ended=", pool_ids(Maybe.default(&2, List<&2, U32>, F.UOp.ended_ranges(ar, tb, x), Nil{})),
-                          " open=", pool_ids(F.Rng.rs(F.UOp.ranges(ar, F.rng_sweep(ar, tb), x)))])]), acc))
+          [String.concat(["val=", RR.rr_node_str(ar, O.Arena.src0(ar, x)),
+                          " ended=", pool_ids(Maybe.default(&2, List<&2, U32>, F.UOp.ended_ranges(ar, tb, x), Nil{})),
+                          " open=", pool_ids(F.Rng.rs(F.UOp.ranges(ar, F.rng_sweep(ar, tb), x))),
+                          " ofs=", rg_str(ar, F.Rng.rs(F.UOp.ranges(ar, F.rng_sweep(ar, tb), x)))])]), acc))
 
 def end_rows() -> List<&2, String>:
   +q = RZ.rz_rebuild(fchain_prog(), False{}, False{})
