@@ -404,6 +404,14 @@ def al_pass.go(+fx0: F.Folded, +us: List<&2, U32>, st: Lt) -> Lt:
     case Nil{}: st
     case u <> t: al_pass.go(fx0, t, al_step(fx0, u, st))
 
+# THE PASS WORKS AND IS NOT WIRED, AND THE TWO FACTS ARE SEPARATE. `shaders/loadable-probe.bend`
+# measures it firing: `mul_at_src0_op=Ops.LOAD` on `MUL(INDEX, INDEX)`, with `at=10` inside an
+# arena of `next=11`. Wired into `body_low` it reaches `KILLED-ON-MEMORY` at **3217 MB** on the
+# 50-node matmul kernel -- so the remaining problem is the SIZE of the term this builds, not the
+# rule. The three defects it exposed (`kn_map_load`'s discarded arena, `al_next`'s erased hit,
+# and `al_next`'s stale arena) are fixed in `codegen/kernel.bend` and are correct independently
+# of whether this is wired.
+#
 # THE FOLD IS TAKEN ONCE FOR THE ROUND: per node was the FIRST O(n^2) attempt, and the fold of
 # an append-only arena is the expensive part of this pass, not the rule.
 def add_loads(+ar: O.Arena, +root: U32) -> O.Found:
@@ -414,8 +422,9 @@ def add_loads(+ar: O.Arena, +root: U32) -> O.Found:
 def body_low(+ar: O.Arena, +b: U32) -> O.Found:
   +w = WK.wk_commit(ar, b)
   +r = KR.lower_reduce_all(O.Found.ar(w), O.Found.i(w))
-  +a = add_loads(O.Found.ar(r), O.Found.i(r))
-  +l = late_apply(O.Found.ar(a), O.Found.i(a))
+  # NOT WIRED YET -- see the note above `add_loads`. It WORKS in isolation and OOMs over the
+  # real kernel, and shipping an OOM to turn one cc error into zero is not a trade worth making.
+  +l = late_apply(O.Found.ar(r), O.Found.i(r))
   KR.alloc_to_buf_all(O.Found.ar(l), O.Found.i(l))
 
 def body_kus(+ar: O.Arena, +k: U32) -> (O.Arena & List<&2, C.KU>):

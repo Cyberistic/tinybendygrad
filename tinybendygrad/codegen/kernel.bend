@@ -496,30 +496,59 @@ def kn_alu_loadable(+tb: F.Table, +ar: O.Arena, i: U32) -> Bool:
 # `kn_map_load` is the fold and `al_grow`/`al_same` are its rows.
 # `maybe_load(u)` -- `u.load()` when loadable, else `u` ITSELF. `u.load()` is
 # `UOp(Ops.LOAD, src=(u,))` (ops.py:594), which is `UOp.new` with the LOAD op.
-def kn_load_one.of(loadable: Bool, +ar: O.Arena, s: U32) -> U32:
+# THE ACCUMULATOR THREADS THE ARENA, AND THAT IS THE WHOLE DEFECT THIS REPLACES.
+# `kn_load_one.of` built its LOAD with `O.UOp.new(ar, ...)` and returned only the INDEX --
+# which is valid in the arena `UOp.new` RETURNED and not in the `ar` its caller still held.
+# `Arena` is append-only and bend is strict, so the caller then built its parent with an index
+# past the end: `Arena.op` answers the BOTTOM (`NOOP`), `UOp.new` interns the parent back onto
+# itself, and `ker_self` turns that into `at=0`. MEASURED with `shaders/probe-loadable.bend`:
+# `elemwise_mul=True`, `loadable_ml_src0=True`, `mapped_op=Ops.NOOP`, `mul_at_op=Ops.NOOP` --
+# the predicate was right, the arena was stale, and `pm_add_loads` added NOTHING.
+#
+# THE SAME TRAP IS WRITTEN DOWN IN `mixin/movement.bend`'s `mxw_add_new2`: "BEND IS STRICT: an
+# argument is evaluated before the callee branches ... the symptom is a self-edge".
+type ALS is Data:
+  ALS{ar: O.Arena, ss: List<&2, U32>}
+
+def ALS.ar(x: ALS) -> O.Arena:
+  match x:
+    case ALS{ar, ss}: ar
+
+def ALS.ss(x: ALS) -> List<&2, U32>:
+  match x:
+    case ALS{ar, ss}: ss
+
+# `maybe_load` -- ONE SOURCE, LOADED IF LOADABLE, IN THE ARENA THE CALLER CARRIES.
+def kn_map1.of(+loadable: Bool, s: U32, +r: ALS) -> ALS:
   match loadable:
-    case True{} : O.Found.i(O.UOp.new(ar, O.OpsLOAD{}, [s], O.ANone{}, O.TNone{}))
-    case False{}: s
+    case True{}:
+      +f = O.UOp.new(ALS.ar(r), O.OpsLOAD{}, [s], O.ANone{}, O.TNone{})
+      ALS{O.Found.ar(f), List.append(&2, U32, ALS.ss(r), [O.Found.i(f)])}
+    case False{}:
+      ALS{ALS.ar(r), List.append(&2, U32, ALS.ss(r), [s])}
 
-def kn_load_one(loadable: Bool, +ar: O.Arena, s: U32) -> U32:
-  kn_load_one.of(loadable, ar, s)
+def kn_map1(+tb: F.Table, +s: U32, +r: ALS) -> ALS:
+  kn_map1.of(kn_alu_loadable(tb, ALS.ar(r), s), s, r)
 
-def kn_map_load.go(ss: List<&2, U32>, +tb: F.Table, +ar: O.Arena) -> List<&2, U32>:
+def kn_map_load.go(ss: List<&2, U32>, +tb: F.Table, r: ALS) -> ALS:
   match ss:
-    case Nil{}   : Nil{}
-    case +s <> t : List.append(&2, U32, kn_map_load.go(t, tb, ar), [kn_load_one(kn_alu_loadable(tb, ar, s), ar, s)])
+    case Nil{}   : r
+    case +s <> t : kn_map_load.go(t, tb, kn_map1(tb, s, r))
 
-def al_0.of(shaped: Bool, +ar: O.Arena, +self: U32, src: List<&2, U32>) -> Ker:
+# `x.replace(src=tuple(map(maybe_load, x.src)))` -- and the REPLACE is `UOp.new` in the arena
+# the mapping GREW, which is why `ALS.ar(r)` is the arena and `ar` is only read for `self`.
+def al_0.of(+shaped: Bool, +ar: O.Arena, +self: U32, +r: ALS) -> Ker:
   match shaped:
-    case True{} : ker_hit(O.UOp.new(ar, kn_op(ar, self), src, kn_arg(ar, self), kn_tag(ar, self)))
+    case True{} : ker_hit(O.UOp.new(ALS.ar(r), O.Arena.op(ar, self), ALS.ss(r),
+                                   O.Arena.arg(ar, self), O.Arena.tag(ar, self)))
     case False{}: Ker{ar, 0}
 
 # `x.replace(src=(x.src[0], maybe_load(x.src[1]))+x.src[2:])` -- the STORE arm
 # (:231). Note it is `src[1]` and not every src: a STORE's value is the ONLY src
 # that is loaded, and `al_store_src` is the row that pins the position.
-def al_store_src(+tb: F.Table, +ar: O.Arena, +self: U32) -> List<&2, U32>:
-  List.append(&2, U32, List.append(&2, U32, [kn_src0(ar, self)], [kn_load_one(kn_alu_loadable(tb, ar, kn_src(ar, self, 1)), ar, kn_src(ar, self, 1))]),
-              O.Arena.src_from(ar, self, 2))
+def al_store_src(+tb: F.Table, +ar: O.Arena, +self: U32) -> ALS:
+  +m = kn_map1(tb, kn_src(ar, self, 1), ALS{ar, [kn_src0(ar, self)]})
+  ALS{ALS.ar(m), List.concat(&2, U32, [ALS.ss(m), O.Arena.src_from(ALS.ar(m), self, 2)])}
 
 def al_1(+tb: F.Table, +ar: O.Arena, +self: U32) -> Ker:
   al_0.of(kn_is(ar, self, O.OpsSTORE{}), ar, self, al_store_src(tb, ar, self))
@@ -534,14 +563,14 @@ def al_table() -> List<&2, O.PMEntry>:
   [O.PMEntry{0, [O.OpsREDUCE{}, O.OpsWMMA{}, O.OpsSTACK{}], Nil{}},   # :224 Elementwise|{REDUCE,WMMA,STACK}
    O.PMEntry{1, [O.OpsSTORE{}], Nil{}}]                                # :226 STORE
 
-def kn_map_load(ss: List<&2, U32>, +tb: F.Table, +ar: O.Arena) -> List<&2, U32>:
-  kn_map_load.go(ss, tb, ar)
+def kn_map_load(ss: List<&2, U32>, +tb: F.Table, +ar: O.Arena) -> ALS:
+  kn_map_load.go(ss, tb, ALS{ar, Nil{}})
 
 def al_dispatch(tag: U32, +tb: F.Table, +ar: O.Arena, +self: U32) -> Ker:
   match tag:
     case 0: al_0.of(Bool.or(Bool.or(kn_is(ar, self, O.OpsREDUCE{}), kn_is(ar, self, O.OpsWMMA{})),
                              Bool.or(kn_is(ar, self, O.OpsSTACK{}), Bool.not(kn_is_bitcast(ar, self)))),
-                    ar, self, kn_map_load(kn_srcs(ar, self), tb, ar))
+                    ar, self, kn_map_load.go(kn_srcs(ar, self), tb, ALS{ar, Nil{}}))
     case 1: al_1(tb, ar, self)
     case _: Ker{ar, 0}
 
@@ -552,9 +581,22 @@ def al_try.go(ok: Bool, tag: U32, +tb: F.Table, +ar: O.Arena, +self: U32) -> Ker
 
 # THE FOLD, first-wins on the ACCUMULATOR: `PatternMatcher.rewrite` returns the
 # FIRST non-None, so keying on the accumulator is what makes it first-wins.
+# FIRST-WINS, AND THE OLD SPELLING KEPT THE OPPOSITE. `b2u(hn, rn)` is `rn` when `hn` is NONE
+# and `0` otherwise, so a hit recorded by an EARLIER table entry was ZEROED by a later entry
+# that did not fire -- which is every pair, because `al_table` has two entries and `al_ok` now
+# also claims Elementwise for both. MEASURED: `al_0.of` called directly answers `Ops.MUL` with
+# two srcs while `pm_add_loads` answers `at=0`, i.e. the rule fired and the fold threw it away.
+# The arena is `Ker.ar(r)` because it is the FRESHER of the two (an arena is append-only), and
+# `r`'s arena is at least as new as `h`'s at every call site.
+# THE ARENA TRAVELS WITH THE INDEX THAT WON, and that is the second half of the same defect.
+# `Ker.ar(r)` is NOT the fresher arena: `al_try.go`'s unmapped arm answers `Ker{ar, 0}` with the
+# arena it was HANDED, which is older than the one the previous entry grew. Keeping the first
+# hit while keeping `r`'s arena returned an index past the end -- MEASURED: `at=10` with
+# `Arena.next=8`, so `Arena.op` answered NOOP for a node that existed in a discarded arena.
 def al_next(h: Ker, r: Ker) -> Ker:
   match h r:
-    case Ker{ha, hn} Ker{ra, rn}: Ker{ra, b2u(hn, rn)}
+    case Ker{ha, +hn} Ker{ra, rn}:
+      Bool.pick(Ker, O.UOp.is_none(hn), Ker{ra, rn}, Ker{ha, hn})
 
 # `GroupOp.Elementwise` AS A PREDICATE, WHICH IS THE WHOLE OF WHAT `al_table` COULD NOT SPELL.
 # upstream's rule 0 matches `GroupOp.Elementwise.union({REDUCE, WMMA, STACK})`, and
