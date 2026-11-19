@@ -18,7 +18,7 @@ for and a tensor model does not have on the shelf:
 ```sh
 .venv/bin/python shaders/shader-gate.py            # PASS / FAIL / DEAD / REFUSED
 .venv/bin/python shaders/shader-gate.py --plant     # the gate must go RED
-bin/bend shaders/shader.bend                       # the port's graph, as rows
+bin/bend shaders/shader-rows.bend                       # the port's graph, as rows
 .venv/bin/python shaders/shader-oracle.py --values  # the formula, as numbers
 ```
 
@@ -50,6 +50,32 @@ fwidth   = abs(dFdx) + abs(dFdy)
 **This is the result worth having.** In most systems autodiff is the hard half; here autodiff
 is already done (32 rules, exercised by the corpus's `grad`/`gral` graphs) and the *screen-space*
 derivative is the half that looks missing — and it is a movement op.
+
+## The pipeline run: four links, and a measured negative
+
+`shader-run.bend` takes the shader through the port's own compiler. **It runs and produces a
+WRONG kernel** (`*(buf0+Lidx0) = 1`, one buffer instead of three), so it is a measured
+negative and not a renderer. What it established on the way is worth more than the render:
+
+| link | without it |
+|---|---|
+| `tn_assign_store` | a bare expression under a SINK schedules **nothing** — `kernels=0`, no error |
+| `rr_kernel_graph` | `SCH.schedule` **is** `create_schedule`, which walks existing kernels and creates none |
+| per-body `linearize` | it takes **one kernel**; given the `LINEAR` it renders `UNHANDLED(Ops.LINEAR)` |
+| `vms` widths | `Nil{}` gives every node key 1, the sort collapses, and the body is **one op** |
+
+**The kernel graph itself is right** — `eng_dump` shows `SINK(AFTER(INDEX, END(STORE, RANGE
+×4)))` with the formula's `SQRT`, `RECIP`, `MAX` and both `PAD`s. So the loss is between
+`create_schedule` and the CU list. `buf-schedules.bend` is the control: the same chain over
+`a + b` on two `BUFFER`s answers `kernels=1` **and renders the add**, so the scheduler is not
+simply broken — something about this graph (PAD/SHRINK, or two reads of one buffer) does not
+survive.
+
+**And a genuinely missing port.** An `ALLOC` has no realize-time rebind: `UOp.new_buffer` is
+`TODO(p3)` in `ops.bend`, and upstream's `linear_with_vars` swaps `ALLOC` → `BUFFER` there.
+That is why the runner takes `mxw_buf` (BUFFERs) and why a graph built the `Tensor.empty`
+way — which is what the graph gate correctly builds, because CPython builds it — cannot be
+scheduled at all.
 
 ## What this folder does not do
 

@@ -101,10 +101,7 @@ def sh_down(+t: T.Tensor) -> T.Tensor:
 # THE FIRST DRAFT'S `maximum(maximum(t, 0), 1)` SATURATES TO 1 EVERYWHERE -- a graph diff
 # would not have caught it, because both sides would have to be given the same wrong
 # formula, and that is the defect class this folder is about.
-def sh_graph() -> O.Found:
-  +ar = O.Arena.empty()
-  +xv = CR.cr_empty(ar, Some{S.single()}, [16, 16], S.D1{0})
-  +yv = CR.cr_empty(T.Tensor.ar(xv), Some{S.single()}, [16, 16], S.D1{0})
+def sh_graph_on(+xv: T.Tensor, +yv: T.Tensor) -> O.Found:
   +xx = E.ew_mul2(xv, xv, False{})
   +yy = E.ew_mul2(yv, yv, False{})
   +sq = E.ew_add(xx, E.ETen{yy}, False{})
@@ -122,52 +119,14 @@ def sh_graph() -> O.Found:
   +al = E.ew_sub(cl, E.ECon{O.CFloat{1.0}}, True{})
   O.Found{T.Tensor.ar(al), T.Tensor.u(al)}
 
-# THE ARG COLUMN. Four arms and a refusal, because this fixture builds four kinds: a
-# `BUFFER`'s param, a `CONST`'s value, a `CAST`'s dtype (there is none here), and `ANone`
-# for every arithmetic node.
-def sh_dt(m: Maybe<&2, S.Dt>) -> String:
-  match m:
-    case Some{d}: R.dt_repr(d)
-    case None{}: "?"
+# THE GRAPH OVER TWO GIVEN INPUT TENSORS. The formula is the same for both callers, and the
+# INPUTS ARE A PARAMETER because the two callers need DIFFERENT nodes for the same shape: the
+# graph gate must build `Tensor.empty`'s `ALLOC` (that is what CPython builds), and the runner
+# must build a `BUFFER` (`mxw_buf`), because the port's Tensor path has no ALLOC at realize
+# time -- `schedule/realize.bend`'s own point 2 says so and `UOp.new_buffer` is a `TODO(p3)`.
 
-def sh_arg(a: O.Arg) -> String:
-  match a:
-    case O.ANone{}: "-"
-    case O.APy{v}: R.const_repr(v)
-    case O.ADt{d}: R.dt_repr(d)
-    case O.AParam{p}: String.concat(["P", U32.show(O.ParamArg.slot(p))])
-    case _: "?"
-
-def sh_row(+ar: O.Arena, +tb: F.Table, +k: U32, +d: U32) -> String:
-  String.concat([U32.show(d), " ", O.Ops.name(O.Arena.op(ar, k)), " ",
-    sh_dt(F.UOp.dtype(ar, tb, k)), " ", sh_arg(O.Arena.arg(ar, k))])
-
-# THE WALK. `fuel` is the arena's node count, which bounds the unfolding because every
-# printed node consumes one; the `case 0n` arm is unreachable on a well-formed graph and is
-# what makes the walk total, not a limit on it.
-#
-# IT RECURSES ON THE SOURCE LIST and not on a node, because bend checks defs in FILE ORDER
-# and so a mutually recursive pair (`walk` calls `srcs`, `srcs` calls `walk`) does not
-# compile. One def over a list, with the node's own children pressed in front of its
-# siblings, IS the preorder walk: children, then siblings, at the same depth.
-def sh_walk(fuel: Nat, +ar: O.Arena, +tb: F.Table, ss: List<&2, U32>, +d: U32) -> IO(Unit):
-  match fuel:
-    case 0n: IO.pure(Unit, Unit{})
-    case 1n+ +p:
-      match ss:
-        case Nil{}: IO.pure(Unit, Unit{})
-        case +s <> rest:
-          do IO<Unit>:
-            h : Unit <- IO.print(sh_row(ar, tb, s, d))
-            c : Unit <- sh_walk(p, ar, tb, O.Arena.srcs(ar, s), U32.add(d, 1))
-            r : Unit <- sh_walk(p, ar, tb, rest, d)
-            IO.pure(Unit, r)
-
-def main() -> IO(Unit):
-  do IO<Unit>:
-    +f : O.Found <- IO.pure(O.Found, sh_graph())
-    +x : F.Folded <- IO.pure(F.Folded, F.folded(O.Found.ar(f)))
-    h : Unit <- IO.print("# shader=aa-circle")
-    r : Unit <- sh_walk(U32.to_nat(O.Arena.next(O.Found.ar(f))), F.Folded.ar(x),
-      F.Folded.t(x), [O.Found.i(f)], 0)
-    IO.pure(Unit, r)
+def sh_graph() -> O.Found:
+  +ar = O.Arena.empty()
+  +xv : T.Tensor = CR.cr_empty(ar, Some{S.single()}, [16, 16], S.D1{0})
+  +yv : T.Tensor = CR.cr_empty(T.Tensor.ar(xv), Some{S.single()}, [16, 16], S.D1{0})
+  sh_graph_on(xv, yv)

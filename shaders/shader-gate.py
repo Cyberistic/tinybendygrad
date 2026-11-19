@@ -87,7 +87,7 @@ def main() -> int:
     return REFUSED
 
   env = dict(os.environ)
-  target = HERE / "shader.bend"
+  target = HERE / "shader-rows.bend"
   if args.plant:
     # A PORT-SIDE PLANT. The copy sits in this folder so its relative imports still resolve,
     # and `SH_R` is the one line the plant rewrites -- a mutation of a parameter, not of the
