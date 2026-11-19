@@ -7959,3 +7959,52 @@ probe-join-pieces.py`**, **⇒⇒† AND **IT **PATCHES **THE **COMPILED **`$Str
 **SUMS **THE **PREFIX **SUMS **DIRECTLY**, **⇒⇒† AND **WHICH **IS **THE **RIGHT **NUMBER** (⇒⇒† AND **AND
 **IT **IS **THE **SMALLEST **OF **THE **THREE**, **⇒⇒† AND **WHICH **IS **WHAT **SHOULD **HAVE **BEEN
 **THE **FIRST**)**.
+
+### 138.18 **WHY **THE **PORT **NEEDS **`String.join`** **AT **ALL**: **IT **IS **UPSTREAM's **CALL**, **AND
+**THE **COST **IS **THE **PRELUDE's**, **NOT **THE **PORT's**
+
+**⇒⇒† AND **THE **QUESTION**: *"WHAT **DOES **TINYGRAD **DO**? **WHY **DO **WE **NEED **`String.join`**?"* **⇒⇒†
+**AND **THE **ANSWER **IS **IN **UPSTREAM's **OWN **CODE** (MEASURED, `tinygrad/renderer/cstyle.py:176`)**:
+```python
+['\n'.join(kernel), "\n}"])
+```
+
+**⇒⇒† AND **THE **PORT **MAKES **THE **SAME **CALL**: **`render_kernel_body`** **DOES
+**`String.concat([..., String.join(kernel, "\n"), "\n}"])`** (MEASURED, `renderer/cstyle.bend:2278`) **⇒⇒† AND
+**SO **THE **SHAPE **IS **FAITHFUL**.
+
+**⇒⇒† AND **AND **THE **REASON **THE **PORT **NEEDS **A **JOIN **AT **ALL** **IS **THE **SUBSTRATE**:
+**BEND **HAS **NO **f-STRINGS **AND **NO **INTERPOLATION**, **⇒⇒† AND **SO **EVERY **UPSTREAM's
+**`f"{a} {b}"`** **AND **`''.join([...])`** **IS **SPELLED **AS **AN **EXPLICIT **`String.concat`** **OR
+**`String.join`** (⇒⇒† AND **THAT **IS **WHY **THE **PORT's **TEXT **LAYER **HAS **THE **SHAPE **IT
+**HAS**)**
+
+**⇒⇒† AND **⇒⇒† AND **THE **COST **IS **THE **PRELUDE's**, **AND **THE **DIFFERENCE **IS **THE **WHOLE
+**THING**:
+
+| | the **copies** |
+|---|---|
+| **PYTHON's **`str.join`** | **EVERY **CHAR **EXACTLY **ONCE** (O(n)) -- **⇒⇒† AND **IT **IS **BUILT **FOR **THIS** |
+| **THE **PRELUDE's **`String.join`** | **THE **SUM **OF **THE **PREFIX **SUMS** (O(n²)) -- **⇒⇒† AND **IT **IS **RIGHT-NESTED** (`String.append(h, String.append(sep, String.join.go(t, h2, sep)))`) **AND **`String.append(a, b)` **COPIES **`a`** |
+
+**⇒⇒† AND **⇒⇒† AND **AND **THE **NESTING **IS **NOT **THE **LEVER**, **AND **THAT **IS **MEASURED**:
+**THE **LEFT-NESTED **FORM **COPIES **THE **STRING **AT **`i`** **`i` **TIMES **AND **THE
+**RIGHT-NESTED **ONE **COPIES **IT **`(n-i)` **TIMES**, **⇒⇒† AND **AND **THE **TOTALS **DIFFER **BY **~1%
+**ON **THE **PORT's **OWN **KERNEL** (MEASURED: **203.0x **VERSUS **202.0x**, **AND **THE **SIGN **FLIPS
+**WITH **WHETHER **THE **FIRST **OR **THE **LAST **LINE **IS **THE **LONG **ONE**) **⇒⇒† AND **SO **THE
+**O(n²) **IS **INHERENT **TO **THE **SHAPE**, **NOT **TO **THE **NESTING**.
+
+**⇒⇒† AND **⇒⇒† AND **SO **THE **ONLY **O(n) **FORM **IS **A **LIST **OF **PIECES **ALL **THE **WAY**,
+**⇒⇒† AND **AND **THAT **IS **WHERE **THE **PORT's **OWN **STATE **IS **ALREADY **PIECE-SHAPED** (§93:
+*"THE **RENDERED **TEXT **OF **A **UOP **IS **A **LIST **OF **PIECES**, **NOT **A **STRING"*) **⇒⇒† AND **AND
+**THE **BLOCKER **IS **MEASURED**: **`St.kernel` **IS **A **`List<&2, String>`** -- **⇒⇒† AND **THE
+**STATEMENT **IS **JOINED **BEFORE **IT **GOES **IN**, **⇒⇒† AND **AND **`St.kernel` **HAS **FIVE **OTHER
+**WRITERS** (THE **HEADER**, **THE **BUFFERS**, **THE **DEFINES**, **THE **ARGS** **AND **THE **FOOTER**) **⇒⇒†
+**AND **SO **THE **CHANGE **IS **NOT **LOCAL**.
+
+**⇒⇒† AND **⇒⇒† AND **AND **THE **CLASS **IS **THE **TREE's **OWN** (§138.11): **THE **SHAREABLE **CODE
+**IS **71 **LOC**, **THE **ACCESSOR **LAYER **IS **930 **LOC**, **⇒⇒† AND **AND **NOW **THE **STRING **JOIN**
+**IS **THE **THIRD**, **⇒⇒† AND **AND **ALL **THREE **ARE **SUBSTRATE **LIMITS**, **NOT **PORT
+**INEFFICIENCIES** -- **⇒⇒† AND **THE **SUBSTRATE's **LIMITS **ARE **IN **THE **PRELUDЕ**'s
+**`String.join`**, **IN **THE **LACK **OF **A **PROJECTION**, **AND **IN **THE **LACK **OF **FUNCTION
+**VALUES** (⇒⇒† AND **WHICH **IS **WHY **THE **DRIVER **TABLES **CANNOT **BE **SHARED**)**.
