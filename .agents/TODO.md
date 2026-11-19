@@ -5019,6 +5019,22 @@ are NOT free: `grep -c smoothstep tinygrad/` is 0 and there is no `Ops.MIN`.
       x4)))` with `SQRT`, `RECIP`, `MAX` and both `PAD`s), so the loss is between
       `create_schedule` and the CU list, and `buf-schedules.bend` is the control that keeps
       that statement honest (`a + b` on two BUFFERs renders).
+- [x] **`UOp.new_buffer` PORTED** (`48e9119e4`). The node, not the host `Buffer`; the slot is
+      a parameter because `grep unique_num ops.bend` answers nothing (no mutable counter).
+- [x] **`pm_add_loads` WIRED INTO `body_low`** (`7196f4f13`, `05dcd22df`). Three measured
+      defects fell out on the way and each is written where it was found: a fixpoint is a 3 GB
+      mistake (`kn_load_one` has no "already a LOAD" guard, so round 2 re-wraps; upstream runs
+      this pass ONCE); `at=0` means UNREWRITTEN and not an index (`al_scan`'s accumulator starts
+      at `Ker{ar,0}` and only `al_try.go` reaches `ker_self`), so mapping `u->0` collapsed the
+      body to `NOOP[] SINK[0]`; and `al_table` CAN spell `GroupOp.Elementwise` — it is
+      `Unary|Binary|Ternary` and all three exist.
+      **MEASURED: body rendered `c_len` 17 -> 721, cc errors 3 -> 1.**
+- [ ] **THE NEXT BLOCKER, PINNED: `kn_alu_loadable` SAYS NOT-LOADABLE FOR `INDEX`.** The INDEX
+      operands still render as pointers, so `pm_add_loads` adds no `LOAD` and one
+      `invalid operands to binary expression (float * and float *)` remains. `fold.addr` has an
+      `OpsINDEX` arm (`fold.bend:1545`, `src_addr(0, ss)`) and a `BUFFER` arm answering from
+      the `ParamArg` (:1538), so the question is whether the fold SETTLES that node at this
+      point in the pipeline — a one-row probe, not a redesign.
 - [ ] **A GENUINELY MISSING PORT, NOT A STALE LABEL: `UOp.new_buffer`.** It is `TODO(p3)` in
       `ops.bend` while upstream's `linear_with_vars` (`tensor.py:184`) swaps `ALLOC` ->
       `BUFFER` there. `schedule/realize.bend`'s own point 2 records that the port's Tensor
