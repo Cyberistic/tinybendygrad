@@ -5005,6 +5005,27 @@ are NOT free: `grep -c smoothstep tinygrad/` is 0 and there is no `Ops.MIN`.
       only number that sees `fwidth`, because a shader multiplying it by zero still agrees with
       its own oracle). `--plant` rewrites `SH_R()` in a COPY of `shader.bend` so the PORT's
       graph moves, and requires the diff to fire (measured: `PLANT FIRED`, row 37).
+- [ ] **THE PIPELINE RUN: FOUR LINKS, AND A KERNEL THAT IS STILL WRONG** (2026-11-19,
+      `61f63e8b1`). `shaders/shader-run.bend` takes the shader through the port's own compiler
+      end to end. It RUNS (`kernels=1`, C rendered) and the body is `*(buf0+Lidx0) = 1` for
+      ONE buffer instead of the 256-cell circle over three -- so it is a MEASURED NEGATIVE.
+      Each link was measured by removing it, and each answered ZERO or `UNHANDLED` rather
+      than an error: (1) `tn_assign_store` -- a bare expression under a SINK schedules
+      NOTHING; (2) `rr_kernel_graph` -- `SCH.schedule` IS `create_schedule`, which walks
+      existing kernels and creates none; (3) `LT.linearize` takes ONE kernel and given the
+      `LINEAR` renders `UNHANDLED(Ops.LINEAR)`; (4) `vms` widths -- `Nil{}` gives every node
+      key 1, the sort collapses, and the body is one op.
+      **THE KERNEL GRAPH ITSELF IS RIGHT** (`eng_dump`: `SINK(AFTER(INDEX, END(STORE, RANGE
+      x4)))` with `SQRT`, `RECIP`, `MAX` and both `PAD`s), so the loss is between
+      `create_schedule` and the CU list, and `buf-schedules.bend` is the control that keeps
+      that statement honest (`a + b` on two BUFFERs renders).
+- [ ] **A GENUINELY MISSING PORT, NOT A STALE LABEL: `UOp.new_buffer`.** It is `TODO(p3)` in
+      `ops.bend` while upstream's `linear_with_vars` (`tensor.py:184`) swaps `ALLOC` ->
+      `BUFFER` there. `schedule/realize.bend`'s own point 2 records that the port's Tensor
+      path dodges it by building BUFFERs directly, which is why the runner takes `mxw_buf`
+      and why a graph built the `Tensor.empty` way -- what the graph gate CORRECTLY builds,
+      because CPython builds it -- cannot be scheduled at all. **This is the first link in
+      the chain that is absent rather than unwired.**
 - [ ] **THE SHADER CANNOT RUN, AND THE REASON IS THE SAME ONE AS ABOVE.** Its 55-node graph
       is a `Tensor`, and turning a `Tensor` into a kernel is `rangeify` stage 1
       (`rangeify.bend:2810`, `run_rangeify -- NOT PORTED`). So `shaders/` is a compiler result
