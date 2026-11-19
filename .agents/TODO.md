@@ -5029,7 +5029,28 @@ are NOT free: `grep -c smoothstep tinygrad/` is 0 and there is no `Ops.MIN`.
       body to `NOOP[] SINK[0]`; and `al_table` CAN spell `GroupOp.Elementwise` — it is
       `Unary|Binary|Ternary` and all three exist.
       **MEASURED: body rendered `c_len` 17 -> 721, cc errors 3 -> 1.**
-- [ ] **THE NEXT BLOCKER, PINNED: `kn_alu_loadable` SAYS NOT-LOADABLE FOR `INDEX`.** The INDEX
+- [x] **`pm_add_loads` NOW FIRES -- THREE ARENA DEFECTS, ALL MEASURED** (`9b7162880`). The
+      predicate was never the problem (`index_loadable=True` in isolation); three separate
+      things dropped the node:
+      1. **`kn_map_load` built its LOAD in a DISCARDED arena.** `kn_load_one` returned only the
+         INDEX, which lives in the arena `UOp.new` RETURNED, not the `ar` its caller held --
+         so the parent got an index past the end, `Arena.op` answered the BOTTOM (`NOOP`), and
+         `ker_self` turned the self-intern into `at=0`. `ALS{ar, ss}` now threads both.
+         MEASURED `mapped_op` `Ops.NOOP` -> `Ops.LOAD`.
+      2. **`al_next` ERASED THE FIRST HIT.** `b2u(hn, rn)` answers `rn` when `hn` is NONE and
+         `0` otherwise, so a hit from an earlier table entry was zeroed by a later entry that
+         did not fire -- which is every pair, since `al_table` has two entries. MEASURED:
+         `al_0.of` answers `Ops.MUL`/2 srcs directly while `pm_add_loads` answered `at=0`.
+      3. **AND IT KEPT THE STALE ARENA WHILE DOING IT.** `Ker.ar(r)` looked fresher, but
+         `al_try.go`'s unmapped arm answers `Ker{ar,0}` with the arena it was HANDED. MEASURED:
+         `at=10` with `Arena.next=8`; now `at=10` with `next=11`.
+      **NOT WIRED, ON PURPOSE:** `body_low` + `add_loads` is `KILLED-ON-MEMORY` at **3217 MB**
+      on the 50-node matmul kernel. The rule is right and the TERM is too big -- separable, and
+      turning one `cc` error into zero by shipping an OOM is not a trade.
+- [ ] **THE NEXT BLOCKER: THE SIZE OF THE TERM `pm_add_loads` BUILDS.** It works on a 2-node
+      probe and OOMs on a 50-node kernel. Suspect `Bool.pick(Ker, ...)` copying arena-carrying
+      records per table entry per node; `al_scan` is the loop to measure.
+- [ ] **~~THE NEXT BLOCKER~~ CLOSED: the predicate was right; see the three arena defects above.** The INDEX
       operands still render as pointers, so `pm_add_loads` adds no `LOAD` and one
       `invalid operands to binary expression (float * and float *)` remains. `fold.addr` has an
       `OpsINDEX` arm (`fold.bend:1545`, `src_addr(0, ss)`) and a `BUFFER` arm answering from
