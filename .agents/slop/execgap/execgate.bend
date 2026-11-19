@@ -265,10 +265,14 @@ def main() -> IO(Unit):
 # THE TODOs, AS COMMENTS BECAUSE rg IS HOW THEY GET FOUND. Each one is a measured wall and not
 # a wish; the report's §6 has the evidence for each.
 #
-# TODO(p3) schedule/rangeify.bend:2810 -- STAGE 1 `run_rangeify`'s APPLY HALF is not driven, so
-#   the port's own `schedule()` answers ZERO kernels for a real graph (`.agents/slop/chain/GAP.md`)
-#   and THIS LANE SCHEDULES NOTHING: its arena is `graphcmp.bend`'s hand-built `g_lin`. THE
-#   MISSING LINK IS ONE STAGE, AND IT IS THE LINK BETWEEN "a Tensor" AND THIS FILE.
+# TODO(p3) schedule/rangeify.bend:2700 -- STAGE 1 `run_rangeify` IS PORTED AND UNWIRED, NOT
+#   MISSING. `rangify.bend`'s `rr_run_rangeify` (:1653) is the driver and `rr_kernel_graph`
+#   (:1661) composes it; MEASURED 2026-11-19, `schedule()` on the rangeified root answers 1
+#   kernel where this lane's engine path answers 0. What is absent is `eng_stages()`'s call,
+#   and that is one line. THIS LANE STILL SCHEDULES NOTHING: its arena is `graphcmp.bend`'s
+#   hand-built `g_lin`. AND THE ONE-STAGE CLAIM WAS WRONG IN THE OTHER DIRECTION TOO: even
+#   rangeified, the port's own kernel has NO `LOAD` nodes and `cc` refuses it, because
+#   `body_low` omits `pm_add_loads` (`.agents/slop/pipelinecensus/REPORT.md` defect 3).
 #
 # TODO(p3) runtime/ops_cpu.bend -- the LAUNCH is `cc` + `exec` here, and the port's OWN device
 #   lane is not on the path: `Cpu.compile` builds a FREESTANDING object (`-nostdlib`,

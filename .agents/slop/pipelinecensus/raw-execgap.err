@@ -1,0 +1,2 @@
+[bounded] WITHIN-LIMITS  rc=0  peak-RSS=43 MB (ceiling 4000)  21s  :: .venv/bin/python .agents/slop/execgap/execgate-gate.py --plants  out=904B err=0B
+  MACHINE: **VIOLATED** -- loadavg 40.5 on 12 cores, swap free 0.72 of 6.00 GiB; loadavg 40.5 > 12 cores and swap free 0.72 of 6.00 GiB; A TIME BOUND HERE IS NOT ATTRIBUTABLE TO THE CHILD

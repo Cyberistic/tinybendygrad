@@ -1,0 +1,2 @@
+[bounded] WITHIN-LIMITS  rc=0  peak-RSS=400 MB (ceiling 4000)  5s  :: ./bin/bend gates/schedule-init-gate.bend  out=1824B err=0B
+  MACHINE: **VIOLATED** -- loadavg 23.1 on 12 cores, swap free 1.19 of 5.00 GiB; loadavg 23.1 > 12 cores and swap free 1.19 of 5.00 GiB; A TIME BOUND HERE IS NOT ATTRIBUTABLE TO THE CHILD

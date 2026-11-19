@@ -1,21 +1,24 @@
 # chain.bend -- THE `Device` LANE's PAYOFF: THE PORT's OWN PROGRAM -> THE PORT's OWN
-# SCHEDULER -> **A NON-ZERO KERNEL COUNT**.
+# SCHEDULER -> THE KERNEL COUNT.
 #
 # THE CHAIN, AND EVERY HOP IS THE PORT's OWN:
 #
 #   the port's own program            (realize.bend's `rz_built`, MEASURED 23/23 AGREE)
 #   -> the port's own sink of AFTERs   (realize.bend's `rz_sink`)
 #   -> the port's own engine            (rangeify.bend's `eng_*`, SEVEN STAGES)
-#   -> the port's own schedule()        (schedule/__init__.bend:1139)
+#   -> the port's own schedule()        (schedule/__init__.bend:1295)
 #   -> **THE KERNEL COUNT**             (THIS FILE's `ch_lin_n`)
 #
-# **AND THE MEASUREMENT IS: **THE PORT's OWN `schedule()` ANSWERS **NON-ZERO** KERNELS
-# FOR **THE PORT's OWN PROGRAM**, WHERE **BEFORE THIS CHAIN EXISTED IT ANSWERED **ZERO**
-# (`rz_lin_n=0`, MEASURED BY `.agents/slop/realize/`'s OWN ROW).**
+# **MEASURED 2026-11-19, AND IT CONTRADICTS THIS HEADER AS IT STOOD: `ch_lin_n=0` AND
+# `ch_lin_n_plant=0`.**  THE HEADER USED TO SAY "NON-ZERO", AND BOTH ROWS ARE ZERO.
+# THE CAUSE IS NAMED AND NOT GUESSED: `eng_stages()`'s STAGE 1 IS `Stg{0, Nil{}}` (an EMPTY
+# TABLE), so this chain never RANGEIFIES and `schedule()` gets a sink whose second src is a
+# STORE rather than an `END`/`CALL`. `rangify.bend`'s `rr_kernel_graph` DOES rangeify, and
+# MEASURED it moves the same count 0 -> 1 (`.agents/slop/pipelinecensus/probe_kg.bend`).
 #
-# **AND THE CONTROL IS **A PLANT IN THE CHAIN**: THE ENGINE'S STAGE LIST IS TRUNCATED BY
-# ONE, **AND THE KERNEL COUNT MUST MOVE**, **AND THE PORT's OWN CHAIN IS NEVER SHIPPED
-# BROKEN** (THE PLANT IS A **ROW**, NOT A BUILD).
+# **AND THE PLANT IS A LABEL HERE: IT DROPS THE LAST STAGE (`List.take(..., 6n)`) AND MOVES
+# NOTHING -- WHICH IS WHAT A COUNT OF ZERO DOES TO EVERY PLANT BELOW IT. IT WILL BITE ONCE
+# STAGE 1 IS WIRED, AND NOT BEFORE. Kept because it is the evidence for the paragraph above.
 import Base
 import ./../../../tinybendygrad/schedule/realize.bend as RZ
 import ./../../../tinybendygrad/schedule/rangeify.bend as RG

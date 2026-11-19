@@ -1,5 +1,20 @@
 # THE `Device` LANE's PAYOFF, AND THE **EXACT** GAP THAT IS LEFT
 
+> **CORRECTED 2026-11-19, MEASURED, AND THE CORRECTION IS THAT THE GAP IS WIRING, NOT A MISSING
+> STAGE.** This file's central claim -- "stage 1, `run_rangeify`, IS NOT PORTED" -- was TRUE of
+> the ENGINE's stage list (`rangeify.bend`'s `eng_stages()` still answers `Stg{0, Nil{}}`) and
+> FALSE of the port: `schedule/rangify.bend`'s `rr_run_rangeify` (:1653) is the driver and
+> `rr_kernel_graph` (:1661) composes it with the engine's six table stages.
+> **THE MEASUREMENT** (`.agents/slop/pipelinecensus/probe_kg.bend`, one `bin/bend` run on this
+> file's own `rz_built` fixture): `ch_lin_n`-style count on the ENGINE's output = **0**;
+> the same count on `rr_kernel_graph`'s output = **1**. So `run_rangeify` costs a WIRING line in
+> `eng_stages()`, NOT a port.
+> **AND THIS FILE'S `ch_lin_n=0` IS STILL TRUE TODAY** (re-measured 2026-11-19), so nothing below
+> is retracted -- only its diagnosis changes: the graph this chain builds is not rangeified
+> because the stage LIST is empty at 1, and the driver it needs already exists one file over.
+> **AND THE `schedule/__init__.bend:1139` CITATION BELOW IS STALE: `schedule(` is at :1295.**
+
+
 ## THE CHAIN, AND EVERY HOP IS THE PORT's OWN
 
 ```

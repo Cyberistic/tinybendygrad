@@ -1,0 +1,2 @@
+[bounded] WITHIN-LIMITS  rc=0  peak-RSS=448 MB (ceiling 4000)  2s  :: ./bin/bend gates/realize-gate.bend  out=2014B err=0B
+  MACHINE: **VIOLATED** -- loadavg 18.2 on 12 cores, swap free 0.62 of 4.00 GiB; loadavg 18.2 > 12 cores and swap free 0.62 of 4.00 GiB; A TIME BOUND HERE IS NOT ATTRIBUTABLE TO THE CHILD

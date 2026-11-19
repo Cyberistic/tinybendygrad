@@ -1,0 +1,2 @@
+[bounded] WITHIN-LIMITS  rc=0  peak-RSS=496 MB (ceiling 4000)  3s  :: ./bin/bend gates/linearizer-gate.bend  out=1922B err=0B
+  MACHINE: **VIOLATED** -- loadavg 16.9 on 12 cores, swap free 0.62 of 4.00 GiB; loadavg 16.9 > 12 cores and swap free 0.62 of 4.00 GiB; A TIME BOUND HERE IS NOT ATTRIBUTABLE TO THE CHILD

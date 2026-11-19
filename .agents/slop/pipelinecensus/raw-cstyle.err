@@ -1,0 +1,2 @@
+[bounded] WITHIN-LIMITS  rc=0  peak-RSS=2482 MB (ceiling 4000)  63s  :: .venv/bin/python gates/cstyle_render_census-gate.py  out=947B err=0B
+  MACHINE: **VIOLATED** -- loadavg 16.4 on 12 cores, swap free 0.54 of 34.00 GiB; loadavg 16.4 > 12 cores and swap free 0.54 of 34.00 GiB; A TIME BOUND HERE IS NOT ATTRIBUTABLE TO THE CHILD

@@ -1,0 +1,2 @@
+[bounded] WITHIN-LIMITS  rc=0  peak-RSS=594 MB (ceiling 4000)  4s  :: ./bin/bend gates/rangeify-gate.bend  out=4896B err=0B
+  MACHINE: **VIOLATED** -- loadavg 19.6 on 12 cores, swap free 0.63 of 4.00 GiB; loadavg 19.6 > 12 cores and swap free 0.63 of 4.00 GiB; A TIME BOUND HERE IS NOT ATTRIBUTABLE TO THE CHILD

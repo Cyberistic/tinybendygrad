@@ -1,0 +1,16 @@
+c_len=665
+in12=1, 2, 3, 0, 1, 2, 3, 1, 0, 2, 0, 1
+in15=1, 0, 2, 0, 1, 0, 1, 0, 2, 0, 2, 0, 1, 0, 2
+cc_status=1
+cc_err<.agents/slop/pipelinecensus/out/full.c:13:74: error: invalid operands to binary expression ('float *' and 'float *')
+   13 |       *(data0_20+((cast0+(5*cast1))%20)) = (((data1_12+((cast2+alu0)%12))*(data2_15+((cast0+(5*cast2)+alu1)%15)))+((data1_12+((cast3+alu0)%12))*(data2_15+((cast0+(5*cast3)+alu1)%15)))+((data1_12+((cast4+alu0)%12))*(data2_15+((cast0+(5*cast4)+alu1)%15))));
+      |                                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.agents/slop/pipelinecensus/out/full.c:13:144: error: invalid operands to binary expression ('float *' and 'float *')
+   13 |       *(data0_20+((cast0+(5*cast1))%20)) = (((data1_12+((cast2+alu0)%12))*(data2_15+((cast0+(5*cast2)+alu1)%15)))+((data1_12+((cast3+alu0)%12))*(data2_15+((cast0+(5*cast3)+alu1)%15)))+((data1_12+((cast4+alu0)%12))*(data2_15+((cast0+(5*cast4)+alu1)%15))));
+      |                                                                                                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.agents/slop/pipelinecensus/out/full.c:13:214: error: invalid operands to binary expression ('float *' and 'float *')
+   13 |       *(data0_20+((cast0+(5*cast1))%20)) = (((data1_12+((cast2+alu0)%12))*(data2_15+((cast0+(5*cast2)+alu1)%15)))+((data1_12+((cast3+alu0)%12))*(data2_15+((cast0+(5*cast3)+alu1)%15)))+((data1_12+((cast4+alu0)%12))*(data2_15+((cast0+(5*cast4)+alu1)%15))));
+      |                                                                                                                                                                                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+3 errors generated.>
+
+run_fail=2 No such file or directory

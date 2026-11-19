@@ -1,0 +1,28 @@
+# census.rows -- THE PIPELINE REACHABILITY CENSUS. Machine-readable; REPORT.md is built from it.
+#
+# MEASURED 2026-11-19, HEAD 425f7126a. Instruments: `.agents/slop/pipelinecensus/callers.py`
+# (callers, walked over 589 live .bend files), `probe_kg.bend`, `probe_lin.bend`,
+# `execfull.bend`, `probe_dev.bend`, and the gate runs recorded in `raw-*.{out,err}`.
+#
+# COLUMNS: stage, exists, implementation, file_lines, callers_total, callers_shipped,
+#          gate, gate_verdict, gate_rc, label_says, label_true
+# `callers_shipped` counts callers under `tinybendygrad/` only (a caller in `gates/` is an
+# instrument, and a caller in `.agents/slop/<unit>/` is a lane; neither ships).
+# `gate_rc`: 0 PASS, 1 FAIL, 3 REFUSED, 5 DEAD; `-` = no gate compares this stage.
+#
+# stage	exists	implementation	file_lines	callers_total	callers_shipped	gate	gate_verdict	gate_rc	label_says	label_true
+1-tensor-api	YES	tinybendygrad/tensor.bend (358 defs)	2557	-	-	none	-	-	"the method surface, and the `realize` entry"	HALF-TRUE: the surface is there, the realize entry is a TODO(p3)
+2-tensor-realize	ABSENT	tensor.py:167/212/219 -> TODO(p3) at tensor.bend:1748/1754/1759	2557	0	0	none	-	-	"TODO(p3) ... linear_with_vars / schedule_linear / realize"	TRUE
+3-sink	YES	schedule/realize.bend:459 rz_built	472	39	0	gates/realize-gate.bend	rows-only, no comparator	0	"the port's own realize-to-sink driver"	TRUE as a driver; its input is a hand-built fixture
+4-engine-stages	YES	schedule/rangeify.bend:2734 eng_stages	3136	3	0	gates/rangeify-gate.bend	rows-only, no comparator	0	"1 run_rangeify -- rangeify.py:344 -- NOT PORTED"	FALSE: implemented in rangify.bend, unwired here
+5-run-rangeify	YES	schedule/rangify.bend:1653 rr_run_rangeify, :1661 rr_kernel_graph	1769	50	0	gates/rangify-gate.bend	REFUSED: does not compile	1	"the whole of the port's own Device lane's last link"	FALSE: the link exists and nothing ships calls it
+6-schedule	YES	schedule/__init__.bend:1295 schedule, :1288 lin_kernels, :1292 linear	2149	130	3 (device.bend:131,132,428)	gates/schedsched-gate.py	REFUSED: CPython oracle raises "cycle detected in assign graph"	3	"PORTED, 84 of 111 rows compared"	UNMEASURED: the comparator cannot run
+7-add-loads	YES as a rule	codegen/kernel.bend:565 pm_add_loads	1557	0	0	none	-	-	"24 pm_add_loads 2 of 2, PORTED"	TRUE as a rule, FALSE as a stage: no graph-level caller anywhere
+8-kernel-body	YES	runtime/device.bend:378 body_kus	430	3	0	none	-	-	"the port has no DEF that builds [a List<KU>] from the PORT's ARENA"	FALSE: body_kus is that def
+9-device-lane	YES	runtime/device.bend:427 compile_sink	430	7	0	none	-	-	"whoever produces it is the next unit"	FALSE: it is produced here and has no shipped caller
+10-linearizer	YES	codegen/late/linearizer.bend:762 linearize	1834	6	1 (device.bend:383)	gates/linearizer_census-gate.py	REFUSED: oracle calls ParamArg with 14 args, upstream takes 13	3	"488 ported defs ... ungated" (the gate's own header)	NOW GATED AND REFUSED
+11-kuconv	YES	renderer/kuconv.bend:349 kuconv.convert	350	5	1 (device.bend:384)	none	-	-	none	-
+12-cstyle	YES	renderer/cstyle.bend:2364 render	2384	21	5	gates/cstyle_render_census-gate.py	PASS: 425 rows, 3 lanes byte-identical	0	"the port's renderer is complete enough to be a compiler"	TRUE, but every fixture it renders already carries its LOADs
+13-cc	YES	runtime/ops_cpu.bend:1035 Cpu.compile	1080	3	1 (device.bend:151)	none (execgap spawns a HOSTED cc, not this def)	-	-	"the port's Cpu.compile is that effect"	TRUE as a def, UNEXERCISED by any gate
+14-run	YES	runtime/ops_cpu.bend:1039 Cpu.exec (+ device.bend:175 exec)	1080	3	1 (device.bend:177)	none	-	-	"the port's Cpu.exec is that effect"	TRUE as a def, UNEXERCISED by any gate
+15-numbers	YES	.agents/slop/execgap (hand-built lin arena) + pipelinecensus/execfull (port's scheduler)	-	-	-	execgap/execgate-gate.py	PASS: 10 rows agree, 3 plants RED	0	"a `bin/bend` process ... prints the binary's own stdout"	TRUE for the fixture path; the scheduler path stops at cc (defect 3)

@@ -1,0 +1,18 @@
+[bounded] WITHIN-LIMITS  rc=1  peak-RSS=438 MB (ceiling 4000)  1s  :: ./bin/bend gates/rangify-gate.bend  out=0B err=353B  said=SOME PROOFS FAIL | Error: | - expected : Data
+  MACHINE: **VIOLATED** -- loadavg 10.1 on 12 cores, swap free 0.86 of 4.00 GiB; swap free 0.86 of 4.00 GiB; A TIME BOUND HERE IS NOT ATTRIBUTABLE TO THE CHILD
+SOME PROOFS FAIL
+Error:
+- expected : Data
+- observed : Type
+Context:
+- plant : Bool
+- q     : RZ.RZProg
+- ar    : O.Arena
+- sink  : U32
+- tb    : F.Table
+Location: rr_row_out
+30 |   +tb = F.Folded.t(F.folded(ar))
+31>|   +m = P.rr_range_map(ar, tb, sink)
+   |   ^^^
+32 |   +ctx = P.RrMap.ctx(m)
+Note: +m can be used many times, so its type must be Data.

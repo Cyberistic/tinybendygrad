@@ -2,9 +2,16 @@
 #
 # WHAT THIS FILE IS. `tinygrad/schedule/indexing.py:183-210` is upstream's
 # `run_rangeify`, and it is the ONE stage of `get_kernel_graph`
-# (`tinygrad/schedule/rangeify.py:341-376`) that the port's own engine spells
-# `Stg{0, Nil{}}` -- "run_rangeify -- NOT PORTED"
-# (`tinybendygrad/schedule/rangeify.bend:2352` symbol=Stg).
+# (`tinygrad/schedule/rangeify.py:341-376`) that the port's own engine's stage list
+# still spells `Stg{0, Nil{}}` with the comment "run_rangeify -- NOT PORTED"
+# (`tinybendygrad/schedule/rangeify.bend:2700` symbol=Stg).
+#
+# THAT COMMENT IS STALE AND THIS FILE IS THE MEASUREMENT THAT SAYS SO: `rr_run_rangeify`
+# below IS the driver, and `rr_kernel_graph` composes it with the engine's six table
+# stages. MEASURED 2026-11-19 (`.agents/slop/pipelinecensus/probe_kg.bend`): on the port's
+# own `rz_built` sink the ENGINE's stage list yields `schedule()` = **0** kernels, and
+# `rr_kernel_graph` + `schedule()` yields **1** -- so the stage is IMPLEMENTED and
+# UNWIRED, not absent. `eng_stages()` calling it is the one-line link that is missing.
 #
 #   upstream: tinygrad/schedule/rangeify.py:344
 #     tsink = run_rangeify(tsink, bool(DEBUG_RANGEIFY))     # "convert movement ops to ranges"

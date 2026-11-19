@@ -272,12 +272,17 @@ or a REDUCE, not a three-term dot.
 
 ## 6. WHAT I COULD NOT DO, AND EVERY ONE OF THEM IS A `TODO(p3)` IN THE CODE
 
-1. **THE PORT STILL HAS NO SCHEDULER FOR A REAL GRAPH, SO THIS LANE DOES NOT SCHEDULE.** Its
-   arena is `graphcmp.bend`'s hand-built `g_lin`. The measured reason: `rangeify.bend:2810` has
-   `run_rangeify -- NOT PORTED` (the apply half), so the port's own `schedule()` answers **ZERO**
-   kernels for the port's own program (`.agents/slop/chain/GAP.md`, and that file measures the
-   engine's output at 114 nodes with **no RANGE and no INDEX** against upstream's 27 with three of
-   each). **THE MISSING LINK IS ONE STAGE, AND IT SITS BETWEEN "a Tensor" AND THIS FILE.**
+1. **THIS LANE DOES NOT SCHEDULE. THE REASON IS NO LONGER "THE STAGE IS NOT PORTED".** Its
+   arena is `graphcmp.bend`'s hand-built `g_lin`, which already carries the six `LOAD` nodes
+   (`:1193-1217`) that a real lowerer would have inserted. **CORRECTED 2026-11-19, MEASURED:**
+   `rangeify.bend`'s `eng_stages()` still spells stage 1 as `Stg{0, Nil{}}`, but
+   `rangify.bend`'s `rr_kernel_graph` IS the driver and `schedule()` on its output answers
+   **1** kernel where the engine's output answers **0** (`.agents/slop/pipelinecensus/probe_kg.bend`).
+   So the missing link is a WIRING LINE, and past it the next wall is `runtime/device.bend`'s
+   `body_low` omitting `pm_add_loads`: the port's own scheduler's kernel renders **NO
+   `LOAD` NODES** and `cc` refuses it with three `invalid operands to binary expression
+   ('float *' and 'float *')` errors (`.agents/slop/pipelinecensus/execfull.bend`).
+   **THE GAP IS TWO LINKS AND NEITHER IS A NEW ALGORITHM.**
 2. **THE LAUNCH IS NOT THE PORT's OWN DEVICE LANE.** `cc` + `exec` here; `runtime/ops_cpu.bend`'s
    `Cpu.compile`/`Cpu.exec` is a freestanding object + relocation + in-process mmap-call, and it is
    not on this path. `.agents/slop/cpuseam/launch.bend` is the worked example of that route.

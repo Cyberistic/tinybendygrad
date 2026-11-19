@@ -1,25 +1,27 @@
 # tinybendygrad/runtime/device.bend -- THE PORT's OWN `Device` LANE.
 #
 
-# The port has EVERY STAGE of the device lane and NOTHING drives them:
+# The port has EVERY STAGE of the device lane, ONE DEF DRIVES THEM -- `compile_sink`
+# (`:427`, the port's own arena to C) -- AND NOTHING SHIPPED CALLS IT. MEASURED 2026-11-19
+# by `.agents/slop/pipelinecensus/callers.py`: `compile_sink` has 0 callers under
+# `tinybendygrad/`; its seven callers are all `.agents/slop/browser/` lanes.
 #
-#   * `schedule/__init__.bend:1124` `schedule(+ar, +sink) -> Lin` IS upstream's
+#   * `schedule/__init__.bend:1295` `schedule(+ar, +sink) -> Lin` IS upstream's
 #     `create_schedule` (`tinygrad/schedule/__init__.py:32-80`), and
-#     `schedule/__init__.bend:1125` `linear(+x: Lin) -> O.Found` IS upstream's
+#     `schedule/__init__.bend:1292` `linear(+x: Lin) -> O.Found` IS upstream's
 #     `return UOp(Ops.LINEAR, src=tuple(linearized))`
 #     (`tinygrad/schedule/__init__.py:80`).
-#   * `renderer/cstyle.bend:2257` `render(+dev, cpu, +kus) -> String` IS upstream's
+#   * `renderer/cstyle.bend:2364` `render(+dev, cpu, +kus) -> String` IS upstream's
 #     `ClangRenderer.render` (`tinygrad/renderer/cstyle.py:268-278`).
-#   * `runtime/ops_cpu.bend:1546` `Cpu.compile(src, argv)` and `:1582`
+#   * `runtime/ops_cpu.bend:1035` `Cpu.compile(src, argv)` and `:1039`
 #     `Cpu.exec(img, bufs, sizes)` ARE upstream's `CPUProgram.__init__` +
 #     `__call__` (`tinygrad/runtime/ops_cpu.py:23-62`), in upstream's own order.
-#   * `runtime/support/elf.bend:1796` `jit_loader(+e, +base) -> Img` IS
+#   * `runtime/support/elf.bend:1720` `jit_loader(+e, +base) -> Img` IS
 #     upstream's `jit_loader` (`tinygrad/runtime/support/elf.py:52-86`).
 #
-# AND `grep -rn "Cpu.compile\|Cpu.exec" tinybendygrad/` ANSWERS ONLY THE TWO
-# definitions: nothing in the port calls them, and nothing in the port calls
-# `schedule()` outside its own gate rows. the port's `Device` lane is a set of
-# STAGES WITH NO LANE.
+# AND `rg -n "Cpu\.(compile|exec)\(" tinybendygrad/` ANSWERS THREE LINES EACH: the DEF, and
+# the ONE CALL at `:151`/`:177` BELOW. So both are wired to THIS file and neither is wired to
+# anything that runs -- the port's `Device` lane is ONE DEF WITH NO CALLER.
 #
 # `.agents/slop/cpuseam/launch.bend:113-131` IS that lane, and it is IN A
 # SCRATCH DIRECTORY. This file is the lane, IN THE PORT.
@@ -58,22 +60,20 @@
 #
 # what is still missing, and it is named here rather than hided.
 #
-# `program` takes a `List<KU>` and the port has no DEF that builds one from the
-# PORT's ARENA. The `KU` record (`renderer/cstyle.bend:121-124`) is a FLATTENED
-# uop list -- `srcs` are POSITIONS IN THAT LIST -- and upstream's renderer takes
-# `list[UOp]` instead (`tinygrad/renderer/cstyle.py:456`). The port's
-# `codegen/late/linearizer.bend:827 linearize(+ar, +lst, vms, +sink) -> List<&2,
-# U32>` IS that `list[UOp]`, in arena indices, so the missing link is exactly
-# `List<&2, U32> -> List<&2, KU>`.
+# THE LAST LINK EXISTS AND IS `body_kus` (`:378`): it takes a kernel index, runs the four
+# lowerer passes, the toposort, `codegen/late/linearizer.bend:762 linearize` and
+# `renderer/kuconv.bend:349 kuconv.convert`, and answers a `List<KU>` in the grown arena.
+# MEASURED 2026-11-19: `compile_sink` on `rangify.bend`'s `rr_kernel_graph` output renders
+# 665 bytes of C for the (4,3)@(3,5) matmul, so the `List<U32> -> List<KU>` conversion is
+# NOT missing and `kuconv.dt` DOES answer the KU record's dtype from the fold.
 #
-# and the link is blocked by a named wall, not by a missing idea:
-# `renderer/cstyle.bend:49-54` records that "`Ops.SHRINK` HAS NO DTYPE IN THE
-# FOLD" and that "`F.fold.dt` answers `None` for SHRINK, LOAD and every ALU above
-# one", and the `KU` record carries a dtype on EVERY node. So the conversion
-# needs a dtype the fold cannot answer for three of the ops a real kernel uses.
-#
-# - so `program`'s input is a `List<KU>`, and whoever produces it is the next
-# unit. this file is the lane that receives it.
+# WHAT IS MISSING IS THE ENDS AND ONE PASS. `compile_sink` (`:427`) is this lane's entry and
+# it has NO SHIPPED CALLER; `compile` (`:149`), `relocate` (`:162`) and `exec` (`:175`) are
+# three defs nothing composes into a lane. AND `body_low` (`:372`) runs `wk_commit`,
+# `lower_reduce_all`, `late_apply` and `alloc_to_buf_all` and NOT `pm_add_loads`
+# (`codegen/kernel.bend:565`, ZERO callers), so the rendered kernel has NO `LOAD` NODE and
+# `cc` refuses it: MEASURED, three `invalid operands to binary expression
+# ('float *' and 'float *')` errors from the port's own scheduler's kernel.
 import Base
 import ./../uop/ops.bend as O
 import ./../LAWS/spec.bend as S

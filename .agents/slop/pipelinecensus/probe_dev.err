@@ -1,0 +1,2 @@
+[bounded] WITHIN-LIMITS  rc=0  peak-RSS=2013 MB (ceiling 4000)  20s  :: ./bin/bend .agents/slop/pipelinecensus/probe_dev.bend  out=672B err=0B
+  MACHINE: **VIOLATED** -- loadavg 13.7 on 12 cores, swap free 1.53 of 7.00 GiB; loadavg 13.7 > 12 cores and swap free 1.53 of 7.00 GiB; A TIME BOUND HERE IS NOT ATTRIBUTABLE TO THE CHILD

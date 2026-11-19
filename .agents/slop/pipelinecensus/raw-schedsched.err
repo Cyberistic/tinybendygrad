@@ -1,0 +1,3 @@
+[bounded] WITHIN-LIMITS  rc=3  peak-RSS=322 MB (ceiling 4000)  1s  :: .venv/bin/python gates/schedsched-gate.py  out=25B err=197B  said=schedsched-gate: the oracle failed rc=1: Traceback (most recent call last): | File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/gates/schedsched-oracle.py", line 397, in <module> | main()
+  MACHINE: **VIOLATED** -- loadavg 14.6 on 12 cores, swap free 1.87 of 41.00 GiB; loadavg 14.6 > 12 cores and swap free 1.87 of 41.00 GiB; A TIME BOUND HERE IS NOT ATTRIBUTABLE TO THE CHILD
+schedsched-gate: the oracle failed rc=1: Traceback (most recent call last): | File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/gates/schedsched-oracle.py", line 397, in <module> | main()
