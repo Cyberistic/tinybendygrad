@@ -1683,13 +1683,17 @@ def rg_rngs.go(+ar: O.Arena, +ns: List<&2, U32>, +acc: List<&2, U32>) -> List<&2
              List.append(&2, U32, acc, [n]), acc)
       rg_rngs.go(ar, t, u)
 
-def rg_afts.go(+ar: O.Arena, +tb: F.Table, +ns: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
+# AN AFTER'S CONTRIBUTION IS THE RANGE NODES ITS SUBTREE REACHES -- the same walk as `rg_rngs` over
+# the AFTER instead of a `F.rng_sweep` per node, because the sweep is O(n^2) and this pass runs on
+# EVERY `rr_kernel_graph` call: MEASURED, the sweep form cost ~15 s per graph and pushed a 30-row
+# probe past a 400 s timeout.
+def rg_afts.go(+ar: O.Arena, +ns: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
   match ns:
     case Nil{}: acc
     case n <> t:
       +u = Bool.pick(List<&2, U32>, O.eq_op(O.Arena.op(ar, n), O.OpsAFTER{}),
-                     F.set_union(acc, F.Rng.rs(F.UOp.ranges(ar, F.rng_sweep(ar, tb), n))), acc)
-      rg_afts.go(ar, tb, t, u)
+                     F.set_union(acc, rg_rngs.go(ar, O.UOp.toposort(O.Arena.budget(ar), ar, n), Nil{})), acc)
+      rg_afts.go(ar, t, u)
 
 def rg_minus.go(+xs: List<&2, U32>, +ds: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
   match xs:
@@ -1706,7 +1710,7 @@ def rw_ended(+ar: O.Arena, +e: U32) -> List<&2, U32>:
 def rr_widen.end(+ar: O.Arena, +e: U32, +tb: F.Table) -> O.Found:
   +ns = O.UOp.toposort(O.Arena.budget(ar), ar, e)
   +closed = rw_ended(ar, e)
-  +extra = rg_minus.go(rg_minus.go(rw_ranges(ar, e), rg_afts.go(ar, tb, ns, Nil{}), Nil{}), closed, Nil{})
+  +extra = rg_minus.go(rg_minus.go(rw_ranges(ar, e), rg_afts.go(ar, ns, Nil{}), Nil{}), closed, Nil{})
   O.UOp.end(ar, O.Arena.src0(ar, e), List.concat(&2, U32, [closed, extra]))
 
 def rr_widen.node(+ar: O.Arena, +n: U32, +rs: List<&2, WRep>) -> O.Found:
