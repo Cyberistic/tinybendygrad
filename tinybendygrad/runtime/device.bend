@@ -390,10 +390,24 @@ def late_apply(+ar: O.Arena, +root: U32) -> O.Found:
 # :565), whose accumulator STARTS at `Ker{ar, 0}` and only reaches `ker_self` through
 # `al_try.go` -- so a node no rule claims comes back as `at=0`. Mapping `u -> 0` records every
 # unclaimed node as a NOOP and the rebuilt body collapses to `NOOP[] SINK[0]`, MEASURED.
+# THE UNCLAIMED NODE IS REBUILT AND RECORDED TOO, AND THAT IS WHAT MAKES THE PASS LAND.
+# `lt_rebuild` substitutes a node's SRCS from the map and nothing else, so the map has to hold the
+# WHOLE toposort -- which is why `late_apply` routes every node through `lt_keep` and not only the
+# ones a rule claimed. Recording only the claimed ones (`nmap=3`) left the map's values unreachable:
+# the rule built the right node (`at=559`, `loads-in-at=2`, `src0` is a LOAD) and the rebuild from
+# the root never constructed it, so `add_loads` changed NOTHING and the C kept multiplying pointers.
+# `at == u` is routed here too: the rule fired but produced the same node, and a src that DID change
+# has to reach it.
+# AND THE ARENA IS THE ACCUMULATOR'S, NOT THE ONE THE PASS WAS HANDED. `al_try.go`'s unmapped arm
+# answers `Ker{ar, 0}` with the FOLD's arena, which is older than anything the walk has grown; minting
+# a node there lands on an index the newer arena already holds. MEASURED: `KR.Ker.ar(al)` in this arm
+# rendered all four kernels as `void test() { }` -- an empty body, because the rebuilt root pointed at
+# collided nodes. `Lt.ar(st)` is the newest arena at every step, and the `False` arm still takes
+# `KR.Ker.ar(al)` because that one holds the node `at` names.
 def al_keep(none: Bool, +al: KR.Ker, +u: U32, +st: Lt) -> Lt:
   match none:
-    case True{} : Lt{KR.Ker.ar(al), Lt.rs(st), Lt.fired(st)}
-    case False{}: Lt{KR.Ker.ar(al), List.append(&2, LateRep, Lt.rs(st), [LateRep{u, KR.Ker.at(al)}]), True{}}
+    case True{} : lt_keep(u, Lt.ar(st), Lt.rs(st), Lt.fired(st))
+    case False{}: lt_put(KR.Ker.ar(al), u, KR.Ker.at(al), Lt.rs(st), True{})
 
 def al_step(+fx0: F.Folded, +u: U32, +st: Lt) -> Lt:
   +al = KR.pm_add_loads(fx0, u)
