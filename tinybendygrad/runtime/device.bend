@@ -422,10 +422,13 @@ def add_loads(+ar: O.Arena, +root: U32) -> O.Found:
 def body_low(+ar: O.Arena, +b: U32) -> O.Found:
   +w = WK.wk_commit(ar, b)
   +r = KR.lower_reduce_all(O.Found.ar(w), O.Found.i(w))
-  # NOT WIRED YET -- see the note above `add_loads`. It WORKS in isolation and OOMs over the
-  # real kernel, and shipping an OOM to turn one cc error into zero is not a trade worth making.
+  # WIRED, AND THE COST IS THE TERM SIZE, NOT THE RULE -- see the note above `add_loads`. Without
+  # it the rendered C does not compile at all: `(data1_784+idx) * (data2_4+idx)` multiplies two
+  # POINTERS, which `cc` refuses with `invalid operands to binary expression ('float *' and
+  # 'float *')` (`.agents/slop/browser/fchain-harness.c` measures exactly that).
   +l = late_apply(O.Found.ar(r), O.Found.i(r))
-  KR.alloc_to_buf_all(O.Found.ar(l), O.Found.i(l))
+  +z = KR.alloc_to_buf_all(O.Found.ar(l), O.Found.i(l))
+  add_loads(O.Found.ar(z), O.Found.i(z))
 
 def body_kus(+ar: O.Arena, +k: U32) -> (O.Arena & List<&2, C.KU>):
   +l = body_low(ar, SCH.sc_src0(ar, k))
