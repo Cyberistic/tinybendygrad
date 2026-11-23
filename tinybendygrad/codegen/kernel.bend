@@ -577,13 +577,26 @@ def kn_map1(+tb: F.Table, +s: U32, +r: ALS) -> ALS:
 # arms, so asking `kn_map1` speculatively would MINT a LOAD node in an arena the caller then throws
 # away -- and the next mint lands on that same index, which is the stale-arena class this file's
 # header records. The `match` arms are the non-strict branch, so only the chosen one runs.
-def kn_map1.sub2(eq: Bool, +sub: List<&2, Sub>, +tb: F.Table, +s: U32, +r: ALS) -> ALS:
-  match eq:
-    case True{} : kn_map1(tb, s, r)
-    case False{}: ALS{ALS.ar(r), List.append(&2, U32, ALS.ss(r), [lw_find(sub, s)])}
+# THE TEST IS THE OP, AND THE TWO FAILURES IT LEAVES ARE NAMED AT THE FOOT OF THIS COMMENT.
+# `s2 != s` happens for TWO reasons and only ONE means "already in the ALU": the walk rewrote the KIND
+# (`MUL(INDEX,INDEX) -> MUL(LOAD,LOAD)`), or it rebuilt the SAME kind with new srcs (an INDEX whose
+# buffer changed). A rebuilt INDEX is still a GLOBAL pointer and must be loaded -- MEASURED, an
+# identity test skipped it and left `data1_784+idx` in three of four kernels.
+# THE OP TEST IS STILL NOT THE WHOLE ANSWER, and saying so is cheaper than pretending:
+# `MUL(LOAD,LOAD)` has the same op as `MUL(INDEX,INDEX)`, so its space is read off the ORIGINAL and the
+# multiply gets loaded (`float val2 = (*(val1*val0));`). ops.py:870-880 answers it from the SUBSTITUTED
+# graph -- void is ALU, Elementwise is ALU iff EVERY src is -- and that walk is MUTUAL RECURSION (op ->
+# all-srcs -> op), which bend refuses. The shape that lands it is an ALU-FLAG MAP threaded through the
+# walk beside `Sub`: the walk is already bottom-up, so each node's flag is a fold over its srcs' flags.
+# TODO(p3) codegen/__init__.py:205  the ALU-flag map that makes this test read the SUBSTITUTED node
+def kn_map1.sub2(same: Bool, +tb: F.Table, +s2: U32, +s: U32, +r: ALS) -> ALS:
+  match same:
+    case True{} : kn_map1.of(kn_alu_loadable(tb, ALS.ar(r), s), s2, r)
+    case False{}: ALS{ALS.ar(r), List.append(&2, U32, ALS.ss(r), [s2])}
 
 def kn_map1.sub(+sub: List<&2, Sub>, +tb: F.Table, +s: U32, +r: ALS) -> ALS:
-  kn_map1.sub2(U32.is_eq(lw_find(sub, s), s), sub, tb, s, r)
+  +s2 = lw_find(sub, s)
+  kn_map1.sub2(O.eq_op(O.Arena.op(ALS.ar(r), s2), O.Arena.op(ALS.ar(r), s)), tb, s2, s, r)
 
 def kn_map_load.go(ss: List<&2, U32>, +sub: List<&2, Sub>, +tb: F.Table, r: ALS) -> ALS:
   match ss:

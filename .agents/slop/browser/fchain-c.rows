@@ -2,22 +2,23 @@ chain_c=--k0
 
 void test(float* restrict data0_196, float* restrict data1_784, float* restrict data2_4) {
   float buf0[1];
+  int alu0 = (4*0);
   for (int Lidx0 = 0; Lidx0 < 14; Lidx0++) {
+    int cast0 = ((int)(Lidx0));
     for (int Lidx1 = 0; Lidx1 < 14; Lidx1++) {
-      *buf0 = 0;
-      for (int Lidx3 = 0; Lidx3 < 2; Lidx3++) {
-        for (int Lidx2 = 0; Lidx2 < 2; Lidx2++) {
-          int cast0 = ((int)(Lidx0));
-          int cast1 = ((int)(Lidx1));
-          int cast2 = ((int)(Lidx2));
+      int cast1 = ((int)(Lidx1));
+      for (int Lidx2 = 0; Lidx2 < 2; Lidx2++) {
+        int cast2 = ((int)(Lidx2));
+        for (int Lidx3 = 0; Lidx3 < 2; Lidx3++) {
           int cast3 = ((int)(Lidx3));
-          float val0 = (*(data1_784+((cast2+(cast0<<1)+(28*cast3)+(56*cast1)+(784*0)+(784*0))%784)));
-          int alu1 = (4*0);
-          float val1 = (*(data2_4+((cast2+(2*0)+(cast3<<1)+alu1+alu1+alu1)%4)));
-          *buf0 = ((*buf0)+(val0*val1));
+          float val0 = (*(data2_4+((cast2+(2*0)+(cast3<<1)+alu0+alu0+alu0)%4)));
+          *buf0 = 0;
+          float val1 = (*(data1_784+((cast2+(cast0<<1)+(28*cast3)+(56*cast1)+(784*0)+(784*0))%784)));
+          float val2 = (*(val1*val0));
+          *buf0 = ((*buf0)+val2);
         }
       }
-      *(data0_196+((cast0+(14*cast1)+(196*0)+(196*0))%196)) = buf0;
+      *(data0_196+((cast0+(14*cast1)+(196*0)+(196*0))%196)) = (*buf0);
     }
   }
 }
@@ -37,19 +38,19 @@ void test(float* restrict data0_196, float* restrict data1_196) {
 void test(float* restrict data0_49, float* restrict data1_196) {
   float buf0[1];
   for (int Lidx0 = 0; Lidx0 < 7; Lidx0++) {
+    int cast0 = ((int)(Lidx0));
     for (int Lidx1 = 0; Lidx1 < 7; Lidx1++) {
-      *buf0 = ((float)(-__builtin_inff()));
-      for (int Lidx3 = 0; Lidx3 < 2; Lidx3++) {
-        for (int Lidx2 = 0; Lidx2 < 2; Lidx2++) {
+      int cast1 = ((int)(Lidx1));
+      for (int Lidx2 = 0; Lidx2 < 2; Lidx2++) {
+        for (int Lidx3 = 0; Lidx3 < 2; Lidx3++) {
+          *buf0 = ((float)(-__builtin_inff()));
           float val0 = (*buf0);
-          int cast0 = ((int)(Lidx0));
-          int cast1 = ((int)(Lidx1));
           float val1 = (*(data1_196+((((int)(Lidx2))+(cast0<<1)+(14*((int)(Lidx3)))+(28*cast1)+(196*0)+(196*0))%196)));
           float alu1 = ((val0<val1)?val1:val0);
           *buf0 = alu1;
         }
       }
-      *(data0_49+((cast0+(7*cast1)+(49*0)+(49*0))%49)) = buf0;
+      *(data0_49+((cast0+(7*cast1)+(49*0)+(49*0))%49)) = (*buf0);
     }
   }
 }
@@ -57,15 +58,16 @@ void test(float* restrict data0_49, float* restrict data1_196) {
 
 void test(float* restrict data0_10, float* restrict data1_49, float* restrict data2_490) {
   float buf0[1];
-  for (int Lidx0 = 0; Lidx0 < 10; Lidx0++) {
-    *buf0 = 0;
-    for (int Lidx1 = 0; Lidx1 < 49; Lidx1++) {
-      int cast0 = ((int)(Lidx1));
-      float val0 = (*(data1_49+((cast0+(49*0)+(49*0))%49)));
+  for (int Lidx1 = 0; Lidx1 < 49; Lidx1++) {
+    int cast0 = ((int)(Lidx1));
+    float val0 = (*(data1_49+((cast0+(49*0)+(49*0))%49)));
+    for (int Lidx0 = 0; Lidx0 < 10; Lidx0++) {
       int cast1 = ((int)(Lidx0));
+      *buf0 = 0;
       float val1 = (*(data2_490+((cast1+(10*cast0)+(490*0))%490)));
-      *buf0 = ((*buf0)+(val0*val1));
+      float val2 = (*(val0*val1));
+      *buf0 = ((*buf0)+val2);
     }
-    *(data0_10+((cast1+(10*0))%10)) = buf0;
+    *(data0_10+((cast1+(10*0))%10)) = (*buf0);
   }
 }

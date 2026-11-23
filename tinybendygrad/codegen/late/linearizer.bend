@@ -459,8 +459,18 @@ def lt_extra(+a: O.Arena, +i: U32) -> U32:
 # the offset is 0..25 < 64. That is what lets `List.sort`'s comparator -- whose
 # parameter type is `A -> A -> Bool` with `+` REFUSED, so one field read per
 # element -- be a single `U32.is_le`.
-def lt_key(rc: U32, po: U32) -> U32:
-  U32.add(U32.mul(rc, 64), po)
+# `priorities[u] = (run_count, len(u.ranges), priority, extra)` -- linearizer.py:33 -- IS A FOUR-TUPLE,
+# AND THE PORT HAD TWO OF THEM. `len(u.ranges)` WAS DROPPED, which is the term that says "a node over
+# one range belongs OUTSIDE a node over four": with it absent, a store's `CAST(RANGE)` and the inner
+# loop's arithmetic tie on `(rc, po)` and the LIST order decides, so the cast was emitted inside the
+# innermost body and reused two scopes out -- `use of undeclared identifier 'cast0'`, three kernels.
+#
+# THE PACKING'S BOUND IS THE INVARIANT AND IT IS NAMED RATHER THAN ASSUMED: `len <= 15` (a kernel with
+# more than fifteen nested ranges is not in this corpus) and `po <= 63` (`lt_po`'s ladder tops out at
+# 25). `rc` keeps its own scale; while `vms` is empty `lt_rc` answers 1 for every node, so the tie
+# the old key broke by list order is now broken by nesting depth, which is what upstream's tuple does.
+def lt_key(rc: U32, len: U32, po: U32) -> U32:
+  U32.add(U32.add(U32.mul(rc, 1024), U32.mul(len, 64)), po)
 
 # `out_degree` -- linearizer.py:11, :16-17. A COUNT OF OCCURRENCES, not a set
 # membership: Python's `out_degree[s] += 1` runs once per (consumer, src) PAIR,
@@ -622,7 +632,8 @@ def lt_vm.go(vms: List<&2, U32>) -> VM:
 # PORTED. What W4 still blocks is the `Arg` dispatch for a node whose arg is not
 # a `ParamArg`, which `fold.addr` would answer -- `lt_addr_of`'s `case _:` arm.
 def lt_keys.put(+acc: List<&2, LtKey>, +u: U32, +ar: O.Arena, +vm: VM) -> List<&2, LtKey>:
-  List.append(&2, LtKey, acc, [LtKey{lt_key(lt_rc(VM.vs(vm)), lt_po(ar, u)), u, lt_rc(VM.vs(vm)), lt_extra(ar, u)}])
+  List.append(&2, LtKey, acc, [LtKey{lt_key(lt_rc(VM.vs(vm)), U32.from_nat(List.length(&2, U32, VM.vs(vm))),
+                                            lt_po(ar, u)), u, lt_rc(VM.vs(vm)), lt_extra(ar, u)}])
 
 def lt_keys.go(+ar: O.Arena, lst: List<&2, U32>, +vms: List<&2, U32>, +acc: List<&2, LtKey>) -> List<&2, LtKey>:
   match lst:

@@ -455,12 +455,39 @@ def body_low(+ar: O.Arena, +b: U32) -> O.Found:
   +z = KR.alloc_to_buf_all(O.Found.ar(l), O.Found.i(l))
   add_loads(O.Found.ar(z), O.Found.i(z))
 
+# `vms` -- THE LINEARIZER'S `run_count` AND `len(u.ranges)` INPUT, WHICH WAS `Nil{}` FOR EVERY KERNEL.
+# `linearizer.py:33` keys a node on `(run_count, len(u.ranges), priority, extra)`; with no `vms` the
+# port's `lt_rc` answered 1 for every node AND the `len` term did not exist, so the order degenerated
+# to `priority` with the LIST breaking every tie. THAT IS WHAT PUT A STORE'S `CAST(RANGE)` INSIDE THE
+# INNERMOST LOOP BODY AND REUSED IT TWO SCOPES OUT (`use of undeclared identifier 'cast0'`).
+#
+# THE `1`S ARE A PROXY AND THEY ARE NAMED AS ONE: upstream's `run_count` is `prod(r.vmax+1)` and
+# reading `r.vmax` needs `vmin_vmax` on the RANGE's CONST, which is not wired here. A section of `n`
+# ones makes `lt_rc` answer `2^n`, so the term still orders by NESTING -- which is the property the
+# placement needs -- and it does not claim to order by size. The LENGTH is the real count.
+def vms_row.go(+rs: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
+  match rs:
+    case Nil{}: acc
+    case _ <> t: vms_row.go(t, List.append(&2, U32, acc, [1]))
+
+def vms_one(+rs: List<&2, U32>) -> List<&2, U32>:
+  List.concat(&2, U32, [[U32.from_nat(List.length(&2, U32, rs))], vms_row.go(rs, Nil{})])
+
+def vms.go(+ar: O.Arena, +rt: F.RTable, +lst: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
+  match lst:
+    case Nil{}: acc
+    case u <> t:
+      vms.go(ar, rt, t, List.append(&2, U32, acc, vms_one(F.Rng.rs(F.UOp.ranges(ar, rt, u)))))
+
+def vms(+ar: O.Arena, +lst: List<&2, U32>) -> List<&2, U32>:
+  vms.go(ar, F.rng_sweep(ar, F.Folded.t(F.folded(ar))), lst, Nil{})
+
 def body_kus(+ar: O.Arena, +k: U32) -> (O.Arena & List<&2, C.KU>):
   +l = body_low(ar, SCH.sc_src0(ar, k))
   +a2 = O.Found.ar(l)
   +b2 = O.Found.i(l)
   +lst = O.UOp.toposort(O.Arena.budget(a2), a2, b2)
-  +lin = LIN.linearize(a2, lst, Nil{}, b2)
+  +lin = LIN.linearize(a2, lst, vms(a2, lst), b2)
   (a2, KC.kuconv.convert(F.folded(a2), lin))
 
 def program.of(p: (O.Arena & List<&2, C.KU>), name: String) -> Prog:
