@@ -30333,6 +30333,18 @@ decode-numbers-js    [###] 3/3  **THE DECODE'S 2,814 NUMBERS ARE PARSED IN JS NO
       ONE SHARED LIST OF DEFS BROKE THE OTHER TWO CASES WITH "duplicate
       declaration", AND A DEF MUST BE IMPLEMENTED BEFORE IT IS USED, SO THE
       LIST IS IN ORDER OF DEPENDENCE.
+- [ ] **THE ALU CENSUS's PLANT IS RED, AND IT IS NOT OURS.** MEASURED
+      2026-11-23: `gates/alu-law-census-gate.py --plant` REPORTS "the mutated
+      copy did not go red naming neg_is_mul_by_minus_one (rc=1, named=None)",
+      AND THE GATE ITSELF EXITS 0.  **AND IT IS PRE-EXISTING:** MEASURED, THE
+      SAME FAILURE AT `HEAD~1` -- BEFORE THE COMPOSITION LAWS -- SO IT IS NOT
+      THE COMPOSITION WORK's.  THE CENSUS's OWN READING IS STILL GREEN ("the
+      census is no worse than the baseline"), SO THE PLANT IS THE ONE RED
+      ROW AND IT IS NOT OURS TO FIX QUIETLY.  **AND THE MESSAGE SAYS WHAT TO
+      LOOK AT:** `named=None` MEANS THE MUTATED COPY WENT RED WITHOUT NAMING A
+      LAW -- SO THE FAILURE IS THE MUTATION'S OWN, NOT THE LAW'S.  AND
+      `neg_is_mul_by_minus_one`'s PROOF IS `{==}` AND ITS LAW IS PRESENT, SO
+      THE MUTATION IS NOT LANDING ON THE SUBJECT IT CLAIMS TO.
 - [x] **THE LAW SET IS NOW **103 LAWS**, AND **ALL FIVE** OF THE SPEC's
       COMPOSITIONS ARE STATED.** MEASURED 2026-11-17 against the pin's spec
       (`f5ac54685074:spec/tinyspec.tex`): the spec writes FIVE ops as
