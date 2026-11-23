@@ -147,7 +147,7 @@ def scatter_add(T, idx, val):
   return T + (mask * val.reshape(1, D)).sum(1)      # (K,)
 ```
 
-**AND ALL THREE CLAIMS ARE ABOUT THE BROADCAST AND NOT ABOUT THE REDUCE, AND
+**AND ALL FIVE CLAIMS ARE ABOUT THE BROADCAST AND NOT ABOUT THE REDUCE, AND
 THAT IS A MEASURED CONSTRAINT RATHER THAN A CHOICE.** Reading the pin's spec:
 `gemm` reduces axis 1 of a *three*-axis shape, `prefix_sum` reduces axis −1,
 `arange` goes through `prefix_sum`, `gather` reduces axis 0, and `scatter_add`
@@ -155,6 +155,37 @@ reduces axis 1. **So ONLY the gather reduces the FIRST axis — and the port's
 `SpReduce` drops the first `k` axes.** The reduce's axis is therefore a
 separate matter from the broadcast's shape, and the broadcast's shape is the
 part both agree on.
+
+**AND THE FOURTH AND FIFTH ARE NOW STATED TOO**, and they needed no arithmetic
+lemma at all:
+
+```
+# prefix_sum: cumulative sum via repeat+reshape sliding window trick
+def prefix_sum(T):
+  n = T.shape[0]
+  x = T.pad((n-1, 0))                            # (2n-1,)
+  x = x.reshape(1,2*n-1).expand(n+1,2*n-1)       # tile
+  x = x.reshape((n+1)*(2*n-1)).shrink_to(2*n*n)  # trim
+  x = x.reshape(n,2*n).shrink_to(n,n)            # windows
+  return x.sum(-1)                               # reduce
+
+# arange: prefix_sum of all 1s gives [1,2,...,n], subtract 1 for [0,1,...,n-1]
+def arange(n):
+  return prefix_sum(Tensor(1).reshape(1).expand(n)) - 1
+```
+
+**AND THE ARITHMETIC IS A DIM, NOT A PROBLEM.** A dim may hold an arithmetic
+term — MEASURED, `S.dim_of(S.SN{Nat.mul(a, b)})` is `Nat.mul(a, b)` — so the
+spec's `2n-1` and `(n+1)*(2n-1)` are STATED DIRECTLY, and the folds answer
+them without a `Nat.mul` lemma. The `Nat.mul` wall this file recorded earlier
+was in the *product* of the dims, and the products are not needed here.
+
+**AND THE ARANGE's CLAIM NEEDS NO BROADCAST LEMMA EITHER, AND THAT IS MEASURED
+TOO.** Its subtract broadcasts `(n,)` with `()`, and the lengths are UNEQUAL —
+and the port's `elem_pick` truncates at the shorter list while `zip_max` keeps
+the longer one's remainder, so the port's `bcast_axes` lemma does NOT apply.
+But `zip_max([n], [])` is `[n]` by `zip_max`'s own rule, so the claim is
+definitional.
 
 **AND BOTH ARE LOAD-BEARING, MEASURED NOT ASSUMED.** A law that cannot go red
 is worse than no row, so the mutation test is in

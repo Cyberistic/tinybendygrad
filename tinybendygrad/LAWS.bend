@@ -851,6 +851,94 @@ law scatter_add_composition_broadcasts_to_the_key_shape:
   for same2: S.SameLen([S.SN{k}, S.SN{1n}], [S.SN{1n}, S.SN{d}])
   {shape_of(prod) == Some{S.Shape.of([S.SN{k}, S.SN{d}])} : Maybe<&2, S.Shape>}
 
+# The PREFIX_SUM composition, and the claim is the NET SHAPE: `(n,)` -- the
+# INPUT's SHAPE -- and every intermediate is the SPEC's OWN EXPRESSION.
+#
+# tinyspec's "Common Ops as Compositions":
+#
+#   # prefix_sum: cumulative sum via repeat+reshape sliding window trick
+#   def prefix_sum(T):
+#     n = T.shape[0]
+#     x = T.pad((n-1, 0))                            # (2n-1,)
+#     x = x.reshape(1,2*n-1).expand(n+1,2*n-1)       # tile
+#     x = x.reshape((n+1)*(2*n-1)).shrink_to(2*n*n)  # trim
+#     x = x.reshape(n,2*n).shrink_to(n,n)            # windows
+#     return x.sum(-1)                               # reduce
+#
+# AND EVERY INTERMEDIATE IS STATED AS THE SPEC WRITES IT, BECAUSE A DIM MAY
+# HOLD AN ARITHMETIC TERM: MEASURED, `S.dim_of(S.SN{Nat.mul(a, b)})` IS
+# `Nat.mul(a, b)`.
+#
+# AND THE CLAIM IS ABOUT THE WINDOWS AND THE NET SHAPE, AND NOT ABOUT THE
+# REDUCE'S AXIS -- BECAUSE THE SPEC's `sum(-1)` IS THE LAST AXIS AND THE
+# PORT's `SpReduce` DROPS THE FIRST `k` AXES.
+law prefix_sum_composition_has_the_input_shape:
+  for +t: S.Sp
+  for +n: Nat
+  for +padded: S.Sp
+  for +tiled: S.Sp
+  for +trimmed: S.Sp
+  for +windows: S.Sp
+  for +out: S.Sp
+  for +spadded: S.Sp
+  for +stiled: S.Sp
+  for +strimmed: S.Sp
+  for +swindows: S.Sp
+  for +sout: S.Sp
+  for +pt: {shape_of(t) == Some{S.Shape.of([S.SN{n}])} : Maybe<&2, S.Shape>}
+  for +ppadded: {shape_of(padded) == Some{S.Shape.of([S.SN{Nat.sub(Nat.mul(2n, n), 1n)}])} : Maybe<&2, S.Shape>}
+  for +ptiled: {shape_of(tiled) == Some{S.Shape.of([S.SN{Nat.add(n, 1n)}, S.SN{Nat.sub(Nat.mul(2n, n), 1n)}])} : Maybe<&2, S.Shape>}
+  for +ptrimmed: {shape_of(trimmed) == Some{S.Shape.of([S.SN{Nat.mul(Nat.mul(2n, n), n)}])} : Maybe<&2, S.Shape>}
+  for +pwindows: {shape_of(windows) == Some{S.Shape.of([S.SN{n}, S.SN{n}])} : Maybe<&2, S.Shape>}
+  for +pout: {shape_of(out) == Some{S.Shape.of([S.SN{n}])} : Maybe<&2, S.Shape>}
+  # AND THE CONSTRUCTION, so the law is about the SPEC's prefix_sum and not
+  # about five unrelated nodes.
+  for +cpad: {padded == S.SpPad{t, Nil{}, [S.SN{Nat.sub(Nat.mul(2n, n), 1n)}]} : S.Sp}
+  for +cwin: {windows == S.SpShrink{S.SpReshape{S.SpInvalid{}, S.SpInvalid{}, [S.SN{n}, S.SN{Nat.mul(2n, n)}]}, Nil{}, [S.SN{n}, S.SN{n}]} : S.Sp}
+  for +cout: {out == S.SpReduce{windows, Nil{}, S.SpInvalid{}, 1n} : S.Sp}
+  # AND THE "EVERY DIM IS CONCRETE" PROOFS, because the reduce's lemma needs
+  # them.
+  for ca: S.AllSN([S.SN{n}, S.SN{n}])
+  {shape_of(out) == Some{S.Shape.of([S.SN{n}])} : Maybe<&2, S.Shape>}
+
+# The ARANGE composition, and the claim is the NET SHAPE: `(n,)` -- the
+# EXPAND's TOTAL.
+#
+# tinyspec's "Common Ops as Compositions":
+#
+#   # arange: prefix_sum of all 1s gives [1,2,...,n], subtract 1 for
+#   # [0,1,...,n-1]
+#   def arange(n):
+#     return prefix_sum(Tensor(1).reshape(1).expand(n)) - 1
+#
+# AND THE EXPAND's SHAPE IS ITS `total` FIELD, AND THE PREFIX_SUM's NET SHAPE
+# IS ITS INPUT's -- SO THE CLAIM IS THE EXPAND's TOTAL.
+law arange_composition_has_the_expanded_shape:
+  for +n: Nat
+  for +one: S.Sp
+  for +reshaped: S.Sp
+  for +expanded: S.Sp
+  for +summed: S.Sp
+  for +out: S.Sp
+  for +sone: S.Sp
+  for +sreshaped: S.Sp
+  for +sexpanded: S.Sp
+  for +ssummed: S.Sp
+  for +sout: S.Sp
+  for +pone: {shape_of(one) == Some{S.Shape.of([S.SN{1n}])} : Maybe<&2, S.Shape>}
+  for +preshaped: {shape_of(reshaped) == Some{S.Shape.of([S.SN{1n}])} : Maybe<&2, S.Shape>}
+  for +pexpanded: {shape_of(expanded) == Some{S.Shape.of([S.SN{n}])} : Maybe<&2, S.Shape>}
+  for +psummed: {shape_of(summed) == Some{S.Shape.of([S.SN{n}])} : Maybe<&2, S.Shape>}
+  for +pout: {shape_of(out) == Some{S.Shape.of([S.SN{n}])} : Maybe<&2, S.Shape>}
+  # AND THE CONSTRUCTION, so the law is about the SPEC's arange and not about
+  # five unrelated nodes: the CONSTANT is reshaped to one element, the EXPAND
+  # tiles it to `n`, and the SUBTRACT of one keeps the shape.
+  for +cones: {one == A.one() : S.Sp}
+  for +creshape: {reshaped == S.SpReshape{one, S.SpInvalid{}, [S.SN{1n}]} : S.Sp}
+  for +cexpand: {expanded == S.SpExpand{reshaped, Nil{}, [S.SN{n}]} : S.Sp}
+  for +cout: {out == A.sub(summed, A.one()) : S.Sp}
+  {shape_of(out) == Some{S.Shape.of([S.SN{n}])} : Maybe<&2, S.Shape>}
+
 law add_is_elementwise:
   for +a: S.Sp
   for +b: S.Sp

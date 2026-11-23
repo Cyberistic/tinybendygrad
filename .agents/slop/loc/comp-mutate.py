@@ -47,8 +47,8 @@ SPEC = LAWS / "spec.bend"
 LAWS_FILE = ROOT / "tinybendygrad" / "LAWS.bend"
 BEND = ROOT / "bin" / "bend"
 
-BOOK = ROOT / "tinybendygrad" / "gemm-mut-book.bend"
-LAW_FILE = ROOT / "tinybendygrad" / "gemm-mut-laws.bend"
+BOOK = ROOT / "tinybendygrad" / "LAWS" / "comp-mut-book.bend"
+LAW_FILE = ROOT / "tinybendygrad" / "LAWS" / "comp-mut-laws.bend"
 
 # THE FOLD: `Shape.max_dim` for two CONCRETE dims is `SN{pick_dim(va, vb)}`,
 # and the mutation makes it the LEFT one -- which is wrong exactly when the
@@ -78,6 +78,21 @@ COMMON_DEFS = [
     "def reduce_of(m: Maybe<&2, S.Shape>) -> Maybe<&2, S.Shape>:",
     # AND THE PORT's BROADCAST LEMMA, which the gather's proof calls twice.
     "def bcast_axes(a: List<&2, S.Sdim>, b: List<&2, S.Sdim>, ca: S.AllSN(a), cb: S.AllSN(b), same: S.SameLen(a, b)) -> {S.zip_max(a, b) == S.elem_pick(a, b) : List<&2, S.Sdim>}:",
+]
+
+# AND THE PREFIX_SUM's AND THE ARANGE's OWN HELPERS.
+PREFIX_DEFS = [
+    "def sh_of(l: List<&2, S.Sdim>) -> S.Shape:",
+    "def some_of_sh(sh: S.Shape) -> Maybe<&2, S.Shape>:",
+]
+
+ARANGE_DEFS = [
+    "def zip_max_first(a: Maybe<&2, S.Shape>) -> (Maybe<&2, S.Shape> -> Maybe<&2, S.Shape>):",
+    "def zip_max_second(b: Maybe<&2, S.Shape>) -> (Maybe<&2, S.Shape> -> Maybe<&2, S.Shape>):",
+    "def id_maybe(m: Maybe<&2, S.Shape>) -> Maybe<&2, S.Shape>:",
+    "def alu_neg_one() -> S.Sp:",
+    "def alu_neg_one_eq() -> {A.neg(A.one()) == S.SpMul{A.one(), A.one()} : S.Sp}:",
+    "def const_shape() -> {S.Sp.shape(A.one()) == Some{S.Shape.empty()} : Maybe<&2, S.Shape>}:",
 ]
 
 # AND THE SCATTER_ADD's OWN HELPERS.
@@ -118,6 +133,14 @@ CASES = {
         "proof_defs": "scatter",
         "note": "the broadcast's per-axis fold, reached through the product",
     },
+    "prefix_sum_composition_has_the_input_shape": {
+        "proof_defs": "prefix",
+        "note": "the reduce's fold, over the windows",
+    },
+    "arange_composition_has_the_expanded_shape": {
+        "proof_defs": "arange",
+        "note": "the broadcast's fold, with an EMPTY operand",
+    },
 }
 
 
@@ -144,24 +167,28 @@ def block_of(text: str, header: str) -> str:
 
 def build_book(law: str, case: dict, proof_text: str, laws_text: str) -> tuple[str, str]:
     """THE LAW FILE (one law) and THE BOOK (the law's proof)."""
-    law_src = [
-        "import Base\n",
-        "import ./LAWS/spec.bend as S\n\n",
-        law_block(laws_text, law),
-        "\n\n",
-    ]
+    law_src = ["import Base\n"]
+    if "A.one" in laws_text or "A.sub" in laws_text:
+        law_src.append("import ./alu.bend as A\n")
+    law_src.append("import ./spec.bend as S\n\n")
+    law_src.append(law_block(laws_text, law))
+    law_src.append("\n\n")
     for header in LAWS_DEFS:
         law_src.append(block_of(laws_text, header))
         law_src.append("\n\n")
 
-    book_src = [
-        "import Base\n",
-        "import ./LAWS/spec.bend as S\n",
-        "import ./gemm-mut-laws.bend as L\n\n",
-    ]
+    book_src = ["import Base\n"]
+    if case.get("proof_defs") == "arange":
+        book_src.append("import ./alu.bend as A\n")
+    book_src.append("import ./spec.bend as S\n")
+    book_src.append("import ./comp-mut-laws.bend as L\n\n")
     defs = list(COMMON_DEFS)
     if case.get("proof_defs") == "scatter":
         defs += SCATTER_DEFS
+    elif case.get("proof_defs") == "prefix":
+        defs += PREFIX_DEFS
+    elif case.get("proof_defs") == "arange":
+        defs += ARANGE_DEFS
     for header in defs:
         if header not in proof_text:
             continue

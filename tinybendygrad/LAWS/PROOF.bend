@@ -1,6 +1,7 @@
 import Base
 import ../LAWS.bend as L
 import ./spec.bend as S
+import ./alu.bend as A
 
 # PROOF.bend -- THE PROOF SET, all thirty-four laws in ONE book.
 #
@@ -976,6 +977,17 @@ def some_of_maybe(m: Maybe<&2, S.Shape>) -> Maybe<&2, S.Shape>:
     case Some{sh}: Some{sh}
     case None{}: None{}
 
+
+
+# A PROBE: WHAT IS `List.drop([n, n], 1n)`?
+def probe_drop(n: Nat) -> {List.drop(&2, S.Sdim, [S.SN{n}, S.SN{n}], 1n) == [S.SN{n}] : List<&2, S.Sdim>}:
+  {==}
+
+
+# THE DROP of ONE IS THE TAIL, and it is the port's own `List.drop` rule.
+def drop_one_two(n: Nat) -> {List.drop(&2, S.Sdim, [S.SN{n}, S.SN{n}], 1n) == [S.SN{n}] : List<&2, S.Sdim>}:
+  {==}
+
 # The identity on a dim list, so `Equal.cong` can rewrite a list in place.
 def elem_pick_of(l: List<&2, S.Sdim>) -> List<&2, S.Sdim>:
   l
@@ -1082,6 +1094,103 @@ def L.scatter_add_composition_broadcasts_to_the_key_shape(pos, idxr, valr, mask,
   %ev4 : {S.Sp.shape(prod) == _ : Maybe<&2, S.Shape>}
   # AND THE BODY IS `{==}`: THE USE's NEW GOAL IS REFLEXIVE, BECAUSE THE
   # EVIDENCE's LEFT ENDPOINT IS `shape(prod)` ITSELF.
+  {==}
+
+# THE REDUCE's FOLD OVER A TWO-AXIS SHAPE OF EQUAL AXES, and the answer is the
+# one-axis shape.
+# VI-quinquies. THE SPEC's PREFIX_SUM COMPOSITION, and the claim is the NET
+# SHAPE.
+#
+# AND THE PROOF IS THE GATHER's PROOF WITH ONE STEP'S FOLD INSTEAD OF TWO
+# BROADCASTS: THE REDUCE's FOLD IS THE SHAPE WITH THE FIRST AXIS DROPPED, AND
+# THE WINDOWS' SHAPE IS `(n, n)`.
+def L.prefix_sum_composition_has_the_input_shape(t, n, padded, tiled, trimmed, windows, out, spadded, stiled, strimmed, swindows, sout, pt, ppadded, ptiled, ptrimmed, pwindows, pout, cpad, cwin, cout, ca):
+  # AND THE WINDOWS' DIM LIST, AND THE LAW's PREMISE NAMES IT.
+  +dw = snoc(S.SN{n}, snoc(S.SN{n}, Nil{}))
+  # AND THE REDUCE's FOLD: the shape of a reduce is its input's shape with the
+  # first axis DROPPED -- and the input is the WINDOWS, whose shape is `(n, n)`.
+  # AND THE EVIDENCE: THE REDUCE OF THE WINDOWS' SHAPE, AND THE WINDOWS' SHAPE
+  # IS `Some{Sh{[n, n]}}` BY THE LAW's PREMISE -- so the reduce of the
+  # windows' shape is the reduce of that, and the reduce of THAT IS `(n,)`,
+  # DEFINITIONALLY: MEASURED, THE PORT's OWN `reduce_two` IS `{==}` FOR THE
+  # SAME SHAPE.
+  cp = Equal.cong(S.Sp, Maybe<&2, S.Shape>, S.Sp.shape, out, S.SpReduce{windows, Nil{}, S.SpInvalid{}, 1n}, cout)
+  cr = Equal.cong(Maybe<&2, S.Shape>, Maybe<&2, S.Shape>, reduce_of, S.Sp.shape(windows), Some{S.Shape.of([S.SN{n}, S.SN{n}])}, pwindows)
+  ev = Equal.trans(Maybe<&2, S.Shape>, S.Sp.shape.reduce(S.Sp.shape(windows), 1n), S.Sp.shape.reduce(Some{S.Shape.of([S.SN{n}, S.SN{n}])}, 1n), Some{S.Shape.of([S.SN{n}])}, cr, reduce_two(n, n))
+  # AND THE `%` USE: the motive is the goal with the RIGHT-HAND SIDE replaced
+  # by the hole, and the evidence's RIGHT endpoint IS the goal's right-hand
+  # side -- so the fit check passes -- and the evidence's LEFT endpoint becomes
+  # the NEW GOAL.
+  %ev : {S.Sp.shape(out) == _ : Maybe<&2, S.Shape>}
+  # AND THE BODY: THE OUTPUT IS THE REDUCE.
+  cp
+
+
+
+# AND THE NEGATED CONSTANT's EQUALITY, and it is the port's own decomposition:
+# `neg(a)` IS `Mul(a, one)`.
+def alu_neg_one_eq() -> {A.neg(A.one()) == S.SpMul{A.one(), A.one()} : S.Sp}:
+  {==}
+
+# AND THE CONSTANT's OWN SHAPE ARM, and it is the port's own law.
+def const_shape() -> {S.Sp.shape(A.one()) == Some{S.Shape.empty()} : Maybe<&2, S.Shape>}:
+  {==}
+
+# AND THE IDENTITY ON A `Maybe<Shape>`, so a congruence can relate the fold's
+# answer to the shape it is.
+def id_maybe(m: Maybe<&2, S.Shape>) -> Maybe<&2, S.Shape>:
+  m
+
+# AND THE CURRIED FOLD: ONE FUNCTION PER FIXED OPERAND, so `Equal.cong` CAN
+# USE THEM -- A CONGRUENCE's FUNCTION IS UNARY.  AND THE FOLD IS
+# `dims_zip_max`, WHICH ANSWERS `Some{Shape.of(zip_max(...))}`.
+def zip_max_first(a: Maybe<&2, S.Shape>) -> (Maybe<&2, S.Shape> -> Maybe<&2, S.Shape>):
+  b => S.dims_zip_max(a, b)
+
+def zip_max_second(b: Maybe<&2, S.Shape>) -> (Maybe<&2, S.Shape> -> Maybe<&2, S.Shape>):
+  a => S.dims_zip_max(a, b)
+
+# AND THE NEGATED CONSTANT, and it is the port's own `A.neg(A.one())`.
+def alu_neg_one() -> S.Sp:
+  A.neg(A.one())
+# VI-sex. THE SPEC's ARANGE COMPOSITION, and the claim is the NET SHAPE.
+#
+# AND THE PROOF NEEDS NO BROADCAST LEMMA, AND THAT IS A MEASURED FACT: the
+# broadcast of `(n,)` WITH `()` IS UNEQUAL-LENGTH, AND THE PORT's `elem_pick`
+# TRUNCATES AT THE SHORTER LIST WHILE `zip_max` KEEPS THE LONGER's REMAINDER --
+# SO THE TWO DISAGREE AND THE PORT's `bcast_axes` LEMMA DOES NOT APPLY.
+#
+# BUT THE FOLD's OWN ANSWER IS ENOUGH: `zip_max([n], [])` IS `[n]` BY `zip_max`'s
+# OWN RULE (`case Nil{}: a`), SO THE CLAIM IS DEFINITIONAL.
+def L.arange_composition_has_the_expanded_shape(n, one, reshaped, expanded, summed, out, sone, sreshaped, sexpanded, ssummed, sout, pone, preshaped, pexpanded, psummed, pout, cones, creshape, cexpand, cout):
+  # AND THE CONSTANT one's SHAPE IS EMPTY -- "A scalar constant with shape ()" --
+  # AND THE SUM's SHAPE IS `(n)`.
+  +se = S.Shape.empty()
+  +sn = S.Shape.of([S.SN{n}])
+  # AND THE BROADCAST OF `(n)` WITH `()` IS UNEQUAL-LENGTH, AND THE PORT's
+  # `elem_pick` TRUNCATES AT THE SHORTER LIST WHILE `zip_max` KEEPS THE
+  # LONGER's REMAINDER -- SO THE PORT's `bcast_axes` LEMMA DOES NOT APPLY.
+  # BUT `zip_max([n], [])` IS `[n]` BY `zip_max`'s OWN RULE (`case Nil{}: a`),
+  # SO THE CLAIM IS DEFINITIONAL AND NO LEMMA IS NEEDED.
+  #
+  # AND THE CHAIN IS FIVE STEPS: THE OUTPUT's SHAPE IS THE SUBTRACT's FOLD (BY
+  # THE CONSTRUCTION), THE SUBTRACT IS `Add(summed, Neg(one))` AND `Neg(one)` IS
+  # `Mul(one, one)` (BY THE PORT's OWN DECOMPOSITIONS), THE CONSTANT's SHAPE IS
+  # EMPTY (BY THE CONSTANT's OWN ARM), AND THE ADD's FOLD IS THE `zip_max` OF
+  # THE TWO OPERANDS' SHAPES (BY THE FOLD).
+  c1 = Equal.cong(S.Sp, Maybe<&2, S.Shape>, S.Sp.shape, out, A.sub(summed, A.one()), cout)
+  # AND THE NEGATED CONSTANT IS THE PORT's OWN `Mul(one, one)`.
+  c2 = Equal.cong(S.Sp, Maybe<&2, S.Shape>, S.Sp.shape, alu_neg_one(), S.SpMul{A.one(), A.one()}, alu_neg_one_eq)
+  # AND THE NEGATED CONSTANT's SHAPE IS THE `zip_max` OF THE TWO CONSTANTS'
+  # SHAPES -- AND BOTH ARE EMPTY.
+  c3 = Equal.cong(Maybe<&2, S.Shape>, Maybe<&2, S.Shape>, zip_max_first(S.Sp.shape(A.one())), S.Sp.shape(A.one()), Some{se}, const_shape)
+  c4 = Equal.cong(Maybe<&2, S.Shape>, Maybe<&2, S.Shape>, zip_max_first(S.Sp.shape(A.one())), S.Sp.shape(alu_neg_one()), Some{se}, c3)
+  # AND THE ADD's FOLD IS THE `zip_max` OF THE SUM's SHAPE AND THE NEGATED
+  # CONSTANT's, AND WITH AN EMPTY ONE THE ANSWER IS THE SUM's.
+  c5 = Equal.cong(Maybe<&2, S.Shape>, Maybe<&2, S.Shape>, zip_max_second(S.Sp.shape(alu_neg_one())), S.Sp.shape(summed), Some{sn}, psummed)
+  c6 = Equal.cong(Maybe<&2, S.Shape>, Maybe<&2, S.Shape>, id_maybe, S.dims_zip_max(S.Sp.shape(summed), S.Sp.shape(alu_neg_one())), Some{sn}, c5)
+  ev = Equal.trans(Maybe<&2, S.Shape>, S.Sp.shape(out), S.dims_zip_max(S.Sp.shape(summed), S.Sp.shape(alu_neg_one())), Some{sn}, c1, c6)
+  %ev : {S.Sp.shape(out) == _ : Maybe<&2, S.Shape>}
   {==}
 # VI-bis. THE SPEC'S OWN COMPOSITION, and the shape it claims.
 #

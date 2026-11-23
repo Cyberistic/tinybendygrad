@@ -30333,6 +30333,34 @@ decode-numbers-js    [###] 3/3  **THE DECODE'S 2,814 NUMBERS ARE PARSED IN JS NO
       ONE SHARED LIST OF DEFS BROKE THE OTHER TWO CASES WITH "duplicate
       declaration", AND A DEF MUST BE IMPLEMENTED BEFORE IT IS USED, SO THE
       LIST IS IN ORDER OF DEPENDENCE.
+- [x] **THE LAW SET IS NOW **103 LAWS**, AND **ALL FIVE** OF THE SPEC's
+      COMPOSITIONS ARE STATED.** MEASURED 2026-11-17 against the pin's spec
+      (`f5ac54685074:spec/tinyspec.tex`): the spec writes FIVE ops as
+      compositions of the primitives -- `gemm`, `prefix_sum`, `arange`,
+      `gather`, `scatter_add` -- and the port now states every one.  The
+      census reads `0/103/103` and ALL FIVE ARE LOAD-BEARING, MEASURED NOT
+      ASSUMED: `comp-mutate.py` builds a book holding ONE law and breaks the
+      fold it depends on, and each goes red in its own book.
+      **AND THE ARITHMETIC IS A DIM AND NOT A PROBLEM**, WHICH IS THE FINDING
+      THAT UNBLOCKED THE LAST TWO: A DIM MAY HOLD AN ARITHMETIC TERM --
+      MEASURED, `S.dim_of(S.SN{Nat.mul(a, b)})` IS `Nat.mul(a, b)` -- so the
+      spec's `2n-1` and `(n+1)*(2*n-1)` ARE STATED DIRECTLY AND THE FOLDS
+      ANSWER THEM WITHOUT A `Nat.mul` LEMMA.  **AND THE `Nat.mul` WALL THIS
+      LEDGER RECORDED EARLIER WAS IN THE *PRODUCT* OF THE DIMS, AND THE
+      PRODUCTS ARE NOT NEEDED HERE.**
+      **AND THE ARANGE's CLAIM NEEDS NO BROADCAST LEMMA, MEASURED:** its
+      subtract broadcasts `(n,)` WITH `()`, THE LENGTHS ARE UNEQUAL, AND THE
+      PORT's `elem_pick` TRUNCATES AT THE SHORTER LIST WHILE `zip_max` KEEPS
+      THE LONGER's REMAINDER -- SO THE PORT's `bcast_axes` LEMMA DOES NOT
+      APPLY.  BUT `zip_max([n], [])` IS `[n]` BY `zip_max`'s OWN RULE, SO THE
+      CLAIM IS DEFINITIONAL.
+      **AND THE MUTATION TOOL's BOOK IS A POPULATION AND ITS PATHS ARE
+      IDENTITY, MEASURED TWICE:** A BOOK OUTSIDE `tinybendygrad/LAWS/` IMPORTED
+      THE SPEC AS `./LAWS/spec.bend` WHILE THE ALU MODULE IMPORTS IT AS
+      `./spec.bend` -- THE SAME FILE BY TWO PATHS AND TWO IDENTITIES -- AND
+      THE BOOK'S `A.one` WAS "a defined name" NOT FOUND.  AND A MODULE THAT
+      FAILS TO RESOLVE MAKES ITS IMPORTER FAIL WITH THE SAME MESSAGE, SO THE
+      SCRATCH LAW FILE IMPORTS THE ALU TOO WHEN ITS LAW NAMES `A.one`.
 - [x] **AND THE CORPUS's VERDICT IS LOAD-SENSITIVE, MEASURED 2026-11-18, AND
       THE TOOL SAYS SO ITSELF.** MEASURED: `graphcmp.py`'s `BEND_TIMEOUT` is
       SIXTY SECONDS (`TRIES, BEND_TIMEOUT = 3, 60`), and at a MACHINE LOAD OF
