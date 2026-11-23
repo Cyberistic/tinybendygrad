@@ -71,7 +71,7 @@ def body_of(+i: U32) -> String:
   +ar = O.Found.ar(r)
   +ns = O.UOp.toposort(O.Arena.budget(ar), ar, O.Found.i(r))
   +mul = pick_mul.go(ar, ns, 0)
-  +mm = KR.pm_add_loads(F.folded(ar), mul)
+  +mm = KR.pm_add_loads(F.folded(ar), ar, Nil{}, mul)
   +at = KR.Ker.at(mm)
   +st = DEV.al_pass.go(F.folded(ar), O.UOp.toposort(O.Arena.budget(ar), ar, O.Found.i(r)),
                        DEV.Lt{ar, Nil{}, False{}})

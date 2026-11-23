@@ -409,8 +409,19 @@ def al_keep(none: Bool, +al: KR.Ker, +u: U32, +st: Lt) -> Lt:
     case True{} : lt_keep(u, Lt.ar(st), Lt.rs(st), Lt.fired(st))
     case False{}: lt_put(KR.Ker.ar(al), u, KR.Ker.at(al), Lt.rs(st), True{})
 
+# THE MAP TRAVELS AS `KR.Sub`, because `pm_add_loads` asks loadability of the SUBSTITUTED source
+# (`codegen/kernel.bend`'s `Sub` header records why) and this file is the one that owns `LateRep`.
+# `lw_find` is first-match and the walk writes each key once, so the conversion is a rename.
+def al_subs.go(+rs: List<&2, LateRep>, +acc: List<&2, KR.Sub>) -> List<&2, KR.Sub>:
+  match rs:
+    case Nil{}: acc
+    case LateRep{old, new} <> t: al_subs.go(t, List.append(&2, KR.Sub, acc, [KR.Sub{old, new}]))
+
+def al_subs(+rs: List<&2, LateRep>) -> List<&2, KR.Sub>:
+  al_subs.go(rs, Nil{})
+
 def al_step(+fx0: F.Folded, +u: U32, +st: Lt) -> Lt:
-  +al = KR.pm_add_loads(fx0, u)
+  +al = KR.pm_add_loads(fx0, Lt.ar(st), al_subs(Lt.rs(st)), u)
   al_keep(Bool.or(U32.is_zero(KR.Ker.at(al)), U32.is_eq(KR.Ker.at(al), u)), al, u, st)
 
 def al_pass.go(+fx0: F.Folded, +us: List<&2, U32>, st: Lt) -> Lt:

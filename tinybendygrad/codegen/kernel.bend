@@ -507,6 +507,35 @@ def kn_alu_loadable(+tb: F.Table, +ar: O.Arena, i: U32) -> Bool:
 #
 # THE SAME TRAP IS WRITTEN DOWN IN `mixin/movement.bend`'s `mxw_add_new2`: "BEND IS STRICT: an
 # argument is evaluated before the callee branches ... the symptom is a self-edge".
+# The substitution pair.
+type Sub is Data:
+  Sub{was: U32, now: U32}
+
+def Sub.was(s: Sub) -> U32:
+  match s:
+    case Sub{was, now}: was
+
+def Sub.now(s: Sub) -> U32:
+  match s:
+    case Sub{was, now}: now
+
+def lw_find.same(s: Sub, x: U32) -> Bool:
+  U32.is_eq(Sub.was(s), x)
+
+def lw_find.hit(same: Bool, s: Sub, hold: U32) -> U32:
+  match same:
+    case True{} : Sub.now(s)
+    case False{}: hold
+
+# `replaced.get(x, x)` -- the FIRST match, since a key is written at most once.
+def lw_find.go(ss: List<&2, Sub>, +x: U32, hold: U32) -> U32:
+  match ss:
+    case Nil{}    : hold
+    case +s <> t  : lw_find.go(t, x, lw_find.hit(lw_find.same(s, x), s, hold))
+
+def lw_find(+ss: List<&2, Sub>, +x: U32) -> U32:
+  lw_find.go(ss, x, x)
+
 type ALS is Data:
   ALS{ar: O.Arena, ss: List<&2, U32>}
 
@@ -517,6 +546,20 @@ def ALS.ar(x: ALS) -> O.Arena:
 def ALS.ss(x: ALS) -> List<&2, U32>:
   match x:
     case ALS{ar, ss}: ss
+
+# THE WALK'S REPLACE MAP, CARRIED AS THIS FILE'S OWN RECORD. `device.bend` owns
+# `LateRep{old, new}` and imports this file, so it cannot hand one over; it converts instead.
+#
+# WHY THE SUBSTITUTED SOURCE IS THE RIGHT SUBJECT: upstream's `pm_add_loads` is ONE
+# `graph_rewrite`, and a graph rewrite rebuilds a node from its ALREADY-REWRITTEN srcs, so
+# `maybe_load` (`codegen/__init__.py:205`) tests `u.addrspace` of the NEW node. The port asked
+# the fold of the ORIGINAL graph, where `MUL(INDEX, INDEX)` has two GLOBAL srcs and is therefore
+# GLOBAL -- so the parent wrapped the whole multiply: `(*((data1_784+idx)*(data2_4+idx)))`.
+#
+# AND "ALREADY SUBSTITUTED" MEANS "ALREADY IN THE ALU", which is why the answer is `False` and not
+# a second fold: `Ops.LOAD` is `ALU` (ops.py:876, "LOAD brings things into the ALU") and an
+# Elementwise node is `ALU` iff every src is (ops.py:880) -- so a source the walk rewrote is
+# exactly a source that must not be loaded again.
 
 # `maybe_load` -- ONE SOURCE, LOADED IF LOADABLE, IN THE ARENA THE CALLER CARRIES.
 def kn_map1.of(+loadable: Bool, s: U32, +r: ALS) -> ALS:
@@ -530,10 +573,22 @@ def kn_map1.of(+loadable: Bool, s: U32, +r: ALS) -> ALS:
 def kn_map1(+tb: F.Table, +s: U32, +r: ALS) -> ALS:
   kn_map1.of(kn_alu_loadable(tb, ALS.ar(r), s), s, r)
 
-def kn_map_load.go(ss: List<&2, U32>, +tb: F.Table, r: ALS) -> ALS:
+# `maybe_load(s)` ASKED OF THE SUBSTITUTED SOURCE, AND NOT STRICTLY. `Bool.pick` evaluates both
+# arms, so asking `kn_map1` speculatively would MINT a LOAD node in an arena the caller then throws
+# away -- and the next mint lands on that same index, which is the stale-arena class this file's
+# header records. The `match` arms are the non-strict branch, so only the chosen one runs.
+def kn_map1.sub2(eq: Bool, +sub: List<&2, Sub>, +tb: F.Table, +s: U32, +r: ALS) -> ALS:
+  match eq:
+    case True{} : kn_map1(tb, s, r)
+    case False{}: ALS{ALS.ar(r), List.append(&2, U32, ALS.ss(r), [lw_find(sub, s)])}
+
+def kn_map1.sub(+sub: List<&2, Sub>, +tb: F.Table, +s: U32, +r: ALS) -> ALS:
+  kn_map1.sub2(U32.is_eq(lw_find(sub, s), s), sub, tb, s, r)
+
+def kn_map_load.go(ss: List<&2, U32>, +sub: List<&2, Sub>, +tb: F.Table, r: ALS) -> ALS:
   match ss:
     case Nil{}   : r
-    case +s <> t : kn_map_load.go(t, tb, kn_map1(tb, s, r))
+    case +s <> t : kn_map_load.go(t, sub, tb, kn_map1.sub(sub, tb, s, r))
 
 # `x.replace(src=tuple(map(maybe_load, x.src)))` -- and the REPLACE is `UOp.new` in the arena
 # the mapping GREW, which is why `ALS.ar(r)` is the arena and `ar` is only read for `self`.
@@ -546,12 +601,12 @@ def al_0.of(+shaped: Bool, +ar: O.Arena, +self: U32, +r: ALS) -> Ker:
 # `x.replace(src=(x.src[0], maybe_load(x.src[1]))+x.src[2:])` -- the STORE arm
 # (:231). Note it is `src[1]` and not every src: a STORE's value is the ONLY src
 # that is loaded, and `al_store_src` is the row that pins the position.
-def al_store_src(+tb: F.Table, +ar: O.Arena, +self: U32) -> ALS:
-  +m = kn_map1(tb, kn_src(ar, self, 1), ALS{ar, [kn_src0(ar, self)]})
+def al_store_src(+sub: List<&2, Sub>, +tb: F.Table, +ar: O.Arena, +self: U32) -> ALS:
+  +m = kn_map1.sub(sub, tb, kn_src(ar, self, 1), ALS{ar, [kn_src0(ar, self)]})
   ALS{ALS.ar(m), List.concat(&2, U32, [ALS.ss(m), O.Arena.src_from(ALS.ar(m), self, 2)])}
 
-def al_1(+tb: F.Table, +ar: O.Arena, +self: U32) -> Ker:
-  al_0.of(kn_is(ar, self, O.OpsSTORE{}), ar, self, al_store_src(tb, ar, self))
+def al_1(+sub: List<&2, Sub>, +tb: F.Table, +ar: O.Arena, +self: U32) -> Ker:
+  al_0.of(kn_is(ar, self, O.OpsSTORE{}), ar, self, al_store_src(sub, tb, ar, self))
 
 # The table: `pm_add_loads`, __init__.py:223-227. TWO rules, and the first is a
 # GroupOp over `{REDUCE, WMMA, STACK}` plus every Elementwise op -- an op SET this
@@ -563,20 +618,20 @@ def al_table() -> List<&2, O.PMEntry>:
   [O.PMEntry{0, [O.OpsREDUCE{}, O.OpsWMMA{}, O.OpsSTACK{}], Nil{}},   # :224 Elementwise|{REDUCE,WMMA,STACK}
    O.PMEntry{1, [O.OpsSTORE{}], Nil{}}]                                # :226 STORE
 
-def kn_map_load(ss: List<&2, U32>, +tb: F.Table, +ar: O.Arena) -> ALS:
-  kn_map_load.go(ss, tb, ALS{ar, Nil{}})
+def kn_map_load(ss: List<&2, U32>, +sub: List<&2, Sub>, +tb: F.Table, +ar: O.Arena) -> ALS:
+  kn_map_load.go(ss, sub, tb, ALS{ar, Nil{}})
 
-def al_dispatch(tag: U32, +tb: F.Table, +ar: O.Arena, +self: U32) -> Ker:
+def al_dispatch(+sub: List<&2, Sub>, tag: U32, +tb: F.Table, +ar: O.Arena, +self: U32) -> Ker:
   match tag:
     case 0: al_0.of(Bool.or(Bool.or(kn_is(ar, self, O.OpsREDUCE{}), kn_is(ar, self, O.OpsWMMA{})),
                              Bool.or(kn_is(ar, self, O.OpsSTACK{}), Bool.not(kn_is_bitcast(ar, self)))),
-                    ar, self, kn_map_load.go(kn_srcs(ar, self), tb, ALS{ar, Nil{}}))
-    case 1: al_1(tb, ar, self)
+                    ar, self, kn_map_load(kn_srcs(ar, self), sub, tb, ar))
+    case 1: al_1(sub, tb, ar, self)
     case _: Ker{ar, 0}
 
-def al_try.go(ok: Bool, tag: U32, +tb: F.Table, +ar: O.Arena, +self: U32) -> Ker:
+def al_try.go(ok: Bool, tag: U32, +sub: List<&2, Sub>, +tb: F.Table, +ar: O.Arena, +self: U32) -> Ker:
   match ok:
-    case True{} : ker_self(al_dispatch(tag, tb, ar, self), self)
+    case True{} : ker_self(al_dispatch(sub, tag, tb, ar, self), self)
     case False{}: Ker{ar, 0}
 
 # THE FOLD, first-wins on the ACCUMULATOR: `PatternMatcher.rewrite` returns the
@@ -616,14 +671,21 @@ def al_elemwise(+ar: O.Arena, i: U32) -> Bool:
 def al_ok(+ops: List<&2, O.Op>, +ar: O.Arena, +self: U32) -> Bool:
   Bool.or(O.pm_claimed(ops, ar, self), al_elemwise(ar, self))
 
-def al_scan(rs: List<&2, O.PMEntry>, +tb: F.Table, +ar: O.Arena, +self: U32, +h: Ker) -> Ker:
+def al_scan(rs: List<&2, O.PMEntry>, +sub: List<&2, Sub>, +tb: F.Table, +ar: O.Arena,
+            +self: U32, +h: Ker) -> Ker:
   match rs:
     case Nil{}  : h
-    case +e <> t: al_scan(t, tb, ar, self, al_next(h, al_try.go(al_ok(O.PMEntry.ops(e), ar, self),
-                                                               O.PMEntry.tag(e), tb, ar, self)))
+    case +e <> t: al_scan(t, sub, tb, ar, self, al_next(h,
+      al_try.go(al_ok(O.PMEntry.ops(e), ar, self), O.PMEntry.tag(e), sub, tb, ar, self)))
 
-def pm_add_loads(+fx: F.Folded, self: U32) -> Ker:
-  al_scan(al_table(), F.Folded.t(fx), F.Folded.ar(fx), self, Ker{F.Folded.ar(fx), 0})
+# THE ARENA IS THE CALLER'S, AND THAT IS NOT A CONVENIENCE. `pm_add_loads` is called once per node
+# by a walk that keeps growing the graph, so minting from `F.Folded.ar(fx)` -- the FOLD's arena, the
+# same one for every node -- puts each node's LOAD at the SAME index. MEASURED: that rendered all
+# four kernels as `void test() { }`, an empty body from collided nodes, because `Arena.op` answers
+# the BOTTOM for an index the arena it is read from does not contain. The walk passes `Lt.ar(st)`,
+# the newest arena at every step.
+def pm_add_loads(+fx: F.Folded, +ar: O.Arena, +sub: List<&2, Sub>, self: U32) -> Ker:
+  al_scan(al_table(), sub, F.Folded.t(fx), ar, self, Ker{ar, 0})
 
 # `_is_local_store` -- __init__.py:247. PORTED. `x.op is Ops.STORE and
 # x.addrspace is AddrSpace.LOCAL`, and the `is` on an enum is an identity test, so
@@ -700,34 +762,6 @@ def pm_alloc_to_buf(+ar: O.Arena, +self: U32) -> Ker:
 # FIRST match and `lw_subst_go` installs the LAST write, which is the same dict.
 # `lw_three` is the row that exercises it.
 
-# The substitution pair.
-type Sub is Data:
-  Sub{was: U32, now: U32}
-
-def Sub.was(s: Sub) -> U32:
-  match s:
-    case Sub{was, now}: was
-
-def Sub.now(s: Sub) -> U32:
-  match s:
-    case Sub{was, now}: now
-
-def lw_find.same(s: Sub, x: U32) -> Bool:
-  U32.is_eq(Sub.was(s), x)
-
-def lw_find.hit(same: Bool, s: Sub, hold: U32) -> U32:
-  match same:
-    case True{} : Sub.now(s)
-    case False{}: hold
-
-# `replaced.get(x, x)` -- the FIRST match, since a key is written at most once.
-def lw_find.go(ss: List<&2, Sub>, +x: U32, hold: U32) -> U32:
-  match ss:
-    case Nil{}    : hold
-    case +s <> t  : lw_find.go(t, x, lw_find.hit(lw_find.same(s, x), s, hold))
-
-def lw_find(+ss: List<&2, Sub>, +x: U32) -> U32:
-  lw_find.go(ss, x, x)
 
 # `replaced[u] = ret[0]` -- a HEAD, because `dict.fromkeys` order is irrelevant to
 # a lookup and a first-wins list is the same map. `lw_install` is the row.
@@ -1054,7 +1088,7 @@ def k_of(+kx: K, n: Nat) -> Ker:
   pm_alloc_to_buf(F.Folded.ar(K.fx(kx)), K.at(kx, n))
 
 def k_al(+kx: K, n: Nat) -> Ker:
-  pm_add_loads(K.fx(kx), K.at(kx, n))
+  pm_add_loads(K.fx(kx), F.Folded.ar(K.fx(kx)), Nil{}, K.at(kx, n))
 
 def k_np_of(+kx: K, n: Nat, c: U32) -> NP:
   pm_number_params(c, F.Folded.ar(K.fx(kx)), K.at(kx, n))
