@@ -8440,3 +8440,51 @@ ms**, **⇒⇒† AND **AND **the **`append` **0.041 ms**.
 **agree **/ **38 **byte-identical**, **⇒⇒† AND **AND **`gates/cstyle_render_census-gate.py` **READS **"425
 **rows, **3 **lanes **byte-identical"** -- **⇒⇒† AND **AND **WHICH **IS **THE **`u64` **DECIMAL **PATH **TOO**,
 **⇒⇒† AND **AND **SINCE **THE **GATE **COMPARES **AGAINST **CPython's **REAL **RENDERER**.
+
+### 138.27 **THE **THREE **CHANGES **TOGETHER**: **THE **RENDER **IS **22% **FASTER **AND **THE **SHIPPED
+**TURN **IS **13% **FASTER** -- **⇒⇒† AND **AND **THE **CORPUS **CERTIFICATE **IS **GREEN **ON **THE **FINAL
+**SUBSTRATE**
+
+**⇒⇒† AND **THE **THREE **LANDED **CHANGES** (⇒⇒† AND **AND **EACH **HAS **ITS **OWN **VERDICT**):
+
+| the **change** | the **commit** | the **paired **median** | the **noise **floor** |
+|---|---|---|---|
+| **THE **INDENT **IS **A **TABLE **OF **LITERALS** | `d93deb9b6` | 0.9666 / 0.9735 | 0.9870 / 1.0240 |
+| **80 **`String.concat`** **CALLS **BECOME **`++`** | `4ec516fc7` | 0.9020 / 0.9915 | 0.9072 / 1.0272 |
+| **THE **DIGIT **COUNT **IS **A **CHAIN **OF **COMPARISONS** | `44dce3f52` | 0.8587 / 0.8517 | 0.9427 / 1.0017 |
+
+**⇒⇒† AND **⇒⇒† AND **THE **CUMULATIVE **VERDICT** (⇒⇒† AND **THE **PAIRED **A/B**, **⇒⇒† AND **AND **THE
+**SAME **BUILD **AGAINST **ITSELF **AS **A **THIRD **ARM **IN **THE **SAME **LOOP**, **⇒⇒† AND **150 **TURNS**):
+
+| | the **three **together** | the **noise **floor** |
+|---|---|---|
+| the **ratio **OF **THE **TWO **MINIMA** | **0.7867** | 1.0208 |
+| the **ratio **OF **THE **TWO **MEDIANS** | **0.7418** | 1.0039 |
+| the **MEDIAN **OF **THE **PAIRED **RATIOS** | **0.7803** | 1.0022 |
+| the **WINS** | **131 of 150** | 51 of 150 |
+
+**⇒⇒† AND **⇒⇒† AND **THE **SHIPPED **TURN** (⇒⇒† AND **AND **THE **USER's **NUMBER**, **⇒⇒† AND **120
+**PAIRED **TURNS**):
+
+| | the **three **together** | the **noise **floor** |
+|---|---|---|
+| the **ratio **OF **THE **TWO **MINIMA** | **0.8459** | 0.9587 |
+| the **ratio **OF **THE **TWO **MEDIANS** | **0.8399** | 0.9956 |
+| the **ratio **OF **THE **TWO **MEANS** | **0.8641** | 0.9663 |
+| the **MEDIAN **OF **THE **PAIRED **RATIOS** | **0.8731** | 0.9736 |
+| the **WINS** | **90 of 120** | 56 of 120 |
+
+**⇒⇒† AND **⇒⇒† AND **THE **CORPUS **CERTIFICATE **IS **GREEN **ON **THE **FINAL **SUBSTRATE**
+(⇒⇒† AND **`3697c987f`**): **38 **answered**, **38 **agree**, **38 **byte-identical**, **0 **refused**,
+**expect-moved=0**, **controls **5/5**, **plants **8/8**, **conflations **4/4**, **cross **1/1**,
+**`substrate-start == substrate-end == live == e09e68be3ced12ac`**, **`REPRO: 340 of 340 files identical`**,
+**⇒⇒† AND **AND **`gates/corpuswitness-gate.py` **READS **"PASS -- the claim is ESTABLISHED"** (⇒⇒† AND **ALL
+**SEVEN **READINGS **OK**).
+
+**⇒⇒† AND **⇒⇒† AND **AND **A **WORD **ON **THE **METHOD**, **FOR **WHOEVER **COMES **NEXT**: **THE
+**NOISE **FLOOR **IS **A **THIRD **ARM **IN **THE **SAME **LOOP** (⇒⇒† AND **AND **IT **IS **NOT **A
+**SEPARATE **RUN**), **⇒⇒† AND **AND **THE **VERDICT **IS **A **RATIO **OF **THE **TWO **MINIMA** **PLUS **THE
+**MEDIAN **OF **THE **PAIRED **RATIOS** **PLUS **THE **WINS** (⇒⇒† AND **AND **THE **THREE **AGREE **ON **A
+**KEEP** **AND **DISAGREE **ON **A **NOISE**)**. **⇒⇒† AND **AND **THE **OUTPUT **IS **CHECKED **BY **BYTES**
+**(⇒⇒† AND **AND **THE **BYTE **COMPARISON **CAUGHT **AN **INVERTED **POLARITY** (⇒⇒† AND **§138.26**) **AND
+**IT **IS **WHAT **THE **CORPUS **IS**)**.
