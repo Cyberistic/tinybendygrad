@@ -8102,3 +8102,83 @@ def String.join.go(xs: List<&2, String>, h: String, +sep: String) -> String:
 **`String.concat([..., String.join(l, ""), ";"])`**) -- **⇒⇒† AND **AND **THAT **IS **A **SECOND **JOIN**,
 **⇒⇒† AND **AND **IT **IS **THE **ONE **THAT **COPIES **THE **STATEMENT's **WHOLE **TEXT** (⇒⇒† AND **THE
 **CONCAT **COPIES **THE **JOINED **STRING**)**.
+
+### 138.20 **THE **RENDER's **STRING **WORK **IS **THE **COST**, **AND **`++` **IS **THE **CURE** -- **⇒⇒† AND
+**THE **INDENT **WAS **18% **OF **IT**, **AND **THE **RENDER **IS **NOW **12% **FASTER**
+
+**⇒⇒† AND **THE **FINDING **IS **A **COUNT, **AND **THE **COUNT **IS **THE **INSTRUMENT** (⇒⇒† AND **AND
+**THE **COUNT **IS **NOT **THE **COST**, **⇒⇒† AND **BUT **THE **COUNT **MULTIPLIES **THE **COST**)**.
+
+**⇒⇒† AND **THE **COUNTING **INSTRUMENTS** (⇒⇒† AND **ALL **NEW**, **⇒⇒† AND **AND **ALL **IN **
+`.agents/slop/cpuseam/builds/`**): **`render-text-shape.py`** (⇒⇒† AND **CLOCKS **`String.concat`
+**AND **`String.join` **AT **THE **COMPILED **SITES**), **`concat-sites-dynamic.py`** (⇒⇒† AND
+**COUNTS **THE **CALL **SITES **DYNAMICALLY**), **`concat-caller.py`** (⇒⇒† AND **COUNTS **THE
+**RECURSIVE **CALLS **BY **THEIR **CALLER**, **⇒⇒† AND **VIA **THE **STACK**), **`indent-depth.py`**
+(⇒⇒† AND **THE **DEPTH's **DISTRIBUTION**), **`indent-candidates.py`** (⇒⇒† AND **THE **CEILING**),
+**`verdict-paired.py`** (⇒⇒† AND **THE **PAIRED **A/B **WITH **THE **NOISE **FLOOR **AS **A **THIRD
+**ARM **IN **THE **SAME **LOOP**), **`render-output-compare.py`** (⇒⇒† AND **THE **OUTPUT's **BYTES**)**.
+
+**⇒⇒† AND **THE **MEASURED **SHAPE **OF **THE **RENDER** (⇒⇒† AND **60 **TURNS**, **⇒⇒† AND **IN **THE
+**DAEMON**)**:
+
+| | before | after |
+|---|---|---|
+| **`String.concat` **CALLS **A **TURN** | **9,967** | **2,983** |
+| **`String.join` **CALLS **A **TURN** | **691** | **5** |
+| the **concat's **OWN **WORK** | 0.310 ms | **0.090 ms** |
+| the **join's **OWN **WORK** | 0.274 ms | **0.048 ms** |
+| the **INDENT's **OWN **WORK** | 0.224 ms | **nothing** |
+| **`named`** | 1.894 ms | **1.563 ms** |
+| **`stmt`** | 0.880 ms | **0.566 ms** |
+| **`emit`** | 1.254 ms | **0.932 ms** |
+| **`decl`** | 0.360 ms | **0.212 ms** |
+
+**⇒⇒† AND **THE **THREE **CHANGES**, **AND **EACH **ONE **IS **A **BEND **FACT**, **NOT **A **PORT
+**ONE**:
+
+1. **`ku_indent` **IS **A **TABLE **OF **LITERALS** (⇒⇒† AND **THE **DEPTH **IS **MATCHED **AGAINST
+   **`case 0:`/`case 1:`**, **⇒⇒† AND **AND **THE **COMPILED **FORM **RETURNS **THE **STRING
+   **CONSTANT** **DIRECTLY** -- **⇒⇒† AND **ZERO **ALLOCATIONS**, **⇒⇒† AND **ZERO **LOOPS**). **⇒⇒† AND
+   **THE **DEPTH's **DISTRIBUTION **IS **MEASURED** (**1..5**, **AT **81/44/50/145/87 **A **TURN**)**,
+   **⇒⇒† AND **AND **THE **FALLBACK **IS **THE **OLD **SHAPE**, **⇒⇒† AND **SO **A **DEPTH **PAST **THE
+   **TABLE **IS **STILL **`"  "*depth``**).
+2. **`++` **IS **`String.append`**, **AND **THE **COMPILER **MAKES **IT **`($0 + $1)`** -- **⇒⇒† AND **A
+   **NATIVE **CONCAT **WITH **NO **`List.Cons` **ALLOCATION **AND **NO **CALL** (⇒⇒† AND **MEASURED,
+   **`bend2/comp.ts:213`**) -- **⇒⇒† AND **AND **`String.concat`** **BUILDS **A **LIST **AND
+   **RECURSES**.
+3. **`String.join(xs, "")` **IS **THE **SAME **STRING **AS **`String.concat(xs)`** **AND **THE **CHEAPER
+   **ONE** (⇒⇒† AND **`String.join.go` **DOES **AN **EXTRA **`append` **PER **PIECE**), **⇒⇒† AND **AND
+   **THE **TWO **AGREE **ON **THE **EMPTY **LIST**, **ON **ONE **PIECE **AND **ON **EMPTY **PIECES**
+   (⇒⇒† AND **MEASURED**)**.
+
+**⇒⇒† AND **THE **VERDICT** (⇒⇒† AND **THE **PAIRED **A/B**, **⇒⇒† AND **WITH **THE **SAME **BUILD
+**AGAINST **ITSELF **AS **A **THIRD **ARM **IN **THE **SAME **INTERLEAVED **LOOP**, **⇒⇒† AND **SO **THE
+**NOISE **IS **READ **AT **THE **SAME **LOAD**)**:
+
+| | the **change** | the **noise **floor** |
+|---|---|---|
+| the **ratio **OF **THE **TWO **MINIMA** | **0.8733** | 1.0197 |
+| the **ratio **OF **THE **TWO **MEDIANS** | **0.8660** | 0.9917 |
+| the **MEDIAN **OF **THE **PAIRED **RATIOS** | **0.8832** | 0.9991 |
+| the **WINS** | **100 of 150** | 53 of 150 |
+
+**⇒⇒† AND **A **SECOND **RUN **OF **150 **TURNS**: **the **paired **median **0.9228 **against **the
+**floor's **1.0130**, **⇒⇒† AND **AND **98 **of **150 **wins **against **the **floor's **43 **of
+**150** (⇒⇒† AND **AND **THE **KEEPER **LINE **IS **0.97**)**.
+
+**⇒⇒† AND **THE **OUTPUT **IS **BYTE-IDENTICAL**: **THE **DAEMON's **OWN **PRINTED **RENDER **IS
+**15,642 **BYTES **FOR **BOTH **BUILDS**, **⇒⇒† AND **`gates/cstyle_render_census-gate.py` **READS
+**"425 **rows, **3 **lanes **byte-identical**"**, **⇒⇒† AND **AND **THE **PROOF **READS **"ALL **PROOFS
+**CHECK"**.
+
+**⇒⇒† AND **THE **CORPUS **CERTIFICATE **IS **GREEN **ON **THE **NEW **SUBSTRATE** (⇒⇒† AND **TAKEN
+**ON **`4ec516fc7`**): **38 **answered**, **38 **agree**, **38 **byte-identical**, **0 **refused**,
+**expect-moved=0**, **controls **5/5**, **plants **8/8**, **conflations **4/4**, **`substrate-start ==
+substrate-end == live == d25a0232d`**, **`REPRO: 339 of 339 files identical`**, **⇒⇒† AND **AND
+**`gates/corpuswitness-gate.py` **READS **"PASS -- the claim is ESTABLISHED"** (⇒⇒† AND **ALL **SEVEN
+**READINGS **OK**)**.
+
+**⇒⇒† AND **THE **LESSON**: **THE **COUNT **IS **NOT **THE **COST** (⇒⇒† AND **AND **THE **COUNT
+**MUST **BE **MEASURED **WITH **A **CLOCK **BESIDE **IT**, **⇒⇒† AND **AND **THE **NOISE **FLOOR
+**MUST **BE **A **THIRD **ARM **IN **THE **SAME **LOOP**, **⇒⇒† AND **AND **OTHERWISE **THE **VERDICT
+**IS **A **READING **OF **THE **LOAD**)**.
