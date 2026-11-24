@@ -264,6 +264,106 @@ each of them. The census's own docstring forbade this ("a mutation that made
 the file ill-typed would redden the gate for the wrong reason"); the mutation
 was doing exactly that, and only the new laws exposed it.
 
+## The ordering ops, and the spec fold was wrong
+
+MEASURED 2026-11-24: the shape census named FIVE arms unpinned — `SpEnd`,
+`SpBackedge`, `SpGroup`, `SpSink` and `SpLinear` — and the census's word for
+an unpinned arm is *"the arm may be wrong and the book says nothing"*.
+
+**AND ONE OF THEM WAS.** The spec fold said `End` has NO shape and NO dtype.
+The pin says otherwise, twice:
+
+- `ops.py:143` — the "pass through first" arm lists `Ops.END`, so
+  `dtype_from_uop(Ops.END, src, arg)` is `src[0].dtype`.
+- `ops.py:371` — the passthrough arm lists `Ops.END`, so `_shape` is
+  `self.src[0]._shape`.
+
+and `ops.py:316-319` — the "late ops don't have shape" list — names `SINK`,
+`BACKEDGE` and `LINEAR` but **not** `END`. So `End` is a passthrough and the
+other three are shapeless.
+
+**AND THE PORT'S OWN IMPLEMENTATION ALREADY AGREED WITH THE PIN AND NOT WITH
+THE SPEC FOLD.** `tinybendygrad/uop/fold.bend:1761` reads
+`case O.OpsEND{}: thru0(ss)` — passthrough of dtype AND shape — and
+`thru0` is `dt_of(src_dt(0, ss), src_shape(0, ss))`.
+
+**AND THE CORPUS PROVES IT, BYTE-IDENTICAL.** The canonical form prints the
+two facts apart: `runs/graphcmp/D/D2-canon-bend-lin.txt:48` reads
+`3:i48 3:END 4:void 2:()` — dtype `void`, shape `()` — while the `SINK` on
+the next line reads `1:R` for its shape, and `R` is "no shape". So
+"no shape" and "the empty shape" are two facts, and upstream's `END` has the
+empty one. And `i48`'s `src[0]` is a `STORE` with shape `()`, so `END`'s
+shape is its body's — measured, not inferred.
+
+So the fold was corrected, and five laws now state the ordering ops' shape:
+
+```
+law end_preserves_shape:
+  for body: S.Sp
+  for ranges: List<&2, S.Sp>
+  {shape_of(S.SpEnd{body, ranges}) == shape_of(body) : Maybe<&2, S.Shape>}
+
+law sink_has_no_shape:
+  for ss: List<&2, S.Sp>
+  {shape_of(S.SpSink{ss}) == none_of_shape() : Maybe<&2, S.Shape>}
+```
+
+**AND `SpGroup` HAS NO UPSTREAM OP AT ALL** — upstream deleted `Ops.GROUP`
+(`4e0192eaf remove Ops.GROUP (#18637)`) — so the port's `Group` is a STACK of
+AFTERs, and a STACK has no shape column here.
+
+## Every law is now tested by exactly one census
+
+MEASURED 2026-11-24, and this was a hole in the tree's own rule. The two
+census gates divide the laws by their `LAWS.bend` SECTION, and the rule read
+the section with `^# ([IVX]+)\. ` — which **misses every sub-section header**
+(`V-bis`, `V-ter`, `V-ter-bis`, `V-quater`, `VI-bis`). A law under one of them
+inherited the *previous* section, and the split was wrong in both directions:
+`V-bis`'s three shape laws landed in the ALU half, and `VI-bis`'s seventeen
+laws landed in the shape half by luck.
+
+**ELEVEN LAWS WERE TESTED BY NEITHER CENSUS** — four of the five composition
+laws, both reshape numel laws, four shape laws and one ALU law. So the tree's
+"every law must be load-bearing" rule was not enforced for them.
+
+**AND THE FIX IS A DECLARATION RATHER THAN A LIST**, because a list of section
+names in a gate is a hand list and a hand list rots: each section header now
+says which half it is, and both gates read `gatekit.law_half`.
+
+```
+# V-bis. THE PASSTHROUGH OPS' SHAPE, and the spec says so in words. -- HALF: shape
+```
+
+**AND THE CENSUS's OWN INSTRUMENTS HAD THREE MORE HOLES**, all exposed by
+laws that had never been testable:
+
+- `goal_of` took "the last line that starts with `{` and ends with `}`", and
+  the gemm's conclusion is **three lines** — so the subject was `None` and the
+  law was reported `NO-SUBJECT`. The goal is now found by its braces.
+- The subject finder could not see a law that concludes on a
+  *premise-bound* variable (`shape_of(out) == …`), which is four of the five
+  composition laws. The premise says what the variable is, and the subject is
+  now read from it.
+- `mutate_definition` required a **one-line** body, and `alu.bend`'s
+  `truncmod` is four — so its law was reported `NO-MUTATION`.
+
+**AND TWO ARMS COULD NOT BE MUTATED AT ALL**: `SpBuffer` and `SpAlloc` are
+`Some{Shape.of([SN{size}])}` — a list literal, and the rule wanted a bare
+word — and `SpConst` and `SpRange` are `Some{Shape.empty()}`, which no rule
+reached. All four are now mutated and their laws are RED.
+
+**MEASURED, AFTER:** `43 shape laws, 53 shape fold arms` and `66 ALU/dtype
+laws`, and **every one of the 109 laws is tested by exactly one census** —
+0 untested, 0 unpinned arms.
+
+**AND THE ALU PLANT's CASE 4 WAS A DEAD LANE, AND IT IS FIXED.** Its claim is
+"breaking an arm no law reads leaves the gate green", and every arm is now
+read by a law, so the control had nothing to break and printed "NO UNPINNED
+ARM". The control now *makes* such an arm by removing the law that reads it.
+**AND AT HEAD THAT CONTROL WAS FAILING FOR A DIFFERENT REASON** — it broke
+`SpEnd` and the gate went RED, proving the census's "unpinned" verdict for
+`SpEnd` was wrong. It is now pinned by a law, and the control is GREEN.
+
 ## What we do not gain, and why
 
 **Float arithmetic.** Bend's guide is blunt: `F32` is axiomatic, nothing about
@@ -310,9 +410,9 @@ the shape half alone reported 18 TODOs and the ALU/dtype half 16, and the
 aggregate `PROOF-ALL.bend` existed to import both. MEASURED 2026-11-17: the two
 halves' sixty defs have NO NAME IN COMMON and neither calls a def declared
 later in its own file, so ONE file holds both halves and the aggregate is not
-needed. The proof file is now `LAWS/PROOF.bend` and it holds all 107 laws —
-MEASURED 2026-11-24 by `.agents/slop/laws17/laws.py`: `107/ 0/107` in
-`LAWS.bend` and `0/107/107` in `PROOF.bend`.
+needed. The proof file is now `LAWS/PROOF.bend` and it holds all 109 laws —
+MEASURED 2026-11-24 by `.agents/slop/laws17/laws.py`: `109/ 0/109` in
+`LAWS.bend` and `0/109/109` in `PROOF.bend`.
 
 **THE ORDER OF THE BOOK IS PART OF THE SPEC, AND MEASURED 2026-11-17.** `bend`
 names the FIRST proof that fails, so an instrument that asks "which law goes
