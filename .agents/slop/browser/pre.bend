@@ -38,7 +38,9 @@ def rows.go(+ar: O.Arena, +tb: F.Table, +rm: IX.IxRMap, +ns: List<&2, U32>,
                           ",dst=", ids(IX.rr_dims(ar, tb, O.Arena.src0(ar, n))),
                           " | val=", U32.show(v), ":has=", Bool.show(IX.ix_rngm_has(rm, v)),
                           ",inp=", n2(RR.rr_ap_inp.of(IX.ix_rngm_get(rm, v))),
-                          ",shape=", ids(RR.rr_p1.shape(ar, tb, v))])]),
+                          ",shape=", ids(RR.rr_p1.shape(ar, tb, v)),
+                          ",v0after=", Bool.show(O.eq_op(O.Arena.op(ar, O.Arena.src0(ar, v)), O.OpsAFTER{})),
+                          ",v0dims=", ids(IX.rr_dims(ar, tb, O.Arena.src0(ar, v)))])]),
         acc))
 
 def r2(p: (O.Arena & RR.RrMap), +sink: U32) -> String:
