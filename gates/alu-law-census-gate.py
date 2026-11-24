@@ -262,6 +262,55 @@ def mutate_definition(text: str, name: str) -> str | None:
     return text.replace(whole, new_whole, 1)
 
 
+def op_field_types(text: str, ctor: str) -> dict[str, str]:
+    """THE FIELD TYPES of the op `ctor`, from the datatype's own declaration.
+
+    AND THE DATATYPE IS THE AUTHORITY: `type Sp is Data:` DECLARES EVERY
+    FIELD's TYPE -- `SpPermute{t: Sp, order: List<&2, Nat>}` -- SO A MUTATION
+    THAT SWAPS ONE FIELD FOR ANOTHER CAN ASK WHETHER THEY ARE THE SAME TYPE
+    INSTEAD OF GUESSING.
+
+    AND A CONSTRUCTOR THE DATATYPE DOES NOT DECLARE ANSWERS EMPTY, AND THEN
+    NO FIELD IS "THE SAME TYPE" AND THE MUTATION FALLS BACK TO CHANGING THE
+    arm's RESULT, WHICH IS ALWAYS TYPE-PRESERVING.
+    """
+    m = re.search(rf"^\s*{re.escape(ctor)}\{{([^}}]*)\}}", text, re.M)
+    if not m:
+        return {}
+    out: dict[str, str] = {}
+    for field in split_top_level(m.group(1)):
+        if ":" not in field:
+            continue
+        name, ty = field.split(":", 1)
+        out[name.strip()] = ty.strip()
+    return out
+
+
+def split_top_level(fields: str) -> list[str]:
+    """The fields of a constructor's list, split on the commas NOT inside `<>`.
+
+    AND A FIELD's TYPE CAN CARRY A COMMA -- `List<&2, Nat>` -- SO A NAIVE
+    SPLIT ON `,` CUTS IT IN TWO AND THE TYPE READS `List<&2`.  MEASURED
+    2026-11-24, THAT IS EXACTLY WHAT IT DID.
+    """
+    out: list[str] = []
+    depth = 0
+    cur = ""
+    for ch in fields:
+        if ch in "<([":
+            depth += 1
+        elif ch in ">)]":
+            depth -= 1
+        if ch == "," and depth == 0:
+            out.append(cur)
+            cur = ""
+            continue
+        cur += ch
+    if cur.strip():
+        out.append(cur)
+    return out
+
+
 def mutate_arm(text: str, op: str, fold: str) -> str | None:
     """A copy of `text` in which the dtype fold's ARM for `op` is broken.
 
@@ -320,7 +369,22 @@ def mutate_arm(text: str, op: str, fold: str) -> str | None:
         operand = sm.group(1)
         if operand not in names:
             return None
-        other = next((n for n in names if n != operand), None)
+        # AND THE SOURCE MUST HAVE THE SAME TYPE, OR THE MUTATION MAKES THE
+        # FILE ILL-TYPED AND THE GATE GOES RED FOR THE WRONG REASON.  MEASURED
+        # 2026-11-24: `SpPermute{t: Sp, order: List<&2, Nat>}`'s DTYPE ARM IS
+        # `Sp.dtype(t)`, AND THE OLD RULE PICKED "ANY OTHER FIELD", WHICH IS
+        # `order` -- AND `order` IS A LIST, SO THE MUTATED FILE DID NOT
+        # TYPECHECK AND THE FAILURE WAS IN THE FOLD `Sp.dtype` ITSELF AND NOT
+        # IN A LAW.  THE ROW SAID "the gate went red naming no law" FOR SEVEN
+        # LAWS, AND NONE OF THEM WAS VACUOUS.
+        #
+        # AND THE TYPES ARE THE PORT's OWN: THE OP DATATYPE DECLARES EVERY
+        # FIELD's TYPE (`SpPermute{t: Sp, order: List<&2, Nat>}`), SO THE
+        # SOURCE IS CHOSEN FROM THE FIELDS OF THE SAME TYPE.
+        types = op_field_types(text, ctor)
+        same = [n for n in names
+                if n != operand and types.get(n) == types.get(operand)]
+        other = same[0] if same else None
         if other is None:
             # A UNARY arm with one operand: there is no OTHER source, so the
             # arm's RESULT changes instead -- `Sp.dtype(a)` becomes
@@ -379,6 +443,45 @@ def named_law(text: str) -> str | None:
     """
     m = re.search(r"Location: L\.(\w+)", text)
     return m.group(1) if m else None
+
+
+def masked_check(law: str, mutated: str, target_rel: str, td: Path) -> tuple[int, str]:
+    """The aggregate checked with the laws that MASK `<law>` removed.
+
+    `bend` reports the FIRST failing law, so a law whose subject is SHARED with
+    an earlier law is never the failure `bend` names.  The mask removes the
+    laws that were failing FIRST, one at a time, until the law under test is
+    the one named -- or until no law fails at all, which says the law under
+    test CANNOT FAIL.
+
+    THE MASK IS ITERATIVE, and it has to be: one mask can uncover a second
+    masking law.  Removing only the law `bend` named is the FIRST step, and the
+    law that appears next is masked in turn.
+
+    AND THIS IS THE SHAPE CENSUS's RULE, COPIED: `bend` reports the FIRST
+    failing proof and not all of them, and the two gates ask the same question
+    about two halves of the same book, so the rule is the same rule twice.
+    MEASURED 2026-11-24: WITHOUT IT, `neg_is_mul_by_minus_one` WAS REPORTED
+    `RED-OTHER` -- "the gate went red naming no law" -- AND THE CAUSE WAS
+    THAT THE ARANGE LAW READS `A.neg` TOO AND COMES FIRST IN THE BOOK.
+    """
+    masked: list[str] = []
+    while True:
+        case_root = fresh_copy(td / f"mask-{law}-{len(masked)}")
+        (case_root / target_rel).write_text(mutated)
+        for other in masked:
+            remove_law(case_root, other)
+        rc, out = check(case_root / "LAWS" / "PROOF.bend")
+        named = named_law(out)
+        if rc == 0 or WARM in out:
+            return (rc, out)
+        if named == law:
+            return (rc, out)
+        if named is None:
+            # the failure is in a HELPER, not in a law: no law can be masked
+            # away to reach the law under test, so the law cannot fail.
+            return (rc, out)
+        masked.append(named)
 
 
 # --------------------------------------------------------------------------- the gate
@@ -456,10 +559,28 @@ def run_gate(args) -> int:
             if rc != 0 and named == law:
                 rows.append((law, "RED", f"the gate names {law}"))
             elif rc != 0:
-                rows.append((law, "RED-OTHER",
-                             f"the gate went red naming {named or 'no law'}"))
-                bad.append(f"{law}: the mutation reddened the gate but it named "
-                           f"{named or 'no law'}")
+                # AND THE MUTATION REDDENED THE GATE UNDER ANOTHER NAME, AND
+                # THAT IS NOT THE END OF THE QUESTION.  MEASURED 2026-11-24:
+                # `neg_is_mul_by_minus_one` WAS REPORTED `RED-OTHER` -- "the
+                # gate went red naming no law" -- AND THE CAUSE WAS THE
+                # ARANGE LAW, WHICH READS `A.neg` TOO AND COMES FIRST.  AND
+                # "THE GATE WENT RED UNDER A NEIGHBOUR's NAME" IS NOT A
+                # FINDING ABOUT THE LAW: IT IS A FINDING ABOUT THE BOOK's
+                # ORDER.  SO THE MASK IS ASKED, EXACTLY AS THE SHAPE CENSUS
+                # ASKS IT, AND A LAW THAT IS REACHED WITH ITS MASKER REMOVED
+                # IS **MASKED**: IT CAN FAIL, AND IT IS JUST NOT THE FAILURE
+                # `bend` REPORTS FIRST.
+                rc2, out2 = masked_check(law, mutated, rel.as_posix(), Path(td))
+                named2 = named_law(out2)
+                if rc2 != 0 and named2 == law:
+                    rows.append((law, "MASKED",
+                                 f"the gate went red naming {named or 'no law'}; with "
+                                 f"the masking law removed it names {law}"))
+                else:
+                    rows.append((law, "RED-OTHER",
+                                 f"the gate went red naming {named or 'no law'}"))
+                    bad.append(f"{law}: the mutation reddened the gate but it named "
+                               f"{named or 'no law'}")
             else:
                 rows.append((law, "GREEN", f"breaking {what} did not move the gate"))
                 bad.append(f"{law}: VACUOUS -- breaking {what} left the gate green")
@@ -831,7 +952,21 @@ def run_plant(args) -> int:
         if not ok_green:
             bad.append("the control copy is not green")
 
-        # 2 -- a decomposition, which must redden naming its law
+        # 2 -- a decomposition, which must redden, AND THE LAW MUST BE
+        # REACHABLE
+        #
+        # AND "REACHABLE" IS NOT "NAMED FIRST", AND THE DIFFERENCE IS MEASURED.
+        # `bend` reports the FIRST failing proof, so a law whose subject is
+        # SHARED with an earlier law is never the failure `bend` names, and
+        # `neg_is_mul_by_minus_one` SHARES `A.neg` WITH THE ARANGE LAW, WHICH
+        # COMES FIRST IN THE BOOK.  MEASURED 2026-11-24: THE PLANT'S CLAIM WAS
+        # "MUST REDDEN NAMING **ITS** LAW" AND IT COULD NOT BE SATISFIED FOR
+        # THAT LAW, AND THE ROW SAID "NAMED NO LAW" -- AND A PLANT THAT
+        # ASSERTS SOMETHING THE BOOK'S ORDER MAKES FALSE IS NOT A CONTROL.
+        #
+        # AND THE CLAIM THAT IS TRUE IS THE ONE THE CENSUS ASKS: THE LAW CAN
+        # FAIL.  SO THE PLANT MASKS THE MASKING LAW AND CHECKS THAT THE LAW
+        # UNDER TEST IS THEN NAMED.
         text = (control_root / "LAWS" / ALU.name).read_text(errors="replace")
         mutated = mutate_definition(text, "neg")
         if mutated is None:
@@ -841,12 +976,24 @@ def run_plant(args) -> int:
             (case_root / "LAWS" / ALU.name).write_text(mutated)
             rc, out = check(case_root / "LAWS" / "PROOF.bend")
             named = named_law(out)
-            ok_red = (rc != 0 and named == "neg_is_mul_by_minus_one")
-            print(f"  2 neg mutated      {'RED' if ok_red else 'NOT RED'}"
-                  f"  naming {named or 'no law'}")
-            if not ok_red:
-                bad.append(f"the mutated copy did not go red naming neg_is_mul_by_minus_one "
-                           f"(rc={rc}, named={named})")
+            if rc != 0 and named == "neg_is_mul_by_minus_one":
+                print(f"  2 neg mutated      RED  naming neg_is_mul_by_minus_one")
+            elif rc != 0:
+                # AND THE LAW IS MASKED BY AN EARLIER LAW, AND THE MASK IS
+                # REMOVED TO REACH IT -- THE SAME STEP THE CENSUS TAKES.
+                rc2, out2 = masked_check("neg_is_mul_by_minus_one", mutated,
+                                         "LAWS/alu.bend", Path(td))
+                named2 = named_law(out2)
+                ok_red = (rc2 != 0 and named2 == "neg_is_mul_by_minus_one")
+                print(f"  2 neg mutated      {'RED' if ok_red else 'NOT RED'}"
+                      f"  naming {named or 'no law'}, and "
+                      f"{named2 or 'no law'} with the masker removed")
+                if not ok_red:
+                    bad.append(f"the mutated copy did not go red naming "
+                               f"neg_is_mul_by_minus_one (rc={rc}, named={named})")
+            else:
+                print(f"  2 neg mutated      NOT RED  the gate stayed green")
+                bad.append("the mutated copy did not go red at all")
 
         # 3 -- a PINNED arm, which must redden
         # EVERY LAW, AND NOT THE ALU HALF'S LAWS.  The question is "does a law
