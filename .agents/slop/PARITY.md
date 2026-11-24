@@ -8182,3 +8182,53 @@ substrate-end == live == d25a0232d`**, **`REPRO: 339 of 339 files identical`**, 
 **MUST **BE **MEASURED **WITH **A **CLOCK **BESIDE **IT**, **⇒⇒† AND **AND **THE **NOISE **FLOOR
 **MUST **BE **A **THIRD **ARM **IN **THE **SAME **LOOP**, **⇒⇒† AND **AND **OTHERWISE **THE **VERDICT
 **IS **A **READING **OF **THE **LOAD**)**.
+
+### 138.21 **THE **OP **DISPATCH's **ARM **ORDER **IS **NOT **THE **COST** -- **⇒⇒† AND **THE **COUNT
+**FELL **70% **AND **THE **WALL **DID **NOT **MOVE**
+
+**⇒⇒† AND **THE **`ku_text_go` **DISPATCH **IS **THE **BIGGEST **LEAF **THE **`text` **FAMILY **HAS**
+(⇒⇒† AND **IT **IS **THE **ONE **§138.3's **`render-shape.py` **COUNTED **AND **DID **NOT **CLOCK**,
+**⇒⇒† AND **AND **THE **NEW **INSTRUMENT **`text-family-shape.py` **CLOCKS **IT**)**.
+
+**⇒⇒† AND **THE **MEASURED **SHAPE **OF **THE **`text` **FAMILY** (⇒⇒† AND **60 **TURNS**, **⇒⇒† AND **IN
+**THE **DAEMON**): **`ku_text_go` 0.907 ms **OVER **644 **CALLS** (⇒⇒† AND **THE **DISPATCH**), **⇒⇒†
+**AND **`ku_text_alu` 0.317 ms **OVER **294**, **⇒⇒† AND **`ku_text_cast` 0.240 ms **OVER **91**, **⇒⇒†
+**AND **`ku_text_load` 0.128 ms **OVER **82** (⇒⇒† AND **AND **THE **ARMS **ARE **NESTED**, **⇒⇒† AND
+**SO **THEY **DO **NOT **SUM**)**.
+
+**⇒⇒† AND **THE **COMPILED **FORM**'s **`ku_text_go` **IS **A **SEQUENCE **OF **`===` **COMPARISONS **ON
+**THE **OP **TAG** (⇒⇒† AND **AND **THE **WILDCARD **IS **LAST**)** -- **⇒⇒† AND **AND **THE **OP
+**HISTOGRAM** (⇒⇒† AND **`op-histogram.py`**, **⇒⇒† AND **60 **TURNS**) **SAID **THE **ALU **OPS
+**PAID **ALL **17**: **OpsADD 156 **CALLS **AT **18 **COMPARISONS**, **⇒⇒† AND **OpsMUL 89**, **⇒⇒† AND
+**OpsCMPLT 22**, **⇒⇒† AND **OpsWHERE 14**, **⇒⇒† AND **OpsAND 8**, **⇒⇒† AND **OpsSHL 5** -- **⇒⇒† AND
+**AND **THE **TOTAL **WAS **8,818 **COMPARISONS **A **TURN**.
+
+**⇒⇒† AND **THE **CHANGE **WAS **PURE **BEND**: **THE **HOT **ALU **OPS **NAMED **EXPLICITLY **AND
+**FIRST**, **⇒⇒† AND **AND **THE **WILDCARD **LAST**, **⇒⇒† AND **AND **THE **OUTPUT **BYTE-IDENTICAL**
+(**15,642 **BYTES **FOR **BOTH **BUILDS**)**.
+
+**⇒⇒† AND **THE **COUNT **FELL **8,818 → 2,598 **A **TURN** (⇒⇒† AND **-70%**)** -- **⇒⇒† AND **AND
+**THE **WALL **DID **NOT **MOVE**:
+
+| | the **change** | the **noise **floor** |
+|---|---|---|
+| the **ratio **OF **THE **TWO **MINIMA** | 0.9915 | 0.9949 |
+| the **ratio **OF **THE **TWO **MEDIANS** | 1.0278 | 0.9981 |
+| the **MEDIAN **OF **THE **PAIRED **RATIOS** | 1.0253 | 0.9952 |
+| the **WINS** | 45 of 150 | 57 of 150 |
+
+**⇒⇒† AND **SO **THE **CHANGE **IS **REVERTED** (⇒⇒† AND **AND **THE **TREE's OWN **RULE**: **A
+**CHANGE **WHOSE **MEASURED **RATIO **IS **NEUTRAL **OR **FAILS **THE **KEEPER **LINE **IS
+**REVERTED**)**.
+
+**⇒⇒† AND **⇒⇒† AND **THE **LESSON**, **AND **IT **IS **THE **THIRD **INSTANCE **OF **THE **SAME
+**THING**: **THE **COUNT **IS **NOT **THE **COST** (⇒⇒† AND **§138.17's **JOIN**, **⇒⇒† AND **§138.18's
+**JOIN**, **⇒⇒† AND **AND **NOW **THE **DISPATCH**) -- **⇒⇒† AND **AND **V8's **STRING **COMPARISON **ON
+**AN **INTERNED **TAG **IS **NEARLY **FREE**, **⇒⇒† AND **AND **17 **OF **THEM **ARE **CHEAPER **THAN
+**THE **WORK **THEY **GATE**.
+
+**⇒⇒† AND **AND **THE **INSTRUMENTS **THAT **SAID **SO**: **`text-family-shape.py`** (⇒⇒† AND **THE
+**`text` **FAMILY**, **⇒⇒† AND **THE **FIRST **TIME **IT **WAS **CLOCKED**), **`op-histogram.py`** (⇒⇒†
+**AND **THE **OP **HISTOGRAM**), **`text-dispatch-ceiling.py`** (⇒⇒† AND **THE **CEILING**, **⇒⇒† AND
+**AND **IT **BUILT **A **`switch`** **WHICH **IS **NOT **A **BEND **FORM**, **⇒⇒† AND **SO **THE **REAL
+**FORM **IS **THE **REORDER**)**.
