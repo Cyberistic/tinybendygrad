@@ -1,0 +1,20 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>fchain-wgsl-live</title>
+<!-- .agents/slop/browser/web/fchain-wgsl-live.html -- THE LIVE LANE: NO PRE-BAKED WGSL.
+     The page imports `fchainwgsl.mjs` -- the port's own renderer, compiled by `./bin/bend
+     .agents/slop/browser/fchainwgsl.bend -o ...` -- calls `chain_wgsl()`, and dispatches the four
+     modules it just produced. The only thing it fetches is the SEED (input words and the buffer
+     wiring); the oracle is not in this directory at all. -->
+<script type="module">
+import M from "./fchainwgsl.mjs";
+import { runStages, splitModules } from "./fchain-run.js";
+const done = (o) => { window.__FCHAIN_RESULT = o; document.title = "done"; };
+const t0 = Date.now();
+const seed = await (await fetch("fchain-seed.json")).json();
+const wgsl = M["chain_wgsl"]();          // THE PORT'S WGSL, generated here
+const genMs = Date.now() - t0;
+runStages({ modules: splitModules(wgsl), wiring: seed.wiring, seed: seed.seed },
+  (o) => done({ ...o, genMs, bytes: wgsl.length }))
+  .catch((e) => done({ ok: false, error: String(e && e.stack || e), genMs }));
+</script>

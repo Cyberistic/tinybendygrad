@@ -1,95 +1,14 @@
 <!doctype html>
 <meta charset="utf-8">
 <title>fchain-wgsl</title>
-<!-- .agents/slop/browser/web/fchain-wgsl.html -- RUN THE FOUR PORT-RENDERED WGSL KERNELS ON WEBGPU.
-     The four modules come from `fchainwgsl.bend` (the port's `wgsl_walk` + `wgsl.bend`), the wiring
-     and the oracle from `fchain-wgsl-gen.py` (the harness's own call order and `--dump`).
-     THE PAGE NEVER GRADES ITSELF: it reports the GPU's words; `fchain-wgsl-gate.mjs` diffs them. -->
+<!-- .agents/slop/browser/web/fchain-wgsl.html -- THE PRE-RENDERED LANE: the four modules come from
+     `fchain-wgsl.rows` (rendered by `fchainwgsl.bend` ahead of time) and are dispatched as-is.
+     The live lane is `fchain-wgsl-live.html`, which renders them IN THE PAGE. -->
 <script type="module">
-const R = (o) => { window.__FCHAIN_RESULT = o; document.title = "done"; };
-// EVERY uncaptured error is KEPT, in order: a later `[Invalid CommandBuffer]` is a CONSEQUENCE, and
-// reporting only the last one hides the cause.
-const ERRS = [];
-const T = (o) => { window.__FCHAIN_TMP = o; };
-window.__FCHAIN_ERRORS = ERRS;
-
-async function readAll(dev, bufs) {
-  const out = {};
-  for (const [name, buf] of Object.entries(bufs)) {
-    const n = buf.size;
-    const rb = dev.createBuffer({ size: n, usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ });
-    const enc = dev.createCommandEncoder();
-    enc.copyBufferToBuffer(buf, 0, rb, 0, n);
-    dev.queue.submit([enc.finish()]);
-    await rb.mapAsync(GPUMapMode.READ);
-    out[name] = Array.from(new Uint32Array(rb.getMappedRange().slice(0)));
-    rb.unmap(); rb.destroy();
-  }
-  return out;
-}
-
-async function main() {
-  if (!navigator.gpu) return R({ ok: false, error: "navigator.gpu is absent" });
-  const adapter = await navigator.gpu.requestAdapter();
-  if (!adapter) return R({ ok: false, error: "no adapter" });
-  const dev = await adapter.requestDevice();
-  dev.addEventListener("uncapturederror", (e) => ERRS.push(String(e.error.message)));
-
-  const bundle = await (await fetch("fchain-wgsl.json")).json();
-  const SIZES = { h1: 196, x: 784, w1: 4, h2: 196, h3: 49, out: 10, w2: 490 };
-  const buf = {};
-  for (const [n, sz] of Object.entries(SIZES)) {
-    buf[n] = dev.createBuffer({ size: sz * 4,
-      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST });
-  }
-  // the seeded inputs, uploaded once
-  for (const [n, words] of Object.entries(bundle.seed)) {
-    dev.queue.writeBuffer(buf[n], 0, new Uint32Array(words));
-  }
-  // the INFINITY uniform every module declares at binding 0
-  const inf = dev.createBuffer({ size: 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
-  dev.queue.writeBuffer(inf, 0, new Float32Array([Infinity]));
-
-  for (let k = 0; k < bundle.modules.length; k++) {
-    const mod = dev.createShaderModule({ code: bundle.modules[k] });
-    const info = await mod.getCompilationInfo();
-    const errs = info.messages.filter((m) => m.type === "error");
-    if (errs.length) {
-      return R({ ok: false, error: "wgsl compile k" + k,
-                 messages: errs.map((m) => `${m.lineNum}:${m.linePos} ${m.message}`) });
-    }
-    // AN EXPLICIT LAYOUT, NOT "auto": `layout:"auto"` OMITS a binding the shader never reads, and
-    // k0 never touches `INFINITY` -- so the uniform entry was rejected and the bind group was
-    // invalid ("submit k0", measured). The layout below is the one `runtime/ops_webgpu.bend`
-    // documents: binding 0 Uniform (the infinity), then one Storage per global buffer, in order.
-    const nbuf = bundle.wiring[k].length;
-    const bglEntries = [{ binding: 0, visibility: GPUShaderStage.COMPUTE, buffer: { type: "uniform" } }];
-    for (let i = 1; i <= nbuf; i++)
-      bglEntries.push({ binding: i, visibility: GPUShaderStage.COMPUTE, buffer: { type: "storage" } });
-    const bgl = dev.createBindGroupLayout({ entries: bglEntries });
-    const pl = dev.createPipelineLayout({ bindGroupLayouts: [bgl] });
-    dev.pushErrorScope("validation");
-    const pipe = dev.createComputePipeline({ layout: pl, compute: { module: mod, entryPoint: "test" } });
-    const perr = await dev.popErrorScope();
-    if (perr) return R({ ok: false, error: "pipeline k" + k, messages: [perr.message], errors: ERRS });
-    const entries = [{ binding: 0, resource: { buffer: inf } }];
-    bundle.wiring[k].forEach((n, i) => entries.push({ binding: i + 1, resource: { buffer: buf[n] } }));
-    dev.pushErrorScope("validation");
-    const bg = dev.createBindGroup({ layout: bgl, entries });
-    const berr = await dev.popErrorScope();
-    if (berr) return R({ ok: false, error: "bindgroup k" + k, messages: [berr.message], errors: ERRS });
-    const enc = dev.createCommandEncoder();
-    const pass = enc.beginComputePass();
-    pass.setPipeline(pipe); pass.setBindGroup(0, bg); pass.dispatchWorkgroups(1, 1, 1);
-    pass.end();
-    dev.pushErrorScope("validation");
-    dev.queue.submit([enc.finish()]);
-    const serr = await dev.popErrorScope();
-    if (serr) return R({ ok: false, error: "submit k" + k, messages: [serr.message], errors: ERRS });
-  }
-  const stages = await readAll(dev, { h1: buf.h1, h2: buf.h2, h3: buf.h3, out: buf.out });
-  R(ERRS.length ? { ok: false, error: "gpu errors", messages: ERRS, stages }
-                 : { ok: true, adapter: adapter.info?.description ?? "adapter", stages });
-}
-main().catch((e) => R({ ok: false, error: String(e && e.stack || e) }));
+import { runStages } from "./fchain-run.js";
+const done = (o) => { window.__FCHAIN_RESULT = o; document.title = "done"; };
+const seed = await (await fetch("fchain-seed.json")).json();
+const mods = await (await fetch("fchain-modules.json")).json();
+runStages({ modules: mods.modules, wiring: seed.wiring, seed: seed.seed }, done)
+  .catch((e) => done({ ok: false, error: String(e && e.stack || e) }));
 </script>
