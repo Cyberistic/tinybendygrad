@@ -516,98 +516,125 @@ def rg_ext(+ar: O.Arena, +r: U32) -> U32:
   +v = rg_ext.n(2n, ar, O.Arena.src0(ar, r))
   rg_ext.pick(U32.is_zero(v), v)
 
+def vms_ends.go(+ar: O.Arena, +ns: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
+  match ns:
+    case Nil{}: acc
+    case n <> t: vms_ends.go(ar, t, Bool.pick(List<&2, U32>,
+                   O.eq_op(O.Arena.op(ar, n), O.OpsEND{}), List.append(&2, U32, acc, [n]), acc))
+
+def vms_ends(+ar: O.Arena, +lst: List<&2, U32>) -> List<&2, U32>:
+  vms_ends.go(ar, lst, Nil{})
+
+def vms_reach.go(+ar: O.Arena, +es: List<&2, U32>, +u: U32, +acc: List<&2, U32>) -> List<&2, U32>:
+  match es:
+    case Nil{}: acc
+    case e <> t: vms_reach.go(ar, t, u, Bool.pick(List<&2, U32>,
+                   F.mem_u32(O.UOp.toposort(O.Arena.budget(ar), ar, e), u),
+                   List.append(&2, U32, acc, [e]), acc))
+
+def vms_reach(+ar: O.Arena, +es: List<&2, U32>, +u: U32) -> List<&2, U32>:
+  vms_reach.go(ar, es, u, Nil{})
+
+def vms_cons.go(+ar: O.Arena, +ns: List<&2, U32>, +u: U32, +acc: List<&2, U32>) -> List<&2, U32>:
+  match ns:
+    case Nil{}: acc
+    case v <> t: vms_cons.go(ar, t, u, Bool.pick(List<&2, U32>,
+                   F.mem_u32(O.Arena.srcs(ar, v), u), List.append(&2, U32, acc, [v]), acc))
+
+def vms_cons(+ar: O.Arena, +ns: List<&2, U32>, +u: U32) -> List<&2, U32>:
+  vms_cons.go(ar, ns, u, Nil{})
+
+def vms_all.go(+ar: O.Arena, +cs: List<&2, U32>, +e: U32, ok: Bool) -> Bool:
+  match cs:
+    case Nil{}: ok
+    case c <> t: vms_all.go(ar, t, e, Bool.and(ok,
+                   F.mem_u32(O.UOp.toposort(O.Arena.budget(ar), ar, c), e)))
+
+def vms_isect.go(+ar: O.Arena, +es: List<&2, U32>, +cs: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
+  match es:
+    case Nil{}: acc
+    case e <> t: vms_isect.go(ar, t, cs, Bool.pick(List<&2, U32>,
+                   vms_all.go(ar, cs, e, True{}), List.append(&2, U32, acc, [e]), acc))
+
+def vms_isect(+ar: O.Arena, +es: List<&2, U32>, +cs: List<&2, U32>) -> List<&2, U32>:
+  vms_isect.go(ar, es, cs, Nil{})
+
+def vms_u.go(+ar: O.Arena, +es: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
+  match es:
+    case Nil{}: acc
+    case e <> t: vms_u.go(ar, t, F.set_union(acc, O.Arena.src_from(ar, e, 1)))
+
+def vms_u(+ar: O.Arena, +es: List<&2, U32>) -> List<&2, U32>:
+  vms_u.go(ar, es, Nil{})
+
+def vms_enc.go(+ar: O.Arena, +es: List<&2, U32>, +u: U32, +acc: List<&2, U32>) -> List<&2, U32>:
+  match es:
+    case Nil{}: acc
+    case e <> t: vms_enc.go(ar, t, u, Bool.pick(List<&2, U32>,
+        F.mem_u32(O.Arena.src_from(ar, e, 1), u), acc,
+        F.set_union(acc, O.Arena.src_from(ar, e, 1))))
+
 def vms_row.go(+ar: O.Arena, +rs: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
   match rs:
     case Nil{}: acc
-    case r <> t: vms_row.go(ar, t, List.append(&2, U32, acc, [0]))
+    case r <> t: vms_row.go(ar, t, List.append(&2, U32, acc, [U32.sub(rg_ext(ar, r), 1)]))
 
-# A RANGE'S `run_count` IS `{self} | enclosing` (ops.py:471-472), AND THE ENCLOSING SET IS READABLE.
-# The port's `F.UOp.ranges` is the DEPENDENCY closure, which for a RANGE is `{self}` and for a
-# `CAST(RANGE)` is also `{self}` -- so `rc` came out as the range's own extent. MEASURED
-# (`.agents/slop/browser/vmsp.bend`): an END's toposort CONTAINS THE ENDS NESTED INSIDE IT -- k0's four
-# ENDs reach 1, 2, 3 and 4 ENDs, k3's reach 1 and 2 -- so the nest IS a DAG path and the enclosing set
-# is the union of the closed ranges of the ENDs in `toposort(e)` other than `e`, where `e` is the END
-# that closes the range. No stack walk, no containment test.
-def vms_cls(+ar: O.Arena, +rt: F.RTable, +u: U32) -> List<&2, U32>:
-  F.Rng.rs(F.UOp.ranges(ar, rt, u))
-
-def vms_prod.go(+ar: O.Arena, +rs: List<&2, U32>, +acc: U32) -> U32:
-  match rs:
-    case Nil{}: acc
-    case r <> t: vms_prod.go(ar, t, U32.mul(acc, rg_ext(ar, r)))
-
-def vms_prod(+ar: O.Arena, +rs: List<&2, U32>) -> U32: vms_prod.go(ar, rs, 1)
-
-def vms_enc.go(+ar: O.Arena, +ns: List<&2, U32>, +e: U32, +acc: U32) -> U32:
+# A STRICT INTERSECTION OVER ALL CONSUMERS IS EMPTY, MEASURED: for cast 137 `reach=2, cons=2,
+# isect=0` -- the two consumers sit in different ENDs, so requiring every END to reach every consumer
+# drops both. THE RULE IS THE MINIMUM CONSUMER DEPTH instead: a node must be declared at the SHALLOWEST
+# scope any consumer is in, so it takes the `dmin` OUTERMOST ENDs, which is never empty.
+def vms_nd.go(+ar: O.Arena, +ns: List<&2, U32>, +acc: U32) -> U32:
   match ns:
     case Nil{}: acc
-    case n <> t:
-      vms_enc.go(ar, t, e, Bool.pick(U32,
-        Bool.and(O.eq_op(O.Arena.op(ar, n), O.OpsEND{}), Bool.not(U32.is_eq(n, e))),
-        U32.mul(acc, vms_prod(ar, O.Arena.src_from(ar, n, 1))), acc))
+    case n <> t: vms_nd.go(ar, t, Bool.pick(U32, O.eq_op(O.Arena.op(ar, n), O.OpsEND{}),
+                                          U32.add(acc, 1), acc))
 
-def vms_enc(+ar: O.Arena, +e: U32) -> U32:
-  vms_enc.go(ar, O.UOp.toposort(O.Arena.budget(ar), ar, e), e, 1)
+def vms_nd(+ar: O.Arena, +e: U32) -> U32:
+  vms_nd.go(ar, O.UOp.toposort(O.Arena.budget(ar), ar, e), 0)
 
-def vms_end_of.go(+ar: O.Arena, +ns: List<&2, U32>, +r: U32, +acc: U32) -> U32:
-  match ns:
+def vms_dep(+ar: O.Arena, +es: List<&2, U32>, +u: U32) -> U32:
+  U32.from_nat(List.length(&2, U32, vms_reach(ar, es, u)))
+
+def vms_min(+a: U32, +b: U32) -> U32: Bool.pick(U32, U32.is_lt(a, b), a, b)
+
+def vms_dmin.go(+ar: O.Arena, +es: List<&2, U32>, +cs: List<&2, U32>, acc: U32) -> U32:
+  match cs:
     case Nil{}: acc
-    case n <> t:
-      vms_end_of.go(ar, t, r, Bool.pick(U32,
-        Bool.and(O.eq_op(O.Arena.op(ar, n), O.OpsEND{}), F.mem_u32(O.Arena.src_from(ar, n, 1), r)),
-        n, acc))
+    case c <> t: vms_dmin.go(ar, es, t, vms_min(acc, vms_dep(ar, es, c)))
 
-def vms_end_of(+ar: O.Arena, +r: U32, +lst: List<&2, U32>) -> U32:
-  vms_end_of.go(ar, lst, r, 0)
+def vms_dmin(+ar: O.Arena, +es: List<&2, U32>, +cs: List<&2, U32>, +d: U32) -> U32:
+  vms_dmin.go(ar, es, cs, d)
 
-def vms_nends.go(+ar: O.Arena, +ns: List<&2, U32>, +acc: U32) -> U32:
-  match ns:
+def vms_tail.go(+ar: O.Arena, +es: List<&2, U32>, +dm: U32, +nmax: U32,
+                +acc: List<&2, U32>) -> List<&2, U32>:
+  match es:
     case Nil{}: acc
-    case n <> t: vms_nends.go(ar, t, Bool.pick(U32, O.eq_op(O.Arena.op(ar, n), O.OpsEND{}),
-                                              U32.add(acc, 1), acc))
+    case e <> t: vms_tail.go(ar, t, dm, nmax, Bool.pick(List<&2, U32>,
+        Bool.not(U32.is_le(vms_nd(ar, e), U32.sub(nmax, dm))),
+        List.append(&2, U32, acc, [e]), acc))
 
-# `nends(toposort(e))` is `1 + the loops nested INSIDE e`, so the OUTERMOST range gets the LARGEST
-# count. `lt_key` sorts ascending, so the count is carried in the `len` term as `16 - count`: the two
-# nested ranges of k3 have the SAME `rc` product (10*49 == 49*10) and only the nesting breaks the tie.
-def vms_zeros.go(n: Nat, +acc: List<&2, U32>) -> List<&2, U32>:
-  match n:
-    case 0n: acc
-    case 1n+p: vms_zeros.go(p, List.append(&2, U32, acc, [0]))
+def vms_val(+ar: O.Arena, +es: List<&2, U32>, +ns: List<&2, U32>, +u: U32) -> List<&2, U32>:
+  +cs = vms_cons(ar, ns, u)
+  +dm = vms_dmin(ar, es, cs, vms_dep(ar, es, u))
+  vms_u(ar, vms_tail.go(ar, es, dm, U32.from_nat(List.length(&2, U32, es)), Nil{}))
 
-def vms_pad(k: U32) -> List<&2, U32>:
-  vms_zeros.go(U32.to_nat(k), Nil{})
+def vms_rg(+ar: O.Arena, +es: List<&2, U32>, +u: U32) -> List<&2, U32>:
+  F.set_union(vms_enc.go(ar, vms_reach(ar, es, u), u, Nil{}), [u])
 
-# THE SECTION IS `[rc - 1] ++ zeros`, AND THE ZEROS ARE NOT FILLER: `lt_rc` multiplies `v + 1`, so a
-# zero leaves `rc` alone while raising the section's LENGTH, which is the `len` term. One list carries
-# both, which is the only way this linearizer receives them.
-# THE FLAT FORM, AND IT IS A COINCIDENCE -- kept because it is the best MEASURED reading (1 `cc` error)
-# and named so no one mistakes it for a rule. The two facts that replace it are written at `vms_enc`
-# above and in `D1.md`: the nest IS a DAG path (an END's toposort contains the ENDs nested inside it),
-# and `rc = extent x enclosing-product` TIES for a nested pair (10*49 == 49*10), so the depth has to
-# ride in the `len` term. The attempt in `vms_enc`/`vms_nends`/`vms_pad` produced `rc = 0` for the
-# ranges -- `1049` is `rc 0, len 16`, i.e. `U32.sub(rc, 1)` on a zero -- and is left UNWIRED rather
-# than shipped: `rg_ext` answering 0 through `U32.mul(rg_ext, vms_enc(..))` is the thing to explain.
-def vms_rg(+ar: O.Arena, +rt: F.RTable, +r: U32, +lst: List<&2, U32>) -> List<&2, U32>:
-  [1, 0]
-
-def vms_one2(isrg: Bool, +ar: O.Arena, +rt: F.RTable, +u: U32, +rs: List<&2, U32>,
-             +lst: List<&2, U32>) -> List<&2, U32>:
-  match isrg:
-    case True{} : vms_rg(ar, rt, u, lst)
-    case False{}: List.concat(&2, U32, [[U32.from_nat(List.length(&2, U32, rs))], vms_row.go(ar, rs, Nil{})])
-
-def vms_one(+ar: O.Arena, +rs: List<&2, U32>) -> List<&2, U32>:
+def vms_one2(isrg: Bool, +ar: O.Arena, +es: List<&2, U32>, +ns: List<&2, U32>, +u: U32) -> List<&2, U32>:
+  +rs = Bool.pick(List<&2, U32>, isrg, vms_rg(ar, es, u), vms_val(ar, es, ns, u))
   List.concat(&2, U32, [[U32.from_nat(List.length(&2, U32, rs))], vms_row.go(ar, rs, Nil{})])
 
-def vms.go(+ar: O.Arena, +rt: F.RTable, +lst: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
+def vms.go(+ar: O.Arena, +es: List<&2, U32>, +ns: List<&2, U32>, +lst: List<&2, U32>,
+           +acc: List<&2, U32>) -> List<&2, U32>:
   match lst:
     case Nil{}: acc
     case u <> t:
-      vms.go(ar, rt, t, List.append(&2, U32, acc,
-        vms_one2(O.eq_op(O.Arena.op(ar, u), O.OpsRANGE{}), ar, rt, u, vms_cls(ar, rt, u), lst)))
+      vms.go(ar, es, ns, t, List.append(&2, U32, acc,
+        vms_one2(O.eq_op(O.Arena.op(ar, u), O.OpsRANGE{}), ar, es, ns, u)))
 
 def vms(+ar: O.Arena, +lst: List<&2, U32>) -> List<&2, U32>:
-  vms.go(ar, F.rng_sweep(ar, F.Folded.t(F.folded(ar))), lst, Nil{})
+  vms.go(ar, vms_ends(ar, lst), lst, lst, Nil{})
 
 def body_kus(+ar: O.Arena, +k: U32) -> (O.Arena & List<&2, C.KU>):
   +l = body_low(ar, SCH.sc_src0(ar, k))

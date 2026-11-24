@@ -31,6 +31,21 @@ def rows(+i: U32) -> String:
   +lst = O.UOp.toposort(O.Arena.budget(a), a, O.Found.i(l))
   String.join(cgo.go(a, LIN.lt_keys(a, lst, DEV.vms(a, lst)), Nil{}), " ")
 
+def lst0(+i: U32) -> (O.Arena & List<&2, U32>):
+  +l = kg3(i)
+  +a = O.Found.ar(l)
+  (a, O.UOp.toposort(O.Arena.budget(a), a, O.Found.i(l)))
+
+def r2(p: (O.Arena & List<&2, U32>)) -> String:
+  (+a, +lst) = p
+  +es = DEV.vms_ends(a, lst)
+  +cs = DEV.vms_cons(a, lst, 137)
+  String.concat(["ends=", U32.show(U32.from_nat(List.length(&2, U32, es))),
+                 " reach137=", U32.show(U32.from_nat(List.length(&2, U32, DEV.vms_reach(a, es, 137)))),
+                 " cons137=", U32.show(U32.from_nat(List.length(&2, U32, cs))),
+                 " isect=", U32.show(U32.from_nat(List.length(&2, U32, DEV.vms_isect(a, DEV.vms_reach(a, es, 137), cs))))])
+
 def main() -> IO(Unit):
   do IO<Unit>:
-    IO.print(String.concat(["cmp0=", rows(0)]))
+    _ : Unit <- IO.print(String.concat(["cmp0=", rows(0)]))
+    IO.print(String.concat(["r2=", r2(lst0(0))]))

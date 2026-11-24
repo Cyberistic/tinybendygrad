@@ -1,0 +1,8 @@
+conv: OK  max-abs-diff=0.000e+00
+relu(actual-input): FAIL  max-abs-diff=5.825e-01
+relu(reference-chain): FAIL  max-abs-diff=5.825e-01
+pool(actual-input): OK  max-abs-diff=0.000e+00
+pool(reference-chain): FAIL  max-abs-diff=5.825e-01
+linear(actual-input): OK  max-abs-diff=0.000e+00
+linear(reference-chain): FAIL  max-abs-diff=1.875e+00
+VERDICT: A KERNEL DISAGREES
