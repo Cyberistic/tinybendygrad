@@ -8604,3 +8604,42 @@ ms**, **⇒⇒† AND **AND **the **`append` **0.041 ms**.
 **lanes **byte-identical **over **the **wide **surface"**) -- **⇒⇒† AND **AND **AND **THE **WGSL **IS
 **BYTE-IDENTICAL** (⇒⇒† AND **3,773 **BYTES **BOTH **BUILDS**) -- **⇒⇒† AND **AND **AND **THE **PROOF
 **READS **"ALL **PROOFS **CHECK"**.
+
+### 138.30 **THE **WGSL's **OWN **TEXT **IS **NOT **THE **TARGET** -- **⇒⇒† AND **THE **PROFILE **SAYS **SO**, **AND
+**IT **IS **A **CORRECTION **OF **THE **HYPOTHESIS **THE **MEASUREMENT **WAS **ASKED **TO **TEST**
+
+**⇒⇒† AND **THE **HYPOTHESIS **WAS **"`wgsl.bend` **STILL **HAS **66 **`String.concat`** **CALLS **TOO**"** (⇒⇒† AND
+**AND **THE **HYPOTHESIS **WAS **TO **CONCENTRATE **THE **EFFORT **THERE**)** -- **⇒⇒† AND **AND **THE
+**MEASUREMENT **SAYS **THE **CONTRARY**:
+
+| the phase | ms | the share of **25 s** |
+|---|---|---|
+| **`DEV.body_kus`** (the lowering) | **20,896** | **76%** |
+| **`RR.rr_kernel_graph`** | **5,985** | **23%** |
+| → **`RG.eng_after_rangeify`** | **4,634** | **18%** |
+| → → `eng_fix` (the 7 stages' fixpoints) | 1,697 | 7% |
+| → → `eng_apply` | 1,596 | 6% |
+| → `rr_run_rangeify` | 1,394 | 5% |
+| `FC.fchain_prog()` (the fixture's own build) | 11.9 | 0.05% |
+| **`W.walk`** (the WGSL walk) | **4.0** | **0.016%** |
+| **`V.render_kernel`** (the WGSL render) | **0.5** | **0.002%** |
+
+**⇒⇒† AND **⇒⇒† AND **SO `wgsl.bend`'s **66 **`String.concat`** **CALLS **ARE **0.5 ms **OF **25 s**
+(⇒⇒† AND **AND **THE **WGSL's **OWN **TEXT **IS **FOUR **ORDERS **OF **MAGNITUDE **BELOW **THE **FOLD**)**.
+
+**⇒⇒† AND **⇒⇒† AND **AND **THE **FOLD **IS **THE **SAME **FOLD **THE **C **RENDERER **PAYS** (⇒⇒† AND
+**AND **AND **THE **`Kahn_get_step` **COUNT **IS **627,863,348 **AFTER **THE **EARLY-EXIT **FIX** (⇒⇒† AND **AND
+**IT **WAS **1,216,274,293 **BEFORE**) -- **⇒⇒† AND **AND **THE **`eng_fix.go` **AND **`wk_fix.go` **BOTH
+**REBUILD **THE **FOLD **AFTER **EVERY **FIRING** (⇒⇒† AND **AND **AND **THE **ENGINE's **7 **STAGES **DO
+**IT **772 **TIMES **A **TURN** (⇒⇒† AND **AND **`eng_fix_go` **IS **772 **AND **`eng_apply` **IS **795**)**.
+
+**⇒⇒† AND **⇒⇒† AND **AND **THE **TREE **ALREADY **DOCUMENTS **WHY **THE **TABLE **CANNOT **BE **AN
+**ARRAY**: **"an **O(n) **lookup, **exactly **what **`fold.bend`'s **`Table` **is **and **for **the **same
+**reason **(`Array<T>` **masks **its **index, **so **it **cannot **grow)**"**
+(**`schedule/__init__.bend:55`**) -- **⇒⇒† AND **AND **SO **THE **O(1) **LOOKUP **IS **NOT **AVAILABLE**,
+**⇒⇒† AND **AND **AND **THE **EARLY **EXIT **IS **THE **WHOLE **OF **WHAT **THE **LIST **CAN **GIVE** (⇒⇒† AND
+**AND **THE **LOOKUP **IS **FOR **THE **NODE **THE **WALK **IS **CURRENTLY **ON**, **⇒⇒† AND **AND **AND **THE
+**WALK **IS **IN **TOPOLOGICAL **ORDER**, **⇒⇒† AND **AND **AND **SO **THE **MATCH **IS **NEAR **THE **END
+**OF **THE **TABLE **AND **THE **SCAN **STOPS **LATE** -- **⇒⇒† AND **AND **AND **THAT **IS **WHY **THE
+**EARLY **EXIT **CUTS **30% **AND **NOT **100%**) -- **⇒⇒† AND **AND **AND **THE **NEXT **STEP **WOULD **BE **AN
+**INCREMENTAL **FOLD**, **⇒⇒† AND **AND **WHICH **IS **A **STRUCTURAL **CHANGE **AND **NOT **A **MICRO-ONE**)**

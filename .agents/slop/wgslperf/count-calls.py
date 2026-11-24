@@ -80,6 +80,9 @@ def main():
     # **COUNT **IS **THE **MULTIPLIER**)**
     "uop_fold_Kahn_seed", "uop_fold_Kahn_step", "uop_fold_Kahn_run", "uop_fold_UOp_fold",
     "uop_fold_Kahn_seed_work", "uop_fold_Kahn_seed_pend",
+    # **⇒⇒† AND **THE **ENGINE's **OWNS **FOLDS** (⇒⇒† AND **AND **THE **SEVEN **STAGES' **FIXPOINTS**)
+    "uop_fold_folded", "eng_fix_go", "eng_apply",
+    "eng_run_stages",
     # **⇒⇒† AND **THE **FIRINGS** (⇒⇒† AND **AND **THE **FOLD **IS **REBUILT **ON **A **FIRING**,
     # **⇒⇒† AND **AND **THE **FIRING **COUNT **IS **THE **FOLD **COUNT **THE **FIX **MUST **CUT**)**
     "uop_weak_wk_fix_fold", "wk_fix_fold", "wk_fix_go", "uop_weak_wk_cast_body", "uop_weak_wk_remint_cast",
@@ -148,7 +151,7 @@ def main():
   print("THE **ARENA's **SIZE** (⇒⇒† AND **AND **THE **FOLD **SORTS **THE **WHOLE **ARENA**):")
   for k in sorted(C):
     if "Arena_next" in k or "arena_next" in k:
-      print(f"  {k:24s} {C[k]/n:12,.0f} a turn")
+      print(f"  {k:24s} {C[k]/60:12,.0f} a turn")
   print()
   print("THE CALL COUNTS:")
   for k, v in sorted(C.items(), key=lambda kv: -kv[1]):

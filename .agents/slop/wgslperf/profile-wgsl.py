@@ -85,6 +85,14 @@ def instrument(src: str) -> str:
   # **AND **THE **`schedule/__init__.bend`** **BECOMES **`schedule___init___`**)**.
   TARGETS = [
     ("kg", "$___browser_fchainl_kg"),
+    ("kg_rebuild", "$_________tinybendygrad_schedule_realize_rz_rebuild"),
+    ("kg_kgraph", "$_________tinybendygrad_schedule_rangify_rr_kernel_graph"),
+    ("kg_prog", "$___browser_fchainl_fchain_prog"),
+    ("kg_rangeify", "$_________tinybendygrad_schedule_rangify_rr_run_rangeify"),
+    ("kg_after_rangeify", "$_________tinybendygrad_schedule_rangeify_eng_after_rangeify"),
+    ("eng_stages", "$_________tinybendygrad_schedule_rangeify_eng_run_stages"),
+    ("eng_fix", "$_________tinybendygrad_schedule_rangeify_eng_fix"),
+    ("eng_apply", "$_________tinybendygrad_schedule_rangeify_eng_apply"),
     ("schedule", "$_________tinybendygrad_schedule___init___schedule"),
     ("lin_kernels", "$_________tinybendygrad_schedule___init___lin_kernels"),
     ("lin_ar", "$_________tinybendygrad_schedule___init___lin_ar"),
