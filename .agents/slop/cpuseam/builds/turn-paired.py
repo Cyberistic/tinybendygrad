@@ -38,13 +38,19 @@ def turn_times(path: pathlib.Path, tag: str, n: int = 120):
 def main():
   a = BUILD / (sys.argv[1] if len(sys.argv) > 1 else "serve_base.js")
   b = BUILD / (sys.argv[2] if len(sys.argv) > 2 else "serve_reorder.js")
-  # **⇒⇒† AND **THE **TWO **RUNS **ARE **ALTERNATED** (⇒⇒† AND **A **PAIRED **A/B**)**.
+  # **⇒⇒† AND **THE **NOISE **FLOOR **IS **A **THIRD **ARM** (⇒⇒† AND **AND **THE **SAME **BUILD
+  # **AGAINST **ITSELF**), **⇒⇒† AND **AND **IT **RUNS **IN **THE **SAME **INTERLEAVED **LOOP** (⇒⇒†
+  # **AND **AND **SO **IT **READS **THE **SAME **LOAD**)**.
+  c = BUILD / "serve_turn_noise.js"
+  c.write_text(a.read_text())
   da = noisefloor.Daemon(a, "tbase")
   db = noisefloor.Daemon(b, "tnew")
+  dc = noisefloor.Daemon(c, "tnoise")
   da.start()
   db.start()
+  dc.start()
   time.sleep(1.0)
-  ta, tb = [], []
+  ta, tb, tc = [], [], []
   for _ in range(120):
     t0 = time.perf_counter()
     da.turn()
@@ -52,23 +58,39 @@ def main():
     t0 = time.perf_counter()
     db.turn()
     tb.append((time.perf_counter() - t0) * 1000)
+    t0 = time.perf_counter()
+    dc.turn()
+    tc.append((time.perf_counter() - t0) * 1000)
   time.sleep(0.2)
   da.stop()
   db.stop()
+  dc.stop()
 
-  A = sorted(ta)
-  B = sorted(tb)
+  def report(ts, label):
+    S = sorted(ts)
+    print("  %-22s min %.4f  median %.4f  mean %.4f ms" % (label, S[0], S[len(S) // 2],
+                                                          statistics.mean(S)))
+    return S
+
   print()
   print(f"THE **SHIPPED **TURN** ({a.name} vs {b.name}), 120 paired turns:")
-  print("  A: min %.4f  median %.4f  mean %.4f ms" % (A[0], A[len(A) // 2], statistics.mean(A)))
-  print("  B: min %.4f  median %.4f  mean %.4f ms" % (B[0], B[len(B) // 2], statistics.mean(B)))
+  A = report(ta, "A (the baseline)")
+  B = report(tb, "B (the change)")
+  C = report(tc, "C (the noise floor)")
   print()
-  print("  THE RATIO OF THE TWO MINIMA:  %.4f" % (B[0] / A[0]))
-  print("  THE RATIO OF THE TWO MEDIANS: %.4f" % (B[len(B) // 2] / A[len(A) // 2]))
-  print("  THE RATIO OF THE TWO MEANS:   %.4f" % (statistics.mean(B) / statistics.mean(A)))
+  print("  THE RATIO OF THE TWO MINIMA:  %.4f   (the noise floor %.4f)"
+        % (B[0] / A[0], C[0] / A[0]))
+  print("  THE RATIO OF THE TWO MEDIANS: %.4f   (the noise floor %.4f)"
+        % (B[len(B) // 2] / A[len(A) // 2], C[len(C) // 2] / A[len(A) // 2]))
+  print("  THE RATIO OF THE TWO MEANS:   %.4f   (the noise floor %.4f)"
+        % (statistics.mean(B) / statistics.mean(A), statistics.mean(C) / statistics.mean(A)))
   n = min(len(ta), len(tb))
   ratios = sorted(tb[i] / ta[i] for i in range(n))
-  print("  THE MEDIAN OF THE PAIRED RATIOS: %.4f" % ratios[len(ratios) // 2])
+  nratios = sorted(tc[i] / ta[i] for i in range(n))
+  print("  THE MEDIAN OF THE PAIRED RATIOS: %.4f   (the noise floor %.4f)"
+        % (ratios[len(ratios) // 2], nratios[len(nratios) // 2]))
+  print("  THE WINS: %d of %d   (the noise floor %d of %d)"
+        % (sum(1 for r in ratios if r < 0.97), n, sum(1 for r in nratios if r < 0.97), n))
 
 
 if __name__ == "__main__":

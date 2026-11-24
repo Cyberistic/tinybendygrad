@@ -8309,3 +8309,43 @@ ms**, **⇒⇒† AND **AND **the **`append` **0.041 ms**.
 **THE **FLOOR **IS **NOT **A **CONSTANT**: **IT **IS **THE **MACHINE's **NOISE **AT **THE **SIZE **OF **THE
 **EFFECT** (⇒⇒† AND **AND **THE **TREE's OWN **RULE**: **THE **NOISE **FLOOR **MUST **BE **READ
 **IMMEDIATELY **BEFORE **THE **VERDICT**)**.
+
+### 138.24 **THE **`ku_inline` **CHAIN's **LAZINESS **IS **UNREACHABLE **IN **BEND** -- **⇒⇒† AND **AND
+**THE **FLAT **FORM **IS **0.9917**, **AGAINST **A **NOISE **FLOOR **OF **0.9976**
+
+**⇒⇒† AND **THE **`inline` **FAMILY **IS **THE **LAST **UNMEASURED **LEAF **OF **THE **`text`
+**FAMILY** (⇒⇒† AND **AND **`inline-family-shape.py` **IS **THE **INSTRUMENT**), **⇒⇒† AND **AND **IT
+**IS **NINE **FUNCTIONS **DEEP **FOR **ONE **BOOLEAN**: **`ku_inline` 0.571 ms **OVER **644 **CALLS**
+(⇒⇒† AND **AND **THE **ARMS **ARE **NESTED**, **⇒⇒† AND **SO **THEY **DO **NOT **SUM**)**.
+
+**⇒⇒† AND **THE **JS-LEVEL **CEILING **WAS **0.9110 **ON **THE **MINIMA** (⇒⇒† AND **AND **AGAINST **A
+**NOISE **FLOOR **OF **0.9757**) -- **⇒⇒† AND **AND **THE **BEND **FORM **OF **THE **SAME **THING **IS
+**NEUTRAL**: **the **flat **form **IS **0.9917 **ON **THE **PAIRED **MEDIAN** (⇒⇒† AND **AND **AGAINST **A
+**NOISE **FLOOR **OF **0.9976**)**.
+
+**⇒⇒† AND **⇒⇒† AND **THE **REASON**, **AND **IT **IS **THE **BEND **RULES**:
+
+1. **THE **PRELUDE's **`Bool.or`/`Bool.and` **ARE **LAZY** -- **⇒⇒† AND **THEY **ARE **A **`match` **ON
+   **THE **FIRST **ARGUMENT** (⇒⇒† AND **MEASURED**, **`bend2/base.bend:635-647`**), **⇒⇒† AND **AND **THE
+   **COMPILED **FORM **SHOWS **`if (!_a_0) { return false; }`**.
+2. **⇒⇒† AND **BUT **THE **CALL **SITE **EVALUATES **ITS **ARGUMENTS **EAGERLY** -- **⇒⇒† AND **THE
+   **COMPILED **FORM **BINDS **THEM **TO **TEMPORARIES **BEFORE **THE **CALL** (⇒⇒† AND **MEASURED: **THE
+   **FLAT **FORM's **COMPILED **BODY **HAS **`const _x_4 = ...; const _x_5 = ...; const _x_6 = ...;`** **AND
+   **ONLY **THEN **`const _x_7 = (_x_4 || _x_5);`**) -- **⇒⇒† AND **AND **SO **THE **LAZINESS **IS **LOST
+   **AT **THE **CALL **SITE**, **⇒⇒† AND **AND **NOT **IN **THE **PRELUDE**)**.
+3. **⇒⇒† AND **AND **THE **CURE **IS **THE **TREE's OWN** (⇒⇒† AND **A **`match` **ON **A **BOOL
+   **PARAMETER**, **⇒⇒† AND **ONLY **THE **CHOSEN **ARM **RUNS**) -- **⇒⇒† AND **BUT **A **`match`
+   **CANNOT **SCRUTINIZE **A **COMPUTED **VALUE** (⇒⇒† AND **"give **it **its **own **def"**) **AND **CANNOT
+   **SCRUTINIZE **A **LOCAL **BINDER** (⇒⇒† AND **MEASURED: **"a **match **cannot **scrutinize **a **local
+   **binder: **give **it **its **own **def"**) -- **⇒⇒† AND **AND **SO **EVERY **LAZY **LEVEL **NEEDS **ITS
+   **OWN **DEF**, **⇒⇒† AND **AND **WHICH **IS **THE **CHAIN **THAT **WAS **BEING **REMOVED**.
+
+**⇒⇒† AND **⇒⇒† AND **THE **CONCLUSION**: **THE **LAZY **FORM **OF **THE **CHAIN **IS **NOT **WRITABLE **IN
+**BEND** (⇒⇒† AND **THE **TYPE **SYSTEM's **RULE **AND **THE **COMPILER's **EAGER **ARGUMENTS **TOGETHER**),
+**⇒⇒† AND **AND **THE **CHAIN's **CALL **OVERHEAD **IS **THE **PRICE **OF **THE **LAZINESS **THE **RULES
+**FORBID** -- **⇒⇒† AND **AND **SO **THE **CHANGE **IS **REVERTED**.
+
+**⇒⇒† AND **⇒⇒† AND **AND **THE **JS **LANE **IS **THE **PLACE **WHERE **IT **IS **NOT **FORBIDDEN**
+(⇒⇒† AND **AND **THE **JS **CEILING **OF **0.9110 **IS **A **BEND **COMPILER **FIX**, **⇒⇒† AND **AND **NOT
+**A **PORT **ONE**) -- **⇒⇒† AND **AND **THE **UPSTREAM **FINDING **IS **THE **SAME **ONE **AS **§138.19's**
+(⇒⇒† AND **AND **IT **IS **A **BEND **FACT**)**
