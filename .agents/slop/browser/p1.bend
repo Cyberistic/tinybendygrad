@@ -8,6 +8,7 @@ import ./../../../tinybendygrad/uop/fold.bend as F
 import ./../../../tinybendygrad/schedule/rangify.bend as RR
 import ./../../../tinybendygrad/schedule/realize.bend as RZ
 import ./../../../tinybendygrad/schedule/indexing.bend as IX
+import ./../../../tinybendygrad/schedule/rangeify.bend as RF
 import ./fchainl.bend as CH
 
 def ids.go(+rs: List<&2, U32>, +acc: List<&2, String>) -> List<&2, String>:
@@ -57,6 +58,30 @@ def row(+n: U32) -> String:
   +tb = F.Folded.t(F.folded(a))
   row2(RR.rr_range_map(a, tb, sink), n, sink)
 
+# THE SRC CLASSIFICATION OF THE RELU VALUE'S OPERANDS: `rr_ap_src.of` indexes only (indexable AND NOT
+# realized); a REALIZED src becomes a STAGE, and a STAGE of a flat buffer has no index at all -- which is
+# exactly what `(*(data1_196+0))` would look like.
+def srow(+a: O.Arena, +ctx: IX.IxCtx, +ss: List<&2, U32>, +acc: List<&2, String>) -> String:
+  match ss:
+    case Nil{}: String.join(acc, ";")
+    case s <> t:
+      srow(a, ctx, t, List.append(&2, String, acc,
+        [String.concat([U32.show(s), ":", RF.eng_op_name(O.Arena.op(a, s)),
+                        " idx=", Bool.show(RR.rr_ap_indexable(a, s)),
+                        " real=", Bool.show(RR.rr_ap_realized(ctx, s))])]))
+
+def srcrow2(p: (O.Arena & RR.RrMap), +n: U32) -> String:
+  (+a, +m) = p
+  srow(a, RR.RrMap.ctx(m), O.Arena.srcs(a, n), Nil{})
+
+def srcrow(+n: U32) -> String:
+  +q = RZ.rz_rebuild(CH.fchain_prog(), False{}, False{})
+  +a = RZ.RZProg.ar(q)
+  +sink = RZ.RZProg.sink(q)
+  srcrow2(RR.rr_range_map(a, F.Folded.t(F.folded(a)), sink), n)
+
 def main() -> IO(Unit):
   do IO<Unit>:
-    IO.print(String.concat(["p1_85=", row(U32.from_nat(85n))]))
+    _ : Unit <- IO.print(String.concat(["p1_85=", row(U32.from_nat(85n))]))
+    _ : Unit <- IO.print(String.concat(["src84=", srcrow(U32.from_nat(84n))]))
+    IO.print(String.concat(["src78=", srcrow(U32.from_nat(78n))]))
