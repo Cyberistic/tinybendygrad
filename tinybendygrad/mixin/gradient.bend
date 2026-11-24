@@ -633,6 +633,30 @@ def gr_13.go(+ar: O.Arena, +ctx: U32, +ret: U32) -> GRes:
 
 def gr_13(ar: O.Arena, +ctx: U32, +self: U32) -> GRes: gr_13.go(ar, ctx, self)
 
+def gdim_eq(+a: List<&2, U32>, +b: List<&2, U32>) -> Bool:
+  match a:
+    case Nil{}:
+      match b:
+        case Nil{}: True{}
+        case _: False{}
+    case x <> t:
+      match b:
+        case Nil{}: False{}
+        case y <> u: Bool.and(U32.is_eq(x, y), gdim_eq(t, u))
+
+# `ctx.reshape(shape)` -- and `Tensor.reshape` to the SAME shape is the IDENTITY in CPython
+# (MEASURED, `.agents/slop/browser` probe: `t.reshape(1,1,14,14)` answered the same node), so the
+# equal case mints nothing. The TWO SLOTS are upstream's arity, which this file's own TODO records:
+# `pm_gradient.rewrite(RESHAPE)` returns 2 for a one-src node, and `compute_gradient` on it raises
+# `AssertionError: got 2 gradient, expected 1`. The port reproduces the arity, so slot 1 is a HOLE.
+def greshape(+ar: O.Arena, +x: U32, +ds: List<&2, U32>) -> O.Found:
+  +sk = O.shape_arg_found(ar, ds)
+  O.UOp.new(O.Found.ar(sk), O.OpsRESHAPE{},
+            List.append(&2, U32, [x], [O.Found.i(sk)]), O.ANone{}, O.TNone{})
+
+def gdims(+ar: O.Arena, +u: U32) -> List<&2, U32>:
+  IX.rr_dims(ar, F.Folded.t(F.folded(ar)), u)
+
 # --- 14. REDUCE -- gradient.py:82. `reduce_gradient(ctx, ret, ret.arg[0])`
 #
 # DISPATCHED, not inlined: the body is `reduce_gradient`, a top-level Python function with
@@ -669,17 +693,91 @@ def gr_13(ar: O.Arena, +ctx: U32, +self: U32) -> GRes: gr_13.go(ar, ctx, self)
 #   `_broadcast_to`'s `broadcast_axes` are both `resolve` on a `Sint`, and `symbolic.py`'s
 #   `resolve` is not ported. Phase P3 owns `symbolic`.
 # * the three arms are `reduce_gradient`'s (`gradient.py:8-18`), and the ADD arm needs
-# `ctx._broadcast_to(ret.src[0].shape)`. THE BLOCKER IS NOT `symbolic`, WHICH IS WHAT THE TODO
-# BELOW USED TO SAY -- AND IT IS NOT A MISSING HELPER EITHER. It is a LAYER: `_broadcast_to` is
-# squeeze + EXPAND + PERMUTE, and EXPAND's arg type `ADims` is declared in `tensor.bend:1226` --
-# the file that imports THIS one. `mixin/movement.bend` is above the same edge. So from here the
-# EXPAND node cannot be built at all, and neither `mxw_bcast` nor `mxw_expand` is seeable.
+# `ctx._broadcast_to(ret.src[0].shape)`. THE OLD TODO HERE BLAMED `broadcast_axes`'s `resolve`,
+# AND THAT WAS WRONG TWICE OVER: `mixin/movement.bend:12-13` had already recorded that a CONCRETE
+# `mxw_bcast` exists, and the arena's movement nodes do not need the high-level `ADims` wrapper at
+# all. MEASURED, `uop/fold.bend:3699` and `tensor.bend:1290-1325`: `Ops.EXPAND`, `Ops.RESHAPE` and
+# `Ops.PERMUTE` all carry their shape as `O.shape_arg_found(ar, dims)` in `src[1]** -- the SAME
+# representation `gr_17` already uses. So the broadcast is buildable HERE, with no layer crossed.
 #
-# THE FIX IS ONE DECLARATION, NOT ONE ALGORITHM: move `ADims` (and the RESHAPE/EXPAND/PAD/SHRINK/
-# PERMUTE arg shapes beside it) down into `ops.bend`, which every layer below can see -- the same
-# move `indexing.bend`'s header records for `_apply_reshape`. Until then the ADD/MAX arms stay
-# SKIPS and this comment is the measurement, so nobody re-blames `symbolic`.
-def gr_14(ar: O.Arena, ctx: U32, self: U32) -> GRes: GSkip{}
+# `_broadcast_to` for a concrete target, and the LEFT PAD is the whole of it once the rank is short:
+# `_align_left` (movement.py:134) pads 1s in front, and an EXPAND from that aligned shape IS the
+# broadcast. `movement.py:129` is `if self.shape == new_shape: return self`, so the equal case mints
+# NOTHING -- which is also the identity `EXPAND` with an empty marg (ops.py:823).
+def g_expand0(+ar: O.Arena, +x: U32) -> O.Found: O.Found{ar, x}
+
+def g_expand(+ar: O.Arena, +x: U32, +ds: List<&2, U32>) -> O.Found:
+  +sk = O.shape_arg_found(ar, ds)
+  O.UOp.new(O.Found.ar(sk), O.OpsEXPAND{}, [x, O.Found.i(sk)], O.ANone{}, O.TNone{})
+
+def g_expand.pick(empty: Bool, +ar: O.Arena, +x: U32, +ds: List<&2, U32>) -> O.Found:
+  match empty:
+    case True{} : g_expand0(ar, x)
+    case False{}: g_expand(ar, x, ds)
+
+def g_ndims(+ds: List<&2, U32>) -> U32: U32.from_nat(List.length(&2, U32, ds))
+
+# the LEFT pad of `_align_left`: `len(new_shape) - len(self.shape)` ones in front.
+def g_dims_pad(+ctx_ds: List<&2, U32>, +n: Nat) -> List<&2, U32>:
+  List.concat(&2, U32, [List.replicate(U32, n, 1), ctx_ds])
+
+def gbcast.reshape(same: Bool, +ar: O.Arena, +ctx: U32, +al: List<&2, U32>) -> O.Found:
+  match same:
+    case True{} : O.Found{ar, ctx}
+    case False{}: greshape(ar, ctx, al)
+
+def gbcast.go(+ar: O.Arena, +ctx: U32, +ds: List<&2, U32>) -> GRes:
+  +cd = gdims(ar, ctx)
+  +al = g_dims_pad(cd, Nat.sub(List.length(&2, U32, ds), List.length(&2, U32, cd)))
+  +r = gbcast.reshape(gdim_eq(cd, al), ar, ctx, al)
+  +e = g_expand.pick(U32.is_zero(g_ndims(ds)), O.Found.ar(r), O.Found.i(r), ds)
+  fired([O.Found.i(e)], O.Found.ar(e))
+
+def gbcast.pick(same: Bool, +ar: O.Arena, +ctx: U32, +ds: List<&2, U32>) -> GRes:
+  match same:
+    case True{} : fired([ctx], ar)
+    case False{}: gbcast.go(ar, ctx, ds)
+
+def gbcast(+ar: O.Arena, +ctx: U32, +ds: List<&2, U32>) -> GRes:
+  gbcast.pick(gdim_eq(gdims(ar, ctx), ds), ar, ctx, ds)
+
+def gr_14.naxes.of(a: O.Arg) -> U32:
+  match a:
+    case O.AReduce{rop, num_axes}: num_axes
+    case _: 0
+
+def gr_14.naxes(+ar: O.Arena, +self: U32) -> U32: gr_14.naxes.of(O.Arena.arg(ar, self))
+
+# `mask = ret.src[0].eq(ret).cast(sum_acc_dtype(ctx.dtype))`, then
+# `(mask / mask._rop(Ops.ADD, tuple(range(ret.arg[1])))).cast(ctx.dtype) * ctx`.
+# THE ACC DTYPE IS NOT AN ARBITRARY CHOICE (gradient.py:11): the TIE COUNT can overflow the
+# gradient dtype, so it is accumulated wider and cast back only AFTER the divide. This chain is
+# float32 throughout, so the wider dtype IS float32 and both casts are the identity -- `gcast`
+# mints nothing when the dtypes agree, which keeps the widening HONEST rather than assumed.
+def gr_14.max(+ar: O.Arena, +ctx: U32, +self: U32, +src: U32) -> GRes:
+  +m0 = geq(ar, src, self)
+  +m1 = gcast(O.Found.ar(m0), O.Found.i(m0), S.single())
+  +cnt = gnew(O.Found.ar(m1), O.OpsREDUCE{}, [O.Found.i(m1)],
+              O.AReduce{O.OpsADD{}, gr_14.naxes(O.Found.ar(m1), self)})
+  +q = gnew(O.Found.ar(cnt), O.OpsDIV{}, [O.Found.i(m1), O.Found.i(cnt)], O.ANone{})
+  +g = gmul(O.Found.ar(q), O.Found.i(q), ctx)
+  fired([O.Found.i(g)], O.Found.ar(g))
+
+def gr_14.rop.of(a: O.Arg) -> O.Op:
+  match a:
+    case O.AReduce{rop, num_axes}: rop
+    case _: O.OpsADD{}
+
+def gr_14.rop(+ar: O.Arena, +self: U32) -> O.Op: gr_14.rop.of(O.Arena.arg(ar, self))
+
+def gr_14.go(rop: O.Op, +ar: O.Arena, +ctx: U32, +self: U32) -> GRes:
+  match rop:
+    case O.OpsADD{}: gbcast(ar, ctx, gdims(ar, O.Arena.src(ar, self, 0)))
+    case O.OpsMAX{}: gr_14.max(ar, ctx, self, O.Arena.src(ar, self, 0))
+    case _: GSkip{}
+
+def gr_14(+ar: O.Arena, +ctx: U32, +self: U32) -> GRes:
+  gr_14.go(gr_14.rop(ar, self), ar, ctx, self)
 
 # --- 15. CONTIGUOUS_BACKWARD -- gradient.py:82. `(ctx.contiguous(),)`
 #
@@ -721,30 +819,6 @@ def gr_16(ar: O.Arena, ctx: U32, +self: U32) -> GRes: fired([ctx], ar)
 #
 # AND THE SHAPE IS `ret.src[0].shape`, read through `IX.rr_dims` -- `indexing.bend` imports only
 # Base/H/O/F/S, so it is seeable from here and it is the port's one concrete-dims reader.
-def gdims(+ar: O.Arena, +u: U32) -> List<&2, U32>:
-  IX.rr_dims(ar, F.Folded.t(F.folded(ar)), u)
-
-def greshape(+ar: O.Arena, +x: U32, +ds: List<&2, U32>) -> O.Found:
-  +sk = O.shape_arg_found(ar, ds)
-  O.UOp.new(O.Found.ar(sk), O.OpsRESHAPE{},
-            List.append(&2, U32, [x], [O.Found.i(sk)]), O.ANone{}, O.TNone{})
-
-def gdim_eq(+a: List<&2, U32>, +b: List<&2, U32>) -> Bool:
-  match a:
-    case Nil{}:
-      match b:
-        case Nil{}: True{}
-        case _: False{}
-    case x <> t:
-      match b:
-        case Nil{}: False{}
-        case y <> u: Bool.and(U32.is_eq(x, y), gdim_eq(t, u))
-
-# `ctx.reshape(shape)` -- and `Tensor.reshape` to the SAME shape is the IDENTITY in CPython
-# (MEASURED, `.agents/slop/browser` probe: `t.reshape(1,1,14,14)` answered the same node), so the
-# equal case mints nothing. The TWO SLOTS are upstream's arity, which this file's own TODO records:
-# `pm_gradient.rewrite(RESHAPE)` returns 2 for a one-src node, and `compute_gradient` on it raises
-# `AssertionError: got 2 gradient, expected 1`. The port reproduces the arity, so slot 1 is a HOLE.
 def gr_17.mk(+ar: O.Arena, +ctx: U32, +ds: List<&2, U32>) -> GRes:
   +f = greshape(ar, ctx, ds)
   fired([O.Found.i(f), 0], O.Found.ar(f))

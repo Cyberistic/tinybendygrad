@@ -23,6 +23,24 @@ import ./../../../tinybendygrad/schedule/realize.bend as RZ
 # conv2x2 -> relu -> pool -> linear, then `sum((y-t)^2)`, then `tn_backward` for BOTH weights.
 # ONE def and no tuple returns: `compute_gradient` GROWS the arena (tensor.bend's rule 5), so every
 # step reads the arena the previous one produced -- which is exactly what a linear body says.
+# every node the walk visited that has NO gradient slot: the ops whose rule did not answer.
+def gslot_at(m: Maybe<&2, G.GSlot>) -> Bool:
+  match m:
+    case Some{v}: True{}
+    case _: False{}
+
+def nograd.go(+g: G.Grads, +ar: O.Arena, +wk: List<&2, U32>, +acc: List<&2, String>, +i: U32) -> String:
+  match wk:
+    case Nil{}: String.join(acc, ",")
+    case n <> t:
+      nograd.go(g, ar, t,
+        Bool.pick(List<&2, String>, gslot_at(G.gslot(g, n)), acc,
+          List.append(&2, String, acc, [String.concat([RF.eng_op_name(O.Arena.op(ar, n)), "@", U32.show(i)])])),
+        U32.add(i, 1))
+
+def nograd(+g: G.Grads, +ar: O.Arena, +wk: List<&2, U32>, +acc: List<&2, String>) -> String:
+  nograd.go(g, ar, wk, acc, 0)
+
 def rows() -> String:
   # THE FORWARD, with no stores: a training GRAPH is value flow, and the chain's shape is the
   # only thing this row is about. `tn_rop` answers a `Found`, so each stage is re-wrapped by
@@ -57,7 +75,10 @@ def rows() -> String:
   +wk = G.Deep.walk_of(dw)
   +seed = O.UOp.const(T.Tensor.ar(lt), O.CInt{H.i64_of_i32(1)})
   +cs = G.compute_gradient(root, O.Found.i(seed), tg, T.Tensor.ar(lt))
-  String.concat(["tstep.walk=", U32.show(U32.from_nat(List.length(&2, U32, wk))),
+  String.concat(["tstep.gw1=", Bool.show(gslot_at(G.gslot(G.CState.g_of(cs), T.Tensor.u(w1)))),
+                 " gw2=", Bool.show(gslot_at(G.gslot(G.CState.g_of(cs), T.Tensor.u(w2)))),
+                 " nograd=", nograd(G.CState.g_of(cs), T.Tensor.ar(lt), wk, Nil{}),
+                 " walk=", U32.show(U32.from_nat(List.length(&2, U32, wk))),
                  " skip=", U32.show(G.CState.skip_of(cs)),
                  " hole=", U32.show(G.CState.hole_of(cs)),
                  " rootop=", RF.eng_op_name(O.Arena.op(T.Tensor.ar(lt), root)),
