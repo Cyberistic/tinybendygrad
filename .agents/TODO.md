@@ -29933,6 +29933,23 @@ FOUR NAMED CASES ARE IN THE POPULATION** (`p193a` `x451a` `x451b` `x451c`, 1 ROW
       (`divandmod.bend:983`).** **THE CENSUS READS `PORT ENTRIES 135 MAPPED 135 BROKEN 0
       UNRESOLVED 0` AND IS **GREEN**, AND THE ROW READS `118  divandmod.py:103  DIV,MOD
       sym_table  117  PORTED`.**
+- [ ] **THE `grad` CORPUS GRAPH IS **RED ON MASTER**, AND IT IS **NOT** THIS LANE's**
+      — MEASURED AND BISECTED 2026-11-24. MEASURED: `checks/differ.py run` REPORTS
+      `RUN WRONG: expect-moved=N -- grad: VERDICT=DISAGREE EXPECTED=AGREE`, AND
+      **THE PORT's `grad` GRAPH IS MISSING THE `BUFFER` NODES AND ITS DTYPE IS
+      `void` WHERE CPYTHON's IS `f32`.**  **AND IT IS BISECTED**: THE PARENT OF
+      `d8b35c38e` ("gmul BROADCASTS A SCALAR: kg_store 2 -> 6 and nk 1 -> 5,
+      real CALL>SINK kernels") IS **GREEN** (`rc=0 5603 bytes`) AND `d8b35c38e`
+      ITSELF IS **RED** (`rc=1 7040 bytes`), MEASURED WITH
+      `.agents/slop/graphcmp.py batch --graphs grad`.  **AND IT IS NOT THE
+      `divandmod` ARM**: MEASURED, THE `grad` GRAPH'S PATH IS
+      `graphcmp.bend` -> `mixin/gradient.bend` -> `uop/fold.bend`, AND **NOTHING
+      IN THAT PATH IMPORTS `uop/divandmod.bend`** (MEASURED: `grep -rn "import.*divandmod"
+      --include="*.bend" tinybendygrad/` ANSWERS **ONE** HIT AND IT IS A PROBE
+      UNDER `.agents/slop/`).  **AND IT SURVIVES WITH `uop/divandmod.bend` REVERTED
+      AND WITH PANE %10's UNCOMMITTED EDITS STASHED**, SO IT IS NEITHER.
+      **SO THE `grad` ROW IS A PRE-EXISTING RED ROW ON MASTER AND IT BELONGS TO
+      THE LANE THAT LANDED `d8b35c38e`.**
 - [x] **THE `MOD` HALF OF `divide_by_gcd` IS PORTED** (2026-11-24) — **AND SO IS THE `DIV`
       HALF, BECAUSE UPSTREAM'S ARM IS ONE ARM WITH TWO ANSWER SHAPES**: `return ret*gcd
       if d.op is Ops.MOD else ret` (divandmod.py:76).  **AND THE ARM IS `divide_by_gcd`
