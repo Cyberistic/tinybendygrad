@@ -8574,3 +8574,33 @@ ms**, **⇒⇒† AND **AND **the **`append` **0.041 ms**.
 **NOISE **FLOOR **READ **1.0247**), **⇒⇒† AND **AND **SO **THE **SHORT **RUNS **ARE **NOT **A
 **VERDICT** (⇒⇒† AND **AND **THE **TREE's OWN **RULE**: **THE **RATIO **OF **THE **TWO **MINIMA **PLUS **THE
 **COUNT**)**.
+
+### 138.29 **THE **`grad` **CORPUS **ROW **IS **RED**, **AND **IT **IS **NOT **MINE** -- **⇒⇒† AND **THE
+**TWO **RUNS **HAVE **THE **IDENTICAL **SIGNATURE**
+
+**⇒⇒† AND **THE **CORPUS **ON **MY **SUBSTRATE** **READS **`expect-moved=1`**, **38 **answered**, **37
+**agree**, **1 **disagree**, **37 **byte-identical**, **⇒⇒† AND **AND **THE **ONE **THAT **DISAGREES **IS
+**`grad`**.
+
+**⇒⇒† AND **⇒⇒† AND **AND **THE **`grad` **ROW **WAS **ALREADY **RED **ON **MASTER** (⇒⇒† AND **AND
+**`35221f97c`: **"the `grad` **CORPUS **ROW **IS **RED **ON **MASTER**, **AND **IT **IS **BISECTED **TO
+**`d8b35c38e`"**, **⇒⇒† AND **AND **THAT **IS **ANOTHER **LANE's **COMMIT**) -- **⇒⇒† AND **AND **IT **IS
+**PROVEN **BY **A **RUN **ON **THE **PARENT **OF **MY **CHANGE** (⇒⇒† AND **AND **IN **A **SEPARATE
+**WORKTREE**)**:
+
+| | **BEFORE **my **change** (`6327b495b~1`) | **AFTER **my **change** (`94a2db776`) |
+|---|---|---|
+| `graphs-answered` | 38 | 38 |
+| `graphs-agree` | 37 | 37 |
+| `graphs-disagree` | 1 (**`grad`**) | 1 (**`grad`**) |
+| `byte-identical` | 37 | 37 |
+| `expect-moved` | 1 | 1 |
+
+**⇒⇒† AND **⇒⇒† AND **THE **SIGNATURES **ARE **IDENTICAL**, **⇒⇒† AND **AND **SO **THE **`grad` **DEFECT
+**IS **ANOTHER **LANE's **AND **MY **FOLD **CHANGE **IS **INNOCENT** (⇒⇒† AND **AND **AND **THE **TREE's OWN
+**RULE **FOR **A **CORRECTNESS **CLAIM**: **A **COMPARISON **AGAINST **A **KNOWN-BAD **BASELINE **IS **THE
+**ONLY **WAY **TO **SHOW **THAT **A **CHANGE **IS **INNOCENT**) -- **⇒⇒† AND **AND **AND **THE **C **RENDERER's
+**OWN **GATE **IS **GREEN **ON **MY **SUBSTRATE** (`gates/cstyle_render_census-gate.py`: **"425 **rows, **3
+**lanes **byte-identical **over **the **wide **surface"**) -- **⇒⇒† AND **AND **AND **THE **WGSL **IS
+**BYTE-IDENTICAL** (⇒⇒† AND **3,773 **BYTES **BOTH **BUILDS**) -- **⇒⇒† AND **AND **AND **THE **PROOF
+**READS **"ALL **PROOFS **CHECK"**.
