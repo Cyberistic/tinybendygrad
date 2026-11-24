@@ -542,8 +542,10 @@ def L.reshape_preserves_numel(t, dst, premise):
   premise
 
 # The same fact from the other side, and it needs no premise.
-def L.reshape_numel_is_the_new_shape(t, dst):
-  {==}
+# AND `reshape_numel_is_the_new_shape`'s PROOF IS GONE WITH THE LAW: the
+# unconditional form is the same claim, and the shape census named it MASKED
+# by `reshape_preserves_numel` -- two laws on one fold, so only one of them
+# can ever be the failure `bend` reports.
 
 # tinyspec Pad: "Place T at offset o_k in an invalid-filled output of shape
 # s'_k", so the count is the output's.
@@ -1439,10 +1441,19 @@ def L.truncmod_preserves_dtype(a, b):
 def L.after_preserves_shape(buf, deps):
   {==}
 
-def L.load_preserves_shape(buf, alt, gate):
+def L.end_preserves_shape(body, ranges):
   {==}
 
-def L.copy_preserves_shape(buf, dev):
+def L.sink_has_no_shape(ss):
+  {==}
+
+def L.backedge_has_no_shape(body, rng, cond):
+  {==}
+
+def L.linear_has_no_shape(uops):
+  {==}
+
+def L.group_has_no_shape(us):
   {==}
 
 def L.detach_preserves_numel(a):

@@ -62,6 +62,8 @@ import ./LAWS/alu.bend as A
 # must satisfy. A Bend law is universally quantified, so it cannot carry an
 # assumption inline; the condition enters as a premise carrying its own proof.
 #
+# I. The reshape's element count. -- HALF: shape
+#
 # The premise is the spec's own constraint. The conclusion is the interesting
 # half: a reshape that preserves the element count PRESERVES the element count,
 # so the spec's constraint is not merely necessary but sufficient.
@@ -71,15 +73,18 @@ law reshape_preserves_numel:
   for +premise: {prod_of(dst) == numel_of(t) : Nat}
   {numel_of(S.SpReshape{t, S.SpInvalid{}, dst}) == numel_of(t) : Nat}
 
-# The same claim from the other side: a reshape's element count IS the new
-# shape's, whether or not the spec's constraint holds. Together the two say the
-# count follows `dst` and nothing else.
-law reshape_numel_is_the_new_shape:
-  for +t: S.Sp
-  for +dst: List<&2, S.Sdim>
-  {numel_of(S.SpReshape{t, S.SpInvalid{}, dst}) == prod_of(dst) : Nat}
+# AND THE UNCONDITIONAL FORM -- "a reshape's element count IS the new shape's"
+# -- WAS HERE AND IS GONE, AND THE REASON IS THAT IT IS THE SAME CLAIM.
+# MEASURED 2026-11-24: THE SHAPE CENSUS REPORTED IT MASKED BY
+# `reshape_preserves_numel`, AND MASKING MEANS THE TWO READ THE SAME FOLD, SO
+# ONLY ONE OF THEM CAN EVER BE THE FAILURE `bend` NAMES.  AND THE TWO ARE
+# LOGICALLY NESTED: THE UNCONDITIONAL ONE IMPLIES THE CONDITIONAL ONE, SO THE
+# CONDITIONAL ONE IS THE REDUNDANT ONE.  AND THE CONDITIONAL ONE IS THE ONE
+# THAT STATES THE SPEC's CLAIM -- "A RESHAPE IS LEGAL ONLY IF prod s_k =
+# prod s'_k" IS A CLAIM ABOUT THE VALIDITY CONDITION, AND THE LAW SAYS THE
+# CONDITION IS SUFFICIENT, NOT JUST NECESSARY.  ONE LAW PER CLAIM.
 
-# II. The spec's derived properties, stated as laws.
+# II. The spec's derived properties, stated as laws. -- HALF: shape
 #
 # tinyspec's shape column, read off the clauses: every movement op passes the
 # shape through except Reshape, Expand, Pad, Shrink, Index, Stack and Bitcast,
@@ -155,7 +160,7 @@ law reduce_numel_divides_by_the_reduced_axes:
   for +n: Nat
   {Nat.mul(reduced_numel(t, n), prod_of(List.take(&2, S.Sdim, dims_of(t), n))) == numel_of(t) : Nat}
 
-# III. Broadcast -- tinyspec: "right-align shapes, element-wise max; each axis
+# III. Broadcast -- tinyspec: "right-align shapes, element-wise max; each axis -- HALF: shape
 # must be equal or 1".
 #
 # The previous law here claimed the result took the LEFT operand's shape. That
@@ -185,7 +190,7 @@ law broadcast_is_elementwise_max:
   for cb: S.AllSN(S.Shape.to_dims(sb))
   {shape_of(S.SpAdd{a, b}) == Some{S.Shape.of(S.elem_pick(S.Shape.to_dims(sa), S.Shape.to_dims(sb)))} : Maybe<&2, S.Shape>}
 
-# IV. The decomposed elementwise ops.
+# IV. The decomposed elementwise ops. -- HALF: alu
 #
 # tinyspec's "Decomposed elementwise ops" table. Each of these is DEFINED in
 # terms of the primitives, so each is a definitional equality and the checker
@@ -247,7 +252,7 @@ law mulacc_is_add_of_mul:
   for +c: S.Sp
   {A.mulacc(a, b, c) == S.SpAdd{S.SpMul{a, b}, c} : S.Sp}
 
-# V. The dtype column, for the ops where it is not simply src[0].
+# V. The dtype column, for the ops where it is not simply src[0]. -- HALF: alu
 #
 # tinyspec: comparisons are bool; Where takes src[1]; Range is index; Store and
 # Call are void; Binary is uint8.
@@ -346,7 +351,7 @@ law detach_preserves_numel:
   for +a: S.Sp
   {numel_of(S.SpDetach{a}) == numel_of(a) : Nat}
 
-# V-bis. THE PASSTHROUGH OPS' SHAPE, and the spec says so in words.
+# V-bis. THE PASSTHROUGH OPS' SHAPE, and the spec says so in words. -- HALF: shape
 #
 # "After & (buf, deps...) & --- & Passthrough of buf; guarantees deps execute
 # first."  So `After`'s shape IS its buffer's -- and the same holds for `Load`
@@ -359,18 +364,66 @@ law after_preserves_shape:
   for deps: List<&2, S.Sp>
   {shape_of(S.SpAfter{buf, deps}) == shape_of(buf) : Maybe<&2, S.Shape>}
 
-law load_preserves_shape:
-  for buf: S.Sp
-  for alt: Maybe<&2, S.Sp>
-  for gate: Maybe<&2, S.Sp>
-  {shape_of(S.SpLoad{buf, alt, gate}) == shape_of(buf) : Maybe<&2, S.Shape>}
+# AND `Load` AND `Copy` SAY THE SAME THING, AND THE SPEC's TABLE GIVES THEIR
+# SHAPES AS src[0]'s.  MEASURED 2026-11-24: `V-bis` CARRIED `load_preserves_
+# shape` AND `copy_preserves_shape` AS WELL, AND THEY WERE BYTE-IDENTICAL TO
+# THE ONES IN SECTION VI -- SO THE SAME CLAIM WAS STATED TWICE, AND THE
+# SECOND COPY WAS MASKED BY THE FIRST (THE CENSUS'S WORD FOR A LAW THAT CAN
+# FAIL BUT IS NEVER THE FAILURE `bend` NAMES).  ONE LAW PER CLAIM, AND THE
+# SECTION VI COPIES ARE THE ONES THAT STAY.
 
-law copy_preserves_shape:
-  for buf: S.Sp
-  for dev: S.Dev
-  {shape_of(S.SpCopy{buf, dev}) == shape_of(buf) : Maybe<&2, S.Shape>}
+# V-bis-bis. THE ORDERING OPS' SHAPE, AND THE SPEC IS SILENT AND THE PIN IS -- HALF: shape
+# NOT, AND THE PIN IS THE REFERENCE THE SPEC DESCRIBES.
+#
+# MEASURED 2026-11-24: the shape census named FIVE arms unpinned --
+# `SpEnd`, `SpBackedge`, `SpGroup`, `SpSink` and `SpLinear` -- and the
+# census's word for an unpinned arm is "the arm may be wrong and the book
+# says nothing".  THE PIN ANSWERS ALL FIVE, AT `f5ac54685074`:
+#
+#   * `ops.py:316-319` -- "late ops don't have shape": `IF | BARRIER | SINK |
+#     REWRITE_ERROR | ENDIF | BACKEDGE | LINEAR | PROGRAM | SOURCE` -> None.
+#     SO `SINK`, `BACKEDGE` AND `LINEAR` HAVE NO SHAPE.
+#   * `ops.py:371` -- the PASSTHROUGH arm, `MSTACK | MSELECT | DETACH |
+#     CONTIGUOUS_BACKWARD | AFTER | LOAD | COPY | ALLREDUCE | STORE | END |
+#     CALL`, ANSWERS `self.src[0]._shape`.  SO `END`'s SHAPE IS ITS BODY's.
+#   * `SpGroup` HAS NO UPSTREAM OP AT ALL -- upstream DELETED `Ops.GROUP`
+#     (`4e0192eaf remove Ops.GROUP (#18637)`) -- so the port's `Group` is a
+#     STACK of AFTERs, and a STACK's shape is `(len(srcs),) + src[0].shape`.
+#
+# AND THE PIN's `END` IS NOT A HYPOTHESIS: THE CORPUS's CANONICAL FORM PRINTS
+# IT.  MEASURED, `runs/graphcmp/D/D2-canon-bend-lin.txt:48` READS
+# `3:i48 3:END 4:void 2:() 2:i0 1:N 10:n(i47,i10)` -- DTYPE `void` AND SHAPE
+# `()` -- WHILE `SINK` ON THE NEXT LINE READS `1:R` FOR ITS SHAPE, AND `R` IS
+# "NO SHAPE".  SO THE CANONICAL FORM DISTINGUISHES "NO SHAPE" FROM "THE EMPTY
+# SHAPE", AND CPython's `END` HAS THE EMPTY ONE.  AND `i47` IS A `STORE` WITH
+# SHAPE `()`, SO `END`'s SHAPE IS ITS BODY's -- MEASURED, NOT INFERRED.
+#
+# AND `END` IS A PASSTHROUGH AND NOT A "LATE OP", AND THAT IS THE WHOLE POINT
+# OF THE ROW: A LOOP CLOSES AROUND A BODY AND DOES NOT CHANGE IT.
+law end_preserves_shape:
+  for body: S.Sp
+  for ranges: List<&2, S.Sp>
+  {shape_of(S.SpEnd{body, ranges}) == shape_of(body) : Maybe<&2, S.Shape>}
 
-# V-ter-bis. The ALU OPS' DTYPE, which the spec's table gives as one row for
+law sink_has_no_shape:
+  for ss: List<&2, S.Sp>
+  {shape_of(S.SpSink{ss}) == none_of_shape() : Maybe<&2, S.Shape>}
+
+law backedge_has_no_shape:
+  for body: S.Sp
+  for rng: S.Sp
+  for cond: S.Sp
+  {shape_of(S.SpBackedge{body, rng, cond}) == none_of_shape() : Maybe<&2, S.Shape>}
+
+law linear_has_no_shape:
+  for uops: List<&2, S.Sp>
+  {shape_of(S.SpLinear{uops}) == none_of_shape() : Maybe<&2, S.Shape>}
+
+law group_has_no_shape:
+  for us: List<&2, S.Sp>
+  {shape_of(S.SpGroup{us}) == none_of_shape() : Maybe<&2, S.Shape>}
+
+# V-ter-bis. The ALU OPS' DTYPE, which the spec's table gives as one row for -- HALF: alu
 # the family: "ALU unary & src[0].dtype" and "Other binary & src[0].dtype".
 #
 # MEASURED 2026-11-17: the ALU census named THIRTEEN dtype arms unpinned --
@@ -439,7 +492,7 @@ law contiguous_backward_takes_the_source_dtype:
   for +a: S.Sp
   {dtype_of(S.SpContiguousBackward{a}) == dtype_of(a) : Maybe<&2, S.Dt>}
 
-# V-ter. The DEVICE column, and the spec's THIRD derived property.
+# V-ter. The DEVICE column, and the spec's THIRD derived property. -- HALF: alu
 #
 # tinyspec: "Each UOp has five derived properties -- dtype, shape, device,
 # addrspace, and min_max -- determined by the rules at the end of this
@@ -583,7 +636,7 @@ law reduce_preserves_device:
   for n: Nat
   {device_of(S.SpReduce{t, ranges, op, n}) == device_of(t) : Maybe<&2, S.Dev>}
 
-# V-quater. The MIN_MAX column, and the spec's FOURTH derived property.
+# V-quater. The MIN_MAX column, and the spec's FOURTH derived property. -- HALF: alu
 #
 # The column has THREE kinds of cell, and this law set states the TWO that need
 # no NUMBER:
@@ -621,6 +674,14 @@ law bitcast_takes_the_dtype_range:
   for dt: S.Dt
   {min_max_of(S.SpBitcast{a, dt}) == min_max_of(S.SpBuffer{1n, dt, S.D1{0}, S.AGlobal{}}) : Maybe<&2, S.Iv>}
 
+# V-quater-bis. THE SHAPE LAWS THAT THE MIN_MAX SECTION CARRIED, AND THEY ARE
+# ABOUT THE SHAPE FOLD. -- HALF: shape
+#
+# MEASURED 2026-11-24: THESE THREE READ `shape_of`, AND THEY WERE IN THE
+# MIN_MAX SECTION, SO THE ALU CENSUS TESTED THEM -- AND THE ALU CENSUS's
+# MUTATION READS THE *DTYPE* FOLD, SO IT COULD NOT BREAK THEIR SUBJECT.  THE
+# HEADER DECLARES THE HALF AND THE HEADER IS WHERE THE HALF IS READ FROM.
+#
 # AND THE PARAM's SHAPE, which the spec's column gives as "$(n)$ from src, or
 # $()$" -- the size, the same as a Buffer's.
 law param_shape_is_its_size:
@@ -665,7 +726,7 @@ law index_of_no_operands_keeps_the_base_shape:
 # `Shape.of(append(index_dims, drop_n(base_dims, k)))` -- A CONCATENATION AND A
 # DROP -- SO EACH ARITY IS ONE STEP AND NO INDUCTION IS NEEDED.
 
-# VI. The elementwise column: "all inputs same shape, output same shape".
+# VI. The elementwise column: "all inputs same shape, output same shape". -- HALF: shape
 #
 # AND THE SHAPE COLUMN for the ops the spec pins it on -- the same section,
 # because it is the SHAPE column and the shape census counts this section's
@@ -731,7 +792,7 @@ law range_shape_is_empty:
 # This is the claim the schedule's fusion decisions rest on, so it is worth
 # stating rather than leaving in a table caption.
 
-# VI-bis. THE SPEC'S OWN COMPOSITIONS, and the shape each one claims.
+# VI-bis. THE SPEC'S OWN COMPOSITIONS, and the shape each one claims. -- HALF: shape
 #
 # tinyspec's "Common Ops as Compositions" writes five of them in Python, and
 # each is a SHAPE claim about a composition of the primitives.  THE FIRST IS:
@@ -1060,7 +1121,7 @@ law truncmod_is_elementwise:
   for +premise: {shape_of(a) == shape_of(b) : Maybe<&2, S.Shape>}
   {shape_of(S.SpTruncmod{a, b}) == shape_of(a) : Maybe<&2, S.Shape>}
 
-# VII. The Store invariant -- tinyspec: "buf.shape = val.shape".
+# VII. The Store invariant -- tinyspec: "buf.shape = val.shape". -- HALF: shape
 #
 # VACUOUS BY CONSTRUCTION, and it was before the folds were fuelled: the
 # conclusion restates the premise verbatim, so the proof is the premise and the
@@ -1074,7 +1135,7 @@ law store_matches_its_buffer:
   for +premise: {shape_of(buf) == shape_of(val) : Maybe<&2, S.Shape>}
   {shape_of(buf) == shape_of(val) : Maybe<&2, S.Shape>}
 
-# VIII. The shape algebra's own laws.
+# VIII. The shape algebra's own laws. -- HALF: shape
 #
 # These are about `zip_max` and `Shape.max_dim` directly, with no `Sp` in
 # sight. They matter because the elementwise laws in section VI are stuck on
@@ -1146,6 +1207,15 @@ def numel_of(s: S.Sp) -> Nat:
 
 def some_of_shape(sh: S.Shape) -> Maybe<&2, S.Shape>:
   Some{sh}
+
+# AND THE SHAPE's ABSENCE, WHICH IS NOT THE EMPTY SHAPE.  MEASURED 2026-11-24:
+# the corpus's canonical form prints a shapeless node's shape as `R` and a
+# node with the empty shape as `()` -- `runs/graphcmp/D/D2-canon-bend-lin.txt`
+# reads `4:SINK 4:void 1:R` on one line and `3:END 4:void 2:()` on the next --
+# so "no shape" and "the empty shape" ARE TWO FACTS AND A LAW THAT MIXES THEM
+# WOULD BE A LAW ABOUT NOTHING.
+def none_of_shape() -> Maybe<&2, S.Shape>:
+  None{}
 
 def some_of(d: S.Dt) -> Maybe<&2, S.Dt>:
   Some{d}

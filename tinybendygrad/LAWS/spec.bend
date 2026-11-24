@@ -617,7 +617,13 @@ def Sp.shape(s: Sp) -> Maybe<&2, Shape>:
 
     # -- ordering ops
     case SpRange{bound}: Some{Shape.empty()}
-    case SpEnd{body, ranges}: None{}
+    # `End` is a PASSTHROUGH, not a late op: ops.py:371's passthrough arm reads
+    # `self.src[0]._shape` and `End` is in it.  MEASURED 2026-11-24, the
+    # corpus's canonical form prints it: `D2-canon-bend-lin.txt:48` reads
+    # `3:i48 3:END 4:void 2:()` while the `SINK` on the next line reads `1:R`
+    # for its shape, and `R` is "no shape" -- so `End`'s shape is the EMPTY
+    # ONE and it is its body's.
+    case SpEnd{body, ranges}: Sp.shape(body)
     case SpBackedge{body, rng, cond}: None{}
     case SpAfter{buf, deps}: Sp.shape(buf)
     case SpGroup{us}: None{}
@@ -784,7 +790,11 @@ def Sp.dtype(s: Sp) -> Maybe<&2, Dt>:
     case SpStore{buf, val, gate}: None{}                  # void
 
     case SpRange{bound}: Some{index()}                    # "index"
-    case SpEnd{body, ranges}: None{}
+    # `End` is a PASSTHROUGH, not void: ops.py:143's "pass through first" arm
+    # reads `src[0].dtype` and `End` is in it.  MEASURED 2026-11-24, the
+    # corpus's canonical form prints `3:i48 3:END 4:void` -- and `void` is
+    # `End`'s BODY's dtype (a `STORE`), not a rule about `End` itself.
+    case SpEnd{body, ranges}: Sp.dtype(body)
     case SpBackedge{body, rng, cond}: None{}
     case SpAfter{buf, deps}: Sp.dtype(buf)
     case SpGroup{us}: None{}
