@@ -118,6 +118,22 @@ field is fixed (the driver emits 135 rows and compiles natively, rc=0); the orac
 rebasing is a separate job, and the port change is **inert for every fixture** (no one of
 the 135 rows moves) — which is also its gap: no fixture exercises it yet.
 
+## The realize the merge forgot, and what it exposed
+
+Upstream's merge ends with `if len(_realize_axis): rctx.realize_map[x] = _realize_axis`
+(`indexing.py:267`), and the port's `rr_merge` **minted the new RANGE and recorded
+nothing** — so a node read at two different ranges (the shader's `dd`, read at `r` by the
+formula and at `r+1` by the neighbour) was never realized, and a node that is never
+realized has no buffer, so its second read has nothing to read from. Implemented in the
+worktree, it produces upstream's shape — the kernel graph now carries
+`STAGE:none:MAX,RANGE,RANGE` and `INDEX:none:STAGE,RANGE,RANGE` — **and it exposes a
+second defect**: the port's gated toposort answers **7 of the graph's 138 nodes** with a
+budget of 371 (`topon=7`, `arena_n=138`, `budget=371`), so the schedule's view of the graph
+is shallow, and the realize pushes the END outside it — `sc_unbacked` on the END is `T` and
+the whole-graph walk answers `F`. **That is why the realize is not landed**: the toposort's
+fuel has to cover the re-push (each kept node is popped twice, once to be cached), and
+until it does, a bigger graph silently loses nodes.
+
 **And a genuinely missing port.** An `ALLOC` has no realize-time rebind: `UOp.new_buffer` is
 `TODO(p3)` in `ops.bend`, and upstream's `linear_with_vars` swaps `ALLOC` → `BUFFER` there.
 That is why the runner takes `mxw_buf` (BUFFERs) and why a graph built the `Tensor.empty`

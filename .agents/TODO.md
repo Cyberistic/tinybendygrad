@@ -5130,6 +5130,30 @@ are NOT free: `grep -c smoothstep tinygrad/` is 0 and there is no `Ops.MIN`.
       so a run now would record a digest of THEIR tree. The runner's `refused=` row IS the
       instrument that can go red on this change (it goes back to `kernels=1` when the pad lane
       lands), and nothing gates it yet — that is the row to gate next.
+- [ ] **THE REALIZE THE MERGE FORGOT — MEASURED, AND NOT LANDED (2026-11-24).** Upstream's
+      merge ends with `if len(_realize_axis): rctx.realize_map[x] = _realize_axis`
+      (`indexing.py:267`); the port's `rr_merge` (`rangify.bend:583`) minted the new RANGE
+      and recorded NOTHING, so a node read at two different ranges was never realized — and
+      a node that is never realized has no buffer, so its second read has nothing to read
+      from. The shader's `dd` is exactly that node (read at `r` by the formula, at `r+1` by
+      the neighbour). Implemented in the worktree it produces upstream's shape: the kernel
+      graph carries `STAGE:none:MAX,RANGE,RANGE` and `INDEX:none:STAGE,RANGE,RANGE`. **IT IS
+      NOT LANDED BECAUSE IT EXPOSES A SECOND DEFECT**: the port's gated toposort answers
+      **7 OF THE GRAPH'S 138 NODES** with a budget of 371 (`topon=7`, `arena_n=138`,
+      `budget=371`), so the schedule's view of the graph is shallow and the realize pushes
+      the END outside it — `sc_unbacked` on the END is `T` while the whole-graph walk
+      answers `F`, and the refusal stops firing. **THE TOPOSORT'S FUEL HAS TO COVER THE
+      RE-PUSH** (each kept node is popped twice: once to be kept and pushed back, once to be
+      cached) and until it does a bigger graph silently loses nodes.
+- [ ] **THE PORT'S GATED TOPOSORT IS SHALLOW, AND THAT IS A DEFECT OF ITS OWN (2026-11-24).**
+      `sc_topo_of` (`schedule/__init__.bend:539`) answers 7 nodes for the shader's 138-node
+      kernel graph. The graph is walked with `enter_calls=False` (`src_without_body`), so the
+      kernel bodies are not descended into — but the RANGE, the INDEX and the formula ARE
+      in the graph and are NOT in the answer, and the schedule's `pass1` builds its whole
+      dependency graph from that list. **WHAT TO CHECK FIRST**: the fuel (the budget is
+      `next + edges`, and each kept node is popped twice) and `sc_topo.keep2`, which pushes
+      the kept node back with `visited=True` and adds it to the cache only on the second
+      pop.
 - [ ] **`gates/schedsched-gate.py` HAD TWO DEFECTS AND ONE MASKED THE OTHER (2026-11-24).**
       (1) The `bend=` field still pointed at the LIBRARY after `d404c64d9` moved the 135 gate
       rows into the driver `gates/schedule-init-gate.bend`, so the port lane ran a file with no

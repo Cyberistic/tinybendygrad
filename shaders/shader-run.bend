@@ -291,25 +291,38 @@ def put(rs: List<&2, String>) -> IO(Unit):
         b : Unit <- put(rest)
         IO.pure(Unit, b)
 
+# THE RENDER, AND THE REFUSAL, AS TWO DEFS AND A MATCH. THE REFUSAL IS A MATCH ON A
+# PARAMETER -- THE PORT'S SPELLING FOR A VALUE-DEPENDENT BRANCH (a match may not scrutinize
+# a computed value) -- AND THE TWO EFFECTS LIVE IN DEFS OF THEIR OWN, SO THE TAKEN ONE IS
+# THE ONLY ONE THAT RUNS. MEASURED: on a refused run `shaders/out/` stays EMPTY, and the
+# row `refused=unbacked-end` is the last thing printed.
+def go_render(+k: Kern, c_only: Bool) -> IO(Unit):
+  Bool.pick(IO(Unit), c_only,
+    IO.print(Kern.c(k)),
+    do IO<Unit>:
+      f : File <- IO.try(File, File.open(C_PATH(), "w"))
+      f2 : File <- IO.bind(File & Result<&1, &1, U32 & String, Unit>, File,
+        File.write(f, drv(k)), wrote)
+      Unit <- File.close(f2)
+      Unit <- run("cc", "cc", ["-O1", "-o", BIN_PATH(), C_PATH()])
+      run("run", BIN_PATH(), []))
+
+def go_refused(+k: Kern) -> IO(Unit):
+  do IO<Unit>:
+    Unit <- IO.print(String.concat(["# refused=", Kern.refused(k)]))
+    IO.pure(Unit, Unit{})
+
+def go_pick(empty: Bool, +k: Kern, c_only: Bool) -> IO(Unit):
+  match empty:
+    case True{}: go_render(k, c_only)
+    case _: go_refused(k)
+
 def go(+k: Kern, c_only: Bool) -> IO(Unit):
   do IO<Unit>:
     Unit <- put(diag())
     Unit <- IO.print(String.concat(["# sig=", sig(k)]))
     Unit <- IO.print(String.concat(["# c_len=", U32.show(U32.from_nat(String.length(Kern.c(k))))]))
-    Bool.pick(IO(Unit), String.eq(Kern.refused(k), ""),
-      do IO<Unit>:
-        Bool.pick(IO(Unit), c_only,
-          IO.print(Kern.c(k)),
-          do IO<Unit>:
-            f : File <- IO.try(File, File.open(C_PATH(), "w"))
-            f2 : File <- IO.bind(File & Result<&1, &1, U32 & String, Unit>, File,
-              File.write(f, drv(k)), wrote)
-            Unit <- File.close(f2)
-            Unit <- run("cc", "cc", ["-O1", "-o", BIN_PATH(), C_PATH()])
-            run("run", BIN_PATH(), [])),
-      do IO<Unit>:
-        Unit <- IO.print(String.concat(["# refused=", Kern.refused(k)]))
-        IO.pure(Unit, Unit{}))
+    go_pick(String.eq(Kern.refused(k), ""), k, c_only)
 
 def main() -> IO(Unit):
   do IO<Unit>:
