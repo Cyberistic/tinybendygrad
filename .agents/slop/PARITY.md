@@ -8272,3 +8272,40 @@ ms**, **⇒⇒† AND **AND **the **`append` **0.041 ms**.
 **THE **COPY **IS **0.9853**)**) -- **⇒⇒† AND **AND **EVERY **KEPT **CHANGE **HAS **A **COUNT **THAT
 **FELL **AND **A **WALL **THAT **FELL** (⇒⇒† AND **THE **INDENT: **9,967 → 7,311 **CONCAT **CALLS **AND
 **0.22 ms **GONE**; **⇒⇒† AND **THE **`++` **MIGRATION: **9,967 → 2,983 **AND **691 → 5**)**.
+
+### 138.23 **THE **WIRE's **NUMBER-LIST **BUILD **IS **NOT **THE **TURN** -- **⇒⇒† AND **THE **PHASE
+**FELL **0.09 ms **AND **THE **TURN **DID **NOT **MOVE**
+
+**⇒⇒† AND **THE **`wire_both` **PHASE** (⇒⇒† AND **THE **PORT's **OWN **FILE**,
+**`tinybendygrad/renderer/wire.js`**) **ALLOCATES **A **JS **ARRAY **PER **ROW** (⇒⇒† AND
+**`t.split("~").map(Number)`**) **⇒⇒† AND **AND **THE **ARRAY **IS **THROWN **AWAY** (⇒⇒† AND **THE
+**LIST **IS **REBUILT **CELL **BY **CELL**) -- **⇒⇒† AND **AND **READING **THE **TOKEN **DIRECTLY **CUTS
+**THE **PHASE **FROM **0.450 **TO **0.360 ms** (⇒⇒† AND **-20%**, **⇒⇒† AND **MEASURED**) **⇒⇒† AND
+**AND **THE **WIRE's **NUMBERS **ARE **BYTE-IDENTICAL** (⇒⇒† AND **14,321 **BYTES **FOR **BOTH **BUILDS**,
+**⇒⇒† AND **AND **THE **COMPARISON **IS **OVER **THE **WIRE's **OWN **EFFECT**)**.
+
+**⇒⇒† AND **⇒⇒† AND **THE **VERDICT**, **ON **THE **SHIPPED **TURN** (⇒⇒† AND **120 **PAIRED **TURNS**,
+**⇒⇒† AND **WITH **THE **SAME **BUILD **AGAINST **ITSELF **AS **A **THIRD **ARM **IN **THE **SAME
+**LOOP**):
+
+| | the **change** | the **noise **floor** |
+|---|---|---|
+| the **ratio **OF **THE **TWO **MINIMA** | 0.9693 | 0.9954 |
+| the **ratio **OF **THE **TWO **MEDIANS** | 0.9062 | 0.8766 |
+| the **ratio **OF **THE **TWO **MEANS** | 0.7601 | 0.7723 |
+| the **MEDIAN **OF **THE **PAIRED **RATIOS** | 0.9117 | 0.9072 |
+| the **WINS** | 75 of 120 | 78 of 120 |
+
+**⇒⇒† AND **SO **THE **CHANGE **IS **REVERTED** -- **⇒⇒† AND **AND **THE **REASON **IS **THE **CLASS**:
+**THE **PHASE **FELL **0.09 ms **OF **A **~3 ms **TURN** (⇒⇒† AND **3%**), **⇒⇒† AND **AND **THE **TURN's
+**OWN **NOISE **IS **THE **SIZE **OF **THE **EFFECT** (⇒⇒† AND **AND **THE **NOISE **FLOOR's **PAIRED
+**MEDIAN **WAS **0.9072** -- **⇒⇒† AND **SO **AN **EFFECT **OF **0.03 **ON **THE **PAIRED **MEDIAN **IS
+**BELOW **THE **FLOOR**) -- **⇒⇒† AND **AND **THE **TREE's OWN **RULE **FOLLOWS**: **A **CHANGE **WHOSE
+**MEASURED **RATIO **IS **NEUTRAL **OR **FAILS **THE **KEEPER **LINE **IS **REVERTED**.
+
+**⇒⇒† AND **⇒⇒† AND **THE **LESSON**, **AND **IT **IS **THE **FOURTH **INSTANCE**: **THE **COUNT **IS
+**NOT **THE **COST** (⇒⇒† AND **AND **A **PHASE's **COUNT **IS **NOT **A **PHASE's **SHARE **EITHER**,
+**⇒⇒† AND **AND **THE **SHARE **OF **A **TURN **IS **WHAT **A **CHANGE **MUST **MOVE**) -- **⇒⇒† AND **AND
+**THE **FLOOR **IS **NOT **A **CONSTANT**: **IT **IS **THE **MACHINE's **NOISE **AT **THE **SIZE **OF **THE
+**EFFECT** (⇒⇒† AND **AND **THE **TREE's OWN **RULE**: **THE **NOISE **FLOOR **MUST **BE **READ
+**IMMEDIATELY **BEFORE **THE **VERDICT**)**.
