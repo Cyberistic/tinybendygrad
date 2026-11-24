@@ -8008,3 +8008,59 @@ probe-join-pieces.py`**, **⇒⇒† AND **IT **PATCHES **THE **COMPILED **`$Str
 **INEFFICIENCIES** -- **⇒⇒† AND **THE **SUBSTRATE's **LIMITS **ARE **IN **THE **PRELUDЕ**'s
 **`String.join`**, **IN **THE **LACK **OF **A **PROJECTION**, **AND **IN **THE **LACK **OF **FUNCTION
 **VALUES** (⇒⇒† AND **WHICH **IS **WHY **THE **DRIVER **TABLES **CANNOT **BE **SHARED**)**.
+
+### 138.18 **THE **CORRECTION **OF **§138.17**: **`String.join` **IS **O(n)**, **NOT **O(n²)** -- **⇒⇒† AND **A
+**COUNT **NEEDS **A **CLOCK**, **NOT **A **MODEL**
+
+**⇒⇒† AND **§138.17 **CLAIMED **THAT **THE **PORT's **RENDER **PAYS **A **QUADRATIC **PRICE **FOR **THE
+**STRING **JOINS** (**⇒⇒† AND **IT **MEASURED **128.6x **AMPLIFICATION**)** -- **⇒⇒† AND **THAT **IS **A
+**MISCOUNT**, **⇒⇒† AND **THE **COUNT **WAS **NOT **EVEN **THE **RIGHT **COUNT**.
+
+**⇒⇒† AND **THE **PRELUDE's **FORM** (MEASURED, `bend2/base.bend`, **AT **Bend **2.0.40** **ON
+**`origin/main` **AT **`966bbb74`**, **2026-11-23**)**:
+```
+def String.join.go(xs: List<&2, String>, h: String, +sep: String) -> String:
+  match xs:
+    case Nil{}:
+      h
+    case h2 <> t:
+      String.append(h, String.append(sep, String.join.go(t, h2, sep)))
+```
+
+**⇒⇒† AND **`String.append(a, b)` **COPIES **`a`** -- **⇒⇒† AND **SO **THE **STRING **COPIED **AT **EVERY
+**LEVEL **IS **`h`**, **THE **HEAD **PIECE** -- **⇒⇒† AND **AND **THE **HEAD **PIECES **ARE **SHORT** -- **⇒⇒†
+**AND **SO **THE **COPIES **ARE **THE **SUM **OF **THE **HEAD **PIECES' **LENGTHS** (⇒⇒† AND **O(n)**) -- **⇒⇒†
+**AND **AND **THE **PREFIX-SUM **COUNT **(⇒⇒† AND **O(n²)**) **IS **THE **COUNT **OF **THE **OTHER
+**NESTING** (⇒⇒† AND **THE **ONE **THAT **COPIES **THE **TAIL**)**.
+
+**⇒⇒† AND **⇒⇒† AND **THE **DECISIVE **READING **IS **THE **BENCH**
+(**`bench/runtime/string-join/main.bend`**, **MEASURED **ON **`origin/main` **AT **`966bbb74`**, **THE **JS
+**LANE **UNDER **BUN**)**:
+
+| n | the **join's **ms** | the **checksum** |
+|---|---|---|
+| 100 | **103** | 140807 |
+| 200 | **105** | 286908 |
+| 400 | **107** | 579410 |
+| 800 | **119** | 1165614 |
+
+**⇒⇒† AND **THE **TIME **GROWS **LINEARLY**, **⇒⇒† AND **A **QUADRATIC **WOULD **BE **103 -> 206 -> 412
+-> 824** (⇒⇒† AND **OR **~4x **THE **COPIES**) -- **⇒⇒† AND **AND **THE **MEASURED **IS **NOT **THAT**.
+
+**⇒⇒† AND **⇒⇒† AND **THE **PORT's **OWN **INSTRUMENT **AGREES** (**`probe-join-pieces.py`**, **AFTER **THE
+**FIX**): **THE **AMPLIFICATION **IS **1.00x** (⇒⇒† AND **22,983 **CHARS **OF **TEXT **COPIED **22,983
+**TIMES**), **⇒⇒† AND **AND **THE **PREFIX-SUM **COUNT **(2,955,749) **IS **REPORTED **AS **WHAT **IT **IS**:
+**THE **OTHER **NESTING's **COUNT**.
+
+**⇒⇒† AND **⇒⇒† AND **THE **PORT's **RENDER **IS **NOT **PAYING **A **QUADRATIC **PRICE **FOR **THE
+**JOIN** -- **⇒⇒† AND **THE **NEXT **TARGET **IS **SOMETHING **ELSE** -- **⇒⇒† AND **AND **THE **§138.18
+**FINDING **IS **THE **LESSON **WITH **A **SECOND **INSTANCE**: **THE **COUNT **IS **NOT **THE **COST** -- **⇒⇒†
+**AND **THE **COUNT **WAS **NOT **EVEN **THE **RIGHT **COUNT** -- **⇒⇒† AND **A **COUNT **NEEDS **A **CLOCK**,
+**NOT **A **MODEL**.
+
+**⇒⇒† AND **AND **THE **BEND **FINDING **IS **RETAINED **AND **REFINED**: **AN **O(n) `String.join`** **OVER
+**A **`List<&2, String>`** **IS **NOT **WRITABLE **IN **THE **CURRENT **TYPE **SYSTEM** (⇒⇒† AND **THE
+**CHAR-LIST **FORM **NEEDS **THE **SEPARATOR **SHARED**, **⇒⇒† AND **AND **A **CHAR **LIST **OF **LINEAR
+**CHARS **CANNOT **BE **SHARED**) -- **⇒⇒† AND **SO **THE **JOIN **IS **NOT **THE **WIN **IT **LOOKED
+**LIKE** (⇒⇒† AND **AND **THE **BENCH **IS **STILL **WORTH **LANDING**: **IT **IS **THE **INSTRUMENT **THAT
+**WOULD **HAVE **SETTLED **THIS **IN **ONE **RUN**)**.

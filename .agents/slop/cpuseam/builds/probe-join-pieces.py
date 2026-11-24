@@ -70,7 +70,8 @@ def instrument(src: str) -> str:
           " while (__x && __x.$ === \"Con\") { __n += 1; __c += (__x.head || \"\").length;"
           " __pre += (__x.head || \"\").length; __cop += __pre; __x = __x.tail; }"
           " globalThis.__J.calls += 1; globalThis.__J.pieces += __n; globalThis.__J.chars += __c;"
-          " globalThis.__J.copies = (globalThis.__J.copies || 0) + __cop; }")
+          " globalThis.__J.copies = (globalThis.__J.copies || 0) + __cop;"
+          " globalThis.__J.heads = (globalThis.__J.heads || 0) + ((__n > 0 ? __c : 0)); }")
   src = src[:brace + 1] + probe + src[brace + 1:]
 
   dump_old = """    return $IO_bind((_x_14) => $IO_print($$ended(), _x_14), run_clo($serve_c11(_f_0,_k_0)), _x_13);"""
@@ -101,10 +102,14 @@ if __name__ == "__main__":
   pieces = J.get("pieces", 0) // n
   chars = J.get("chars", 0) // n
   copies = J.get("copies", 0) // n
+  heads = J.get("heads", 0) // n
   print("THE `String.join` CALLS, MEASURED IN THE DAEMON:")
   print(f"  CALLS A TURN:          {calls}")
   print(f"  PIECES A TURN:         {pieces}")
   print(f"  PIECES PER CALL:       {pieces/max(calls,1):.1f}")
   print(f"  CHARS A TURN:          {chars}")
-  print(f"  CHARS COPIED BY THE JOIN A TURN: {copies}")
-  print(f"  THE AMPLIFICATION:     {copies/max(chars,1):.2f}x")
+  print(f"  CHARS COPIED BY THE JOIN A TURN (THE HEAD PIECES): {heads}")
+  print(f"  THE AMPLIFICATION:     {heads/max(chars,1):.2f}x")
+  print(f"  THE PREFIX-SUM COUNT (THE OTHER NESTING's): {copies}")
+  print("  =>=>+ AND **THE **PREFIX-SUM **COUNT **IS **NOT **WHAT **THE **PRELUDE **DOES** -- **=>=>+ AND **THE")
+  print("  **BENCH **IS **THE **DECISIVE **READING** (THE **TIME **GROWS **LINEARLY**)")
