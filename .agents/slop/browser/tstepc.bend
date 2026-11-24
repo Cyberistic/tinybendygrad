@@ -46,29 +46,35 @@ def sgd.mk(+ar: O.Arena, +w: U32, +g: U32) -> T.Tensor:
   T.tn_sub(T.tn_new(T.Tensor.ar(sc), w), sc)
 
 type TP is Data:
-  TP{prog: RZ.RZProg, out: U32, lt: U32, g1: U32, g2: U32, w1n: U32, w2n: U32}
+  TP{prog: RZ.RZProg, out: U32, lt: U32, g1: U32, g2: U32, w1n: U32, w2n: U32, ws: U32, csg: G.Grads}
 
 def TP.prog(x: TP) -> RZ.RZProg:
   match x:
-    case TP{prog, out, lt, g1, g2, w1n, w2n}: prog
+    case TP{prog, out, lt, g1, g2, w1n, w2n, ws, csg}: prog
 def TP.out(x: TP) -> U32:
   match x:
-    case TP{prog, out, lt, g1, g2, w1n, w2n}: out
+    case TP{prog, out, lt, g1, g2, w1n, w2n, ws, csg}: out
 def TP.lt(x: TP) -> U32:
   match x:
-    case TP{prog, out, lt, g1, g2, w1n, w2n}: lt
+    case TP{prog, out, lt, g1, g2, w1n, w2n, ws, csg}: lt
 def TP.g1(x: TP) -> U32:
   match x:
-    case TP{prog, out, lt, g1, g2, w1n, w2n}: g1
+    case TP{prog, out, lt, g1, g2, w1n, w2n, ws, csg}: g1
 def TP.g2(x: TP) -> U32:
   match x:
-    case TP{prog, out, lt, g1, g2, w1n, w2n}: g2
+    case TP{prog, out, lt, g1, g2, w1n, w2n, ws, csg}: g2
 def TP.w1n(x: TP) -> U32:
   match x:
-    case TP{prog, out, lt, g1, g2, w1n, w2n}: w1n
+    case TP{prog, out, lt, g1, g2, w1n, w2n, ws, csg}: w1n
 def TP.w2n(x: TP) -> U32:
   match x:
-    case TP{prog, out, lt, g1, g2, w1n, w2n}: w2n
+    case TP{prog, out, lt, g1, g2, w1n, w2n, ws, csg}: w2n
+def TP.ws(x: TP) -> U32:
+  match x:
+    case TP{prog, out, lt, g1, g2, w1n, w2n, ws, csg}: ws
+def TP.csg(x: TP) -> G.Grads:
+  match x:
+    case TP{prog, out, lt, g1, g2, w1n, w2n, ws, csg}: csg
 
 def tprog() -> TP:
   # --- the four inputs, one chain -----------------------------------------------------------------
@@ -126,7 +132,7 @@ def tprog() -> TP:
   +snk = O.UOp.sink(O.Found.ar(an2),
     [O.Found.i(ao), O.Found.i(als), O.Found.i(ag1), O.Found.i(ag2), O.Found.i(an1), O.Found.i(an2)])
   TP{RZ.RZProg{O.Found.ar(snk), O.Found.i(snk)},
-     T.Tensor.u(out), T.Tensor.u(lt), g1, g2, T.Tensor.u(w1n), T.Tensor.u(w2n)}
+     T.Tensor.u(out), T.Tensor.u(lt), g1, g2, T.Tensor.u(w1n), T.Tensor.u(w2n), T.Tensor.u(ws), G.CState.g_of(cs)}
 
 def dims.go(+xs: List<&2, U32>, +acc: List<&2, String>) -> List<&2, String>:
   match xs:
@@ -204,6 +210,106 @@ def slots.go(+ar: O.Arena, +ns: List<&2, U32>, +acc: List<&2, String>) -> String
       slots.go(ar, t, Bool.pick(List<&2, String>, O.eq_op(O.Arena.op(ar, n), O.OpsSTORE{}),
         List.append(&2, String, acc, [slot_of(ar, n)]), acc))
 
+# THE `g1` CHILD WALK: the op of g1 and of each of its srcs, with each SHAPE's rank -- the first `0`
+# is the node whose shape the fold cannot read, which is what makes `g1` (and `w1_new`) shapeless.
+def kids.go(+ar: O.Arena, +ss: List<&2, U32>, +acc: List<&2, String>) -> String:
+  match ss:
+    case Nil{}: String.join(acc, ",")
+    case h <> t:
+      kids.go(ar, t, List.append(&2, String, acc,
+        [String.concat([RF.eng_op_name(O.Arena.op(ar, h)), "/",
+                        U32.show(U32.from_nat(List.length(&2, U32, IX.rr_dims(ar, F.Folded.t(F.folded(ar)), h))))])]))
+
+# THE STACK WALK: g1's src[1] is the shape arg greshape minted. Its OP says which form ds took
+# (a bare CONST for a one-element ds, a STACK otherwise), dshow reads its own fold-shape, stkids
+# reads each child's sym_dim, and mshow is marg(ar, g1) -- the very read reshape_ds makes.
+def symshow.of(m: Maybe<&1, O.Sint>) -> String:
+  match m:
+    case Some{O.SI{+v}}: String.concat(["SI", H.i64_text(v)])
+    case Some{O.SU{+s}}: String.concat(["SU", U32.show(s)])
+    case None{}: "?"
+
+def symshow(+ar: O.Arena, +u: U32) -> String:
+  symshow.of(F.sym_dim(ar, u))
+
+def dshow.go(ds: List<&2, U32>, +acc: String) -> String:
+  match ds:
+    case Nil{}: acc
+    case d <> t: dshow.go(t, String.concat([acc, "x", U32.show(d)]))
+
+def dshow(+ar: O.Arena, +u: U32) -> String:
+  dshow.go(IX.rr_dims(ar, F.Folded.t(F.folded(ar)), u), "")
+
+def sshow.go(ds: List<&2, O.Sint>, +acc: String) -> String:
+  match ds:
+    case Nil{}: acc
+    case d <> t:
+      match d:
+        case O.SI{+v}: sshow.go(t, String.concat([acc, "x", H.i64_text(v)]))
+        case O.SU{+s}: sshow.go(t, String.concat([acc, "xSU", U32.show(s)]))
+
+def mshow.of(m: Maybe<&2, List<&2, O.Sint>>) -> String:
+  match m:
+    case Some{ds}: String.concat(["[", sshow.go(ds, ""), "]"])
+    case None{}: "None"
+
+def mshow(+ar: O.Arena, +u: U32) -> String:
+  mshow.of(F.marg(ar, u))
+
+def stkids.go(+ar: O.Arena, +ss: List<&2, U32>, +acc: List<&2, String>) -> String:
+  match ss:
+    case Nil{}: String.join(acc, ",")
+    case h <> t:
+      stkids.go(ar, t, List.append(&2, String, acc,
+        [String.concat([RF.eng_op_name(O.Arena.op(ar, h)), "=", symshow(ar, h)])]))
+
+def g1row(+ar: O.Arena, +u: U32) -> String:
+  +sk = O.Arena.src(ar, u, 1)
+  String.concat([RF.eng_op_name(O.Arena.op(ar, u)), "[", kids.go(ar, O.Arena.srcs(ar, u), Nil{}), "]",
+                 " sk=", RF.eng_op_name(O.Arena.op(ar, sk)), "{", dshow(ar, sk), "}",
+                 " kids=", stkids.go(ar, O.Arena.srcs(ar, sk), Nil{}),
+                 " mul=", dshow(ar, O.Arena.src0(ar, u)),
+                 " marg=", mshow(ar, u)])
+
+def afts.go(+ar: O.Arena, +ss: List<&2, U32>, +acc: List<&2, String>) -> String:
+  match ss:
+    case Nil{}: String.join(acc, ",")
+    case h <> t:
+      afts.go(ar, t, List.append(&2, String, acc,
+        [String.concat([RF.eng_op_name(O.Arena.op(ar, h)), ">", RF.eng_op_name(O.Arena.op(ar, O.Arena.src0(ar, h)))])]))
+
+def gshape.none.of(m: Maybe<&2, List<&2, U32>>) -> Bool:
+  match m:
+    case Some{ds}: False{}
+    case _: True{}
+
+def gshape.none(+ar: O.Arena, +u: U32) -> Bool:
+  gshape.none.of(G.gshape(ar, u))
+
+def pairs.go(+ar: O.Arena, +ks: List<&2, U32>, +vs: List<&2, U32>, +acc: List<&2, String>) -> String:
+  match ks vs:
+    case Nil{} Nil{}: String.join(acc, "|")
+    case k <> kt v <> vt:
+      pairs.go(ar, kt, vt, List.append(&2, String, acc,
+        [String.concat([RF.eng_op_name(O.Arena.op(ar, k)), "=", RF.eng_op_name(O.Arena.op(ar, v)), ":", dshow(ar, v)])]))
+    case _ _: String.join(acc, "|")
+
+def badg.go(+ar: O.Arena, +ks: List<&2, U32>, +vs: List<&2, U32>, +acc: List<&2, String>) -> String:
+  match ks vs:
+    case Nil{} Nil{}: String.join(acc, ";")
+    case k <> kt v <> vt:
+      badg.go(ar, kt, vt, Bool.pick(List<&2, String>, gshape.none(ar, v),
+        List.append(&2, String, acc, [String.concat([RF.eng_op_name(O.Arena.op(ar, k)), "=", RF.eng_op_name(O.Arena.op(ar, v))])]), acc))
+    case _ _: String.join(acc, ";")
+
+def gshs.of(m: Maybe<&2, List<&2, U32>>) -> String:
+  match m:
+    case Some{ds}: dshow.go(ds, "")
+    case _: "None"
+
+def gshs(+ar: O.Arena, +u: U32) -> String:
+  gshs.of(G.gshape(ar, u))
+
 def diag() -> String:
   # (1) the STOREs BEFORE the kernel split, and (2) the SHAPES of the six stored values. A store whose
   # value has no shape is a store `rz_rebuild`/`rr_kernel_graph` drops, and the difference between these
@@ -218,13 +324,56 @@ def diag() -> String:
   +ka = O.Found.ar(k)
   +ns = O.UOp.toposort(O.Arena.budget(ka), ka, O.Found.i(k))
   +lin = SCH.schedule(ka, O.Found.i(k))
+  +p_ck: O.Found = O.UOp.const(O.Arena.empty(), O.CFloat{FB.F32.from_bits(1)})
+  +p_cv: O.Found = O.UOp.const(O.Found.ar(p_ck), O.CFloat{FB.F32.from_bits(1)})
+  +p_pa: O.Arena = O.Found.ar(p_cv)
+  +p_k: U32 = O.Found.i(p_ck)
+  +p_v: U32 = O.Found.i(p_cv)
+  +p_s: G.CState = G.CState{p_pa, G.Grads{Nil{}, Nil{}}, 0, 0}
+  +p_c: G.CState = G.cg_edge.guard(Some{[1, 1, 1, 2, 1, 2]}, Some{[1, 1, 14, 2, 14, 2]}, p_s, p_k, p_v)
+  +p_a: O.Arena = G.CState.ar_of(p_c)
+  +p_r: U32 = gv(G.CState.g_of(p_c), p_k)
+  +q_ck: O.Found = O.UOp.const(O.Arena.empty(), O.CFloat{FB.F32.from_bits(1)})
+  +q_cv: O.Found = O.UOp.const(O.Found.ar(q_ck), O.CFloat{FB.F32.from_bits(1)})
+  +q_s: G.CState = G.CState{O.Found.ar(q_cv), G.Grads{Nil{}, Nil{}}, 0, 0}
+  +q_c: G.CState = G.cg_edge.eq([1, 1, 1, 2, 1, 2], [1, 1, 14, 2, 14, 2], q_s, O.Found.i(q_ck), O.Found.i(q_cv))
+  +q_a: O.Arena = G.CState.ar_of(q_c)
+  +q_r: U32 = gv(G.CState.g_of(q_c), O.Found.i(q_ck))
+  +w_ck: O.Found = O.UOp.const(O.Arena.empty(), O.CFloat{FB.F32.from_bits(1)})
+  +w_cv: O.Found = O.UOp.const(O.Found.ar(w_ck), O.CFloat{FB.F32.from_bits(1)})
+  +w_s: G.CState = G.CState{O.Found.ar(w_cv), G.Grads{Nil{}, Nil{}}, 0, 0}
+  +w_c: G.CState = G.cg_edge.axes(False{}, [1, 1, 1, 2, 1, 2], [1, 1, 14, 2, 14, 2], w_s, O.Found.i(w_ck), O.Found.i(w_cv))
+  +w_a: O.Arena = G.CState.ar_of(w_c)
+  +w_r: U32 = gv(G.CState.g_of(w_c), O.Found.i(w_ck))
+  +y_ck: O.Found = O.UOp.const(O.Arena.empty(), O.CFloat{FB.F32.from_bits(1)})
+  +y_cv: O.Found = O.UOp.const(O.Found.ar(y_ck), O.CFloat{FB.F32.from_bits(1)})
+  +y_s: G.CState = G.CState{O.Found.ar(y_cv), G.Grads{Nil{}, Nil{}}, 0, 0}
+  +y_c: G.CState = G.cg_edge.diff(True{}, [1, 1, 1, 2, 1, 2], [1, 1, 14, 2, 14, 2], y_s, O.Found.i(y_ck), O.Found.i(y_cv))
+  +y_a: O.Arena = G.CState.ar_of(y_c)
+  +y_r: U32 = gv(G.CState.g_of(y_c), O.Found.i(y_ck))
+  +h_ck: O.Found = O.UOp.const(O.Arena.empty(), O.CFloat{FB.F32.from_bits(1)})
+  +h_cv: O.Found = O.UOp.const(O.Found.ar(h_ck), O.CFloat{FB.F32.from_bits(1)})
+  +h_ar: O.Arena = O.Found.ar(h_cv)
+  +h_f: O.Found = G.gedge.rop.hasrd([2, 4], h_ar, O.Found.i(h_cv), [2, 4], [1, 1, 14, 2, 14, 2])
+  +x_ax: Maybe<&2, List<&2, U32>> = G.gbaxes.of(False{}, [1, 1, 1, 2, 1, 2], [1, 1, 14, 2, 14, 2])
+  +s_f: O.Found = O.shape_arg_found(O.Found.ar(h_f), [1, 1, 1, 2, 1, 2])
+  +z_f: O.Found = G.cg_edge.rshp(False{}, O.Found.ar(h_f), O.Found.i(h_f), [1, 1, 1, 2, 1, 2])
+  +n_ka: O.Found = O.UOp.const(O.Arena.empty(), O.CFloat{FB.F32.from_bits(2)})
+  +n_va: O.Found = O.UOp.const(O.Found.ar(n_ka), O.CFloat{FB.F32.from_bits(3)})
+  +n_s: G.CState = G.CState{O.Found.ar(n_va), G.Grads{Nil{}, Nil{}}, 0, 0}
+  +n_c: G.CState = G.cg_puts.put(n_s, O.Found.i(n_ka), O.Found.i(n_va))
+  +n_r: U32 = gv(G.CState.g_of(n_c), O.Found.i(n_ka))
   String.concat(["tsc.reb_store=", U32.show(cnt(qa, ns0, O.OpsSTORE{})),
                  " sh_out=", sh(cha, TP.out(tp)),
                  " sh_lt=", sh(cha, TP.lt(tp)),
                  " sh_g1=", sh(cha, TP.g1(tp)),
+                 " gsh_ws=", gshs(cha, TP.ws(tp)),
+                 " gsh_mul=", gshs(cha, O.Arena.src0(cha, TP.g1(tp))),
+                 " gsh_g1=", gshs(cha, TP.g1(tp)),
                  " sh_g2=", sh(cha, TP.g2(tp)),
                  " sh_w1n=", sh(cha, TP.w1n(tp)),
                  " sh_w2n=", sh(cha, TP.w2n(tp)),
+                 " g1=", g1row(cha, TP.g1(tp)),
                  " reb_slots=", slots.go(qa, ns0, Nil{}),
                  " kg_slots=", slots.go(ka, ns, Nil{}),
                  " tsc.kg_n=", U32.show(U32.from_nat(List.length(&2, U32, ns))),
@@ -233,7 +382,29 @@ def diag() -> String:
                  " kg_index=", U32.show(cnt(ka, ns, O.OpsINDEX{})),
                  " kg_red=", U32.show(cnt(ka, ns, O.OpsREDUCE{})),
                  " nk=", U32.show(U32.from_nat(List.length(&2, U32, SCH.lin_kernels(lin)))),
-                 " lk=", lk1(SCH.lin_ar(lin), SCH.lin_kernels(lin), Nil{})])
+                 " lk=", lk1(SCH.lin_ar(lin), SCH.lin_kernels(lin), Nil{}),
+                 " probe=", RF.eng_op_name(O.Arena.op(p_a, p_r)),
+                 " peq=", U32.show(Bool.pick(U32, O.eq_u32([1, 1, 1, 2, 1, 2], [1, 1, 14, 2, 14, 2]), 9, 0)),
+                 " peqc=", U32.show(Bool.pick(U32, O.eq_u32([1, 1], [1, 1]), 9, 0)),
+                 " pnext=", U32.show(O.Arena.next(p_a)),
+                 " qprobe=", RF.eng_op_name(O.Arena.op(q_a, q_r)),
+                 " qnext=", U32.show(O.Arena.next(q_a)),
+                 " wprobe=", RF.eng_op_name(O.Arena.op(w_a, w_r)), " wn=", U32.show(O.Arena.next(w_a)),
+                 " yprobe=", RF.eng_op_name(O.Arena.op(y_a, y_r)), " yn=", U32.show(O.Arena.next(y_a)),
+                 " bax=", gshs.of(x_ax),
+                 " hasrd=", U32.show(O.Found.i(h_f)), " hnext=", U32.show(O.Arena.next(O.Found.ar(h_f))),
+                 " hrop=", RF.eng_op_name(O.Arena.op(O.Found.ar(h_f), O.Found.i(h_f))),
+                 " sk=", U32.show(O.Found.i(s_f)),
+                 " rshp=", U32.show(O.Found.i(z_f)), " zrop=", RF.eng_op_name(O.Arena.op(O.Found.ar(z_f), O.Found.i(z_f))),
+                 " nk=", U32.show(O.Found.i(n_ka)), " nv=", U32.show(O.Found.i(n_va)), " nr=", U32.show(n_r),
+                 " pk=", U32.show(p_k), " pv=", U32.show(p_v), " pr=", U32.show(p_r),
+                 " badg=", badg.go(cha, G.Grads.ks_of(TP.csg(tp)), G.Grads.vs_of(TP.csg(tp)), Nil{}),
+                 " dimR=", dshow(O.Found.ar(z_f), O.Found.i(z_f)),
+                 " dimRed=", dshow(O.Found.ar(h_f), O.Found.i(h_f)),
+                 " dimPer=", dshow(O.Found.ar(h_f), O.Arena.src(O.Found.ar(h_f), O.Found.i(h_f), 0)),
+                 " pairs=", pairs.go(cha, G.Grads.ks_of(TP.csg(tp)), G.Grads.vs_of(TP.csg(tp)), Nil{}),
+                 " sinkk=", kids.go(ka, O.Arena.srcs(ka, O.Found.i(k)), Nil{}),
+                 " afts=", afts.go(ka, O.Arena.srcs(ka, O.Found.i(k)), Nil{})])
 
 def main() -> IO(Unit):
   do IO<Unit>:
