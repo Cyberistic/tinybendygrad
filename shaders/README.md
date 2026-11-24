@@ -64,12 +64,39 @@ negative and not a renderer. What it established on the way is worth more than t
 | per-body `linearize` | it takes **one kernel**; given the `LINEAR` it renders `UNHANDLED(Ops.LINEAR)` |
 | `vms` widths | `Nil{}` gives every node key 1, the sort collapses, and the body is **one op** |
 
-**The kernel graph itself is right** — `eng_dump` shows `SINK(AFTER(INDEX, END(STORE, RANGE
-×4)))` with the formula's `SQRT`, `RECIP`, `MAX` and both `PAD`s. So the loss is between
-`create_schedule` and the CU list. `buf-schedules.bend` is the control: the same chain over
-`a + b` on two `BUFFER`s answers `kernels=1` **and renders the add**, so the scheduler is not
-simply broken — something about this graph (PAD/SHRINK, or two reads of one buffer) does not
-survive.
+**The kernel graph is right, and the loss is now pinned past it — measured, not inferred.**
+`sched-probe.bend` (a probe, gitignored) walked the 2-D gate lane node by node:
+
+* the **tensor** graph is healthy — `detT2` counts 4 `PAD` + 4 `SHRINK`, and the movement
+  wrapper is clean (`pad4`: `sh_right` returns `Ops.SHRINK` with dims `1616`, the identity
+  test answers `F`, so the shrink is kept; the double call in `mxw_pairs_node2` is wasted
+  work, not a defect);
+* rangify **consumes the `SHRINK`s** — `rr_mvx`'s arm puts `r+off` in the range table
+  (`rangify.bend:680`, upstream `indexing.py:166`) and the node answers its src per Rule 5 —
+  but **keeps the `PAD`s**: `rr_ap_wall_hit` (`rangify.bend:1474`) names pad a wall, so the
+  node passes into the kernel graph unchanged. Upstream's kernel graph holds **no** movement
+  ops (`get_kernel_graph`, `rangeify.py:341`: "convert movement ops to ranges");
+* the surviving `PAD`'s 2-D marg meets the flattened kernel graph and **the fold refuses it**
+  — the same refusal the standalone flat pad shows (`padflat=:GAP`) — so the `PAD` gets no
+  fold row, the formula tail loses its rows, and the `END` has none;
+* `F.fold.ended(END)` is `None` while the structural answer is 2 (`ended_direct=2`) — the
+  structure is right, the fold route is broken. The END's own RANGE srcs are never popped,
+  the 2 WEAK ranges read as open, `sk_open=False`, `split_store` refuses, no `CALL` is
+  built, and the store's value is dropped: `*(buf0+Lidx0) = 1`.
+
+**The cure is upstream's pad lane, and it is a milestone, not a patch.** `apply_movement_op`
+(`indexing.py:169-173`) shifts and masks the ranges — `(r-off).valid(gate)`, which is
+`gate.where(r-off, Invalid)` (`ops.py:636`) — and `convert_pad_to_where_to_keep_behavior_local`
+(`indexing.py:98-103`) turns the pad into a value-level `WHERE(valid, indexed_value, 0)`.
+The neighbour shift can only apply to a **buffered** read, and the port never realizes `dd`
+(there is no store of it; the pad names the inline chain), so the fix is the other half of
+W3 — `valid`/`Invalid` plus the realize-forcing of movement-op sources. A partial arm would
+not do: the pad's zero-fill is load-bearing at the last column, so a wrong arm trades a loud
+`= 1` for silently wrong border pixels.
+
+`buf-schedules.bend` remains the control: the same chain over `a + b` on two `BUFFER`s
+answers `kernels=1` **and renders the add**, so the scheduler is not broken — this graph's
+pad is.
 
 **And a genuinely missing port.** An `ALLOC` has no realize-time rebind: `UOp.new_buffer` is
 `TODO(p3)` in `ops.bend`, and upstream's `linear_with_vars` swaps `ALLOC` → `BUFFER` there.

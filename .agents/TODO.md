@@ -5094,11 +5094,20 @@ are NOT free: `grep -c smoothstep tinygrad/` is 0 and there is no `Ops.MIN`.
       and why a graph built the `Tensor.empty` way -- what the graph gate CORRECTLY builds,
       because CPython builds it -- cannot be scheduled at all. **This is the first link in
       the chain that is absent rather than unwired.**
-- [ ] **THE SHADER CANNOT RUN, AND THE REASON IS THE SAME ONE AS ABOVE.** Its 55-node graph
-      is a `Tensor`, and turning a `Tensor` into a kernel is `rangeify` stage 1
-      (`rangeify.bend:2810`, `run_rangeify -- NOT PORTED`). So `shaders/` is a compiler result
-      and not a renderer: every number in it is CPython's except the row *structure*. The
-      single stage that would close it is the same one that would give the tree a forward pass.
+- [ ] **THE SHADER COMPILES TO A WRONG KERNEL, AND THE ROOT CAUSE IS NOW MEASURED (2026-11-24).**
+      `shader-run.bend` takes the graph through `rr_kernel_graph` — rangeify stage 1 IS ported —
+      and renders `*(buf0+Lidx0) = 1`. The chain, all in `shaders/README.md`: the rangify apply
+      consumes `SHRINK` (`rangify.bend:680`) but keeps `PAD` as a wall (`rr_ap_wall_hit`,
+      `rangify.bend:1474`); the surviving PAD's 2-D marg over the flattened kernel graph is
+      refused by the fold, the END loses its fold row, `fold.ended(END)` is `None` (structural
+      answer 2), the 2 WEAK ranges read as open, `sk_open=False`, no `CALL` is built, and the
+      store's value is dropped. **The fix is upstream's pad lane** — `apply_movement_op`'s
+      `(r-off).valid(gate)` (`indexing.py:169-173`, = `gate.where(r-off, Invalid)`,
+      `ops.py:636`) plus `convert_pad_to_where_to_keep_behavior_local` (`indexing.py:98-103`,
+      the value-level `WHERE(valid, value, 0)`) plus the realize-forcing of movement-op
+      sources (the shift can only apply to a buffered read). That is the other half of W3;
+      see the README for why a partial arm would be silently wrong at the border instead of
+      loudly `= 1`.
 
 ---
 
