@@ -8064,3 +8064,41 @@ def String.join.go(xs: List<&2, String>, h: String, +sep: String) -> String:
 **CHARS **CANNOT **BE **SHARED**) -- **⇒⇒† AND **SO **THE **JOIN **IS **NOT **THE **WIN **IT **LOOKED
 **LIKE** (⇒⇒† AND **AND **THE **BENCH **IS **STILL **WORTH **LANDING**: **IT **IS **THE **INSTRUMENT **THAT
 **WOULD **HAVE **SETTLED **THIS **IN **ONE **RUN**)**.
+
+### 138.19 **THE **FINDING **IS **UPSTREAM** -- **⇒⇒† AND **THE **PR **IS **OPEN**, **AND **THE **BENCH **IS **THE
+**PATCH**
+
+**⇒⇒† AND **THE **STRING-JOIN **FINDING **IS **A **BEND **FINDING**, **NOT **A **PORT **ONE** -- **⇒⇒† AND
+**AND **IT **IS **NOW **A **BENCH **IN **THE **UPSTREAM **REPO**: **`bendlang/bend#2287`** (**⇒⇒† AND **THE
+**REPO **IS **`bendlang/bend`** (⇒⇒† AND **THE **CLONE's **REMOTE **SAYS **`HigherOrderCO/Bend`** (⇒⇒† AND
+**THEY **ARE **THE **SAME **PROJECT** -- **⇒⇒† AND **THE **PR **URL **IS **`bendlang/bend`**)**.
+
+**⇒⇒† AND **THE **THREE **FILES**: **`bench/runtime/string-join/main.bend`** (⇒⇒† AND **THE **JOIN **PLUS **A
+**CHECKSUM **OVER **THE **JOINED **TEXT**), **`main.c`** (⇒⇒† AND **ONE **BUFFER**, **ONE **PLAIN **LOOP**),
+**`main.ts`** (⇒⇒† AND **`Array.prototype.join`**) -- **⇒⇒† AND **AND **ALL **THREE **PRINT **THE **SAME
+**CHECKSUM **AT **EVERY **SIZE** (⇒⇒† AND **140807 **AT **100 **LINES**, **286908 **AT **200**, **579410 **AT
+**400**, **1165614 **AT **800**, **2366261 **AT **1600**, **4789659 **AT **3200**)**.
+
+**⇒⇒† AND **THE **THREE **FILES **ARE **COVERED **BY **THE **EXISTING **`gates/repo.ts` **ALLOW **LINE**
+(**`allow(/^bench\/runtime\/[a-z-]+\/main\.(bend|c|lean|ts)$/)`**) -- **⇒⇒† AND **AND **SO **NO **ALLOW-LIST
+**CHANGE **IS **NEEDED** (⇒⇒† AND **MEASURED **BY **THE **GATE's **OWN **REGEX**)**.
+
+**⇒⇒† AND **AND **THERE **IS **NO **LEAN **TWIN**: **THE **PERF **GATE **RUNS **THE **BEND**, **C **AND **TS
+**LANES** (⇒⇒† AND **MEASURED**), **⇒⇒† AND **AND **A **LEAN **TWIN **WOULD **BE **A **THIRD **REFERENCE**
+**RATHER **THAN **A **SECOND **MEASUREMENT** -- **⇒⇒† AND **AND **THAT **IS **SAID **IN **THE **PR**.
+
+**⇒⇒† AND **⇒⇒† AND **THE **LOCAL **PATCH **IS **THE **CORRECTED **INSTRUMENT** (⇒⇒† AND **THE **PORT's
+**OWN): **`probe-join-pieces.py`** **NOW **REPORTS **THE **HEAD-PIECE **COUNT** (⇒⇒† AND **THE **AMPLIFICATION
+**IS **1.00x**) **AND **THE **PREFIX-SUM **COUNT **AS **WHAT **IT **IS** (⇒⇒† AND **THE **OTHER **NESTING's
+**COUNT**)** -- **⇒⇒† AND **AND **`.agents/slop/cpuseam/builds/join-correction.py`** **CARRIES **THE
+**CORRECTION **AND **ITS **EVIDENCE**.
+
+**⇒⇒† AND **⇒⇒† AND **THE **PORT **NEEDS **NO **CHANGE** (⇒⇒† AND **THE **JOIN **IS **NOT **A
+**BOTTLENECK**), **⇒⇒† AND **AND **THE **OPEN **QUESTION **IS **WHAT **IS** -- **⇒⇒† AND **THE **RENDER's
+**BIGGEST **ARMS **ARE **THE **TEXT **ASSEMBLY **AND **THE **STRING **JOINS** (§138.3) **⇒⇒† AND **AND **THE
+**JOINS **ARE **OUT**, **⇒⇒† AND **SO **THE **TEXT **ASSEMBLY **IS **THE **NEXT **TARGET** -- **⇒⇒† AND
+**AND **IT **IS **THE **`String.concat`** **THAT **WRAPS **THE **JOIN** (⇒⇒† AND **THE **PORT's
+**`_render.plain`** **AND **`_render.decl`** **BOTH **DO
+**`String.concat([..., String.join(l, ""), ";"])`**) -- **⇒⇒† AND **AND **THAT **IS **A **SECOND **JOIN**,
+**⇒⇒† AND **AND **IT **IS **THE **ONE **THAT **COPIES **THE **STATEMENT's **WHOLE **TEXT** (⇒⇒† AND **THE
+**CONCAT **COPIES **THE **JOINED **STRING**)**.
