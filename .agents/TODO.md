@@ -10,7 +10,18 @@ render-perf     [######] 4/9          THE RENDER IS ~10% FASTER (THE PAIRED MEDI
                                          (4ec516fc7) -- **⇒⇒† AND **THE **STRING **WORK **IS **DOWN
                                          **FROM **0.81 ms **TO **0.15 ms** **A **TURN**.
                                          **⇒⇒† AND **THE **CORPUS **CERTIFICATE **IS **GREEN **ON **THE
-                                         **NEW **SUBSTRATE** (38/38, 339/339 repro, witness PASS).
+                                         **NEW **SUBSTRATE** (38/38, 340/340 repro, witness PASS,
+                                         **ON **`61d46bff7`**).
+                                         **⇒⇒† AND **AND **THE **TARGETS **THAT **ARE **OUT**, **ALL
+                                         **MEASURED**: **THE **`String.join`** (§138.18), **THE
+                                         **`List.append`'s **SPINE** (§138.21), **THE **`eq_op`
+                                         **DISPATCH** (0.045 ms), **THE **`ku_text_go`'s **ARM
+                                         **ORDER** (§138.21), **THE **`ku_inline` **CHAIN** (§138.24),
+                                         **THE **WIRE's **NUMBER-LIST** (§138.23), **AND **THE
+                                         **PRELUDE's **`String.split`** (0.057 ms) -- **⇒⇒† AND **AND
+                                         **THE **TURN **IS **~2.3-3.4 ms** (⇒⇒† AND **THE **DECODE
+                                         **~0.95 ms**, **⇒⇒† AND **THE **RENDER **~1.10 ms**, **⇒⇒†
+                                         **AND **THE **PRINT **0.084 ms**).
                                          **⇒⇒† AND **THE **NEXT **TARGETS**, **MEASURED**: **THE
                                          **`List.append` **SPINE **IS **NOT **ONE** (THE CEILING **OF
                                          **REMOVING **THE **COPY **IS **0.9853** -- **⇒⇒† AND **THE
@@ -29927,9 +29938,27 @@ FOUR NAMED CASES ARE IN THE POPULATION** (`p193a` `x451a` `x451b` `x451c`, 1 ROW
       `(x%2)//4` WITH `0` **VIA THE **RANGE** ARM**), **AND THREE PLANTS ARE MEASURED FIRING, ONE
       PER GUARD** -- **AND THE `nd_rewrite` ROW READS THE **VALUES** AND NOT ONLY THE **SHAPES**,
       BECAUSE A PLANT THAT REPLACED THE DIVIDEND **DID NOT** GO RED UNDER A SHAPE-ONLY ROW.**
-- [ ] **THE `fold_divmod_general` ARMS THAT ARE STILL UNPORTED** — `remove_nested_mod` (`:27-35`),
-      `fold_divmod_congruence` (`:42-48`), `gcd_with_remainder` (`:50-55`) AND `nest_by_factor`
-      (`:57-70`). **AND `nest_by_factor` RECURSES
+- [x] **THE `remove_nested_mod` ARM (`:27-35`) IS PORTED** (2026-11-24) — **AND IT WAS THE
+      CLEANEST OF THE FOUR, AND THE REASON IS MEASURED**: `fold_divmod_congruence` (`:42-48`)
+      NEEDS THE CARTESIAN PRODUCT OF `itertools.product` OVER THE REMAINDER CHOICES,
+      `gcd_with_remainder` (`:50-55`) NEEDS `UOp.gcd` AND `UOp.divide_exact` (WHICH NEEDS A
+      MULTISET OVER `split_uop(MUL)` FACTORS, AND THE PORT HAS NO MULTISET AND NO `Map`), AND
+      `nest_by_factor` (`:57-70`) RECURSES (`fold_divmod_general(x//div)`) AND BEND REFUSES
+      MUTUAL RECURSION, **SO THAT ONE IS A SHAPE PROBLEM AND NOT ONLY ARITHMETIC.** THIS ONE
+      NEEDED `split_uop`, `divides` AND `usum`, AND THE PORT HAD THE FIRST TWO.
+      **AND `usum` IS NOW IN `ops.bend`** (`mixin/elementwise.py:40`) **BECAUSE THE IMPORT
+      DIRECTION FORBIDS `uop/` REACHING `schedule/`** — `schedule/indexing.bend` IMPORTS
+      `uop/ops.bend` — AND `schedule/indexing.bend`'s `rr_usum` IS **NOT** CHANGED, BECAUSE IT
+      IS **RIGHT**-NESTED AND UPSTREAM'S `reduce` IS **LEFT**-NESTED AND THE CORPUS COMPARES
+      CANONICAL FORMS **BYTE-IDENTICALLY**, SO CHANGING IT WOULD BE A CORPUS DIVERGENCE WITH
+      NOTHING WRONG.
+      **AND IT HAS A DIFFERENTIAL GATE AND A PLANT** — `gates/divandmod-gate.py`,
+      `gates/divandmod-oracle.py`, `gates/divandmod-driver.bend`,
+      `gates/divandmod-cases.rows` AND `gates/divandmod-plant.py` — **AND THE CASE FILE IS
+      READ BY BOTH THE PORT AND THE ORACLE, SO THEY CANNOT BE MEASURING TWO DIFFERENT
+      GRAPHS.** MEASURED: 3 ROWS, 3 AGREE, 0 DIVERGE, AND THE PLANT'S FOUR CASES PASS.
+- [ ] **THE `fold_divmod_general` ARMS THAT ARE STILL UNPORTED** — `fold_divmod_congruence` (`:42-48`),
+      `gcd_with_remainder` (`:50-55`) AND `nest_by_factor` (`:57-70`). **AND `nest_by_factor` RECURSES
       (`fold_divmod_general(x//div)`) AND BEND REFUSES MUTUAL RECURSION, **SO THAT ONE IS A
       SHAPE PROBLEM AND NOT ONLY ARITHMETIC.**
 - [x] `UOp.gcd` / `UOp.divide_exact` — **BOTH IN** (2026-11-09, `4a8d15ab6`). **AND THE PORT
