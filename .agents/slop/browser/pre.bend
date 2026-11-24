@@ -16,6 +16,21 @@ def ids.go(+rs: List<&2, U32>, +acc: List<&2, String>) -> List<&2, String>:
     case Nil{}: acc
     case r <> t: ids.go(t, List.append(&2, String, acc, [U32.show(r)]))
 
+def opn2(r: Bool, a: Bool, b: Bool, m: Bool) -> String:
+  match r:
+    case True{} : "RESHAPE"
+    case False{}:
+      match a:
+        case True{} : "AFTER"
+        case False{}:
+          match b:
+            case True{} : "BUFFER"
+            case False{}: Bool.pick(String, m, "MUL", "OTHER")
+
+def opn(+ar: O.Arena, +n: U32) -> String:
+  opn2(O.eq_op(O.Arena.op(ar, n), O.OpsRESHAPE{}), O.eq_op(O.Arena.op(ar, n), O.OpsAFTER{}),
+       O.eq_op(O.Arena.op(ar, n), O.OpsBUFFER{}), O.eq_op(O.Arena.op(ar, n), O.OpsMUL{}))
+
 def ids(+rs: List<&2, U32>) -> String: String.join(ids.go(rs, Nil{}), ",")
 
 def n2(+xs: List<&2, U32>) -> String: U32.show(U32.from_nat(List.length(&2, U32, xs)))
@@ -40,7 +55,10 @@ def rows.go(+ar: O.Arena, +tb: F.Table, +rm: IX.IxRMap, +ns: List<&2, U32>,
                           ",inp=", n2(RR.rr_ap_inp.of(IX.ix_rngm_get(rm, v))),
                           ",shape=", ids(RR.rr_p1.shape(ar, tb, v)),
                           ",v0after=", Bool.show(O.eq_op(O.Arena.op(ar, O.Arena.src0(ar, v)), O.OpsAFTER{})),
-                          ",v0dims=", ids(IX.rr_dims(ar, tb, O.Arena.src0(ar, v)))])]),
+                          ",v0dims=", ids(IX.rr_dims(ar, tb, O.Arena.src0(ar, v))),
+                          ",v0op=", opn(ar, O.Arena.src0(ar, v)),
+                          ",v1dims=", ids(IX.rr_dims(ar, tb, O.Arena.src0(ar, O.Arena.src0(ar, v)))),
+                          ",v1op=", opn(ar, O.Arena.src0(ar, O.Arena.src0(ar, v)))])]),
         acc))
 
 def r2(p: (O.Arena & RR.RrMap), +sink: U32) -> String:
