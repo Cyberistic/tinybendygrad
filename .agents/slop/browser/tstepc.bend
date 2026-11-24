@@ -180,6 +180,30 @@ def lk1(+ar: O.Arena, +ks: List<&2, U32>, +acc: List<&2, String>) -> String:
         [String.concat([RF.eng_op_name(O.Arena.op(ar, k)), ">",
                         RF.eng_op_name(O.Arena.op(ar, SCH.sc_src0(ar, k)))])]))
 
+# WHICH STORE SLOTS SURVIVE. A STORE's dst is `INDEX(BUFFER(ParamArg{slot}))`, so the slot is two srcs
+# down and it is the only thing that says WHICH of the six went missing.
+def mslot(m: Maybe<&2, U32>) -> Maybe<&2, String>:
+  match m:
+    case Some{v}: Some{U32.show(v)}
+    case _: None{}
+
+def slot_of.pick(isix: Bool, +ar: O.Arena, +st: U32) -> String:
+  match isix:
+    case True{}:
+      +b = O.Arena.src0(ar, O.Arena.src0(ar, st))
+      Maybe.default(&2, String, mslot(RZ.rz_param_slot(ar, b)), "?")
+    case False{}: "?"
+
+def slot_of(+ar: O.Arena, +st: U32) -> String:
+  slot_of.pick(O.eq_op(O.Arena.op(ar, O.Arena.src0(ar, st)), O.OpsINDEX{}), ar, st)
+
+def slots.go(+ar: O.Arena, +ns: List<&2, U32>, +acc: List<&2, String>) -> String:
+  match ns:
+    case Nil{}: String.join(acc, ",")
+    case n <> t:
+      slots.go(ar, t, Bool.pick(List<&2, String>, O.eq_op(O.Arena.op(ar, n), O.OpsSTORE{}),
+        List.append(&2, String, acc, [slot_of(ar, n)]), acc))
+
 def diag() -> String:
   # (1) the STOREs BEFORE the kernel split, and (2) the SHAPES of the six stored values. A store whose
   # value has no shape is a store `rz_rebuild`/`rr_kernel_graph` drops, and the difference between these
@@ -201,6 +225,8 @@ def diag() -> String:
                  " sh_g2=", sh(cha, TP.g2(tp)),
                  " sh_w1n=", sh(cha, TP.w1n(tp)),
                  " sh_w2n=", sh(cha, TP.w2n(tp)),
+                 " reb_slots=", slots.go(qa, ns0, Nil{}),
+                 " kg_slots=", slots.go(ka, ns, Nil{}),
                  " tsc.kg_n=", U32.show(U32.from_nat(List.length(&2, U32, ns))),
                  " sink_nsrc=", U32.show(O.Arena.nsrc(ka, O.Found.i(k))),
                  " kg_store=", U32.show(cnt(ka, ns, O.OpsSTORE{})),
