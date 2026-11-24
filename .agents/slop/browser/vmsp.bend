@@ -58,5 +58,5 @@ def key_rows(+i: U32) -> String:
 def main() -> IO(Unit):
   do IO<Unit>:
     _ : Unit <- IO.print(String.concat(["ends0=", ends(0)]))
-    _ : Unit <- IO.print(String.concat(["keys0=", key_rows(0)]))
+    _ : Unit <- IO.print(String.concat(["keys3=", key_rows(3)]))
     IO.print(String.concat(["ends3=", ends(3)]))

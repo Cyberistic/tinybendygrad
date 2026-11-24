@@ -469,8 +469,16 @@ def lt_extra(+a: O.Arena, +i: U32) -> U32:
 # more than fifteen nested ranges is not in this corpus) and `po <= 63` (`lt_po`'s ladder tops out at
 # 25). `rc` keeps its own scale; while `vms` is empty `lt_rc` answers 1 for every node, so the tie
 # the old key broke by list order is now broken by nesting depth, which is what upstream's tuple does.
-def lt_key(rc: U32, len: U32, po: U32) -> U32:
-  U32.add(U32.add(U32.mul(rc, 1024), U32.mul(len, 64)), po)
+# FOUR COMPONENTS, AND THE FOURTH IS UPSTREAM'S `tuplize` (linearizer.py:35:
+# `priorities[x] + (x.tuplize if TUPLE_ORDER else ())`). The port packed three, so two RANGES with equal
+# `run_count`, `len` and priority TIED and the TOSORT LIST decided -- which is how the linear kernel's
+# 49-loop came out OUTSIDE its 10-loop and the store landed outside `cast1`'s scope.
+# THE DEPTH GOES IN THE LOW BITS BECAUSE `rc` MUST NOT MOVE: the flat `vms` keeps `rc == 1` everywhere,
+# which is what makes a cast (`len 1, po 20`) sort just before its range (`len 1, po 25`) so the toposort
+# drops it in adjacent. Scaling `rc` for ranges was measured five ways and every one broke that.
+# BOUNDS, as the invariant: `rc <= 65535`, `len <= 15`, `po <= 63`, `tb <= 63`.
+def lt_key(rc: U32, len: U32, po: U32, tb: U32) -> U32:
+  U32.add(U32.add(U32.add(U32.mul(rc, 65536), U32.mul(len, 4096)), U32.mul(po, 64)), tb)
 
 # `out_degree` -- linearizer.py:11, :16-17. A COUNT OF OCCURRENCES, not a set
 # membership: Python's `out_degree[s] += 1` runs once per (consumer, src) PAIR,
@@ -631,15 +639,52 @@ def lt_vm.go(vms: List<&2, U32>) -> VM:
 # carried" does not bite the BUFFER/ALLOC arm after all and the predicate is
 # PORTED. What W4 still blocks is the `Arg` dispatch for a node whose arg is not
 # a `ParamArg`, which `fold.addr` would answer -- `lt_addr_of`'s `case _:` arm.
-def lt_keys.put(+acc: List<&2, LtKey>, +u: U32, +ar: O.Arena, +vm: VM) -> List<&2, LtKey>:
-  List.append(&2, LtKey, acc, [LtKey{lt_key(lt_rc(VM.vs(vm)), U32.from_nat(List.length(&2, U32, VM.vs(vm))),
-                                            lt_po(ar, u)), u, lt_rc(VM.vs(vm)), lt_extra(ar, u)}])
+# `tuplize` FOR A RANGE IS ITS NESTING: the END that closes the range, and how many ENDs that END's own
+# toposort reaches (`1 + the loops inside it`, so the OUTERMOST range has the LARGEST count and therefore
+# the SMALLEST `tb`). MEASURED on the fixture: k0's four ENDs reach 1, 2, 3, 4 and k3's reach 1, 2.
+def lt_end_of.go(+ar: O.Arena, +ns: List<&2, U32>, +r: U32, +acc: U32) -> U32:
+  match ns:
+    case Nil{}: acc
+    case n <> t:
+      lt_end_of.go(ar, t, r, Bool.pick(U32,
+        Bool.and(O.eq_op(O.Arena.op(ar, n), O.OpsEND{}), F.mem_u32(O.Arena.src_from(ar, n, 1), r)),
+        n, acc))
 
-def lt_keys.go(+ar: O.Arena, lst: List<&2, U32>, +vms: List<&2, U32>, +acc: List<&2, LtKey>) -> List<&2, LtKey>:
+def lt_nend.go(+ar: O.Arena, +ns: List<&2, U32>, +acc: U32) -> U32:
+  match ns:
+    case Nil{}: acc
+    case n <> t: lt_nend.go(ar, t, Bool.pick(U32, O.eq_op(O.Arena.op(ar, n), O.OpsEND{}),
+                                           U32.add(acc, 1), acc))
+
+# `15 - count` stays `<= 63` while `count >= 1`; a node with no closing END would underflow, so the count
+# is clamped to at least 1 -- a NAMED guard.
+def lt_tb.pick(z: Bool, n: U32) -> U32: Bool.pick(U32, z, 1, n)
+
+def lt_tb.rg(+ar: O.Arena, +u: U32, +lst: List<&2, U32>) -> U32:
+  +e = lt_end_of.go(ar, lst, u, 0)
+  +n = lt_nend.go(ar, O.UOp.toposort(O.Arena.budget(ar), ar, e), 0)
+  U32.sub(15, lt_tb.pick(U32.is_zero(n), n))
+
+def lt_tb.by(isrg: Bool, +ar: O.Arena, +u: U32, +lst: List<&2, U32>) -> U32:
+  match isrg:
+    case True{} : lt_tb.rg(ar, u, lst)
+    case False{}: 0
+
+def lt_tb(+ar: O.Arena, +u: U32, +lst: List<&2, U32>) -> U32:
+  lt_tb.by(O.eq_op(O.Arena.op(ar, u), O.OpsRANGE{}), ar, u, lst)
+
+
+def lt_keys.put(+acc: List<&2, LtKey>, +u: U32, +ar: O.Arena, +vm: VM,
+                +lst: List<&2, U32>) -> List<&2, LtKey>:
+  List.append(&2, LtKey, acc,
+    [LtKey{lt_key(lt_rc(VM.vs(vm)), U32.from_nat(List.length(&2, U32, VM.vs(vm))), lt_po(ar, u),
+                  lt_tb(ar, u, lst)), u, lt_rc(VM.vs(vm)), lt_extra(ar, u)}])
+
+def lt_keys.go(+ar: O.Arena, +lst: List<&2, U32>, +vms: List<&2, U32>, +acc: List<&2, LtKey>) -> List<&2, LtKey>:
   match lst:
     case Nil{}    : acc
     case u <> +t  : lt_keys.go(ar, t, VM.rest(lt_vm.go(vms)),
-                              lt_keys.put(acc, u, ar, lt_vm.go(vms)))
+                              lt_keys.put(acc, u, ar, lt_vm.go(vms), lst))
 
 def lt_keys(+ar: O.Arena, lst: List<&2, U32>, vms: List<&2, U32>) -> List<&2, LtKey>:
   lt_keys.go(ar, lst, vms, Nil{})
