@@ -8232,3 +8232,43 @@ substrate-end == live == d25a0232d`**, **`REPRO: 339 of 339 files identical`**, 
 **AND **THE **OP **HISTOGRAM**), **`text-dispatch-ceiling.py`** (⇒⇒† AND **THE **CEILING**, **⇒⇒† AND
 **AND **IT **BUILT **A **`switch`** **WHICH **IS **NOT **A **BEND **FORM**, **⇒⇒† AND **SO **THE **REAL
 **FORM **IS **THE **REORDER**)**.
+
+### 138.22 **THE **SHIPPED **TURN **IS **~10% **FASTER**, **AND **THE **DECODE **IS **NOW **AS **BIG
+**AS **THE **RENDER** -- **⇒⇒† AND **AND **THE **WIRE's **NUMBER-LIST **BUILD **IS **THE **NEXT **TARGET**
+
+**⇒⇒† AND **THE **SHIPPED **TURN** (⇒⇒† AND **NOT **THE **RENDER's **SHAPE**, **⇒⇒† AND **AND **THE
+**TURN **IS **WHAT **THE **USER **FEELS**), **⇒⇒† AND **MEASURED **BY **`turn-paired.py`** (⇒⇒† AND
+**120 **PAIRED **TURNS**, **⇒⇒† AND **THE **FRAME's **WRITE **TO **THE **FRAME's **ANSWER**)**:
+
+| | before | after | the **ratio** |
+|---|---|---|---|
+| the **minimum** | 2.3907 ms | 2.2723 ms | **0.9505** |
+| the **median** | 3.3822 ms | 2.8984 ms | **0.8569** |
+| the **mean** | 4.6528 ms | 4.3107 ms | **0.9265** |
+| the **MEDIAN **OF **THE **PAIRED **RATIOS** | — | — | **0.9200** |
+
+**⇒⇒† AND **⇒⇒† AND **THE **TURN's **TWO **HALVES**, **MEASURED **ON **THE **CURRENT **BUILD**
+(⇒⇒† AND **60 **TURNS**, **⇒⇒† AND **IN **THE **DAEMON**): **THE **DECODE **IS **1.01 ms**
+(⇒⇒† AND **`decode-shape.py`**) **AND **THE **RENDER **IS **~1.1 ms** -- **⇒⇒† AND **AND **THEY **ARE
+**NOW **THE **SAME **SIZE**.
+
+**⇒⇒† AND **THE **DECODE's **SHAPE** (⇒⇒† AND **MEASURED**): **the **numbers **0.369 ms** (⇒⇒† AND
+**THE **WIRE's **NUMBER-LIST **BUILD**), **AND **the **rows **0.571 ms** (⇒⇒† AND **OF **WHICH **the
+**`ku_row` **0.444 ms** **AND **the **`arg_of` **0.227 ms**), **⇒⇒† AND **AND **the **split **0.086
+ms**, **⇒⇒† AND **AND **the **`append` **0.041 ms**.
+
+**⇒⇒† AND **THE **WIRE's **NUMBER-LIST **BUILD**, **MEASURED** (⇒⇒† AND **`wire-numbers-ceiling.py`**,
+**⇒⇒† AND **THE **PORT's **OWN **FILE**, **⇒⇒† AND **`tinybendygrad/renderer/wire.js`**): **THE
+**`list()` **HELPER **ALLOCATES **A **JS **ARRAY **PER **ROW** (⇒⇒† AND **`t.split("~").map(Number)`**)
+**⇒⇒† AND **AND **THE **ARRAY **IS **THROWN **AWAY** (⇒⇒† AND **AND **THE **LIST **IS **REBUILT **CELL
+**BY **CELL**) -- **⇒⇒† AND **AND **READING **THE **TOKEN **DIRECTLY **CUTS **THE **PHASE **FROM **0.450
+**TO **0.360 ms** (⇒⇒† AND **-20%**) -- **⇒⇒† AND **AND **THE **REMAINING **0.36 ms **IS **THE **LIST
+**CELLS **AND **THE **`split`**, **⇒⇒† AND **AND **SO **THE **FLOOR **IS **THE **LIST **ITSELF**.
+
+**⇒⇒† AND **⇒⇒† AND **THE **STANDING **LESSON**, **NOW **WITH **FOUR **INSTANCES**: **THE **COUNT **IS
+**NOT **THE **COST** (⇒⇒† AND **§138.17's **JOIN**, **⇒⇒† AND **§138.18's **JOIN**, **⇒⇒† AND
+**§138.21's **DISPATCH**, **⇒⇒† AND **AND **§138.21's **`List.append`** (⇒⇒† AND **THE **JS **LANE
+**COPIES **THE **SPINE **AND **NOT **THE **ELEMENTS**, **⇒⇒† AND **AND **THE **CEILING **OF **REMOVING
+**THE **COPY **IS **0.9853**)**) -- **⇒⇒† AND **AND **EVERY **KEPT **CHANGE **HAS **A **COUNT **THAT
+**FELL **AND **A **WALL **THAT **FELL** (⇒⇒† AND **THE **INDENT: **9,967 → 7,311 **CONCAT **CALLS **AND
+**0.22 ms **GONE**; **⇒⇒† AND **THE **`++` **MIGRATION: **9,967 → 2,983 **AND **691 → 5**)**.
