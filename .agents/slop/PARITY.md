@@ -8349,3 +8349,39 @@ ms**, **⇒⇒† AND **AND **the **`append` **0.041 ms**.
 (⇒⇒† AND **AND **THE **JS **CEILING **OF **0.9110 **IS **A **BEND **COMPILER **FIX**, **⇒⇒† AND **AND **NOT
 **A **PORT **ONE**) -- **⇒⇒† AND **AND **THE **UPSTREAM **FINDING **IS **THE **SAME **ONE **AS **§138.19's**
 (⇒⇒† AND **AND **IT **IS **A **BEND **FACT**)**
+
+### 138.25 **THE **PRELUDE's **`String.split` **IS **NOT **A **TARGET**, **AND **THE **NESTED **CLOCK
+**OVERCOUNTS **BY **42x** -- **⇒⇒† AND **THE **EXCLUSIVE **WORK **IS **0.057 ms **A **TURN**
+
+**⇒⇒† AND **THE **PAYLOAD's **SPLITS **ARE **STILL **THE **PRELUDE's** (⇒⇒† AND **AND **THE **PORT
+**ALREADY **MOVED **THE **WIRE's **SPLIT **TO **A **JS **EFFECT** (⇒⇒† AND **§125/§126**)) -- **⇒⇒† AND
+**AND **THE **PRELUDE's **`String.split`** **IS **ONE **RECURSION **PER **CHARACTER** (⇒⇒† AND **AND **IT
+**DOES **A **TOKEN **CONCATENATION **PER **CHARACTER**)**.
+
+**⇒⇒† AND **THE **FIRST **CLOCK **READ **2.39 ms **A **TURN** -- **⇒⇒† AND **AND **THAT **IS **THE
+**NESTED **CLOCK's **OVERCOUNT**: **THE **ENTRY's **CLOCK **SPANS **THE **RECURSION**, **⇒⇒† AND **AND
+**THE **TIME **IS **COUNTED **ONCE **PER **LEVEL** (⇒⇒† AND **AND **THE **SAME **LESSON **AS **THE
+**STRING **WORK's**)**. **⇒⇒† AND **THE **EXCLUSIVE **WORK** -- **THE **TWO **`slice`s **AND **THE **TWO
+**`char_len`s** -- **IS **0.057 ms **A **TURN** (⇒⇒† AND **691 **CHARACTERS **AT **0.083 µs**)**.
+
+**⇒⇒† AND **⇒⇒† AND **THE **STANDING **LESSON**, **AND **IT **IS **NOW **THE **FIFTH **INSTANCE**: **A
+**CLOCK **THAT **SPANS **A **RECURSION **OVERCOUNTS **BY **THE **NESTING** (⇒⇒† AND **AND **THE **STRING
+**WORK **AND **THE **`List.append` **AND **THE **`text` **FAMILY's **`ku_text_go` **ALL **SAID **THE **SAME
+**THING**) -- **⇒⇒† AND **AND **THE **COUNT **IS **THE **MULTIPLIER **AND **THE **CLOCK **IS **THE **COST**,
+**⇒⇒† AND **AND **A **CLOCK **THAT **COUNTS **THE **NESTED **PARTS **IS **NEITHER**).
+
+**⇒⇒† AND **⇒⇒† AND **THE **TURN's **SHAPE **AS **IT **STANDS** (⇒⇒† AND **60 **TURNS**, **⇒⇒† AND **IN
+**THE **DAEMON**): **THE **DECODE **~0.93-1.01 ms** (⇒⇒† AND **THE **numbers **0.30**, **⇒⇒† AND **AND **THE
+**rows **0.46** (⇒⇒† AND **OF **WHICH **THE **`ku_row` **0.33 **AND **THE **`arg_of` **0.16**)), **⇒⇒† AND
+**AND **THE **RENDER **~1.10 ms**, **⇒⇒† AND **AND **THE **PRINT **0.084 ms** (⇒⇒† AND **AND **THE **TURN
+**IS **~2.3-3.4 ms**)**.
+
+**⇒⇒† AND **AND **THE **TARGETS **THAT **ARE **OUT**, **ALL **MEASURED**: **THE **`String.join`** (⇒⇒† AND
+**§138.18**), **THE **`List.append`'s **SPINE** (⇒⇒† AND **§138.21**, **⇒⇒† AND **THE **CEILING **IS
+**0.9853**), **THE **`eq_op` **DISPATCH** (⇒⇒† AND **0.045 ms **OVER **602 **CALLS**), **THE **`ku_text_go`'s
+**ARM **ORDER** (⇒⇒† AND **§138.21**, **⇒⇒† AND **THE **COUNT **FELL **70% **AND **THE **WALL **DID **NOT
+**MOVE**), **THE **`ku_inline` **CHAIN** (⇒⇒† AND **§138.24**, **⇒⇒† AND **THE **LAZINESS **IS
+**UNREACHABLE **IN **BEND**), **THE **WIRE's **NUMBER-LIST **BUILD** (⇒⇒† AND **§138.23**, **⇒⇒† AND **THE
+**PHASE **FELL **0.09 ms **AND **THE **TURN **DID **NOT **MOVE**), **AND **THE **PRELUDE's **`String.split`**
+(⇒⇒† AND **0.057 ms**) -- **⇒⇒† AND **SO **THE **NEXT **TARGET **MUST **BE **FOUND **BY **MEASUREMENT
+**AND **NOT **BY **GUESS**).
