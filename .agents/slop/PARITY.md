@@ -8488,3 +8488,89 @@ ms**, **⇒⇒† AND **AND **the **`append` **0.041 ms**.
 **KEEP** **AND **DISAGREE **ON **A **NOISE**)**. **⇒⇒† AND **AND **THE **OUTPUT **IS **CHECKED **BY **BYTES**
 **(⇒⇒† AND **AND **THE **BYTE **COMPARISON **CAUGHT **AN **INVERTED **POLARITY** (⇒⇒† AND **§138.26**) **AND
 **IT **IS **WHAT **THE **CORPUS **IS**)**.
+
+### 138.28 **THE **WGSL **GENERATION's **23.7 s**: **THE **PROFILE **SAYS **THE **FOLD **IS **HALF **OF **IT**,
+**AND **`wgsl.bend`'s **66 **`String.concat`** **CALLS **ARE **0.4 ms**
+
+**⇒⇒† AND **THE **23,679 ms **WAS **MEASURED **BY **THE **PAGE** (⇒⇒† AND **AND **IT **IS **ONE
+**NUMBER**, **⇒⇒† AND **AND **THE **`chain_wgsl()`** **CALL**)** -- **⇒⇒† AND **AND **SO **THE **PROFILE
+**HAS **TO **SPLIT **IT** (⇒⇒† AND **AND **THE **INSTRUMENT **IS
+**`.agents/slop/wgslperf/profile-wgsl.py`**, **⇒⇒† AND **AND **AND **THE **CLOCKS **GO **IN **THE
+**COMPILED **JS** (⇒⇒† AND **AND **AND **THE **PAGE's **OWN **`Date.now()`** **IS **COARSE**)).
+
+**⇒⇒† AND **⇒⇒† AND **THE **PROFILE** (⇒⇒† AND **60 **TURNS**, **⇒⇒† AND **IN **THE **DAEMON**):
+
+| the phase | ms | the share |
+|---|---|---|
+| **`DEV.body_kus`** | **20,896** | **76%** |
+| **`FC.kg()`** (the kernel graph build) | **6,482** | **23%** |
+| **`wk_commit`** (inside `body_kus`) | **13,703** | **50%** |
+| **`late_apply`** (inside `body_kus`) | **5,461** | **20%** |
+| `kuconv.convert` | 1,185 | 4% |
+| `toposort` | 269 | 1% |
+| `lower_reduce_all` | 243 | 0.9% |
+| `add_loads` | 125 | 0.5% |
+| `alloc_to_buf_all` | 23 | 0.1% |
+| `linearize` | 13 | ~0 |
+| **THE **WGSL **WALK **(`wgsl_walk.bend`)** | **4.0** | **0.01%** |
+| **THE **WGSL **RENDER **(`wgsl.bend`)** | **0.5** | **~0** |
+
+**⇒⇒† AND **⇒⇒† AND **SO **`wgsl.bend`'s **66 **`String.concat`** **CALLS **ARE **NOT **THE **TARGET** (⇒⇒† AND
+**AND **THE **RENDER **IS **0.5 ms **OF **27.6 s**, **⇒⇒† AND **AND **THE **WGSL's **OWN **TEXT **IS
+**FOUR **ORDERS **OF **MAGNITUDE **BELOW **THE **FOLD**) -- **⇒⇒† AND **AND **THE **TARGET **IS **THE
+**LOWERING**, **⇒⇒† AND **AND **SPECIFICALLY **THE **FOLD**.
+
+**⇒⇒† AND **⇒⇒† AND **THE **FOLD's **COST**, **BY **COUNT** (⇒⇒† AND **AND **THE **COUNT **IS **THE
+**NOISE-FREE **READING**):
+
+| | the count a turn |
+|---|---|
+| **`Kahn_get_step`** (the table's linear scan) | **1,216,274,293** |
+| `Kahn_get_go` (the scans) | 3,414,487 |
+| `Kahn_step` (the toposort's own work) | 2,605,176 |
+| `Table_put` (the table's builds) | 873,457 |
+| `uop_folded` (the folds) | 1,811 |
+| `wk_once` | 559 |
+| `pm_claimed` | 8,936 |
+| `pm_early` | 4,869 |
+
+**⇒⇒† AND **⇒⇒† AND **THE **1.2 **BILLION **IS **THE **TABLE's **LINEAR **SCAN** (⇒⇒† AND **AND **THE
+**TABLE **IS **A **`List`**, **⇒⇒† AND **AND **AND **THE **TREE's OWN **COMMENT **SAYS **WHY**: **"an **O(n)
+**lookup, **exactly **what **`fold.bend`'s **`Table` **is **and **for **the **same **reason**
+**(`Array<T>` **masks **its **index, **so **it **cannot **grow)**"** (⇒⇒† AND **AND
+**`schedule/__init__.bend:55`**)), **⇒⇒† AND **AND **AND **THE **FOLD **IS **THE **WHOLE-ARENA
+**TOPOLOGICAL **SORT** (⇒⇒† AND **AND **`UOp.fold` **IS **`Kahn.run`**), **⇒⇒† AND **AND **AND **IT **IS
+**BUILT **1,811 **TIMES **A **TURN** (⇒⇒† AND **AND **OVER **A **1,418-NODE **ARENA** (⇒⇒† AND **AND
+**MEASURED**) -- **⇒⇒† AND **AND **SO **THE **FOLD **IS **O(n²) **PER **FOLD**.
+
+**⇒⇒† AND **⇒⇒† AND **THE **FIX** (⇒⇒† AND **`6327b495b`**): **THE **SCAN **STOPS **AT **THE **MATCH**
+(⇒⇒† AND **AND **THE **INDICES **ARE **UNIQUE**, **⇒⇒† AND **AND **SO **THE **FIRST **MATCH **IS **THE
+**ONLY **ONE**), **⇒⇒† AND **AND **AND **THE **FOUND **FLAG **IS **A **BOOL **PARAMETER** (⇒⇒† AND **AND **A
+**`match` **CANNOT **SCRUTINIZE **A **COMPUTED **VALUE**), **⇒⇒† AND **AND **AND **THE **COMPARISON **STAYS
+**IN **`Kahn.get.step`** (⇒⇒† AND **AND **WHICH **GETS **ITS **OWN **`i`**, **⇒⇒† AND **AND **BECAUSE
+**`U32.is_eq` **DESTRUCTURES **ITS **ARGUMENTS** **AND **SO **`i` **IS **SPENT **BY **THE
+**COMPARISON**), **⇒⇒† AND **AND **AND **AND **`wk_commit`'s **FIXPOINT **NO **LONGER **REBUILDS **THE **FOLD
+**PER **RULE **ATTEMPT**.
+
+**⇒⇒† AND **⇒⇒† AND **THE **COUNT** (⇒⇒† AND **AND **THE **NOISE-FREE **READING**, **⇒⇒† AND **AND **BOTH
+**BUILDS **INSTRUMENTED **THE **SAME **WAY**): **`Kahn_get_step` **FELL **1,216,274,293 -> 845,379,356
+(-30.5%)**, **⇒⇒† AND **AND **AND **EVERY **OTHER **COUNT **IS **UNCHANGED**.
+
+**⇒⇒† AND **⇒⇒† AND **THE **VERDICT** (⇒⇒† AND **THE **PAIRED **A/B**, **⇒⇒† AND **AND **WITH **THE
+**SAME **BUILD **AGAINST **ITSELF **AS **A **THIRD **ARM **IN **THE **SAME **INTERLEAVED **LOOP** -- **⇒⇒† AND
+**AND **THE **WGSL **GENERATION **IS **~27 s **AND **THE **MACHINE **IS **LOADED**, **⇒⇒† AND **AND **SO **THE
+**RATIO **IS **THE **VERDICT **AND **NOT **AN **ABSOLUTE **TIME**): **the **minima **0.9572 **against **the
+**floor's **0.9926**, **⇒⇒† AND **AND **the **medians **0.9297 **against **the **floor's **1.0523**, **⇒⇒† AND
+**AND **AND **A **SECOND **RUN **OF **11 **PAIRS**: **the **minima **0.9580 **against **the **floor's
+**0.9815**, **⇒⇒† AND **AND **the **medians **0.9478 **against **the **floor's **0.9977**.
+
+**⇒⇒† AND **⇒⇒† AND **THE **OUTPUT **IS **BYTE-IDENTICAL**: **THE **WGSL **IS **3,773 **BYTES **FOR **BOTH
+**BUILDS**, **⇒⇒† AND **AND **`gates/cstyle_render_census-gate.py` **READS **"425 **rows, **3 **lanes
+**byte-identical **over **the **wide **surface"**.
+
+**⇒⇒† AND **⇒⇒† AND **AND **THE **NEGATIVE **READINGS**, **FOR **WHOEVER **COMES **NEXT** (⇒⇒† AND **AND
+**THE **MACHINE **WAS **LOADED **AND **THE **SHORT **RUNS **DISAGREE**): **THE **FIVE-PAIR **RUN **READ
+**0.8993**, **⇒⇒† AND **AND **THE **SEVEN-PAIR **RUN **READ **1.0177** (⇒⇒† AND **AND **THE **MACHINE's
+**NOISE **FLOOR **READ **1.0247**), **⇒⇒† AND **AND **SO **THE **SHORT **RUNS **ARE **NOT **A
+**VERDICT** (⇒⇒† AND **AND **THE **TREE's OWN **RULE**: **THE **RATIO **OF **THE **TWO **MINIMA **PLUS **THE
+**COUNT**)**.
