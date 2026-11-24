@@ -2029,20 +2029,68 @@ def i64_dec.text(+cs: List<&2, U32>, +acc: String) -> String:
 def i64_dec.put(neg: Bool, +body: String) -> String:
   Bool.pick(String, neg, String.append("-", body), body)
 
-# THE TABLE IS IN `.agents/slop/tables/helpers-2121.md` -- `i64_dec` DIVIDES THE MAGNITUDE UNSIGNED, through `u64_divmod` rather than
-def i64_dec.times10(+p: I64) -> I64: i64_add(i64_shl(p, 3n), i64_shl(p, 1n))
+# THE **DIGIT **COUNT **OF **THE **MAGNITUDE**, **AND **IT **IS **A **CHAIN **OF **COMPARISONS**
+# **AGAINST **THE **POWERS **OF **TEN** -- **⇒⇒† AND **AND **NOT **A **WALK **THAT **MULTIPLIES** (⇒⇒† AND
+# **AND **THE **OLD **SHAPE **WALKED **19 **TIMES**, **⇒⇒† AND **AND **EACH **STEP **DID **TWO **SHIFTS **AND
+# **AN **ADD **AND **FOUR **`lo32`/`hi32` **READS**).
+#
+# **⇒⇒† AND **THE **COUNT **IS **THE **NUMBER **OF **DIGITS**, **⇒⇒† AND **AND **IT **IS **THE **FIRST **k
+# **WITH **`10^k > x`** (⇒⇒† AND **AND **THE **DIGIT **COUNT **OF **A **VALUE **IS **THAT **k**, **⇒⇒† AND
+# **AND **THE **COMPARISON **CHAIN **IS **THE **SAME **COUNT **OF **STEPS**).
+#
+# **⇒⇒† AND **AND **THE **POWERS **ARE **CONSTANTS** (⇒⇒† AND **AND **THEY **ARE **THE **`hi`/`lo` **PAIRS
+# **OF **10**0 **THROUGH **10**19**), **⇒⇒† AND **AND **AND **THE **COMPARISON **IS **`u64_lt`** (⇒⇒† AND
+# **AND **WHICH **TAKES **THE **TWO **`U32` **HALVES**) -- **⇒⇒† AND **AND **AND **THE **`x` **IS **READ
+# **ONCE** (⇒⇒† AND **AND **AN **`I64` **CANNOT **BE **READ **TWICE**: **MEASURED**, **"consumed **more
+# **than **once"**)**.
+# **⇒⇒† AND **THE **CHAIN **IS **A **`match` **ON **A **BOOL **PARAMETER** (⇒⇒† AND **AND **THE **TREE's OWN
+# **LESSON**: **§39**, **AND **`Bool.pick` **IS **STRICT** -- **⇒⇒† AND **AND **THE **TREE's OWN **CURE **IS **A
+# **`match` **ON **A **BOOL **PARAMETER**, **⇒⇒† AND **AND **ONLY **THE **CHOSEN **ARM **RUNS**) -- **⇒⇒† AND
+# **AND **THE **HIGH **HALVES **ARE **READ **ONCE** (⇒⇒† AND **AND **THE **COMPARISON **IS **THE **PORT's OWN
+# **`u64_lt`**, **⇒⇒† AND **AND **WHICH **TAKES **THE **TWO **HIGH **HALVES **AS **`+`** **AND **THE **TWO
+# **LOW **ONES **AS **PLAIN**)**
+def i64_dec.digits.arm(c: Bool, yes: U32, no: U32) -> U32:
+  match c:
+    case True{}: yes
+    case False{}: no
 
-def i64_dec.dig(+x: I64, f: Nat, +p: I64, +c: U32) -> U32:
-  match f:
-    case 0n: c
-    case 1n+g:
-      i64_dec.dig(x, g, i64_dec.times10(p),
-        U32.add(c, Bool.to_u32(Bool.not(u64_lt(hi32(x), lo32(x), hi32(p), lo32(p))))))
+# **⇒⇒† AND **THE **CHAIN **ASCENDS** (⇒⇒† AND **AND **THE **COUNT **IS **THE **NUMBER **OF **POWERS **OF
+# **TEN **THAT **ARE **AT **MOST **THE **VALUE**) -- **⇒⇒† AND **AND **THE **ASCENDING **FORM **EXITS **AT
+# **ONCE **FOR **A **SMALL **VALUE** (⇒⇒† AND **AND **THE **DESCENDING **FORM **WALKED **ALL **TWENTY
+# **ARMS **FOR **A **ONE-DIGIT **VALUE**, **⇒⇒† AND **AND **THAT **IS **WHY **THE **FIRST **VERSION **OF
+# **THIS **CHANGE **WAS **2.1x **SLOWER** -- **MEASURED**) -- **⇒⇒† AND **AND **THE **COUNT **IS **THE **INDEX
+# **OF **THE **ARM **THAT **STOPPED** (⇒⇒† AND **AND **AND **THE **`k` **IS **THE **ARM's **INDEX**)**
+def i64_dec.digits.go2(xh: U32, xl: U32, k: U32) -> U32:
+  match k:
+    case 0: i64_dec.digits.arm(u64_lt(xh, xl, 0, 10), 1, 2)
+    case 1: i64_dec.digits.arm(u64_lt(xh, xl, 0, 100), 2, 3)
+    case 2: i64_dec.digits.arm(u64_lt(xh, xl, 0, 1000), 3, 4)
+    case 3: i64_dec.digits.arm(u64_lt(xh, xl, 0, 10000), 4, 5)
+    case 4: i64_dec.digits.arm(u64_lt(xh, xl, 0, 100000), 5, 6)
+    case 5: i64_dec.digits.arm(u64_lt(xh, xl, 0, 1000000), 6, 7)
+    case 6: i64_dec.digits.arm(u64_lt(xh, xl, 0, 10000000), 7, 8)
+    case 7: i64_dec.digits.arm(u64_lt(xh, xl, 0, 100000000), 8, 9)
+    case 8: i64_dec.digits.arm(u64_lt(xh, xl, 0, 1000000000), 9, 10)
+    case 9: i64_dec.digits.arm(u64_lt(xh, xl, 2, 1410065408), 10, 11)
+    case 10: i64_dec.digits.arm(u64_lt(xh, xl, 23, 1215752192), 11, 12)
+    case 11: i64_dec.digits.arm(u64_lt(xh, xl, 232, 3567587328), 12, 13)
+    case 12: i64_dec.digits.arm(u64_lt(xh, xl, 2328, 1316134912), 13, 14)
+    case 13: i64_dec.digits.arm(u64_lt(xh, xl, 23283, 276447232), 14, 15)
+    case 14: i64_dec.digits.arm(u64_lt(xh, xl, 232830, 2764472320), 15, 16)
+    case 15: i64_dec.digits.arm(u64_lt(xh, xl, 2328306, 1874919424), 16, 17)
+    case 16: i64_dec.digits.arm(u64_lt(xh, xl, 23283064, 1569325056), 17, 18)
+    case 17: i64_dec.digits.arm(u64_lt(xh, xl, 232830643, 2808348672), 18, 19)
+    case 18: i64_dec.digits.arm(u64_lt(xh, xl, 2328306436, 2313682944), 19, 20)
+    case _: 20
+
+def i64_dec.digits.go(x: I64, k: U32) -> U32:
+  match x:
+    case I64{hi, lo}: i64_dec.digits.go2(hi, lo, k)
 
 # zero has one digit and the count above says it has NONE, so the floor is here rather than in the fold.
 def i64_dec.digits.at(+c: U32) -> U32: Bool.pick(U32, U32.is_zero(c), 1, c)
 
-def i64_dec.digits(+x: I64) -> U32: i64_dec.digits.at(i64_dec.dig(x, 19n, i64_of_i32(1), 0))
+def i64_dec.digits(+x: I64) -> U32: i64_dec.digits.at(i64_dec.digits.go(x, 0))
 
 # a decimal by division, not by a 32-cell bit list. `U32.show` is `u32_to_word` (thirty-two cons cells
 # per number, in the language prelude) plus a fold, which is why §90's swap to it measured NEUTRAL: both
