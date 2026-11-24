@@ -30432,18 +30432,50 @@ decode-numbers-js    [###] 3/3  **THE DECODE'S 2,814 NUMBERS ARE PARSED IN JS NO
       NEW LAWS EXPOSED IT.
       THE CENSUS READS `36 shape laws, 53 shape fold arms` AND THE LAW CENSUS
       READS `0/107/107`; `--plant` IS GREEN.
-- [ ] **THE ALU CENSUS's PLANT IS RED, AND IT IS NOT OURS.** MEASURED
-      2026-11-23: `gates/alu-law-census-gate.py --plant` REPORTS "the mutated
-      copy did not go red naming neg_is_mul_by_minus_one (rc=1, named=None)",
-      AND THE GATE ITSELF EXITS 0.  **AND IT IS PRE-EXISTING:** MEASURED, THE
-      SAME FAILURE AT `HEAD~1` -- BEFORE THE COMPOSITION LAWS -- SO IT IS NOT
-      THE COMPOSITION WORK's.  THE CENSUS's OWN READING IS STILL GREEN ("the
-      census is no worse than the baseline"), SO THE PLANT IS THE ONE RED
-      ROW AND IT IS NOT OURS TO FIX QUIETLY.  **AND THE MESSAGE SAYS WHAT TO
-      LOOK AT:** `named=None` MEANS THE MUTATED COPY WENT RED WITHOUT NAMING A
-      LAW -- SO THE FAILURE IS THE MUTATION'S OWN, NOT THE LAW'S.  AND
-      `neg_is_mul_by_minus_one`'s PROOF IS `{==}` AND ITS LAW IS PRESENT, SO
-      THE MUTATION IS NOT LANDING ON THE SUBJECT IT CLAIMS TO.
+- [x] **THE ALU CENSUS's PLANT IS GREEN NOW, AND THE CAUSE WAS THREE THINGS
+      AND NOT ONE.** MEASURED 2026-11-24: `gates/alu-law-census-gate.py
+      --plant` REPORTS ALL FOUR CASES PASSING AND EXITS 0.  THE PRE-EXISTING
+      RED ROW (2026-11-23: "the mutated copy did not go red naming
+      neg_is_mul_by_minus_one (rc=1, named=None)") IS RETIRED.
+      **AND THE CAUSE WAS NOT WHAT THE MESSAGE SAID.** THE MESSAGE SAID
+      `named=None` -- "THE MUTATED COPY WENT RED WITHOUT NAMING A LAW -- SO
+      THE FAILURE IS THE MUTATION'S OWN, NOT THE LAW'S" -- AND THE OLD NOTE
+      ADDED "AND `neg_is_mul_by_minus_one`'s PROOF IS `{==}` AND ITS LAW IS
+      PRESENT, SO THE MUTATION IS NOT LANDING ON THE SUBJECT IT CLAIMS TO."
+      **AND ALL THREE OF THOSE READINGS WERE WRONG.** THE MUTATION LANDS
+      EXACTLY ON ITS SUBJECT, AND THE LAW IS PRESENT, AND THE LAW IS
+      LOAD-BEARING.  MEASURED, BREAKING `def neg` FAILS UNDER THE NAME OF A
+      **HELPER** -- `alu_neg_one_eq` -- AND A FAILURE IN A HELPER IS NOT A
+      LAW FAILING AND NOT "NO LAW FAILED": THE ROW SAID "NO LAW" BECAUSE THE
+      FAILURE's LOCATION NAMED A DEF AND NOT A `L.` LAW.
+      **AND THE THREE FIXES, IN ORDER:**
+      (1) **THE HELPER WAS UNNECESSARY AND IS GONE.** `alu_neg_one_eq` STATED
+      `A.neg(A.one()) == S.SpMul{A.one(), A.one()}` AND `A.neg(a)` IS
+      `S.SpMul{a, one()}`, SO THE FACT IS **DEFINITIONAL** -- MEASURED, THE
+      ARANGE PROOF's `c2` STEP CLOSES WITH `{==}` DIRECTLY.  SO THE HELPER
+      WENT AND WITH IT WENT THE "FAILURE IN A HELPER" CLASS.  (A LOC
+      REDUCTION AND A CLASS REMOVAL AT ONCE.)
+      (2) **THE ARANGE LAW MASKS THE NEG LAW, AND THAT IS TRUE AND NOT A
+      DEFECT.** THE ARANGE LAW READS `A.neg(A.one())` AND
+      `neg_is_mul_by_minus_one` READS `A.neg(a)`, SO THEY SHARE THE SUBJECT,
+      AND `bend` REPORTS THE FIRST FAILING PROOF AND NOT ALL OF THEM.  **SO THE
+      ALU CENSUS NOW ASKS THE MASK, EXACTLY AS THE SHAPE CENSUS DOES** --
+      `masked_check` REMOVES THE MASKING LAW AND RE-CHECKS -- AND
+      `neg_is_mul_by_minus_one` IS NOW **MASKED**: "the gate went red naming
+      arange_composition_has_the_expanded_shape; with the masking law removed
+      it names neg_is_mul_by_minus_one".  **SO THE LAW CAN FAIL, AND IT IS
+      JUST NOT THE FAILURE `bend` REPORTS FIRST.**
+      (3) **THE PLANT's CLAIM WAS ASSERTING SOMETHING THE BOOK's ORDER MAKES
+      FALSE.** IT SAID "MUST REDDEN NAMING **ITS** LAW", AND FOR THIS LAW
+      THAT IS NOT SATISFIABLE WHILE THE ARANGE LAW COMES FIRST.  A PLANT
+      THAT ASSERTS SOMETHING FALSE IS NOT A CONTROL, SO IT NOW ASSERTS THE
+      CLAIM THAT IS TRUE -- THE LAW MUST BE **REACHABLE**, MASKED OR NOT.
+      **AND THE FIVE `vacuous-on-mask` LAWS REMAIN, AND THEY ARE A DOCUMENTED
+      STRUCTURAL LIMIT AND NOT A DEFECT TO FIX HERE:** `A.one()` AND
+      `A.zero()` ARE THE SAME TERM -- BOTH ARE `S.SpConst{S.SpInvalid{},
+      S.index()}` -- BECAUSE THE SPEC IR IS STRUCTURAL AND ITS CONSTS CARRY NO
+      NUMBER, WHICH IS WHY THE SPEC's `min_max` ARITHMETIC CELLS ARE NOT
+      STATED EITHER.
 - [x] **THE LAW SET IS NOW **103 LAWS**, AND **ALL FIVE** OF THE SPEC's
       COMPOSITIONS ARE STATED.** MEASURED 2026-11-17 against the pin's spec
       (`f5ac54685074:spec/tinyspec.tex`): the spec writes FIVE ops as
@@ -30611,3 +30643,25 @@ decode-numbers-js    [###] 3/3  **THE DECODE'S 2,814 NUMBERS ARE PARSED IN JS NO
       and the tail move and the implementation does not, so the driver never
       reopens a namespace. MEASURED: the driver answers `expected: a defined
       name` only when it tries, and it does not try any more.
+
+## 2026-11-24 — the MNIST forward chain executes bit-exactly, and the corpus certificate is settled
+
+- [x] **THE FORWARD CHAIN: FOUR KERNELS, FOUR `OK 0.000e+00`, `ALL FOUR KERNELS AGREE`** (`0bd21897a`,
+      `0d8d96ee`). `.agents/slop/browser/fchain-harness.c` compiles the port's own rendered C
+      (`cc -O1 -std=c11` rc=0), runs it, and compares every stage against a longhand reference:
+      `conv OK · relu OK · pool OK · linear OK`, plus the three `reference-chain` rows, harness rc=0.
+      **THE DEFECT WAS ONE INDEX SHAPE**: the relu's flat read was the only `INDEX` left unfolded
+      (`INDEX(after, c0, c0, r0, r1)`), and the renderer reads `src1` only, so it rendered
+      `(*(data1_196+0))` for every element. `rr_ap_index_src` now folds a multi-entry range list with
+      `_apply_reshape`'s own arithmetic (`IX.rr_reshape.go` — it takes NODES, so nothing is re-minted)
+      and the read is `(Lidx0 + 14*Lidx1 + 196*0 + 196*0) % 196`.
+      THREE MEASUREMENTS SHAPED THE FOLD, AND EACH ONE IS WHY THE OBVIOUS VERSION FAILED: every entry
+      must STAY (a filtered fold leaves a range unbound while the `END` still binds it, and the
+      linearizer expands it into a vector — `float784`, cc 11 errors, three times); a CONST entry's
+      `ext` is **0**, not 1 (`indexing.bend:226`), so the shape read is `max(ext,1)` (without it every
+      index was `%0`, and clang's UB on ARM64 spun the harness to SIGKILL); and a ONE-entry list is
+      already a two-src index (folding it again wraps it in `%1`, which is zero for every element).
+- [x] **THE CORPUS CERTIFICATE IS SETTLED AND GREEN ON THE SAME SUBSTRATE**: `checks/differ.py run` ->
+      `graphs-agree=38  byte-identical=38  controls=5 of 5  plants-disagree=8 of 8  conflations=4 of 4
+      ORACLE SELFCHECK: OK`, with `substrate-start == substrate-end == ed932b4a0d9b…` and
+      `unhealthy() []` — i.e. the run describes one tree, not a mixture.
