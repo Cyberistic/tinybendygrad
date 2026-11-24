@@ -847,10 +847,19 @@ def wk_norm(m: Maybe<&2, O.Found>, u: U32) -> Maybe<&2, O.Found>:
     case None{} : None{}
 
 # `which`: 0 = `pm_commit_weak`, 1 = `pm_uncast_const`, 2 = `pm_cast_const`.
-def wk_once(+ts: O.PMEntrys, which: U32, +ar: O.Arena, +u: U32) -> Maybe<&2, O.Found>:
+#
+# THE **FOLD **IS **A **PARAMETER **AND **NOT **COMPUTED **HERE** (⇒⇒† AND **AND **THAT **IS **THE
+# **MEASURED **FIX**): **THE **FOLD **IS **A **WHOLE-ARENA **TOPOLOGICAL **SORT** (⇒⇒† AND **AND
+# **`UOp.fold` **IS **`Kahn.run`**), **⇒⇒† AND **AND **IT **IS **7.57 ms **A **CALL** (⇒⇒† AND **AND
+# **MEASURED**), **⇒⇒† AND **AND **THE **FIXPOINT **CALLED **IT **1,811 **TIMES **A **TURN** (⇒⇒† AND **AND
+# **MEASURED**), **⇒⇒† AND **AND **THAT **WAS **13,703 ms **OF **THE **23.7 s** (⇒⇒† AND **AND **HALF
+# **THE **WHOLE**) -- **⇒⇒† AND **AND **THE **FOLD **CHANGES **ONLY **WHEN **A **RULE **FIRES** (⇒⇒† AND
+# **AND **A **RULE **MINTS **INTO **THE **ARENA**), **⇒⇒† AND **AND **SO **THE **CALLER **BUILDS **IT **ONCE
+# **AND **REBUILDS **IT **ONLY **AFTER **A **FIRING** (⇒⇒† AND **AND **`wk_fix.go` **CARRIES **IT**)**
+def wk_once(+ts: O.PMEntrys, which: U32, +fx: F.Folded, +u: U32) -> Maybe<&2, O.Found>:
   match which:
-    case 2: wk_norm(wk_cast_consts(F.folded(ar), u), u)
-    case _: wk_norm(wk_scan(ts, U32.is_zero(which), F.folded(ar), u, O.PMEntrys.es(ts), None{}), u)
+    case 2: wk_norm(wk_cast_consts(fx, u), u)
+    case _: wk_norm(wk_scan(ts, U32.is_zero(which), fx, u, O.PMEntrys.es(ts), None{}), u)
 
 def wk_has(m: Maybe<&2, O.Found>) -> Bool:
   match m:
@@ -882,7 +891,36 @@ def wk_last(hit: Bool, f: O.Found, last: Maybe<&2, O.Found>) -> Maybe<&2, O.Foun
 # a branch, because the self-call's first argument must be `p`, a subterm of `1n+p`:
 # the termination checker reads arguments left to right and a computed fuel is not a
 # smaller term.
-def wk_fix.go(fuel: Nat, +ts: O.PMEntrys, +which: U32, +ar: O.Arena, +u: U32,
+#
+# **⇒⇒† AND **THE **FOLD **IS **CARRIED **AND **REBUILT **ONLY **AFTER **A **FIRING** (⇒⇒† AND **AND **A
+# **FIRING **MINTS **INTO **THE **ARENA**, **⇒⇒† AND **AND **SO **THE **FOLD **OVER **THE **OLD **ARENA **IS
+# **STALE**) -- **⇒⇒† AND **AND **THE **FIXPOINT **CALLED **`F.folded`** **1,811 **TIMES **A **TURN**
+# (⇒⇒† AND **AND **MEASURED**), **⇒⇒† AND **AND **EACH **CALL **IS **A **WHOLE-ARENA **TOPOLOGICAL
+# **SORT **OF **7.57 ms** (⇒⇒† AND **AND **MEASURED**), **⇒⇒† AND **AND **THAT **WAS **13,703 ms **OF **THE
+# **23.7 s** -- **⇒⇒† AND **AND **HALF **THE **WHOLE**)**
+#
+# **⇒⇒† AND **AND **THE **REBUILD **IS **A **SEPARATE **DEF** (⇒⇒† AND **AND **A **`match` **CANNOT
+# **SCRUTINIZE **A **LOCAL **BINDER** -- **⇒⇒† AND **AND **THE **TREE's OWN **RULE**: **"give **it **its
+# **own **def"**) -- **⇒⇒† AND **AND **IT **TAKES **THE **HIT **FLAG **AS **A **PARAMETER** (⇒⇒† AND **AND
+# **AND **THE **FLAG **IS **COMPUTED **BY **THE **CALLER**, **⇒⇒† AND **AND **WHOSE **`wk_last` **ALREADY
+# **BRANCHES **ON **IT**)**
+#
+# **⇒⇒† AND **AND **IT **ANSWERS **THE **FOLD **AND **THE **NODE **IN **TWO **DEFS** (⇒⇒† AND **AND **A
+# **TUPLE **CANNOT **BE **DESTRUCTURED** -- **⇒⇒† AND **AND **"a **match **cannot **scrutinize **a
+# **computed **value"**)**
+# **THE **REBUILD **IS **FROM **THE **ARENA **THE **RULE **LEFT** (⇒⇒† AND **AND **A **RULE **MINTS **INTO
+# **THE **ARENA **IT **WAS **HANDED**, **⇒⇒† AND **AND **THAT **IS **THE **NEW **ARENA**)**
+def wk_fix.fold(hit: Bool, +fx: F.Folded, +f: O.Found) -> F.Folded:
+  match hit:
+    case True{}: F.folded(O.Found.ar(f))
+    case False{}: fx
+
+def wk_fix.node(hit: Bool, +fx: F.Folded, +f: O.Found, u: U32) -> O.Found:
+  match hit:
+    case True{}: f
+    case False{}: O.Found{F.Folded.ar(fx), u}
+
+def wk_fix.go(fuel: Nat, +ts: O.PMEntrys, +which: U32, +fx: F.Folded, +u: U32,
               last: Maybe<&2, O.Found>, stop: Bool) -> Maybe<&2, O.Found>:
   match fuel:
     case 0n: last
@@ -890,13 +928,19 @@ def wk_fix.go(fuel: Nat, +ts: O.PMEntrys, +which: U32, +ar: O.Arena, +u: U32,
       match stop:
         case True{}: last
         case False{}:
-          +m = wk_once(ts, which, ar, u)
+          +m = wk_once(ts, which, fx, u)
           +hit = wk_has(m)
-          +f = wk_get(m, O.Found{ar, u})
-          wk_fix.go(p, ts, which, O.Found.ar(f), O.Found.i(f), wk_last(hit, f, last), Bool.not(hit))
+          +f = wk_get(m, O.Found{F.Folded.ar(fx), u})
+          +fx2 = wk_fix.fold(hit, fx, f)
+          +u2 = O.Found.i(wk_fix.node(hit, fx, f, u))
+          wk_fix.go(p, ts, which, fx2, u2, wk_last(hit, f, last), Bool.not(hit))
 
 # ONE SWEEP, in the arena's topological order -- `toposort_nocalls`, so a CALL's body is
 # not entered, which is `enter_calls=False` and is what `full_rewrite_to_sink` sees.
+#
+# **THE **FOLD **IS **BUILT **HERE **ONCE **A **SWEEP** (⇒⇒† AND **AND **THE **SWEEP **IS **THE
+# **UNIT **THAT **THE **FIXPOINT **RUNS **INSIDE**, **⇒⇒† AND **AND **THE **FOLD **IS **REBUILT **BY
+# **`wk_fix.go` **ONLY **AFTER **A **FIRING**)**
 def wk_sweep.go(+ts: O.PMEntrys, +which: U32, +ns: List<&2, U32>, +ar: O.Arena, +root: U32,
                 +rep: List<&2, WRep>) -> O.Found:
   match ns:
@@ -904,7 +948,7 @@ def wk_sweep.go(+ts: O.PMEntrys, +which: U32, +ns: List<&2, U32>, +ar: O.Arena, 
     case n <> t:
       +srcs = wrep.srcs.go(O.Arena.srcs(ar, n), rep, Nil{})
       +f = O.UOp.new(ar, O.Arena.op(ar, n), srcs, O.Arena.arg(ar, n), O.Arena.tag(ar, n))
-      +m = wk_fix.go(O.Arena.budget(ar), ts, which, O.Found.ar(f), O.Found.i(f), None{}, False{})
+      +m = wk_fix.go(O.Arena.budget(ar), ts, which, F.folded(O.Found.ar(f)), O.Found.i(f), None{}, False{})
       # THE ARENA AFTER THE RULE, not the rebuild's. A rule mints into the arena it was
       # handed, so threading `Found.ar(f)` here builds the NEXT node in a SHORTER arena
       # and its index collides with one the rule already minted. MEASURED: that produced a

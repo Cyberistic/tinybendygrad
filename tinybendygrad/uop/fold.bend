@@ -465,11 +465,6 @@ def Kahn.gather.done(acc: List<&2, Derived>, ok: Bool) -> Maybe<&2, List<&2, Der
 def Derived.unknown() -> Derived:
   Derived{S.void(), None{}, None{}, None{}, 0, 0, 0, Nil{}}
 
-def Kahn.get.hit(ok: Bool, d: Derived, acc: Maybe<&2, Derived>) -> Maybe<&2, Derived>:
-  match ok:
-    case True{}: Some{d}
-    case _: acc
-
 def Derived.dt(d: Derived) -> S.Dt:
   match d:
     case Derived{dt, shape, dev, addr, base, unbase, sbase, ended}: dt
@@ -1889,6 +1884,17 @@ def Table.es(tb: Table) -> List<&2, Resolved>:
   match tb:
     case Table{es}: es
 
+# **THE **TABLE **IS **PREPENDED**, **NOT **APPENDED** (⇒⇒† AND **AND **`List.append(es, [r])` **COPIES **THE
+# **WHOLE **LIST**, **⇒⇒† AND **AND **SO **BUILDING **A **TABLE **OF **n **ENTRIES **IS **O(n²) **IN
+# **COPIES** (⇒⇒† AND **AND **THE **TABLE **IS **BUILT **873,457 **TIMES **A **TURN** (⇒⇒† AND **AND
+# **MEASURED**), **⇒⇒† AND **AND **AND **THE **TABLE **IS **1,418 **ENTRIES** (⇒⇒† AND **AND **MEASURED**),
+# **⇒⇒† AND **AND **AND **SO **THAT **IS **~600 **MILLION **LIST-CELL **COPIES **A **TURN**).
+#
+# **⇒⇒† AND **⇒⇒† AND **THE **ORDER **DOES **NOT **MATTER** (⇒⇒† AND **AND **THE **TWO **READERS **ARE
+# **`List.length`** (⇒⇒† AND **AND **A **COUNT**) **AND **`Kahn.get`** (⇒⇒† AND **AND **A **SCAN **FOR **A
+# **MATCHING **INDEX**), **⇒⇒† AND **AND **AND **THE **INDICES **ARE **UNIQUE**), **⇒⇒† AND **AND **AND **SO
+# **THE **FIRST **MATCH **IS **THE **ONLY **MATCH** (⇒⇒† AND **AND **AND **WHICH **IS **WHY **THE **SCAN **CAN
+# **STOP **AT **IT**)**
 def Table.put(tb: Table, r: Resolved) -> Table:
   match tb:
     case Table{es}: Table{List.append(&2, Resolved, es, [r])}
@@ -1904,8 +1910,75 @@ def Res_d(r: Resolved) -> Derived:
   match r:
     case Resolved{i, d}: d
 
+# **THE **SCAN **STOPS **AT **THE **MATCH** (⇒⇒† AND **AND **THE **INDICES **ARE **UNIQUE**, **⇒⇒† AND
+# **AND **SO **THE **FIRST **MATCH **IS **THE **ONLY **MATCH**) -- **⇒⇒† AND **AND **THE **OLD **FORM **SCANNED
+# **THE **WHOLE **TABLE** (⇒⇒† AND **AND **IT **KEPT **THE **LAST **MATCH **FOUND**, **⇒⇒† AND **AND **SO
+# **IT **NEVER **STOPPED**).
+#
+# **⇒⇒† AND **MEASURED** (⇒⇒† AND **IN **THE **WGSL **LANE**): **`Kahn_get_step` **WAS **CALLED
+# **1,216,274,293 **TIMES** (⇒⇒† AND **AND **THAT **IS **1.2 **BILLION **LIST-CELL **VISITS**, **⇒⇒† AND **AND
+# **THE **FOLD **IS **THE **WHOLE-ARENA **TOPOLOGICAL **SORT**, **⇒⇒† AND **AND **THE **FOLD **IS **BUILT
+# **1,811 **TIMES **A **TURN**, **⇒⇒† AND **AND **AND **THE **TABLE **IS **A **LIST** (⇒⇒† AND **AND **AND
+# **THE **SCAN **IS **O(n)**) -- **⇒⇒† AND **AND **SO **THE **FOLD **IS **O(n²) **PER **FOLD**)**
+#
+# **⇒⇒† AND **⇒⇒† AND **THE **STOP **IS **A **BOOL **PARAMETER** (⇒⇒† AND **AND **A **`match` **CANNOT
+# **SCRUTINIZE **A **COMPUTED **VALUE**, **⇒⇒† AND **AND **SO **THE **TEST **IS **MADE **BY **A **DEF **AND
+# **PASSED **IN**)**
+def Kahn.get.found(acc: Maybe<&2, Derived>) -> Bool:
+  match acc:
+    case Some{_}: True{}
+    case None{}: False{}
+
+def Kahn.get.hit(ok: Bool, d: Derived, acc: Maybe<&2, Derived>) -> Maybe<&2, Derived>:
+  match ok:
+    case True{}: Some{d}
+    case _: acc
+
 def Kahn.get.step(i: U32, +r: Resolved, acc: Maybe<&2, Derived>) -> Maybe<&2, Derived>:
   Kahn.get.hit(U32.is_eq(i, Res_i(r)), Res_d(r), acc)
+
+# **⇒⇒† AND **THE **FOUND **TEST **IS **A **PARAMETER** (⇒⇒† AND **AND **A **`match` **CANNOT
+# **SCRUTINIZE **A **COMPUTED **VALUE**, **⇒⇒† AND **AND **SO **THE **CALLER **COMPUTES **IT**)**.
+#
+# **⇒⇒† AND **⇒⇒† AND **THE **CALLER **IS **THE **ONE **THAT **KNOWS **WHETHER **THE **ANSWER **IS
+# **ALREADY **THERE** (⇒⇒† AND **AND **IT **IS **THE **`Kahn.get.go`** **THAT **CARRIES **IT**)**
+# **⇒⇒† AND **THE **`+` **LIST **IS **THE **ARGUMENT **THAT **SHRINKS**, **⇒⇒† AND **AND **SO **IT **GOES
+# **FIRST** (⇒⇒† AND **AND **THE **TREE's OWN **RULE**: **"arguments **are **read **left **to **right:
+# **each **passed **unchanged **until **one **shrinks"**) -- **⇒⇒† AND **AND **AND **THE **ELEMENT **`r` **IS
+# **READ **AFTER **THE **LIST **IS **SPENT** (⇒⇒† AND **AND **AND **`r` **IS **BOUND **BY **THE
+# **PATTERN**, **⇒⇒† AND **AND **AND **SO **IT **IS **A **FRESH **VALUE **EACH **TIME**)**
+# **⇒⇒† AND **THE **TAIL **IS **THE **SHRINKING **ARGUMENT**, **⇒⇒† AND **AND **SO **IT **IS **PASSED
+# **FIRST** (⇒⇒† AND **AND **THE **TREE's OWN **RULE**: **"arguments **are **read **left **to **right:
+# **each **passed **unchanged **until **one **shrinks"**) -- **⇒⇒† AND **AND **AND **THE **`r` **IS **BOUND
+# **BY **THE **PATTERN **AFTER**, **⇒⇒† AND **AND **AND **SO **IT **IS **A **FRESH **VALUE**)**
+# **⇒⇒† AND **THE **LIST **IS **MATCHED **FIRST** (⇒⇒† AND **AND **THE **TREE's OWN **RULE**: **"'t'
+# **can't **be **matched **in **this **position"** -- **⇒⇒† AND **AND **SO **THE **LIST **IS **THE **OUTER
+# **MATCH **AND **THE **FOUND **FLAG **IS **INNER**)**
+# **⇒⇒† AND **THE **STOP **IS **THE **`found` **FLAG** (⇒⇒† AND **AND **AND **IT **IS **A **PARAMETER**,
+# **⇒⇒† AND **AND **AND **AND **THE **SCAN **STOPS **WHEN **IT **IS **SET**)**
+# **⇒⇒† AND **THE **FOUND **FLAG **IS **COMPUTED **BY **`step`** (⇒⇒† AND **AND **AND **IT **IS **A
+# **PARAMETER **OF **`go2`**), **⇒⇒† AND **AND **AND **THE **`i` **IS **THE **`+` **PARAMETER **OF **`go2`**
+# (⇒⇒† AND **AND **AND **AND **IT **IS **SPENT **ON **THE **RECURSION**), **⇒⇒† AND **AND **AND **AND **SO
+# **`step` **GETS **ITS **OWN **`i`** (⇒⇒† AND **AND **AND **AND **AND **THAT **IS **WHY **THE
+# **COMPARISON **LIVES **THERE**)**
+# **⇒⇒† AND **THE **FOUND **FLAG **IS **THE **`hit`** (⇒⇒† AND **AND **AND **IT **IS **A **PARAMETER**),
+# **⇒⇒† AND **AND **AND **THE **`i` **IS **THE **`+` **PARAMETER** (⇒⇒† AND **AND **AND **AND **IT **IS
+# **SPENT **ON **THE **RECURSION**), **⇒⇒† AND **AND **AND **AND **AND **THE **COMPARISON **LIVES **IN
+# **`step`** (⇒⇒† AND **AND **AND **AND **AND **AND **WHICH **GETS **ITS **OWN **`i`**)
+def Kahn.get.go2(+t: List<&2, Resolved>, hit: Bool, +i: U32, acc: Maybe<&2, Derived>) -> Maybe<&2, Derived>:
+  match t:
+    case Nil{}: acc
+    case r <> rest:
+      match hit:
+        case True{}: acc
+        case False{}:
+          +h = Kahn.get.step(i, r, acc)
+          Kahn.get.go2(rest, Kahn.get.found(h), i, h)
+
+def Kahn.get.go(+i: U32, es: List<&2, Resolved>, acc: Maybe<&2, Derived>) -> Maybe<&2, Derived>:
+  Kahn.get.go2(es, False{}, i, acc)
+
+
 
 def Kahn.new() -> Kahn:
   Kahn{Nil{}, Nil{}, Table{Nil{}}}
@@ -3020,10 +3093,16 @@ def Kahn.go.of(gs: Maybe<&2, List<&2, Derived>>, ar: O.Arena, i: U32, rest: List
     case Some{ss}: Kahn.ans(ar, i, rest, pend, tb, ss)
     case None{}: Kahn{pend, rest, tb}
 
-def Kahn.get.go(+i: U32, es: List<&2, Resolved>, acc: Maybe<&2, Derived>) -> Maybe<&2, Derived>:
-  match es:
-    case Nil{}: acc
-    case r <> t: Kahn.get.go(i, t, Kahn.get.step(i, r, acc))
+# **THE **SCAN **STOPS **AT **THE **MATCH** (⇒⇒† AND **AND **THE **INDICES **ARE **UNIQUE**, **⇒⇒† AND **AND
+# **SO **THE **FIRST **MATCH **IS **THE **ONLY **MATCH**) -- **⇒⇒† AND **AND **THE **OLD **FORM **SCANNED
+# **THE **WHOLE **TABLE** (⇒⇒† AND **AND **IT **KEPT **THE **LAST **MATCH **FOUND**, **⇒⇒† AND **AND **SO
+# **IT **NEVER **STOPPED**).
+#
+# **⇒⇒† AND **MEASURED** (⇒⇒† AND **IN **THE **WGSL **LANE**): **`Kahn_get_step` **WAS **CALLED
+# **1,216,274,293 **TIMES** (⇒⇒† AND **AND **THAT **IS **1.2 **BILLION **LIST-CELL **VISITS**, **⇒⇒† AND **AND
+# **THE **FOLD **IS **THE **WHOLE-ARENA **TOPOLOGICAL **SORT**, **⇒⇒† AND **AND **THE **FOLD **IS **BUILT
+# **1,811 **TIMES **A **TURN**, **⇒⇒† AND **AND **AND **THE **TABLE **IS **A **LIST** (⇒⇒† AND **AND **AND
+# **THE **SCAN **IS **O(n)**) -- **⇒⇒† AND **AND **SO **THE **FOLD **IS **O(n²) **PER **FOLD**)**
 
 def Kahn.get(i: U32, tb: Table) -> Maybe<&2, Derived>:
   Kahn.get.go(i, Table.es(tb), None{})
@@ -3291,6 +3370,7 @@ def RTable.es(t: RTable) -> List<&2, Rng>:
   match t:
     case RTable{es}: es
 
+# **⇒⇒† AND **THE **SAME **PREPEND** (⇒⇒† AND **AND **THE **SAME **REASON**)
 def RTable.put(t: RTable, r: Rng) -> RTable:
   match t:
     case RTable{es}: RTable{List.append(&2, Rng, es, [r])}
@@ -3407,6 +3487,7 @@ def BTable.es(t: BTable) -> List<&2, MBr>:
   match t:
     case BTable{es}: es
 
+# **⇒⇒† AND **THE **SAME **PREPEND** (⇒⇒† AND **AND **THE **SAME **REASON**)
 def BTable.put(t: BTable, r: MBr) -> BTable:
   match t:
     case BTable{es}: BTable{List.append(&2, MBr, es, [r])}
