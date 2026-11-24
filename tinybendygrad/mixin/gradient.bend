@@ -1365,8 +1365,13 @@ def _deepwalk.vis(+ar: O.Arena, targets: List<&2, U32>, root: U32) -> Itp:
 # `_deepwalk(root, targets)` -- gradient.py:109-114. `O.UOp.toposort` is `topovisit`
 # without the visitor (uop/ops.bend:2943 symbol=UOp.mstack.go records that `topovisit`'s body IS the toposort),
 # and `Arena.budget` is the exact pop bound, so the pass cannot be cut short.
+#
+# THE WALK'S IDS BELONG TO `ar`, so `Deep.fill` receives `ar` -- `O.Arena.empty()` was here, and an
+# arena is a VALUE, so the same integer names a different node in a fresh one. MEASURED: changing it
+# moved NOTHING (walk=29 skip=5 hole=8 either way), so it is a correctness-of-lineage fix and NOT the
+# explanation for the weights' missing keys; it is kept because it is the arena the ids came from.
 def _deepwalk(root: U32, targets: List<&2, U32>, +ar: O.Arena) -> Deep:
-  Deep.fill(O.Arena.empty(), _deepwalk.vis(ar, targets, root))
+  Deep.fill(ar, _deepwalk.vis(ar, targets, root))
 
 
 # `grads: dict[UOp, UOp]` (gradient.py:118) -- TWO PARALLEL LISTS and an IN-PLACE

@@ -74,6 +74,22 @@ def one(+ar: O.Arena, +wk: List<&2, U32>, +k: U32) -> String:
                  "/src0=", U32.show(O.Arena.src0(ar, k)), String.take(RF.eng_op_name(O.Arena.op(ar, O.Arena.src0(ar, k))), 3n),
                  "/users=", users.go(ar, wk, k, 0, Nil{})])
 
+# THE WALK'S OWN IDS, with a `+` where a grad exists: the ids are the walk's, so nothing here
+# crosses an arena lineage.
+def sids(+ar: O.Arena, +ss: List<&2, U32>, +acc: List<&2, String>) -> String:
+  match ss:
+    case Nil{}: String.join(acc, ",")
+    case h <> t: sids(ar, t, List.append(&2, String, acc, [U32.show(h)]))
+
+def wid.go(+g: G.Grads, +ar: O.Arena, +wk: List<&2, U32>, +acc: List<&2, String>) -> String:
+  match wk:
+    case Nil{}: String.join(acc, " ")
+    case n <> t:
+      wid.go(g, ar, t, List.append(&2, String, acc,
+        [String.concat([U32.show(n), String.take(RF.eng_op_name(O.Arena.op(ar, n)), 3n),
+                        Bool.pick(String, gslot_at(G.gslot(g, n)), "+", "-"),
+                        "<", sids(ar, O.Arena.srcs(ar, n), Nil{}), ">"])]))
+
 def rows() -> String:
   # THE FORWARD, with no stores: a training GRAPH is value flow, and the chain's shape is the
   # only thing this row is about. `tn_rop` answers a `Found`, so each stage is re-wrapped by
@@ -112,6 +128,7 @@ def rows() -> String:
                  " walkops=", wops(G.CState.ar_of(cs), wk, Nil{}),
                  " kw1=", U32.show(T.Tensor.u(w1)),
                  " kw2=", U32.show(T.Tensor.u(w2)),
+                 " wid=", wid.go(G.CState.g_of(cs), T.Tensor.ar(lt), wk, Nil{}),
                  " has10=", Bool.show(gslot_at(G.gslot(G.CState.g_of(cs), 10))),
                  " has11=", Bool.show(gslot_at(G.gslot(G.CState.g_of(cs), 11))),
                  " has12=", Bool.show(gslot_at(G.gslot(G.CState.g_of(cs), 12))),
