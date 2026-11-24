@@ -609,30 +609,11 @@ def gr_11(+ar: O.Arena, +ctx: U32, +self: U32) -> GRes: gr_11.go(ar, ctx, O.Aren
 # collapses `ret.src[1]*ctx` and `ret.src[0]*ctx` when the srcs are equal, and
 # `mul_same_src` is the row that says so -- a fixture with a square MUL where BOTH slots
 # are the same node, which is correct and not a bug.
-def gr_12.go(+ar: O.Arena, +ctx: U32, +ret: U32) -> GRes:
-  +f1 = gmul(ar, O.Arena.src(ar, ret, 1), ctx)
-  +f2 = gmul(O.Found.ar(f1), O.Arena.src(O.Found.ar(f1), ret, 0), ctx)
-  fired([O.Found.i(f1), O.Found.i(f2)], O.Found.ar(f2))
-
-def gr_12(ar: O.Arena, +ctx: U32, +self: U32) -> GRes: gr_12.go(ar, ctx, self)
-
-# --- 13. WHERE -- gradient.py:81.
-#   (None, ret.src[0].where(ctx, ctx.const_like(0)),
-#       ret.src[0].where(ctx.const_like(0), ctx))
-#
-# Three slots, the first a hole: a WHERE's CONDITION is not differentiable. The other
-# two are `mask.where(value, ctx)` with the branches SWAPPED between them
-# (elementwise.py:426 is `mask.where(value, self)`), so slot 1 takes the taken branch
-# and slot 2 the untaken one. The `const_like(0)` is built ONCE in Python's fold and
-# used twice; here it is built twice, which interns to the same node.
-def gr_13.go(+ar: O.Arena, +ctx: U32, +ret: U32) -> GRes:
-  +z = gconst(ar, k_fzero())
-  +f1 = gwhere(O.Found.ar(z), O.Arena.src(O.Found.ar(z), ret, 0), ctx, O.Found.i(z))
-  +f2 = gwhere(O.Found.ar(f1), O.Arena.src(O.Found.ar(f1), ret, 0), O.Found.i(z), ctx)
-  fired([0, O.Found.i(f1), O.Found.i(f2)], O.Found.ar(f2))
-
-def gr_13(ar: O.Arena, +ctx: U32, +self: U32) -> GRes: gr_13.go(ar, ctx, self)
-
+# A SCALAR OPERAND MUST BE BROADCAST BEFORE AN ELEMENTWISE MUL. `ctx` is a SCALAR at the top of the
+# backward (the root grad is `const_like(1.0)`), and a `MUL(tensor, scalar)` has NO SHAPE -- so every
+# grad downstream of it is shapeless and its store is dropped at the kernel split. MEASURED: the walk
+# was right and `g1` came out as `RESHAPE[MUL/0, STACK/1]` -- the MUL itself ranked 0. This is
+# `_broadcasted` (mixin/elementwise.py:24-32) for the ONE case a gradient rule meets.
 def gdim_eq(+a: List<&2, U32>, +b: List<&2, U32>) -> Bool:
   match a:
     case Nil{}:
@@ -704,6 +685,14 @@ def gdims(+ar: O.Arena, +u: U32) -> List<&2, U32>:
 # `_align_left` (movement.py:134) pads 1s in front, and an EXPAND from that aligned shape IS the
 # broadcast. `movement.py:129` is `if self.shape == new_shape: return self`, so the equal case mints
 # NOTHING -- which is also the identity `EXPAND` with an empty marg (ops.py:823).
+def gr_13.go(+ar: O.Arena, +ctx: U32, +ret: U32) -> GRes:
+  +z = gconst(ar, k_fzero())
+  +f1 = gwhere(O.Found.ar(z), O.Arena.src(O.Found.ar(z), ret, 0), ctx, O.Found.i(z))
+  +f2 = gwhere(O.Found.ar(f1), O.Arena.src(O.Found.ar(f1), ret, 0), O.Found.i(z), ctx)
+  fired([0, O.Found.i(f1), O.Found.i(f2)], O.Found.ar(f2))
+
+def gr_13(ar: O.Arena, +ctx: U32, +self: U32) -> GRes: gr_13.go(ar, ctx, self)
+
 def g_expand0(+ar: O.Arena, +x: U32) -> O.Found: O.Found{ar, x}
 
 def g_expand(+ar: O.Arena, +x: U32, +ds: List<&2, U32>) -> O.Found:
@@ -790,6 +779,36 @@ def gr_14(+ar: O.Arena, +ctx: U32, +self: U32) -> GRes:
 #   The rule's OBSERVABLE effect for a non-weak, device-bearing, non-identity node is
 #   exactly `alu(Ops.STAGE)`, and `stage_*` covers that node; the four early returns are
 #   what is missing.
+def gscalar(+ar: O.Arena, +u: U32) -> Bool:
+  U32.is_zero(U32.from_nat(List.length(&2, U32, gdims(ar, u))))
+
+def gmul_bc.pick(xs: Bool, ys: Bool, +ar: O.Arena, +x: U32, +y: U32) -> O.Found:
+  match xs:
+    case True{} : gmul(ar, gs_solid(gbcast(ar, x, gdims(ar, y))), y)
+    case False{}:
+      match ys:
+        case True{} : gmul(ar, x, gs_solid(gbcast(ar, y, gdims(ar, x))))
+        case False{}: gmul(ar, x, y)
+
+def gmul_bc(+ar: O.Arena, +x: U32, +y: U32) -> O.Found:
+  gmul_bc.pick(gscalar(ar, x), gscalar(ar, y), ar, x, y)
+
+def gr_12.go(+ar: O.Arena, +ctx: U32, +ret: U32) -> GRes:
+  +f1 = gmul_bc(ar, O.Arena.src(ar, ret, 1), ctx)
+  +f2 = gmul_bc(O.Found.ar(f1), O.Arena.src(O.Found.ar(f1), ret, 0), ctx)
+  fired([O.Found.i(f1), O.Found.i(f2)], O.Found.ar(f2))
+
+def gr_12(ar: O.Arena, +ctx: U32, +self: U32) -> GRes: gr_12.go(ar, ctx, self)
+
+# --- 13. WHERE -- gradient.py:81.
+#   (None, ret.src[0].where(ctx, ctx.const_like(0)),
+#       ret.src[0].where(ctx.const_like(0), ctx))
+#
+# Three slots, the first a hole: a WHERE's CONDITION is not differentiable. The other
+# two are `mask.where(value, ctx)` with the branches SWAPPED between them
+# (elementwise.py:426 is `mask.where(value, self)`), so slot 1 takes the taken branch
+# and slot 2 the untaken one. The `const_like(0)` is built ONCE in Python's fold and
+# used twice; here it is built twice, which interns to the same node.
 def gr_15(ar: O.Arena, ctx: U32, self: U32) -> GRes: GSkip{}
 
 # --- 16. STAGE -- gradient.py:84. `(ctx,)`
