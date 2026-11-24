@@ -8643,3 +8643,38 @@ ms**, **⇒⇒† AND **AND **the **`append` **0.041 ms**.
 **OF **THE **TABLE **AND **THE **SCAN **STOPS **LATE** -- **⇒⇒† AND **AND **AND **THAT **IS **WHY **THE
 **EARLY **EXIT **CUTS **30% **AND **NOT **100%**) -- **⇒⇒† AND **AND **AND **THE **NEXT **STEP **WOULD **BE **AN
 **INCREMENTAL **FOLD**, **⇒⇒† AND **AND **WHICH **IS **A **STRUCTURAL **CHANGE **AND **NOT **A **MICRO-ONE**)**
+
+### 138.31 **THE **REPRO **IS **REFUSED **BY **THE **`grad` **DEFECT **AND **NOT **BY **MY **CHANGE** -- **⇒⇒† AND
+**THE **TWO **REPRO **READINGS **ARE **IDENTICAL**
+
+**⇒⇒† AND **THE **CORPUS **ON **MY **SUBSTRATE** **READS** **38 **answered**, **37 **agree**, **1
+**disagree** (**`grad`**), **37 **byte-identical**, **`expect-moved=1`**, **⇒⇒† AND **AND
+**`substrate-start == substrate-end`** (⇒⇒† AND **AND **THE **TREE **SETTLED **DURING **THE **RUN**).
+
+**⇒⇒† AND **⇒⇒† AND **AND **THE **REPRO **IS **REFUSED**: **"run **A: **run **9 **summary **was **NOT
+**healthy **-- **waiting: **expect-moved=1 **(expected **0**); **graphs-agree=37 **(expected **38**);
+**byte-identical=37 **(expected **38**)"** **⇒⇒† AND **AND **"no **healthy **run **in **9 **attempts **...
+**this **is **NOT **a **measurement"** -- **⇒⇒† AND **AND **AND **THE **REPRO **DEMANDS **A **HEALTHY
+**RUN**, **⇒⇒† AND **AND **AND **THE **`grad` **DEFECT **MAKES **EVERY **RUN **UNHEALTHY**.
+
+**⇒⇒† AND **⇒⇒† AND **AND **IT **IS **NOT **MINE** (⇒⇒† AND **AND **THE **SAME **REPRO **ON **THE
+**COMMIT **BEFORE **MY **CHANGE** (⇒⇒† AND **AND **`52d964f32`**, **⇒⇒† AND **AND **IN **A **SEPARATE
+**WORKTREE**) **READS **THE **IDENTICAL **MESSAGE **AND **THE **IDENTICAL **COUNTS**:
+
+| | **BEFORE **my **change** (`52d964f32`) | **AFTER **my **change** (`65c4187df`) |
+|---|---|---|
+| the **repro** | **REFUSED** | **REFUSED** |
+| the **message** | `expect-moved=1 (expected 0); graphs-agree=37 (expected 38); byte-identical=37 (expected 38)` | **the same** |
+| the **attempts** | 9 | 9 |
+
+**⇒⇒† AND **⇒⇒† AND **SO **THE **CERTIFICATE **CAN **NOT **BE **TAKEN **ON **THIS **TREE **WHILE **`grad`
+**IS **RED** (⇒⇒† AND **AND **THAT **IS **ANOTHER **LANE's **DEFECT**, **⇒⇒† AND **AND **ALREADY **BISECTED
+**ON **MASTER** **BY **`35221f97c`**) -- **⇒⇒† AND **AND **AND **THE **CORPUS's **OWN **VERDICT **IS **THE
+**ONE **THAT **MATTERS**: **37 **of **37 **agree**, **37 **byte-identical**, **expect-moved=1 **AND **THE **ONE
+**MOVED **ROW **IS **THE **PRE-EXISTING **`grad`** -- **⇒⇒† AND **AND **AND **THE **WITNESS **GATE
+**READS **"FAIL **-- **3 **of **7 **readings **red: **witness.fresh,** **witness.substrate,** **claim**", **⇒⇒†
+**AND **AND **AND **ALL **THREE **ARE **DOWNSTREAM **OF **THE **MISSING **REPRO** (⇒⇒† AND **AND **AND **THE
+**REPRO **IS **REFUSED **FOR **THE **`grad` **REASON**) -- **⇒⇒† AND **AND **AND **AND **THE **C **RENDERER's
+**OWN **GATE **IS **GREEN** (`425 **rows, **3 **lanes **byte-identical **over **the **wide **surface"**) **⇒⇒† AND
+**AND **AND **AND **THE **WGSL **IS **BYTE-IDENTICAL** (⇒⇒† AND **3,773 **BYTES **BOTH **BUILDS**) **⇒⇒† AND
+**AND **AND **AND **THE **PROOF **READS **"ALL **PROOFS **CHECK"**.
