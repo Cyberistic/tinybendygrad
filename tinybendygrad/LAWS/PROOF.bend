@@ -1129,11 +1129,6 @@ def L.prefix_sum_composition_has_the_input_shape(t, n, padded, tiled, trimmed, w
 
 
 
-# AND THE NEGATED CONSTANT's EQUALITY, and it is the port's own decomposition:
-# `neg(a)` IS `Mul(a, one)`.
-def alu_neg_one_eq() -> {A.neg(A.one()) == S.SpMul{A.one(), A.one()} : S.Sp}:
-  {==}
-
 # AND THE CONSTANT's OWN SHAPE ARM, and it is the port's own law.
 def const_shape() -> {S.Sp.shape(A.one()) == Some{S.Shape.empty()} : Maybe<&2, S.Shape>}:
   {==}
@@ -1181,8 +1176,13 @@ def L.arange_composition_has_the_expanded_shape(n, one, reshaped, expanded, summ
   # EMPTY (BY THE CONSTANT's OWN ARM), AND THE ADD's FOLD IS THE `zip_max` OF
   # THE TWO OPERANDS' SHAPES (BY THE FOLD).
   c1 = Equal.cong(S.Sp, Maybe<&2, S.Shape>, S.Sp.shape, out, A.sub(summed, A.one()), cout)
-  # AND THE NEGATED CONSTANT IS THE PORT's OWN `Mul(one, one)`.
-  c2 = Equal.cong(S.Sp, Maybe<&2, S.Shape>, S.Sp.shape, alu_neg_one(), S.SpMul{A.one(), A.one()}, alu_neg_one_eq)
+  # AND THE NEGATED CONSTANT IS THE PORT's OWN `Mul(one, one)`.  AND THE
+  # EVIDENCE IS `{==}` AND NOT A HELPER, AND THAT IS MEASURED: `A.neg(a)` IS
+  # `S.SpMul{a, one()}`, SO AT `a = A.one()` THE FACT IS DEFINITIONAL.  AND
+  # THE HELPER IT REPLACED WAS A MASKER: MEASURED 2026-11-24, BREAKING `def
+  # neg` FAILED UNDER THE HELPER's NAME AND NOT UNDER A LAW's, AND A FAILURE
+  # IN A HELPER IS NOT A LAW FAILING.
+  c2 = Equal.cong(S.Sp, Maybe<&2, S.Shape>, S.Sp.shape, alu_neg_one(), S.SpMul{A.one(), A.one()}, {==})
   # AND THE NEGATED CONSTANT's SHAPE IS THE `zip_max` OF THE TWO CONSTANTS'
   # SHAPES -- AND BOTH ARE EMPTY.
   c3 = Equal.cong(Maybe<&2, S.Shape>, Maybe<&2, S.Shape>, zip_max_first(S.Sp.shape(A.one())), S.Sp.shape(A.one()), Some{se}, const_shape)
