@@ -8385,3 +8385,58 @@ ms**, **⇒⇒† AND **AND **the **`append` **0.041 ms**.
 **PHASE **FELL **0.09 ms **AND **THE **TURN **DID **NOT **MOVE**), **AND **THE **PRELUDE's **`String.split`**
 (⇒⇒† AND **0.057 ms**) -- **⇒⇒† AND **SO **THE **NEXT **TARGET **MUST **BE **FOUND **BY **MEASUREMENT
 **AND **NOT **BY **GUESS**).
+
+### 138.26 **THE **DIGIT **COUNT **IS **A **CHAIN **OF **COMPARISONS**, **AND **THE **RENDER **IS **15%
+**FASTER** -- **⇒⇒† AND **AND **A **DESCENDING **CHAIN **IS **2.1x **SLOWER**
+
+**⇒⇒† AND **THE **INTEGER **CONSTANTS **ARE **RENDERED **BY **DIVISION** (⇒⇒† AND **AND **THE **COUNT **OF
+**THE **DIGITS **SAYS **HOW **MANY **DIVISIONS **TO **DO**)** -- **⇒⇒† AND **AND **THE **OLD **COUNT **WAS **A
+**WALK **OF **NINE **MULTIPLICATIONS** (⇒⇒† AND **AND **EACH **STEP **DID **TWO **SHIFTS**, **AN **ADD **AND
+**FOUR **`lo32`/`hi32` **READS**) -- **⇒⇒† AND **AND **THE **COUNT **AND **THE **DIVISIONS **WERE **THE
+**SAME **WORK **TWICE**.
+
+**⇒⇒† AND **MEASURED** (⇒⇒† AND **`decimal-exclusive.py`**, **⇒⇒† AND **IN **THE **DAEMON**): **THE
+**DIGIT-COUNT **LOOP **WAS **2,280 **`i64_dec_times10` **CALLS **A **TURN** (⇒⇒† AND **AND **THE
+**DIVISIONS **WERE **3,056 **`div_step` **CALLS**) -- **⇒⇒† AND **AND **THE **COUNT **WAS **43% **OF **THE
+**STEPS**.
+
+**⇒⇒† AND **⇒⇒† AND **THE **COUNT **IS **NOW **A **CHAIN **OF **COMPARISONS **AGAINST **THE **POWERS **OF
+**TEN** -- **⇒⇒† AND **AND **THE **CHAIN **ASCENDS** (⇒⇒† AND **AND **THE **COUNT **IS **THE **NUMBER **OF
+**POWERS **THAT **ARE **AT **MOST **THE **VALUE**), **⇒⇒† AND **AND **SO **A **ONE-DIGIT **VALUE **LEAVES **IT
+**AT **ONCE** (⇒⇒† AND **AND **A **TWENTY-DIGIT **VALUE **WALKS **ALL **TWENTY **ARMS**)**.
+
+**⇒⇒† AND **⇒⇒† AND **THE **DESCENDING **FORM **WAS **2.1x **SLOWER** (⇒⇒† AND **MEASURED**: **the
+**minima **1.7722**, **the **medians **2.3520**, **the **paired **median **2.1097**, **⇒⇒† AND **AND **5 **of
+**150 **wins** -- **⇒⇒† AND **AND **IT **WALKED **ALL **TWENTY **ARMS **FOR **EVERY **VALUE**) -- **⇒⇒† AND **AND
+**THE **POLARITY **WAS **INVERTED **IN **THE **FIRST **VERSION** (⇒⇒† AND **AND **THE **OUTPUT **DIFFERED**:
+**`-15` **RENDERED **AS **`-5`**, **⇒⇒† AND **AND **THE **BYTE **COMPARISON **CAUGHT **IT**) -- **⇒⇒† AND **AND
+**THAT **IS **THE **INSTRUMENT's **WORTH**: **A **BYTE **COMPARISON **IS **A **CORRECTNESS **GATE**, **⇒⇒† AND
+**AND **A **COUNT **IS **NOT**).
+
+**⇒⇒† AND **⇒⇒† AND **THE **CHAIN **IS **A **`match` **ON **A **BOOL **PARAMETER** (⇒⇒† AND **AND
+**`Bool.pick` **IS **STRICT** (⇒⇒† AND **§39**), **⇒⇒† AND **AND **SO **BOTH **ARMS **WOULD **RUN **AND **THE
+**HIGH **HALVE **WOULD **BE **READ **TWICE**)**.
+
+**⇒⇒† AND **⇒⇒† AND **AND **THE **PORT's **OLD **`i64_dec.dig` **READ **`p` **TWICE**, **WHICH **IS **NOT
+**LEGAL **FOR **A **`+` **PARAMETER** -- **⇒⇒† AND **AND **IT **WAS **DEAD **CODE** (⇒⇒† AND **ONLY
+**`i64_dec.digits` **USED **IT**), **⇒⇒† AND **AND **SO **IT **WAS **NEVER **TYPE-CHECKED** (⇒⇒† AND **AND
+**THAT **IS **A **LATENT **DEFECT **THE **TREE **WAS **CARRYING**)**.
+
+**⇒⇒† AND **⇒⇒† AND **THE **VERDICT** (⇒⇒† AND **THE **PAIRED **A/B**, **⇒⇒† AND **WITH **THE **SAME
+**BUILD **AGAINST **ITSELF **AS **A **THIRD **ARM **IN **THE **SAME **LOOP**):
+
+| | the **change** | the **noise **floor** |
+|---|---|---|
+| the **ratio **OF **THE **TWO **MINIMA** | 0.8753 | 0.9521 |
+| the **ratio **OF **THE **TWO **MEDIANS** | 0.8411 | 0.9437 |
+| the **MEDIAN **OF **THE **PAIRED **RATIOS** | **0.8587** | 0.9427 |
+| the **WINS** | **123 of 150** | 91 of 150 |
+
+**⇒⇒† AND **A **SECOND **RUN **OF **150 **TURNS**: **the **paired **median **0.8517 **against **the **floor's
+**1.0017**, **⇒⇒† AND **AND **123 **of **150 **wins **against **the **floor's **57 **of **150**.
+
+**⇒⇒† AND **⇒⇒† AND **THE **OUTPUT **IS **BYTE-IDENTICAL**: **THE **DAEMON's **OWN **PRINTED **RENDER **IS
+**15,642 **BYTES **FOR **BOTH **BUILDS**, **⇒⇒† AND **`checks/differ.py run` **READS **38 **answered **/ **38
+**agree **/ **38 **byte-identical**, **⇒⇒† AND **AND **`gates/cstyle_render_census-gate.py` **READS **"425
+**rows, **3 **lanes **byte-identical"** -- **⇒⇒† AND **AND **WHICH **IS **THE **`u64` **DECIMAL **PATH **TOO**,
+**⇒⇒† AND **AND **SINCE **THE **GATE **COMPARES **AGAINST **CPython's **REAL **RENDERER**.
