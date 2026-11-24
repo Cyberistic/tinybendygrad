@@ -15,5 +15,5 @@
 # `.gitignore`d and emptied before every run.
 
 vacuous	store_matches_its_buffer
-masked	add_is_elementwise,pad_shrink_round_trip
-unpinned-arms	SpBackedge,SpEnd,SpGroup,SpLinear,SpSink
+masked	add_is_elementwise,arange_composition_has_the_expanded_shape,gather_composition_has_the_gather_axis_shape,gemm_broadcasts_to_the_three_axis_shape,pad_shrink_round_trip,prefix_sum_composition_has_the_input_shape,scatter_add_composition_broadcasts_to_the_key_shape
+unpinned-arms	

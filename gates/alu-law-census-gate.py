@@ -106,11 +106,6 @@ def law_names(path: Path) -> list[str]:
     return re.findall(r"^law (\w+):", path.read_text(errors="replace"), re.M)
 
 
-def proved_names(path: Path) -> list[str]:
-    """The `def L.NAME(` names this file proves."""
-    return re.findall(r"^def L\.(\w+)\(", path.read_text(errors="replace"), re.M)
-
-
 def proof_books(port: Path) -> list[Path]:
     """The proof books: the `.bend` files that carry `def L.<name>` bodies.
 
@@ -125,48 +120,87 @@ def proof_books(port: Path) -> list[Path]:
     return out
 
 
-def law_section(laws_text: str, name: str) -> str:
-    """the SECTION of `LAWS.bend` a law is in -- read from its own headers.
+def remove_law(root: Path, law: str) -> None:
+    """Remove `law` from the COPY's `LAWS.bend` AND its proof from `PROOF.bend`.
 
-    `LAWS.bend` numbers its sections with `# <ROMAN>. ` headers, and the
-    sections ARE the two halves: IV and V are the ALU/dtype half and I, II,
-    III, VI, VII and VIII are the shape half.  MEASURED 2026-11-17: the halves
-    were TWO books and the gate told them apart by the book's text; ONE book
-    holds both halves now, and the section is where the split already was.
+    THE MASK.  `bend` discharges a law by a def of the same name, so a law whose
+    proof def is REMOVED becomes an open TODO rather than a failure -- and a
+    TODO is a different verdict from a red law.  Removing the law's DECLARATION
+    as well makes the law not exist.
+
+    The copy is in a temp dir; the tree's `LAWS.bend` and `PROOF.bend` are not
+    touched.
     """
-    sec = ""
-    for line in laws_text.split("\n"):
-        m = re.match(r"^# ([IVX]+)\. ", line)
-        if m:
-            sec = m.group(1)
-        if re.match(rf"^law {re.escape(name)}:", line):
-            return sec
-    return ""
+    laws_f = root / "LAWS.bend"
+    text = laws_f.read_text(errors="replace")
+    text = re.sub(rf"^law {re.escape(law)}:\n((?:[ \t]+[^\n]*\n)*[ \t]+[^\n]*$)", "", text, flags=re.M)
+    laws_f.write_text(text)
+    for book in proof_books(root):
+        bt = book.read_text(errors="replace")
+        new = re.sub(rf"^def L\.{re.escape(law)}\(.*?(?=^def |\Z)", "", bt, flags=re.M | re.S)
+        if new != bt:
+            book.write_text(new)
+
+
+# AND THE ARM THE CONTROL UN-PINNED, AND IT IS A MODULE-LEVEL NAME SO THE
+# CONTROL CAN READ IT AFTER THE HELPER RETURNS.
+unpinned_arm_name = ""
+
+
+def unpin_an_arm(root: Path, arms: list[tuple[str, list[str]]]) -> bool:
+    """MAKE an arm read by NO LAW, in the COPY, and name it.
+
+    MEASURED 2026-11-24: EVERY FOLD ARM IS READ BY A LAW, SO THE CONTROL HAD
+    NO ARM NO LAW READS AND ITS CASE 4 COULD NOT RUN -- A CONTROL THAT CANNOT
+    RUN IS A DEAD LANE, NOT A PASS.
+
+    AND THE CLAIM IS ABOUT THE ARM AND NOT ABOUT THE LAWS: "BREAKING AN ARM
+    NO LAW READS LEAVES THE GATE GREEN".  SO THE CONTROL MAKES SUCH AN ARM BY
+    REMOVING THE LAW THAT READS IT, AND THEN BREAKS IT.
+
+    AND THE LAW IS CHOSEN BY THE ARM IT READS, AND THE ARM IS CHOSEN BY A LAW
+    THAT READS THE FOLD AT THAT OP -- so the arm really does become unread.
+    """
+    global unpinned_arm_name
+    laws_text = (root / "LAWS.bend").read_text(errors="replace")
+    for arm, naming in arms:
+        if not naming:
+            continue
+        law = naming[0]
+        # THE LAW MUST READ THE FOLD AT THAT OP, or removing it does not
+        # un-pin the arm.
+        body = re.search(rf"^law {re.escape(law)}:\n((?:[ \t]+[^\n]*\n)*[ \t]+[^\n]*$)", laws_text, re.M)
+        if not body or f"{arm}{{" not in body.group(0):
+            continue
+        remove_law(root, law)
+        unpinned_arm_name = arm
+        return True
+    return False
 
 
 def alu_half(port: Path) -> tuple[Path, list[str]]:
     """`(the book that holds the ALU/dtype half, its law names)`.
 
-    AND THE RULE IS NOW THE LAW's SECTION, because `LAWS.bend` SAYS which half
-    a law is in: sections IV and V are the ALU/dtype half and I, II, III, VI,
-    VII and VIII are the shape half -- and the port's own header says the same
-    ("the elementwise-decomposition half (IV) and the dtype half (V)").
+    AND THE RULE IS THE LAW's SECTION, AND THE SECTION SAYS WHICH HALF IT IS.
 
     MEASURED 2026-11-17: the two halves were TWO books and this rule picked
     the one whose text named the decomposition table; ONE book holds both halves
-    now, and the section is where the split already was.  The section is READ
-    from `LAWS.bend`'s own `# <ROMAN>.` headers, so a law that moves between
-    sections moves this gate with it, and no half is named here.
+    now, and the section is where the split already was.
+
+    AND MEASURED 2026-11-24: THE SECTION'S OWN HEADER NOW SAYS WHICH HALF IT
+    IS, BECAUSE THE REGEX THAT READ IT MISSED EVERY SUB-SECTION HEADER AND
+    THE SPLIT WAS WRONG IN BOTH DIRECTIONS -- `V-bis`'s THREE SHAPE LAWS
+    LANDED IN THIS HALF.  THE RULE LIVES IN `gatekit.law_half`, SO BOTH
+    GATES READ ONE IMPLEMENTATION AND A NEW SECTION IS INVISIBLE TO NEITHER.
     """
     books = proof_books(port)
     if not books:
         return (Path(""), [])
     book = books[0]
     laws_text = (port / "LAWS.bend").read_text(errors="replace")
-    alu_sections = {"IV", "V"}
     laws_declared = set(law_names(port / "LAWS.bend"))
-    own = [n for n in proved_names(book)
-           if n in laws_declared and law_section(laws_text, n) in alu_sections]
+    own = [n for n in gatekit.proved_names(book)
+           if n in laws_declared and gatekit.law_half(laws_text, n) == "alu"]
     return (book, own)
 
 
@@ -196,17 +230,33 @@ def mutate_definition(text: str, name: str) -> str | None:
     reaches the law and finds it false.  A mutation that made the file
     ill-typed would redden the gate for the wrong reason (a type error is not a
     law failing), so the replacement must be well-typed.
+
+    AND THE BODY MAY BE MANY LINES.  MEASURED 2026-11-24: THE OLD RULE WAS
+    "THE BODY IS ONE LINE" -- `len(lines) != 2` -- AND `alu.bend`'s `truncmod`
+    IS FOUR LINES (TWO BINDINGS AND A CALL, WITH COMMENTS BETWEEN), SO ITS
+    LAW WAS REPORTED `NO-MUTATION` -- "could not break def truncmod" -- AND A
+    LAW THE GATE CANNOT MUTATE IS A LAW THE GATE CANNOT TEST.
+
+    AND THE LINE THAT IS REPLACED IS THE BODY's LAST NON-COMMENT LINE, BECAUSE
+    THAT IS THE TERM THE DEF EVALUATES TO: A BINDING IS NOT THE RESULT, AND A
+    COMMENT IS NOT A TERM.
     """
     found = find_def_body(text, name)
     if found is None:
         return None
-    whole, last = found
-    # the body of these defs is ONE line; only a one-line body is mutated here
-    lines = [ln for ln in whole.splitlines() if ln.strip()]
-    if len(lines) != 2:
+    whole, _ = found
+    lines = whole.splitlines()
+    # THE BODY's LAST NON-COMMENT, NON-BLANK LINE.
+    target = None
+    for ln in reversed(lines[1:]):
+        s = ln.strip()
+        if s and not s.startswith("#"):
+            target = ln
+            break
+    if target is None:
         return None
-    indented = " " * (len(lines[1]) - len(lines[1].lstrip()))
-    new_whole = whole.replace(lines[1], indented + "S.SpInvalid{}")
+    indented = " " * (len(target) - len(target.lstrip()))
+    new_whole = whole.replace(target, indented + "S.SpInvalid{}", 1)
     if new_whole == whole:
         return None
     return text.replace(whole, new_whole, 1)
@@ -844,25 +894,40 @@ def run_plant(args) -> int:
                 print(f"  (the dtype fold is FULLY PINNED; the control breaks the "
                       f"shape fold's {unpinned[0]})")
         if not unpinned:
-            bad.append("no UNPINNED arm was found, so case 4 could not run")
-            print("  4 unpinned arm     NO UNPINNED ARM")
-        else:
-            arm = unpinned[0]
-            spec_text = (control_root / "LAWS" / SPEC.name).read_text(errors="replace")
-            mutated = mutate_arm(spec_text, arm, "Sp.dtype")
-            if mutated is None:
-                bad.append(f"could not break the {arm} arm")
-                print(f"  4 unpinned arm     COULD NOT MUTATE {arm}")
+            # AND NO ARM IS UNPINNED, SO THE CONTROL MAKES ONE.  MEASURED
+            # 2026-11-24: EVERY FOLD ARM IS NOW READ BY A LAW -- THE SHAPE
+            # FOLD'S FIVE WERE PINNED AND THE DTYPE FOLD'S WERE PINNED
+            # ALREADY -- SO THERE WAS NO ARM NO LAW READS, AND THE CONTROL
+            # PRINTED "NO UNPINNED ARM" AND FAILED.  BUT A CONTROL THAT
+            # CANNOT RUN IS A DEAD LANE, NOT A PASS.
+            #
+            # AND THE CLAIM THE CONTROL MAKES IS "BREAKING AN ARM NO LAW READS
+            # LEAVES THE GATE GREEN", AND THAT CLAIM IS ABOUT THE ARM AND NOT
+            # ABOUT THE LAWS.  SO THE CONTROL MAKES AN UNREAD ARM BY REMOVING
+            # THE LAW THAT READS IT: THE ARM IS THEN READ BY NOBODY, AND
+            # BREAKING IT MUST LEAVE THE GATE GREEN.
+            case_root = fresh_copy(Path(td) / "case4-unpin")
+            if not unpin_an_arm(case_root, arms):
+                bad.append("no arm could be UNPINNED, so case 4 could not run")
+                print("  4 unpinned arm     COULD NOT UNPIN ANY ARM")
             else:
-                case_root = fresh_copy(Path(td) / "case4")
-                (case_root / "LAWS" / SPEC.name).write_text(mutated)
-                rc, out = check(case_root / "LAWS" / "PROOF.bend")
-                ok_green = (rc == 0)
-                print(f"  4 unpinned arm     {'GREEN' if ok_green else 'NOT GREEN'}"
-                      f"  ({arm})")
-                if not ok_green:
-                    bad.append(f"breaking the UNPINNED arm {arm} DID redden the gate, so "
-                               f"the census that called it unpinned is wrong")
+                arm = unpinned_arm_name
+                spec_text = (case_root / "LAWS" / SPEC.name).read_text(errors="replace")
+                mutated = mutate_arm(spec_text, arm, "Sp.dtype")
+                if mutated is None:
+                    mutated = mutate_arm(spec_text, arm, "Sp.shape")
+                if mutated is None:
+                    bad.append(f"could not break the {arm} arm")
+                    print(f"  4 unpinned arm     COULD NOT MUTATE {arm}")
+                else:
+                    (case_root / "LAWS" / SPEC.name).write_text(mutated)
+                    rc, out = check(case_root / "LAWS" / "PROOF.bend")
+                    ok_green = (rc == 0)
+                    print(f"  4 unpinned arm     {'GREEN' if ok_green else 'NOT GREEN'}"
+                          f"  ({arm}, un-pinned by removing its law)")
+                    if not ok_green:
+                        bad.append(f"breaking the UNPINNED arm {arm} DID redden the gate, so "
+                                   f"the census that called it unpinned is wrong")
     print(f"--plant: {'OK' if not bad else 'FAILED: ' + '; '.join(bad)}")
     return 1 if bad else 0
 

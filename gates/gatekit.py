@@ -364,6 +364,78 @@ def _lines(path):
     return [l for l in path.read_text().splitlines() if l.strip() != ""]
 
 
+# --------------------------------------------------------------------------- the law sections
+#
+# AND THE HALF A LAW IS IN IS DECLARED BY ITS OWN SECTION HEADER, AND THE
+# HEADER IS THE ONLY PLACE THAT SAYS SO.
+#
+# MEASURED 2026-11-24: BOTH CENSUS GATES READ THE SECTION WITH
+# `^# ([IVX]+)\. `, AND THAT REGEX MISSES EVERY SUB-SECTION HEADER -- `V-bis`,
+# `V-ter`, `V-ter-bis`, `V-quater`, `VI-bis` -- SO A LAW UNDER ONE OF THEM
+# INHERITED THE PREVIOUS SECTION, AND THE SPLIT WAS WRONG IN BOTH DIRECTIONS:
+# `V-bis`'s THREE SHAPE LAWS (`after_preserves_shape`, `load_preserves_shape`,
+# `copy_preserves_shape`) LANDED IN THE ALU HALF, AND `VI-bis`'s SEVENTEEN
+# LAWS LANDED IN THE SHAPE HALF BY LUCK.  MEASURED: ELEVEN LAWS WERE TESTED BY
+# NEITHER CENSUS -- FOUR OF THE FIVE COMPOSITION LAWS, BOTH RESHAPE NUMEL LAWS,
+# FOUR SHAPE LAWS AND ONE ALU LAW -- SO THE TREE'S "EVERY LAW MUST BE
+# LOAD-BEARING" RULE WAS NOT ENFORCED FOR THEM.
+#
+# AND THE FIX IS A DECLARATION RATHER THAN A LIST, BECAUSE A LIST OF SECTION
+# NAMES IN A GATE IS A HAND LIST AND A HAND LIST ROTS: A NEW SECTION IS
+# INVISIBLE TO IT.  THE HEADER SAYS WHICH HALF IT IS, AND THE GATE READS IT.
+#
+# AND THE HEADER IS `# <ROMAN>[-<word>]. <text> -- HALF: <half>`, AND A HEADER
+# WITH NO `HALF:` DECLARATION INHERITS THE PREVIOUS SECTION's HALF, SO A
+# SECTION THAT IS NOT YET CLASSIFIED IS IN THE ONE BEFORE IT AND NOT IN
+# NEITHER.
+
+_SECTION = re.compile(r"^# ([IVX]+(?:-[a-z]+)*)\. ")
+_HALF = re.compile(r"--\s*HALF:\s*(shape|alu)\b")
+
+
+def law_sections(laws_text: str) -> list[tuple[str, str, str]]:
+    """`(section name, half, header text)` for every section header.
+
+    AND THE HALF IS READ FROM THE HEADER, AND AN UNDECLARED HEADER INHERITS
+    THE PREVIOUS ONE's HALF.  THE RETURN ORDER IS THE FILE's ORDER, because
+    the inheritance is positional.
+    """
+    out: list[tuple[str, str, str]] = []
+    half = ""
+    for line in laws_text.split("\n"):
+        m = _SECTION.match(line)
+        if not m:
+            continue
+        h = _HALF.search(line)
+        if h:
+            half = h.group(1)
+        out.append((m.group(1), half, line))
+    return out
+
+
+def law_half(laws_text: str, name: str) -> str:
+    """WHICH HALF the law `name` is in -- `shape`, `alu`, or `""` if unknown.
+
+    AND THE SECTION IS THE NEAREST HEADER ABOVE THE LAW, AND A HEADER WITH A
+    `HALF:` DECLARATION SETS THE HALF FOR EVERY LAW UNDER IT.
+    """
+    half = ""
+    for line in laws_text.split("\n"):
+        m = _SECTION.match(line)
+        if m:
+            h = _HALF.search(line)
+            if h:
+                half = h.group(1)
+        if re.match(r"^law " + re.escape(name) + r":", line):
+            return half
+    return ""
+
+
+def proved_names(path: Path) -> list[str]:
+    """The `def L.NAME(` names this file proves."""
+    return re.findall(r"^def L\.(\w+)\(", path.read_text(errors="replace"), re.M)
+
+
 def _row_name(line):
     """The row's NAME -- the part before the first `=` -- or the whole line.
 

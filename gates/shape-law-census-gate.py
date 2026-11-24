@@ -136,57 +136,28 @@ def proof_books(port: Path) -> list[Path]:
 def shape_half(port: Path) -> tuple[Path, list[str]]:
     """`(the book that holds the shape half, its law names)`.
 
-    THE ALU/dtype half is the one that names the DECOMPOSITION TABLE or the
-    DTYPE COLUMN, and the shape half is the other one.  That is a RULE over the
-    law TEXTS, so a law that moves from one half to the other moves this gate
-    with it.
+    AND THE RULE IS THE LAW's SECTION, AND THE SECTION SAYS WHICH HALF IT IS.
 
-    AND THE RULE IS NOW OVER THE LAWS, NOT OVER THE BOOKS.  MEASURED 2026-11-17:
-    the two halves were TWO books, and the rule picked the one whose text did
-    NOT name the decomposition table.  ONE book holds both halves now, so the
-    rule is over the LAW.
+    MEASURED 2026-11-17: the two halves were TWO books, and the rule picked
+    the one whose text did not name the decomposition table.  ONE book holds
+    both halves now, so the rule is over the LAW.
 
-    AND THE RULE IS THE LAW's SECTION, because `LAWS.bend` SAYS which half a
-    law is in: sections I, II, III, VI, VII and VIII are the shape half and IV
-    and V are the ALU/dtype half -- and the port's own header says the same
-    ("LAWS.bend sections I, II, III, VI, VII and VIII").  The section is READ
-    from `LAWS.bend`'s own `# <ROMAN>.` headers, so a law that moves between
-    sections moves this gate with it, and no half is named here.
+    AND MEASURED 2026-11-24: THE SECTION'S OWN HEADER NOW SAYS WHICH HALF IT
+    IS, BECAUSE THE REGEX THAT READ IT MISSED EVERY SUB-SECTION HEADER AND
+    THE SPLIT WAS WRONG IN BOTH DIRECTIONS -- `V-bis`'s THREE SHAPE LAWS AND
+    `V-bis-bis`'s FIVE LANDS IN THE ALU HALF, WHERE THEY WERE NOT TESTED.  THE
+    RULE LIVES IN `gatekit.law_half`, SO BOTH GATES READ ONE IMPLEMENTATION
+    AND A NEW SECTION IS INVISIBLE TO NEITHER.
     """
     books = proof_books(port)
     if not books:
         return (Path(""), [])
     book = books[0]
-    declared = set(law_names(port / "LAWS.bend"))
     laws_text = (port / "LAWS.bend").read_text(errors="replace")
-    shape_sections = {"I", "II", "III", "VI", "VII", "VIII"}
-    own = []
-    for n in re.findall(r"^def L\.(\w+)\(", book.read_text(errors="replace"), re.M):
-        if n not in declared:
-            continue
-        if law_section(laws_text, n) not in shape_sections:
-            continue
-        own.append(n)
+    declared = set(law_names(port / "LAWS.bend"))
+    own = [n for n in gatekit.proved_names(book)
+           if n in declared and gatekit.law_half(laws_text, n) == "shape"]
     return (book, own)
-
-
-def law_section(laws_text: str, name: str) -> str:
-    """the SECTION of `LAWS.bend` a law is in -- read from its own headers.
-
-    `LAWS.bend` numbers its sections with `# <ROMAN>. ` headers, and the
-    sections ARE the two halves: I, II, III, VI, VII and VIII are the shape
-    half and IV and V are the ALU/dtype half.  MEASURED 2026-11-17: the halves
-    were TWO books and the gate told them apart by the book's text; ONE book
-    holds both halves now, and the section is where the split already was.
-    """
-    sec = ""
-    for line in laws_text.split("\n"):
-        m = re.match(r"^# ([IVX]+)\. ", line)
-        if m:
-            sec = m.group(1)
-        if re.match(rf"^law {re.escape(name)}:", line):
-            return sec
-    return ""
 
 
 def law_block(laws_text: str, name: str) -> str:
@@ -278,7 +249,28 @@ def mutate_arm(text: str, op: str, fold: str = "Sp.shape") -> str | None:
             return text[:start] + new_arm + text[end:]
     # a `Some{Shape.of(<list>)}` arm: the LIST is replaced by a fixed one-dim
     # shape, so the answer changes and the type does not.
+    #
+    # AND THE LIST MAY BE A BARE WORD OR A LIST LITERAL.  MEASURED 2026-11-24:
+    # `SpBuffer` AND `SpAlloc` ARE `Some{Shape.of([SN{size}])}` -- A LITERAL --
+    # AND THE OLD REGEX `(\w+)` MATCHED ONLY A BARE WORD, SO THOSE TWO ARMS
+    # COULD NOT BE MUTATED AND THEIR LAWS WERE REPORTED `NO-MUTATION` -- "could
+    # not break the SpBuffer arm of Sp.shape".  A LAW THAT THE GATE CANNOT
+    # MUTATE IS A LAW THE GATE CANNOT TEST, AND IT IS NOT A PASS.
+    m = re.search(r"Some\{Shape\.of\(\[SN\{\w+\}\]\)\}", arm)
+    if m:
+        new_arm = arm.replace(m.group(0), "Some{Shape.of([SN{0n}])}", 1)
+        return text[:start] + new_arm + text[end:]
     m = re.search(r"Some\{Shape\.of\((\w+)\)\}", arm)
+    if m:
+        new_arm = arm.replace(m.group(0), "Some{Shape.of([SN{0n}])}", 1)
+        return text[:start] + new_arm + text[end:]
+    # a `Some{Shape.empty()}` arm: the EMPTY shape becomes a ONE-DIM shape.
+    # MEASURED 2026-11-24: `SpConst` AND `SpRange` ARE `Some{Shape.empty()}`,
+    # AND NEITHER IS A UNARY PASSTHROUGH NOR A LIST, SO NO RULE REACHED THEM
+    # AND THEIR LAWS WERE REPORTED `NO-MUTATION`.  THE REPLACEMENT IS
+    # `Some{Shape.of([SN{0n}])}` -- THE SAME TYPE, `Maybe<Shape>`, AND A
+    # DIFFERENT ANSWER -- SO THE COPY STILL TYPECHECKS.
+    m = re.search(r"Some\{Shape\.empty\(\)\}", arm)
     if m:
         new_arm = arm.replace(m.group(0), "Some{Shape.of([SN{0n}])}", 1)
         return text[:start] + new_arm + text[end:]
@@ -323,6 +315,30 @@ def find_def_body(text: str, name: str) -> tuple[str, str] | None:
 
 
 # --------------------------------------------------------------------------- the subjects
+def alu_op(root: Path, fn: str) -> str | None:
+    """The OP an ALU decomposition BUILDS -- `sub` builds `SpAdd`.
+
+    AND THE TABLE IS IN THE TREE: `tinybendygrad/LAWS/alu.bend` HOLDS THE
+    DECOMPOSITIONS AS DEFS, AND `def sub(a: S.Sp, b: S.Sp) -> S.Sp:`'s BODY IS
+    `S.SpAdd{a, neg(b)}`.  SO THE OP IS READ FROM THE TABLE AND NOT LISTED
+    HERE, AND A NEW DECOMPOSITION IS INVISIBLE TO NOTHING.
+
+    AND THE BODY's FIRST `S.Sp<Op>{` IS THE OP, BECAUSE A DECOMPOSITION IS
+    BUILT FROM ITS OUTERMOST OP -- `sub` IS `SpAdd` OF A NEGATION, AND THE
+    NEGATION IS `SpMul`, AND THE SHAPE FOLD's ARM FOR THE OUTERMOST ONE IS
+    THE ONE THE LAW READS.
+    """
+    alu = root / "LAWS" / "alu.bend"
+    if not alu.exists():
+        return None
+    text = alu.read_text(errors="replace")
+    m = re.search(rf"^def {re.escape(fn)}\([^)]*\)[^:]*:\n((?:[ \t]+[^\n]*\n)*)", text, re.M)
+    if not m:
+        return None
+    op = re.search(r"S\.(Sp\w+)\{", m.group(1))
+    return op.group(1) if op else None
+
+
 def law_subject(law: str, root: Path) -> dict | None:
     """What to break so that `<law>` goes red, and where it lives.
 
@@ -358,6 +374,31 @@ def law_subject(law: str, root: Path) -> dict | None:
     op = re.search(r"\bS\.(Sp\w+)\{", goal)
     if op:
         return {"kind": "arm", "name": op.group(1), "file": "LAWS/spec.bend"}
+    # AND WHEN THE CONCLUSION NAMES NO OP, THE SUBJECT IS THE OP THE PREMISE
+    # BINDS THE CONCLUDED VARIABLE TO.  MEASURED 2026-11-24: FOUR OF THE FIVE
+    # COMPOSITION LAWS CONCLUDE ON A PREMISE-BOUND VARIABLE -- `shape_of(out)
+    # == Some{...}` -- AND THE PREMISE IS WHAT SAYS WHAT `out` IS:
+    # `for +cout: {out == S.SpReduce{prod, ...} : S.Sp}`.  WITHOUT THIS RULE
+    # THOSE LAWS NAMED NO TERM TO BREAK AND WERE REPORTED `NO-SUBJECT`, AND A
+    # LAW THE GATE CANNOT BREAK IS A LAW THE GATE CANNOT TEST.
+    #
+    # AND THE VARIABLE IS FOUND FROM THE CONCLUSION, NOT GUESSED: IT IS THE
+    # ONE `shape_of(<var>)` NAMES.  AND THE PREMISE IS FOUND FROM THE BODY.
+    for var in re.findall(r"\bshape_of\((\w+)\)", goal):
+        prem = re.search(r"\b" + re.escape(var) + r"\s*==\s*S\.(Sp\w+)\{", body)
+        if prem:
+            return {"kind": "arm", "name": prem.group(1), "file": "LAWS/spec.bend"}
+        # AND THE PREMISE MAY BIND IT TO AN ALU DECOMPOSITION INSTEAD OF AN OP:
+        # `for +cout: {out == A.sub(summed, A.one()) : S.Sp}`.  MEASURED
+        # 2026-11-24: THE ARANGE's LAW IS THE ONE, AND ITS SUBJECT WAS STILL
+        # NOT FOUND, AND THE ANSWER IS THE OP THE DECOMPOSITION BUILDS --
+        # `alu.bend`'s `sub` IS `S.SpAdd{a, neg(b)}`.  AND THE DECOMPOSITION
+        # TABLE IS IN THE TREE, SO THE OP IS READ FROM IT RATHER THAN LISTED.
+        prem = re.search(r"\b" + re.escape(var) + r"\s*==\s*A\.(\w+)\(", body)
+        if prem:
+            op = alu_op(root, prem.group(1))
+            if op:
+                return {"kind": "arm", "name": op, "file": "LAWS/spec.bend"}
     # a HELPER the conclusion calls: `S.<helper>(` in the spec, or a LAWS.bend
     # helper such as `numel_of`/`shape_of`/`reduced_numel`
     for m in re.finditer(r"\bS\.Shape\.([a-z_]\w*)\(", goal):
@@ -414,16 +455,47 @@ def shape_arms(root: Path, laws: list[str]) -> list[tuple[str, list[str]]]:
 
 
 def goal_of(body: str) -> str | None:
-    """The law's CONCLUSION: the last line of its body.
+    """The law's CONCLUSION: the last brace-balanced `{...}` of its body.
 
     A law's body is a list of `for` binders and then the goal, and the goal is
     the line that OPENS a brace and closes it with a type -- `{... : T}`.  The
     binders are hypotheses, so the subject of the law is what the GOAL reads.
+
+    AND THE GOAL MAY SPAN SEVERAL LINES.  MEASURED 2026-11-24: THE GEMM's
+    CONCLUSION IS THREE LINES -- `shape_of(S.SpMul{S.SpReshape{...},` /
+    `S.SpReshape{...}})` / `== some_of_shape(S.Shape.of([m, k, n])) : ...}` --
+    AND THE OLD RULE ("THE LAST LINE THAT STARTS WITH `{` AND ENDS WITH `}`")
+    FOUND NONE OF THEM, SO THE GOAL WAS `None` AND THE LAW WAS REPORTED
+    `NO-SUBJECT` -- "the law names no term to break".  A LAW THE GATE CANNOT
+    FIND A SUBJECT FOR IS A LAW THE GATE CANNOT TEST, AND IT IS NOT A PASS.
+
+    AND THE GOAL IS THE LAST BRACE-BALANCED GROUP THAT ENDS AT THE BODY's LAST
+    CHARACTER.  MEASURED 2026-11-24: THE BINDERS ALSO CARRY BRACES -- `for
+    +pa: {shape_of(pos) == Some{...} : Maybe<&2, S.Shape>}` -- AND THE
+    PREMISES BALANCE BEFORE THE GOAL, SO A FORWARD SCAN FINDS A PREMISE's
+    BRACE, NOT THE GOAL's.  AND THE GOAL MAY SPAN SEVERAL LINES.
     """
-    for line in reversed(body.splitlines()):
-        s = line.strip()
-        if s.startswith("{") and s.endswith("}"):
-            return s
+    text = body.rstrip()
+    if not text.endswith("}"):
+        return None
+    depth = 0
+    for i, ch in enumerate(text):
+        if ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0 and i == len(text) - 1:
+                # THIS BRACE BALANCED AT THE END -- SO IT IS THE GOAL's CLOSER,
+                # AND THE GOAL's OPENER IS THE ONE THAT OPENED IT.  WALK BACK.
+                depth = 0
+                for j in range(i, -1, -1):
+                    if text[j] == "}":
+                        depth += 1
+                    elif text[j] == "{":
+                        depth -= 1
+                        if depth == 0:
+                            return text[j:]
+                return None
     return None
 
 
