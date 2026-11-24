@@ -43,6 +43,54 @@ was possible at all.
   18 mutations measured.** The `rej` counts are there because a mis-spelled
   reject set is silent.
 
+## The `remove_nested_mod` arm, and the differential gate that holds it
+
+`divandmod.py:27-35` — `remove_nested_mod in sum: (a%4 + b)%2 -> (a+b)%2`. It
+is the arm the whole unit's remaining work was waiting on, because it was the
+one whose wall (`divides`) turned out to be measured false.
+
+**The arm is four facts, and each is a separate def so a reader can see which
+one is false:** `d` is a MOD; `y` is a CONST and its value is **positive**; each
+term `u` of the sum is a MOD whose divisor **divides** `c`, and then the term
+becomes its own **dividend**; and at least one term changed, or the arm does
+not fire. The answer is `(usum(new_xs) + const) % y`, and the `+ const` is an
+ADD of a ZERO CONST when `x` had no CONST part — upstream's
+`identity_element(Ops.ADD, dt)` is `0` (`ops.py:57`), and the port keeps the
+ADD so the tree matches.
+
+**AND IT HAS A DIFFERENTIAL GATE AND A PLANT**, and the gate's design is the
+`symrules` one: **one case file, two readers.**
+`gates/divandmod-cases.rows` holds the graphs, the port's `.bend` driver reads
+it, and `gates/divandmod-oracle.py` reads **the same file** and builds the same
+graphs in CPython — so the port and the oracle cannot be measuring two
+different graphs, which is the defect a hand-written pair of fixtures has by
+construction. MEASURED 2026-11-24: **3 rows, 3 agree, 0 diverge**, and the
+plant's four cases all pass.
+
+**AND THE CASE IS A FIXED SHAPE AND NOT AN S-EXPRESSION, and the reason is a
+Bend rule:** the first draft read an s-expression, and the port's parser needs
+a frame stack, because `parse` and `close` need each other and **Bend refuses
+mutual recursion** — the same wall this file's header names for
+`nest_by_factor`. The fix was not a better parser; it was a case shape that
+needs no parser.
+
+**AND THE PLANT HAS FOUR CASES, AND TWO OF THE FIRST DRAFT's DID NOT FIRE —
+and the reason is general: a plant that mutates a guard which is already
+satisfied, or which is never reached, proves nothing.** The first broke
+`divides` to "always divides" and the cases already divide. The second broke
+the positive-divisor guard, and the `zero` row's `divides` on a zero divisor
+never reaches it. The plant now breaks the `divides` guard the other way (the
+arm never fires), the **zero-divisor check** (the port stops raising), and the
+`usum` association (the sum's tree changes).
+
+**AND THE CONST/CONST ARM IS NOT IN THE CASE FILE**, and the reason is
+measured: upstream's `canonicalize` rewrites `SUB` into
+`ADD(x, MUL(MUL(q,y),C(-1)))`, so the two trees differ while the values are
+equal — and a row that compares trees on that arm is a row that can never pass.
+**The existing gate already covers that arm by value** (`gates/divandmod-gate.bend`'s
+`dmc.den` reads the folded tree's value), so the differential is about the
+**new** arm.
+
 ## The three arms that survived, and why each one
 
 Of `fold_divmod_general`'s 89 lines, 60 are interval arithmetic over symbolic
@@ -118,7 +166,13 @@ a fixture where the quotient is on src1 AND the CONST is also on src1.
 - `divandmod.py:17-19` `pop_const()` and `split_uop(Ops.ADD)` — expressible, but
   P3 for SCOPE, not impossibility; they land with line 23.
 - `divandmod.py:23-25` `nested_div` — needs `divides` → `gcd` → a `Counter` fold.
-- `divandmod.py:28-35` `remove_nested_mod` — `divides`, same wall.
+- `divandmod.py:28-35` `remove_nested_mod` — **DONE (2026-11-24), AND THE `divides`
+  WALL WAS MEASURED FALSE.** `UOp.divides` (`ops.bend:4182`) HAS BEEN IN THE TREE
+  SINCE 2026-11-06 AND IT ANSWERS UPSTREAM's SHAPE: A `Dv` WHOSE `ok` SAYS
+  "DIVIDES" AND WHOSE `i` IS THE QUOTIENT NODE.  **SO THE ARM NEEDED `split_uop`,
+  `divides` AND `usum`, AND THE PORT HAD THE FIRST TWO** — AND `usum` IS NOW IN
+  `ops.bend` (`mixin/elementwise.py:40`), BECAUSE THE IMPORT DIRECTION FORBIDS
+  `uop/` REACHING `schedule/`.
 - `divandmod.py:37-48` `fold_divmod_congruence` — the worst one: a cartesian
   product over per-term sign choices, then interval arithmetic over a symbolic
   SUM. Bend has no cartesian product and no `min` over three with a key.
