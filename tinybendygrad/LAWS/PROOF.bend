@@ -1192,6 +1192,58 @@ def L.arange_composition_has_the_expanded_shape(n, one, reshaped, expanded, summ
   ev = Equal.trans(Maybe<&2, S.Shape>, S.Sp.shape(out), S.dims_zip_max(S.Sp.shape(summed), S.Sp.shape(alu_neg_one())), Some{sn}, c1, c6)
   %ev : {S.Sp.shape(out) == _ : Maybe<&2, S.Shape>}
   {==}
+# VI-oct. THE INDEX FAMILY's SHAPE, AND THE PROOF IS ONE STEP: THE FOLD IS
+# A CONCATENATION AND A DROP, SO NEITHER IS A ZIP AND NO INDUCTION IS NEEDED.
+#
+# AND THE OLD NOTE SAID THE INDUCTION WAS NEEDED -- "the zip's shape and the
+# drop's shape together" -- AND THAT WAS TRUE OF A DIFFERENT FOLD.  THE FOLD IS
+# `Shape.of(append(index_dims, drop_n(base_dims, k)))`, SO IT IS A
+# CONCATENATION AND A DROP.
+#
+# AND THE `%` USES CASCADE: EACH ONE REPLACES ONE SLOT OF THE FOLD's `pre`, AND
+# THE NEXT ONE's MOTIVE REFLECTS THE REPLACEMENT -- AND THE MOTIVE IS THE GOAL
+# WITH THAT SLOT REPLACED BY THE HOLE, SO THE FIT CHECK IS THE GOAL.
+
+def L.index_one_with_an_empty_shape_removes_the_base_dim(t, a, st, pt, pa):
+  spa = Equal.sym(Maybe<&2, S.Shape>, S.Sp.shape(a), Some{S.Shape.empty()}, pa)
+  %spa : {S.Sp.shape.index(_, S.Sp.shape(t), 1n) == Some{S.Shape.of(S.drop_n(S.Shape.to_dims(st), 1n))} : Maybe<&2, S.Shape>}
+  spt = Equal.sym(Maybe<&2, S.Shape>, S.Sp.shape(t), Some{st}, pt)
+  %spt : {S.Sp.shape.index(Some{S.Shape.empty()}, _, 1n) == Some{S.Shape.of(S.drop_n(S.Shape.to_dims(st), 1n))} : Maybe<&2, S.Shape>}
+  {==}
+
+def L.index_two_with_empty_shapes_removes_two_base_dims(t, a, b, st, pt, pa, pb):
+  spa = Equal.sym(Maybe<&2, S.Shape>, S.Sp.shape(a), Some{S.Shape.empty()}, pa)
+  %spa : {S.Sp.shape.index(S.dims_append(_, S.Sp.shape(b)), S.Sp.shape(t), 2n) == Some{S.Shape.of(S.drop_n(S.Shape.to_dims(st), 2n))} : Maybe<&2, S.Shape>}
+  spb = Equal.sym(Maybe<&2, S.Shape>, S.Sp.shape(b), Some{S.Shape.empty()}, pb)
+  %spb : {S.Sp.shape.index(S.dims_append(Some{S.Shape.empty()}, _), S.Sp.shape(t), 2n) == Some{S.Shape.of(S.drop_n(S.Shape.to_dims(st), 2n))} : Maybe<&2, S.Shape>}
+  spt = Equal.sym(Maybe<&2, S.Shape>, S.Sp.shape(t), Some{st}, pt)
+  %spt : {S.Sp.shape.index(S.dims_append(Some{S.Shape.empty()}, Some{S.Shape.empty()}), _, 2n) == Some{S.Shape.of(S.drop_n(S.Shape.to_dims(st), 2n))} : Maybe<&2, S.Shape>}
+  {==}
+
+def L.index_three_with_empty_shapes_removes_three_base_dims(t, a, b, c, st, pt, pa, pb, pc):
+  spa = Equal.sym(Maybe<&2, S.Shape>, S.Sp.shape(a), Some{S.Shape.empty()}, pa)
+  %spa : {S.Sp.shape.index(S.dims_append(S.dims_append(_, S.Sp.shape(b)), S.Sp.shape(c)), S.Sp.shape(t), 3n) == Some{S.Shape.of(S.drop_n(S.Shape.to_dims(st), 3n))} : Maybe<&2, S.Shape>}
+  spb = Equal.sym(Maybe<&2, S.Shape>, S.Sp.shape(b), Some{S.Shape.empty()}, pb)
+  %spb : {S.Sp.shape.index(S.dims_append(S.dims_append(Some{S.Shape.empty()}, _), S.Sp.shape(c)), S.Sp.shape(t), 3n) == Some{S.Shape.of(S.drop_n(S.Shape.to_dims(st), 3n))} : Maybe<&2, S.Shape>}
+  spc = Equal.sym(Maybe<&2, S.Shape>, S.Sp.shape(c), Some{S.Shape.empty()}, pc)
+  %spc : {S.Sp.shape.index(S.dims_append(S.dims_append(Some{S.Shape.empty()}, Some{S.Shape.empty()}), _), S.Sp.shape(t), 3n) == Some{S.Shape.of(S.drop_n(S.Shape.to_dims(st), 3n))} : Maybe<&2, S.Shape>}
+  spt = Equal.sym(Maybe<&2, S.Shape>, S.Sp.shape(t), Some{st}, pt)
+  %spt : {S.Sp.shape.index(S.dims_append(S.dims_append(Some{S.Shape.empty()}, Some{S.Shape.empty()}), Some{S.Shape.empty()}), _, 3n) == Some{S.Shape.of(S.drop_n(S.Shape.to_dims(st), 3n))} : Maybe<&2, S.Shape>}
+  {==}
+
+def L.index_four_with_empty_shapes_removes_four_base_dims(t, a, b, c, d, st, pt, pa, pb, pc, pd):
+  spa = Equal.sym(Maybe<&2, S.Shape>, S.Sp.shape(a), Some{S.Shape.empty()}, pa)
+  %spa : {S.Sp.shape.index(S.dims_append(S.dims_append(S.dims_append(_, S.Sp.shape(b)), S.Sp.shape(c)), S.Sp.shape(d)), S.Sp.shape(t), 4n) == Some{S.Shape.of(S.drop_n(S.Shape.to_dims(st), 4n))} : Maybe<&2, S.Shape>}
+  spb = Equal.sym(Maybe<&2, S.Shape>, S.Sp.shape(b), Some{S.Shape.empty()}, pb)
+  %spb : {S.Sp.shape.index(S.dims_append(S.dims_append(S.dims_append(Some{S.Shape.empty()}, _), S.Sp.shape(c)), S.Sp.shape(d)), S.Sp.shape(t), 4n) == Some{S.Shape.of(S.drop_n(S.Shape.to_dims(st), 4n))} : Maybe<&2, S.Shape>}
+  spc = Equal.sym(Maybe<&2, S.Shape>, S.Sp.shape(c), Some{S.Shape.empty()}, pc)
+  %spc : {S.Sp.shape.index(S.dims_append(S.dims_append(S.dims_append(Some{S.Shape.empty()}, Some{S.Shape.empty()}), _), S.Sp.shape(d)), S.Sp.shape(t), 4n) == Some{S.Shape.of(S.drop_n(S.Shape.to_dims(st), 4n))} : Maybe<&2, S.Shape>}
+  spd = Equal.sym(Maybe<&2, S.Shape>, S.Sp.shape(d), Some{S.Shape.empty()}, pd)
+  %spd : {S.Sp.shape.index(S.dims_append(S.dims_append(S.dims_append(Some{S.Shape.empty()}, Some{S.Shape.empty()}), Some{S.Shape.empty()}), _), S.Sp.shape(t), 4n) == Some{S.Shape.of(S.drop_n(S.Shape.to_dims(st), 4n))} : Maybe<&2, S.Shape>}
+  spt = Equal.sym(Maybe<&2, S.Shape>, S.Sp.shape(t), Some{st}, pt)
+  %spt : {S.Sp.shape.index(S.dims_append(S.dims_append(S.dims_append(Some{S.Shape.empty()}, Some{S.Shape.empty()}), Some{S.Shape.empty()}), Some{S.Shape.empty()}), _, 4n) == Some{S.Shape.of(S.drop_n(S.Shape.to_dims(st), 4n))} : Maybe<&2, S.Shape>}
+  {==}
+
 # VI-bis. THE SPEC'S OWN COMPOSITION, and the shape it claims.
 #
 # tinyspec's "Common Ops as Compositions": "def gemm(A, B): M,K = A.shape; _,N =

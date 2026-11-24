@@ -657,11 +657,13 @@ law index_of_no_operands_keeps_the_base_shape:
 # AND THE SHAPE IS NOT THE BASE'S WHOLE: an index of k operands DROPS k of
 # the base's dims and keeps the rest -- "remaining dims".
 #
-# THE OTHER ARITIES ARE NOT STATED, and the reason is the PROOF and not the
-# claim: the shape of an `Idx2` is the zip of the two index shapes with the
-# base's dims after dropping two, and proving that needs the same induction the
-# broadcast law needs -- the zip's shape and the drop's shape together.  That is
-# a piece of work and not a piece of prose, so it is not claimed here.
+# THE OTHER ARITIES ARE NOW STATED, AND THE BLOCKER WAS A FOLD THAT IS NOT
+# THERE.  THE OLD NOTE SAID "the shape of an `Idx2` is the zip of the two index
+# shapes with the base's dims after dropping two, and proving that needs the
+# same induction the broadcast law needs -- the zip's shape and the drop's
+# shape together".  BUT THE FOLD IS NOT A ZIP: IT IS
+# `Shape.of(append(index_dims, drop_n(base_dims, k)))` -- A CONCATENATION AND A
+# DROP -- SO EACH ARITY IS ONE STEP AND NO INDUCTION IS NEEDED.
 
 # VI. The elementwise column: "all inputs same shape, output same shape".
 #
@@ -938,6 +940,69 @@ law arange_composition_has_the_expanded_shape:
   for +cexpand: {expanded == S.SpExpand{reshaped, Nil{}, [S.SN{n}]} : S.Sp}
   for +cout: {out == A.sub(summed, A.one()) : S.Sp}
   {shape_of(out) == Some{S.Shape.of([S.SN{n}])} : Maybe<&2, S.Shape>}
+
+# AND THE INDEX FAMILY's SHAPE, AND THE CLAIM IS THE SPEC's PROSE AND ITS
+# COLUMN TOGETHER: "Index from left. ()-shaped i removes dim" AND "remaining
+# dims".
+#
+# AND THE INDEX SHAPES ARE EMPTY -- WHICH IS THE `()`-shaped INDEX THE SPEC's
+# PROSE NAMES -- SO THE INDEX's SHAPE IS THE BASE's REMAINING DIMS.
+#
+# AND THE ARITIES ARE ONE CLAIM EACH, AND THEY ARE THE FOUR THE SPEC's ONE ROW
+# COVERS.  MEASURED 2026-11-17: the shape census named `SpIdx2`, `SpIdx3` and
+# `SpIdx4` UNPINNED -- `SpIdx1` WAS PINNED BY THE DEVICE AND DTYPE LAWS BUT
+# NOT BY A SHAPE LAW -- AND THE BLOCKER WAS THE PROOF: "the shape of
+# an Idx2 is the zip of the two index shapes with the base's dims after
+# dropping two, and proving that needs the same induction the broadcast law
+# needs -- the zip's shape and the drop's shape together."
+#
+# AND THE BLOCKER WAS A FOLD THAT IS NOT THERE: THE FOLD IS
+# `Shape.of(append(index_dims, drop_n(base_dims, k)))` -- A CONCATENATION AND A
+# DROP -- AND NEITHER IS A ZIP.  SO EACH ARITY IS ONE STEP.
+
+law index_one_with_an_empty_shape_removes_the_base_dim:
+  for +t: S.Sp
+  for +a: S.Sp
+  for +st: S.Shape
+  for +pt: {shape_of(t) == Some{st} : Maybe<&2, S.Shape>}
+  for +pa: {shape_of(a) == Some{S.Shape.empty()} : Maybe<&2, S.Shape>}
+  {shape_of(S.SpIdx1{t, a}) == Some{S.Shape.of(S.drop_n(S.Shape.to_dims(st), 1n))} : Maybe<&2, S.Shape>}
+
+law index_two_with_empty_shapes_removes_two_base_dims:
+  for +t: S.Sp
+  for +a: S.Sp
+  for +b: S.Sp
+  for +st: S.Shape
+  for +pt: {shape_of(t) == Some{st} : Maybe<&2, S.Shape>}
+  for +pa: {shape_of(a) == Some{S.Shape.empty()} : Maybe<&2, S.Shape>}
+  for +pb: {shape_of(b) == Some{S.Shape.empty()} : Maybe<&2, S.Shape>}
+  {shape_of(S.SpIdx2{t, a, b}) == Some{S.Shape.of(S.drop_n(S.Shape.to_dims(st), 2n))} : Maybe<&2, S.Shape>}
+
+law index_three_with_empty_shapes_removes_three_base_dims:
+  for +t: S.Sp
+  for +a: S.Sp
+  for +b: S.Sp
+  for +c: S.Sp
+  for +st: S.Shape
+  for +pt: {shape_of(t) == Some{st} : Maybe<&2, S.Shape>}
+  for +pa: {shape_of(a) == Some{S.Shape.empty()} : Maybe<&2, S.Shape>}
+  for +pb: {shape_of(b) == Some{S.Shape.empty()} : Maybe<&2, S.Shape>}
+  for +pc: {shape_of(c) == Some{S.Shape.empty()} : Maybe<&2, S.Shape>}
+  {shape_of(S.SpIdx3{t, a, b, c}) == Some{S.Shape.of(S.drop_n(S.Shape.to_dims(st), 3n))} : Maybe<&2, S.Shape>}
+
+law index_four_with_empty_shapes_removes_four_base_dims:
+  for +t: S.Sp
+  for +a: S.Sp
+  for +b: S.Sp
+  for +c: S.Sp
+  for +d: S.Sp
+  for +st: S.Shape
+  for +pt: {shape_of(t) == Some{st} : Maybe<&2, S.Shape>}
+  for +pa: {shape_of(a) == Some{S.Shape.empty()} : Maybe<&2, S.Shape>}
+  for +pb: {shape_of(b) == Some{S.Shape.empty()} : Maybe<&2, S.Shape>}
+  for +pc: {shape_of(c) == Some{S.Shape.empty()} : Maybe<&2, S.Shape>}
+  for +pd: {shape_of(d) == Some{S.Shape.empty()} : Maybe<&2, S.Shape>}
+  {shape_of(S.SpIdx4{t, a, b, c, d}) == Some{S.Shape.of(S.drop_n(S.Shape.to_dims(st), 4n))} : Maybe<&2, S.Shape>}
 
 law add_is_elementwise:
   for +a: S.Sp

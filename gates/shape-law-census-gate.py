@@ -246,7 +246,9 @@ def mutate_arm(text: str, op: str, fold: str = "Sp.shape") -> str | None:
     THREE SHAPES OF ARM, AND EACH HAS ITS OWN REPLACEMENT:
 
       * a UNARY passthrough (`Sp.shape(t)`): the arm's RESULT changes --
-        `Some{Shape.empty()}`, the same TYPE and a different answer;
+        `Some{Shape.empty()}`, the same TYPE and a different answer -- AND
+        WHEN IT LANDS IN A LOCAL ASSIGNMENT THE LOCAL's TYPE IS PINNED, SO THE
+        COPY STILL TYPECHECKS;
       * a `Some{Shape.of(<list>)}` arm: the LIST changes -- a fixed one-dim
         shape, the same TYPE and a different count;
       * a MULTI-LINE arm (`SpStack`, `SpReduce`, `SpAdd`): one LINE inside it
@@ -284,6 +286,24 @@ def mutate_arm(text: str, op: str, fold: str = "Sp.shape") -> str | None:
     m = re.search(r"Sp\.shape\((\w+)\)", arm)
     if m:
         new_arm = arm.replace(m.group(0), "Some{Shape.empty()}", 1)
+        # AND WHEN THE REPLACEMENT LANDS IN A LOCAL ASSIGNMENT, THE LOCAL's
+        # TYPE MUST BE PINNED -- `Some{Shape.empty()}`'s TYPE PARAMETER IS NOT
+        # INFERABLE AT AN ASSIGNMENT, SO WITHOUT THE ANNOTATION THE COPY
+        # STOPS TYPECHECKING AND THE GATE GOES RED NAMING NO LAW.  THAT IS A
+        # TYPE ERROR AND NOT A LAW FAILING, WHICH IS WHAT THIS FUNCTION's
+        # DOCSTRING FORBIDS.
+        #
+        # MEASURED 2026-11-24: the `SpIdx1`..`SpIdx4` ARMS ASSIGN `p =
+        # Sp.shape(a)`, AND WITHOUT THE ANNOTATION EVERY ONE OF THEM WAS
+        # REPORTED VACUOUS -- NOT BECAUSE THE LAW COULD NOT FAIL, BUT BECAUSE
+        # THE MUTATION DID NOT TYPECHECK.  THE `SpStack`, `SpReduce`, `SpAdd`
+        # AND `SpMul` ARMS WERE FINE: THEIR REPLACEMENT LANDS WHERE THE TYPE
+        # IS ALREADY PINNED.
+        new_arm = re.sub(
+            r"(?m)^(\s*)(\w+) = Some\{Shape\.empty\(\)\}",
+            r"\1\2: Maybe<&2, Shape> = Some{Shape.empty()}",
+            new_arm,
+        )
         return text[:start] + new_arm + text[end:]
     # a VOID arm: `None{}` -- giving it a shape is a different shape column.
     if arm.rstrip().endswith("None{}"):

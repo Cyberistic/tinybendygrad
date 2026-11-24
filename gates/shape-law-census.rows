@@ -15,5 +15,5 @@
 # `.gitignore`d and emptied before every run.
 
 vacuous	store_matches_its_buffer
-masked	add_is_elementwise,pad_shrink_round_trip,reshape_numel_is_the_new_shape
-unpinned-arms	SpBackedge,SpEnd,SpGroup,SpIdx2,SpIdx3,SpIdx4,SpLinear,SpSink
+masked	add_is_elementwise,pad_shrink_round_trip
+unpinned-arms	SpBackedge,SpEnd,SpGroup,SpLinear,SpSink
