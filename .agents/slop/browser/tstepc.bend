@@ -17,6 +17,7 @@ import ./../../../tinybendygrad/mixin/gradient.bend as G
 import ./../../../tinybendygrad/schedule/realize.bend as RZ
 import ./../../../tinybendygrad/schedule/rangify.bend as RR
 import ./../../../tinybendygrad/schedule/__init__.bend as SCH
+import ./../../../tinybendygrad/schedule/rangeify.bend as RF
 import ./../../../tinybendygrad/runtime/device.bend as DEV
 import ./../../../tinybendygrad/renderer/cstyle.bend as C
 import ./../../../tinybendygrad/base.bend as FB
@@ -121,6 +122,36 @@ def chain_c() -> String:
   +lin = SCH.schedule(O.Found.ar(k), O.Found.i(k))
   mk_all(mk_go(SCH.lin_kernels(lin), (SCH.lin_ar(lin), Nil{}), 0))
 
+# --- DIAGNOSTICS: what `kg()` and `schedule()` actually returned -----------------------------------
+def cnt.go(+ar: O.Arena, +ns: List<&2, U32>, +want: O.Op, +acc: U32) -> U32:
+  match ns:
+    case Nil{}: acc
+    case n <> t: cnt.go(ar, t, want, U32.add(acc, Bool.to_u32(O.eq_op(O.Arena.op(ar, n), want))))
+
+def cnt(+ar: O.Arena, +ns: List<&2, U32>, want: O.Op) -> U32: cnt.go(ar, ns, want, 0)
+
+def lk1(+ar: O.Arena, +ks: List<&2, U32>, +acc: List<&2, String>) -> String:
+  match ks:
+    case Nil{}: String.join(acc, " ")
+    case k <> t:
+      lk1(ar, t, List.append(&2, String, acc,
+        [String.concat([RF.eng_op_name(O.Arena.op(ar, k)), ">",
+                        RF.eng_op_name(O.Arena.op(ar, SCH.sc_src0(ar, k)))])]))
+
+def diag() -> String:
+  +k = kg()
+  +ka = O.Found.ar(k)
+  +ns = O.UOp.toposort(O.Arena.budget(ka), ka, O.Found.i(k))
+  +lin = SCH.schedule(ka, O.Found.i(k))
+  String.concat(["tsc.kg_n=", U32.show(U32.from_nat(List.length(&2, U32, ns))),
+                 " sink_nsrc=", U32.show(O.Arena.nsrc(ka, O.Found.i(k))),
+                 " kg_store=", U32.show(cnt(ka, ns, O.OpsSTORE{})),
+                 " kg_index=", U32.show(cnt(ka, ns, O.OpsINDEX{})),
+                 " kg_red=", U32.show(cnt(ka, ns, O.OpsREDUCE{})),
+                 " nk=", U32.show(U32.from_nat(List.length(&2, U32, SCH.lin_kernels(lin)))),
+                 " lk=", lk1(SCH.lin_ar(lin), SCH.lin_kernels(lin), Nil{})])
+
 def main() -> IO(Unit):
   do IO<Unit>:
+    _ : Unit <- IO.print(String.concat(["tsc_diag=", diag()]))
     IO.print(String.concat(["tstep_c=", chain_c()]))
