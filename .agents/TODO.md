@@ -5119,6 +5119,17 @@ are NOT free: `grep -c smoothstep tinygrad/` is 0 and there is no `Ops.MIN`.
       `*(buf0+Lidx0) = 1` -> `kernels=0` + `refused=unbacked-end`, no C compiled. The 135
       schedule-gate rows DO NOT MOVE — so the change is inert for every fixture, WHICH IS ITS
       GAP: no fixture exercises it, and a row that cannot go red is worse than no row.
+      **THE CORPUS IS UNAFFECTED AND MUST STILL BE RE-TAKEN.** No corpus graph has an unbacked
+      END (CPython's own assert would have made that row an error, and the corpus was 38 of 38
+      on 2026-10-31), and BOTH instruments that call `create_schedule` are unmoved —
+      `gates/schedule-init-gate.bend` (135 rows) and `gates/realize-gate.bend` (8 rows), diffs
+      empty before and after — BUT the change moves `tinybendygrad/`, so the substrate digest
+      moves and the corpus run is STALE until it is re-taken. **DO NOT RE-TAKE IT OVER ANOTHER
+      SESSION'S TREE**: master is red on the `grad` corpus row for a bisect in flight, and the
+      working copy carries that session's uncommitted `gradient.bend`/`fold.bend`/`weak.bend`,
+      so a run now would record a digest of THEIR tree. The runner's `refused=` row IS the
+      instrument that can go red on this change (it goes back to `kernels=1` when the pad lane
+      lands), and nothing gates it yet — that is the row to gate next.
 - [ ] **`gates/schedsched-gate.py` HAD TWO DEFECTS AND ONE MASKED THE OTHER (2026-11-24).**
       (1) The `bend=` field still pointed at the LIBRARY after `d404c64d9` moved the 135 gate
       rows into the driver `gates/schedule-init-gate.bend`, so the port lane ran a file with no
