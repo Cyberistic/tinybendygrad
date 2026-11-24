@@ -91,6 +91,50 @@ equal — and a row that compares trees on that arm is a row that can never pass
 `dmc.den` reads the folded tree's value), so the differential is about the
 **new** arm.
 
+## The `divide_by_gcd` arm, and its MOD half
+
+`divandmod.py:72-77` — `divide_by_gcd: x//y -> (x//gcd)//(y//gcd)`. It is ONE
+arm with TWO answer shapes, and the second is the one this file's TODO called
+a wall:
+
+```python
+ret = unwrap(x.divide_exact(gcd)).alu(d.op, unwrap(y.divide_exact(gcd)))
+return ret*gcd if d.op is Ops.MOD else ret
+```
+
+**AND THE TWO SHAPES ARE MEASURED ON CPYTHON AT THE PIN** — `MOD(0, 2x)`
+answers `MUL(MOD(c0,MUL(x,c1)),c2)` and `DIV(0, 2x)` answers
+`DIV(c0,MUL(x,c1))` — two different trees for the same gcd.
+
+**AND THE ARM NEEDED NOTHING NEW.** `UOp.gcd` (`ops.bend:4513`),
+`UOp.divide_exact` (`ops.bend:4490`) and `UOp.const_factor` (`ops.bend:3943`)
+were all already in `ops.bend`. **AND `simplify()` IS NOT NEEDED**: upstream
+calls `UOp.gcd(...).simplify()` and the port's `UOp.gcd` already answers
+upstream's simplified form — measured, on `gcd(x, 2x)` upstream answers
+`(x*1.expand((4,)))` and `simplify()` leaves it alone, and on `gcd(0, 2x)`
+both answer `2`. **So the `simplify` wall is measured false for this arm, and
+the `divide_by_gcd` wall was the `divides` one, which was also measured
+false.**
+
+**AND TWO THINGS WERE FOUND WHILE PORTING IT.**
+
+**The port's own `symbolic.bend` had only the DIV half.** `dm_gcd_ret.put`
+built `O.OpsDIV{}` unconditionally, so a MOD root was rewritten as a DIV.
+That file is another lane's, and it is still there.
+
+**And the two gcds differ in SHAPE on a term that is not a CONST.**
+Upstream counts the **peeled** terms — `u.pop_const(Ops.MUL)` gives `2` for
+`2x`, and `2.split_uop(MUL)` is `[2]` — so its counters for `2` and `2x` are
+**disjoint** and it answers a **CONST**. The port's `UOp.gcd.terms` counts the
+**unpeeled** term (`2x`), so its counters **overlap** and it answers a
+**MUL**. So `(2 + 2x)` is not a differential row: the two would never
+agree. The row is not in the case file, and the reason is written there.
+
+**AND THE DIFFERENTIAL ROWS ARE GREEN.** `gates/divandmod-cases.rows` holds
+`gcdmod_fires` and `gcddiv_fires`, and the plant's case 5 **deletes the
+`ret*gcd` multiplication** and the lanes disagree — **so the MOD half is
+load-bearing and not a variant of the DIV half.**
+
 ## The three arms that survived, and why each one
 
 Of `fold_divmod_general`'s 89 lines, 60 are interval arithmetic over symbolic
@@ -181,8 +225,16 @@ a fixture where the quotient is on src1 AND the CONST is also on src1.
 - `divandmod.py:57-70` `nest_by_factor` — a set comprehension, then a RECURSIVE
   call to `fold_divmod_general` (mutual recursion, refused outright), then
   `backward_slice` twice. The largest single omission in the file.
-- `divandmod.py:75-96` `divide_by_gcd` and `factor_remainder` — `gcd`,
-  `const_factor`, `simplify`, `_min_max`.
+- `divandmod.py:83-96` `factor_remainder` — `const_like` (a TODO in
+  `ops.bend`) and `new_x.vmin` over a sum. **AND `usum` IS NO LONGER A
+  BLOCKER**: it is in `ops.bend` now.
+- `divandmod.py:72-77` `divide_by_gcd` — **DONE (2026-11-24), AND BOTH HALVES**:
+  upstream's arm is ONE arm with TWO answer shapes (`ret*gcd` for a MOD and
+  `ret` for a DIV, `divandmod.py:76`), and `simplify` was not needed — the
+  port's `UOp.gcd` already answers upstream's simplified form. **AND THE
+  PORT's OWN `symbolic.bend` HAD ONLY THE DIV HALF** (`dm_gcd_ret.put` built
+  `O.OpsDIV{}` unconditionally), **SO THE MOD HALF WAS MISSING THERE TOO —
+  AND IT IS STILL THERE, AND IT IS ANOTHER LANE's FILE.**
 - `divandmod.py:11` the `raise` itself. `dm_zero` reports the condition and the
   rows are the evidence; rendering the message is the caller's job.
 

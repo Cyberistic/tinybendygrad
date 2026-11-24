@@ -45,14 +45,14 @@ GATE = Gate(
     "divandmod-gate",
     bend="gates/divandmod-driver.bend",
     oracle="gates/divandmod-oracle.py",
-    # THREE CASES, AND THE COUNT IS THE CASE FILE's ROW COUNT AND NOT A NUMBER
+    # FIVE CASES, AND THE COUNT IS THE CASE FILE's ROW COUNT AND NOT A NUMBER
     # ANYONE KEEPS IN STEP: MEASURED 2026-11-24, `gates/divandmod-cases.rows`
-    # HOLDS THREE AND THE LANE EMITS THREE.
-    rows=3,
-    compared=3,
+    # HOLDS FIVE AND THE LANE EMITS FIVE.
+    rows=5,
+    compared=5,
     order="positional",
 )
 
 if __name__ == "__main__":
-    sys.exit(main(GATE, "divandmod-gate: 3 rows compared -- the remove_nested_mod "
-                        "arm agrees with the CPython run"))
+    sys.exit(main(GATE, "divandmod-gate: 5 rows compared -- the remove_nested_mod "
+                        "and divide_by_gcd arms agree with the CPython run"))

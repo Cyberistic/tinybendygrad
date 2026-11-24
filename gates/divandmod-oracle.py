@@ -107,6 +107,14 @@ def build(op, k, c, n, d):
         return num.alu(Ops.MOD, const(d))
     if op == "DIVCONST":
         return const(k).alu(Ops.DIV, const(c))
+    if op in ("GCDMOD", "GCDDIV"):
+        # AND THE `divide_by_gcd` SHAPE, AND IT IS `(c0 + 2x) % (2x)` -- A
+        # NUMERATOR WHOSE CONSTANT TERM MAKES IT **NOT EXACTLY DIVISIBLE**, AND A
+        # DIVISOR THAT IS ITSELF A MUL SO THE GCD IS **2** AND NOT 1.
+        root_op = Ops.MOD if op == "GCDMOD" else Ops.DIV
+        mx = mk_param("x").alu(Ops.MUL, const(k))
+        num = const(n).alu(Ops.ADD, mx)
+        return num.alu(root_op, mx)
     # `(x%k + y + z)%c`
     inner = mk_param("x").alu(Ops.MOD, const(k))
     terms = [inner] + [mk_param(chr(ord("y") + i)) for i in range(n)]

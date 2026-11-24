@@ -1,5 +1,5 @@
-# divandmod-cases.rows -- THE GRAPHS FOR `fold_divmod_general`'s `remove_nested_mod`
-# ARM, ONE PER LINE, AND THE PORT AND THE ORACLE BOTH READ THIS FILE.
+# divandmod-cases.rows -- THE GRAPHS FOR `fold_divmod_general`'s ARMS, ONE PER
+# LINE, AND THE PORT AND THE ORACLE BOTH READ THIS FILE.
 #
 # ONE FILE, TWO READERS: the port's driver (`gates/divandmod-driver.bend`) reads
 # it and prints one answer per case, and the oracle
@@ -13,14 +13,16 @@
 # PORT's PARSER NEEDED A FRAME STACK, BECAUSE `parse` AND `close` NEED EACH
 # OTHER AND **BEND REFUSES MUTUAL RECURSION** -- THE SAME WALL
 # `tinybendygrad/uop/divandmod.bend`'s HEADER NAMES FOR `nest_by_factor`.  AND
-# THE FIX IS NOT A PARSER: IT IS A CASE SHAPE THAT NEEDS NO PARSER.  THE ARM
-# UNDER TEST HAS **ONE** SHAPE -- `(a%k + b)%c` -- AND THE FIXTURE IS THAT
-# SHAPE WITH ITS SLOTS NAMED.
+# THE FIX IS NOT A PARSER: IT IS A CASE SHAPE THAT NEEDS NO PARSER.
 #
 # THE SIX FIELDS, AND EVERY ROW HAS EXACTLY SIX:
 #
 #   `name`  THE ROW's NAME.
-#   `op`    `MOD` OR `DIV` FOR THE ROOT.
+#   `op`    THE SHAPE FAMILY.  `MOD` AND `DIV` ARE `(x%k + y + z)%d` AND
+#          `(x%k + y + z)//d`.  `GCDMOD` AND `GCDDIV` ARE `(c0 + c2*x) % (2*x)`
+#          AND `(c0 + c2*x) // (2*x)` -- THE SHAPE THAT REACHES
+#          `divide_by_gcd` (divandmod.py:72-77), AND THE `c0` IS THE CONSTANT
+#          TERM THAT MAKES THE NUMERATOR NOT EXACTLY DIVISIBLE.
 #   `k`     THE INNER MOD's DIVISOR.  A POSITIVE CONST.
 #   `c`     THE OUTER MOD's DIVISOR.  A POSITIVE CONST, AND THE ARM ONLY FIRES
 #          WHEN `c` **DIVIDES** `k` -- MEASURED, IT IS `divides(c)` ON THE
@@ -49,8 +51,7 @@
 # DIFFER WHILE THE VALUES ARE EQUAL -- AND A ROW THAT COMPARES TREES ON THAT
 # ARM IS A ROW THAT CAN NEVER PASS.  **THE EXISTING GATE ALREADY COVERS THAT
 # ARM BY VALUE** (`gates/divandmod-gate.bend`'s `dmc.den` READS THE FOLDED
-# TREE'S VALUE), SO THE DIFFERENTIAL IS ABOUT THE **NEW** ARM AND NOT ABOUT A
-# ROW THAT EXISTS ALREADY.
+# TREE'S VALUE), SO THE DIFFERENTIAL IS ABOUT THE **NEW** ARMS.
 
 # --- `remove_nested_mod` (divandmod.py:27-35).  `(a%k + b)%c -> (a+b)%c`.
 # `k=4 c=2`: 2 DIVIDES 4, SO THE ARM FIRES.
@@ -60,3 +61,24 @@ rmn_fires|MOD|4|2|1|2
 rmn_two|MOD|8|2|2|2
 # --- THE ZERO DIVISOR (divandmod.py:11), AND PYTHON RAISES.
 zero|MOD|4|0|1|0
+# --- `divide_by_gcd` (divandmod.py:72-77).  `x//y -> (x//gcd)//(y//gcd)`, AND
+# THE **MOD HALF** IS `ret*gcd` (divandmod.py:76) -- A SECOND ANSWER SHAPE AND
+# NOT A VARIANT.  MEASURED 2026-11-24 ON CPYTHON AT THE PIN: `MOD(0, 2x)`
+# ANSWERS `MUL(MOD(c0,MUL(x,c1)),c2)` AND `DIV(0, 2x)` ANSWERS
+# `DIV(c0,MUL(x,c1))` -- TWO DIFFERENT TREES FOR THE SAME GCD.
+# THE GCD OF `0` AND `2x` IS 2, SO THE ARM FIRES AND THE GCD IS NOT 1.
+gcdmod_fires|GCDMOD|2|2|0|0
+# AND THE DIV HALF, AND IT IS `ret` AND NOT `ret*gcd`.
+gcddiv_fires|GCDDIV|2|2|0|0
+#
+# AND THE SHAPE `(2 + 2x) % (2x)` IS **NOT** HERE, AND THE REASON IS A
+# **PRE-EXISTING DIVERGENCE IN THE PORT's `UOp.gcd`** AND NOT A DEFECT IN THE
+# ARM.  MEASURED 2026-11-24: UPSTREAM'S `gcd` COUNTS THE **PEELED** TERMS
+# (`u.pop_const(Ops.MUL)` GIVES `2` FOR `2x`, AND `2.split_uop(MUL)` IS `[2]`),
+# SO ITS COUNTERS FOR `2` AND `2x` ARE `{c2:1}` AND `{2:1}` -- **DISJOINT** --
+# AND THE CONST PATH ANSWERS A **CONST** `2`.  THE PORT's `UOp.gcd.terms` COUNTS
+# THE **UNPEELED** TERM (`2x`), SO ITS COUNTERS ARE `{c2:1}` AND `{c2:1,x:1}` --
+# **OVERLAPPING** -- AND IT ANSWERS A **MUL** INSTEAD OF A CONST.  SO THE PORT's
+# GCD IS A DIFFERENT SHAPE FROM UPSTREAM's ON THAT INPUT, AND THE ARM'S
+# `divide_exact` THEN REFUSES IT.  **A ROW THAT COMPARES THE TWO WOULD BE A ROW
+# THAT CAN NEVER PASS**, SO IT IS NOT HERE.

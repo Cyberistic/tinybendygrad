@@ -29924,12 +29924,50 @@ FOUR NAMED CASES ARE IN THE POPULATION** (`p193a` `x451a` `x451b` `x451c`, 1 ROW
       (`divandmod.bend:983`).** **THE CENSUS READS `PORT ENTRIES 135 MAPPED 135 BROKEN 0
       UNRESOLVED 0` AND IS **GREEN**, AND THE ROW READS `118  divandmod.py:103  DIV,MOD
       sym_table  117  PORTED`.**
-- [ ] **THE `MOD` HALF OF `divide_by_gcd` IS **NOT** PORTED** — UPSTREAM'S `return ret*gcd if
-      d.op is Ops.MOD else ret` MULTIPLIES THE REMAINDER BY THE GCD, **AND THAT IS A **SECOND**
-      ANSWER SHAPE AND A NAMED WALL**, **AND IT IS SAID SO AT THE DEF.**
-- [ ] **A `usum` REACHABLE FROM `divandmod.bend`** — **THE `symbolic -> divandmod` IMPORT
-      DIRECTION FORBIDS IT TODAY**, **AND IT IS NEEDED BY THE `factor_remainder` ARM
-      (`divandmod.py:83-96`), WHICH IS STILL UNPORTED.**
+- [x] **THE `MOD` HALF OF `divide_by_gcd` IS PORTED** (2026-11-24) — **AND SO IS THE `DIV`
+      HALF, BECAUSE UPSTREAM'S ARM IS ONE ARM WITH TWO ANSWER SHAPES**: `return ret*gcd
+      if d.op is Ops.MOD else ret` (divandmod.py:76).  **AND THE ARM IS `divide_by_gcd`
+      (divandmod.py:72-77), AND IT NEEDED NOTHING NEW**: `UOp.gcd` (`ops.bend:4513`),
+      `UOp.divide_exact` (`ops.bend:4490`) AND `UOp.const_factor` (`ops.bend:3943`)
+      ARE ALL IN `ops.bend` ALREADY, **AND THE `simplify()` IS **NOT** NEEDED** —
+      MEASURED: UPSTREAM CALLS `UOp.gcd(...).simplify()` AND THE PORT's `UOp.gcd`
+      ALREADY ANSWERS UPSTREAM's SIMPLIFIED FORM (ON `gcd(x, 2x)` UPSTREAM
+      ANSWERS `(x*1.expand((4,)))` AND `simplify()` LEAVES IT ALONE, AND ON
+      `gcd(0, 2x)` BOTH ANSWER `2`).  **SO THE `simplify` WALL IS MEASURED FALSE
+      FOR THIS ARM, AND THE `divide_by_gcd` WALL WAS THE `divides` ONE, WHICH WAS
+      ALSO MEASURED FALSE.**
+      **AND TWO THINGS WERE FOUND WHILE PORTING IT, AND BOTH ARE MEASURED:**
+      (1) **THE ARM'S ANSWER DEPENDS ON THE GCD's OWN SHAPE, AND UPSTREAM's GCD IS A
+      **CONST** WHERE THE PORT's IS A **MUL** ON A TERM THAT IS NOT A CONST** —
+      MEASURED: UPSTREAM COUNTS THE **PEELED** TERMS (`u.pop_const(Ops.MUL)` GIVES
+      `2` FOR `2x`, AND `2.split_uop(MUL)` IS `[2]`) SO ITS COUNTERS FOR `2` AND
+      `2x` ARE **DISJOINT** AND IT ANSWERS A CONST; THE PORT's `UOp.gcd.terms`
+      COUNTS THE **UNPEELED** TERM (`2x`) SO ITS COUNTERS **OVERLAP** AND IT
+      ANSWERS A MUL.  **SO THE `(2 + 2x)` SHAPE IS NOT A DIFFERENTIAL ROW** — THE
+      TWO WOULD NEVER AGREE — **AND THE ROW IS NOT IN THE CASE FILE.**
+      (2) **THE PORT's OWN `symbolic.bend` HAD **ONLY THE DIV HALF** AND BUILT
+      `O.OpsDIV{}` UNCONDITIONALLY** (`dm_gcd_ret.put`), **SO THE MOD HALF WAS
+      MISSING THERE TOO** — AND IT IS STILL THERE, AND IT IS ANOTHER LANE's FILE.
+      **AND THE DIFFERENTIAL ROWS ARE GREEN**: `gates/divandmod-cases.rows`'s
+      `gcdmod_fires` AND `gcddiv_fires`, MEASURED 5 CASES 5 AGREE 0 DIVERGE, AND
+      THE PLANT'S CASE 5 **DELETES THE `ret*gcd` MULTIPLICATION** AND THE LANES
+      DISAGREE — **SO THE MOD HALF IS LOAD-BEARING AND NOT A VARIANT OF THE DIV
+      HALF.**
+- [ ] **A `usum` REACHABLE FROM `divandmod.bend`** — **AND THIS IS **DONE** (2026-11-24):
+      `UOp.usum` IS IN `ops.bend` (`mixin/elementwise.py:40`), BECAUSE
+      `schedule/indexing.bend` IMPORTS `uop/ops.bend` AND SO `uop/` CANNOT REACH
+      `schedule/` — **AND `schedule/indexing.bend`'s `rr_usum` IS **NOT** CHANGED,
+      BECAUSE IT IS **RIGHT**-NESTED AND UPSTREAM'S `reduce` IS **LEFT**-NESTED AND
+      THE CORPUS COMPARES CANONICAL FORMS **BYTE-IDENTICALLY**, SO CHANGING IT
+      WOULD BE A CORPUS DIVERGENCE WITH NOTHING WRONG.**
+- [ ] **THE `factor_remainder` ARM (`divandmod.py:83-96`) IS STILL UNPORTED** — **AND
+      IT NEEDS TWO THINGS THE PORT DOES NOT HAVE**: `const_like` (`ops.py:572`, A
+      TODO IN `ops.bend`) AND `new_x.vmin` OVER A SUM, **AND IT IS THE ARM THAT
+      NEEDS `usum` — WHICH IS NOW IN `ops.bend`, SO THE `usum` WALL IS NOT THE
+      BLOCKER ANY MORE.**  **AND IT WAS MEASURED REACHABLE**: INSTRUMENTING
+      UPSTREAM's OWN AST (EVERY `return` IS A NODE, AND THE ARM IS THE ONE WHOSE
+      COMMENT IS THE NEAREST COMMENT ABOVE IT) OVER 4,400 ENUMERATED SHAPES, IT
+      IS REACHED **831 TIMES** — SO IT IS NOT SHADOWED AND NOT DEAD.
 - [x] **`nested_div` (`divandmod.py:23`) IS PORTED** (2026-11-09, `e8a5fdae1`) — **AND IT IS THE
       FIRST ARM THAT NEEDS **NO** `usum`, **AND SO IT WAS REACHABLE WITHOUT MOVING THE WALL.**
       **AND FOUR SUBSTITUTIONS ARE MEASURED AND STATED AT THE DEF:** THE `k` IS **THE MOD's**

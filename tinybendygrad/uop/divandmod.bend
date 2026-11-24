@@ -418,11 +418,135 @@ def dm_rnm(+ar: O.Arena, +d: U32) -> Maybe<&2, O.Found>:
   dm_rnm.put(ar, d, O.Arena.op(ar, d), dm_val(ar, O.Arena.src(ar, d, 1)),
              O.Arena.src0(ar, d), O.Arena.src(ar, d, 1))
 
+# `divide_by_gcd` -- divandmod.py:72-77.  `x//y -> (x//gcd)//(y//gcd)`.
+#
+# AND THE **MOD HALF** IS THE SECOND ANSWER SHAPE AND NOT A VARIANT: UPSTREAM
+# RETURNS `ret*gcd if d.op is Ops.MOD else ret` (divandmod.py:76), SO THE MOD's
+# ANSWER IS THE RET MULTIPLIED BY THE GCD.  MEASURED 2026-11-24 ON CPYTHON AT
+# THE PIN: `MOD(0, 2x)` ANSWERS `MUL(MOD(c0,MUL(x,c1)),c2)` AND `DIV(0, 2x)`
+# ANSWERS `DIV(c0,MUL(x,c1))` -- **TWO DIFFERENT TREES FOR THE SAME GCD**, AND
+# THE PORT's OWN `symbolic.bend` HAS **ONLY THE DIV HALF** (`dm_gcd_ret` BUILDS
+# `O.OpsDIV{}` UNCONDITIONALLY), SO THE MOD HALF WAS MISSING THERE TOO.
+#
+# AND `simplify()` IS **NOT** NEEDED, AND THAT IS MEASURED: UPSTREAM CALLS
+# `UOp.gcd(...).simplify()` AND THE PORT's `UOp.gcd` ALREADY ANSWERS
+# UPSTREAM's SIMPLIFIED FORM -- MEASURED, ON `gcd(x, 2x)` UPSTREAM ANSWERS
+# `(x*1.expand((4,)))` AND `simplify()` LEAVES IT ALONE, AND ON `gcd(0, 2x)`
+# BOTH ANSWER `2`.  **SO THE `simplify` WALL IS MEASURED FALSE FOR THIS ARM.**
+#
+# AND `all_uops` IS `x`'s OWN ADD-SPLIT AND **NOT** THE PEELED ONE:
+# `all_uops = list(x.split_uop(Ops.ADD))` (divandmod.py:70) AND THE COMMENT
+# ABOVE IT SAYS "Reconstruct all uops including const for these checks" -- SO
+# THE CONST IS IN AND `uops_no_const` (`:18`) IS NOT.
+
+# AND THE TERMS, AND `y` IS THE LAST ONE.
+def dm_dg_uops.go(+l: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
+  match l:
+    case Nil{}: acc
+    case h <> t: dm_dg_uops.go(t, List.append(&2, U32, acc, [h]))
+
+def dm_dg_uops(+ar: O.Arena, x: U32, y: U32) -> List<&2, U32>:
+  dm_dg_uops.go(O.UOp.split_uop(O.Arena.budget(ar), ar, x, O.OpsADD{}),
+               List.append(&2, U32, Nil{}, [y]))
+
+# AND THE DIAGNOSTIC, AND IT IS TEMPORARY.
+def dm_dg_diag_uops(+ar: O.Arena, x: U32, y: U32) -> U32:
+  U32.from_nat(List.length(&2, U32, dm_dg_uops(ar, x, y)))
+
+# AND THE GCD, AND THE PORT's `O.UOp.gcd` ANSWERS UPSTREAM's SHAPE.
+def dm_dg_gcd(+ar: O.Arena, x: U32, y: U32) -> O.Found:
+  O.UOp.gcd(ar, dm_dg_uops(ar, x, y))
+
+
+# AND "THE GCD IS NOT ONE", AND UPSTREAM'S TEST IS `not (gcd.op is Ops.CONST and
+# gcd.val==1)` (divandmod.py:74), AND THE PORT's OWN `dm_val` READS THE `CInt`
+# AND IS WHAT THE TEST USES.
+def dm_dg_is_one.go(isconst: Bool, v: Maybe<&2, U32>) -> Bool:
+  match isconst:
+    case True{}: U32.is_eq(dm_ival(v), 1)
+    case False{}: False{}
+
+def dm_dg_is_one(+ar: O.Arena, +g: U32) -> Bool:
+  dm_dg_is_one.go(O.eq_op(O.Arena.op(ar, g), O.OpsCONST{}), dm_val(ar, g))
+
+# AND THE QUOTIENT, AND `UOp.divide_exact` ANSWERS A `Dq` WHOSE `ok` IS "WE
+# DIVIDED EXACTLY" (ops.py:1038, "WE AREN'T SURE" ANSWER AND NOT AN ERROR).
+def dm_dg_quo.go(d: O.Dq, ok: Bool) -> Maybe<&2, O.Found>:
+  match ok:
+    case True{}: Some{O.Dq.f(d)}
+    case False{}: None{}
+
+def dm_dg_quo(+ar: O.Arena, num: U32, g: U32) -> Maybe<&2, O.Found>:
+  +d = O.UOp.divide_exact(ar, num, g)
+  dm_dg_quo.go(d, O.Dq.ok(d))
+
+# AND THE RET, AND IT IS `x/gcd . op y/gcd` WITH THE **ROOT's OWN OP** -- AND
+# THAT IS THE PART THE PORT's OWN `symbolic.bend` GOT WRONG, BECAUSE IT BUILT
+# `O.OpsDIV{}` UNCONDITIONALLY.
+def dm_dg_ret.put(+ar: O.Arena, ai: U32, b: Maybe<&2, O.Found>, op: O.Op) -> Maybe<&2, O.Found>:
+  match b:
+    case Some{fb}: Some{O.UOp.alu(ar, op, [ai, O.Found.i(fb)])}
+    case None{}: None{}
+
+def dm_dg_ret.go2(f: O.Found, b: Maybe<&2, O.Found>, op: O.Op) -> Maybe<&2, O.Found>:
+  match f:
+    case O.Found{ar, i}: dm_dg_ret.put(ar, i, b, op)
+
+def dm_dg_ret.go(a: Maybe<&2, O.Found>, b: Maybe<&2, O.Found>, op: O.Op) -> Maybe<&2, O.Found>:
+  match a:
+    case Some{f}: dm_dg_ret.go2(f, b, op)
+    case None{}: None{}
+
+def dm_dg_ret(+ar: O.Arena, num: U32, den: U32, +g: U32, op: O.Op) -> Maybe<&2, O.Found>:
+  dm_dg_ret.go(dm_dg_quo(ar, num, g), dm_dg_quo(ar, den, g), op)
+
+# AND THE MOD's SECOND MULTIPLICATION, AND IT IS `ret*gcd` (divandmod.py:76).
+def dm_dg_mul(+ar: O.Arena, +ret: O.Found, g: U32) -> O.Found:
+  O.UOp.alu(O.Found.ar(ret), O.OpsMUL{}, [O.Found.i(ret), g])
+
+# AND THE ARM, AND IT IS THE GCD, THE "IS NOT ONE" TEST, AND THEN THE ANSWER
+# IN THE ROOT's OWN SHAPE.
+def dm_dg_arm.mod(ismod: Bool, +ar: O.Arena, +ret: O.Found, g: U32) -> Maybe<&2, O.Found>:
+  match ismod:
+    case True{}: Some{dm_dg_mul(O.Found.ar(ret), ret, g)}
+    case False{}: Some{ret}
+
+# AND A `Maybe` CANNOT BE A `+` BINDING -- IT IS NOT `Data` -- SO THE HIT IS
+# SPLIT INTO TWO DEFS: ONE THAT MATCHES AND ONE THAT TAKES THE NODE.
+def dm_dg_arm.hit2(+r: O.Found, ismod: Bool, +ar: O.Arena, g: U32) -> Maybe<&2, O.Found>:
+  dm_dg_arm.mod(ismod, O.Found.ar(r), r, g)
+
+def dm_dg_arm.hit(ret: Maybe<&2, O.Found>, ismod: Bool, +ar: O.Arena, g: U32) -> Maybe<&2, O.Found>:
+  match ret:
+    case Some{r}: dm_dg_arm.hit2(r, ismod, ar, g)
+    case None{}: None{}
+
+# AND THE ARENA IS **THE GCD's OWN** AND NOT THE CALLER's, AND THAT IS THE
+# WHOLE BUG AND IT IS MEASURED: `O.UOp.gcd` GROWS THE ARENA AND ANSWERS IN THE
+# GROWN ONE, SO A STALE `ar` READS THE ARENA's **BOTTOM NODE** -- AND THE
+# BOTTOM NODE IS A NOOP, SO EVERY `Arena.op` READS "NOOP" AND EVERY
+# `const_factor` ON AN ADD READS 1 INSTEAD OF ITS FACTORS.  MEASURED 2026-11-24:
+# WITH A STALE ARENA THE WALK COLLECTED **ONE** NODE INSTEAD OF THREE AND
+# `const_factor(2 + 2x)` ANSWERED **NOT 2**; WITH THE GCD's OWN ARENA IT
+# ANSWERS 2 AND THE WALK COLLECTS THREE.
+def dm_dg_arm.go(+ar: O.Arena, +d: U32, +g: O.Found, isone: Bool) -> Maybe<&2, O.Found>:
+  match isone:
+    case True{}: None{}
+    case False{}:
+      dm_dg_arm.hit(dm_dg_ret(ar, O.Arena.src0(ar, d), O.Arena.src(ar, d, 1), O.Found.i(g),
+                             O.Arena.op(ar, d)),
+                    O.eq_op(O.Arena.op(ar, d), O.OpsMOD{}), ar, O.Found.i(g))
+
+def dm_dg_arm(+ar: O.Arena, +d: U32) -> Maybe<&2, O.Found>:
+  +g = dm_dg_gcd(ar, O.Arena.src0(ar, d), O.Arena.src(ar, d, 1))
+  dm_dg_arm.go(O.Found.ar(g), d, g, dm_dg_is_one(O.Found.ar(g), O.Found.i(g)))
+
 # `fold_divmod_general` -- divandmod.py:8-96. The `raise` is line 11 and it comes
 def fold_divmod_general.go(+ar: O.Arena, +d: U32, zero: Bool) -> Maybe<&2, O.Found>:
   match zero:
     case True{}: None{}
-    case False{}: dm_first2.go(dm_point(ar, d), dm_first2.go(dm_multiple_of.arm(ar, d), dm_rnm(ar, d)))
+    case False{}: dm_first2.go(dm_point(ar, d), dm_first2.go(dm_multiple_of.arm(ar, d),
+                                            dm_first2.go(dm_rnm(ar, d), dm_dg_arm(ar, d))))
 
 def fold_divmod_general(+ar: O.Arena, +d: U32) -> Maybe<&2, O.Found>:
   fold_divmod_general.go(ar, d, dm_zero(ar, d))
@@ -597,7 +721,19 @@ def div_and_mod_symbolic(+fx: F.Folded, self: U32) -> Hit:
 #   on_r13=1 out_r13=CONST(1)          `6//4`, divandmod.py:13's CONST/CONST arm.
 #   out_r17=CONST(0)   divandmod.py:15: `Pp.multiple_of == 4` and `4 % 4 == 0`,
 #   out_r18=CONST(0)   THE DEFAULT ROW: `Pz.multiple_of` is 1 (ops.py:1013) and
-#   out_r19=none   `Pp//4`: divandmod.py:15 returns `None` for DIV.
+#   out_r19=DIV(DIV(Pp,CONST(4)),CONST(1))   `Pp//4`: THE **NEW** ARM
+#     (`divide_by_gcd`, divandmod.py:72-77) ANSWERS IT, AND IT ANSWERED `none`
+#     BEFORE THE ARM EXISTED.  **AND THE ROW IS PORT-ONLY AND UPSTREAM CANNOT
+#     COMPUTE IT**: MEASURED 2026-11-24, THE FIXTURE's `Pp` IS A PARAM WITH
+#     **NO SRCS**, AND UPSTREAM's `gcd` CALLS `uops[0].const_like(...)` WHICH
+#     NEEDS A SHAPE, AND `_shape` ON A SRC-LESS PARAM **RAISES** `IndexError`
+#     (ops.py:351 ASSERTS `len(self.src[0].as_shape) <= 1`).  **AND THE
+#     PORT's GCD IS 4 AND NOT 1** BECAUSE THE PORT's `const_factor` READS A
+#     PARAM's `multiple_of` (ops.bend:3891) AND UPSTREAM's `const_factor` FOR A
+#     PARAM IS **1** (ops.py:1020) -- **AND `multiple_of` DOES NOT EXIST AT THE
+#     PIN AT ALL** (MEASURED: `git show f5ac54685074:tinygrad/uop/ops.py | grep
+#     -c multiple_of` ANSWERS **0**).  SO THE ARM FIRES HERE AND NOT UPSTREAM.
+#     THE **DIFFERENTIAL** ROWS ARE ON SIZED PARAMs, WHERE UPSTREAM ANSWERS.
 #   out_r21=none   `Px%4`: past divandmod.py:15, i.e. behind the wall. Python
 #    ops.py:1013 is load-bearing in a place no code comment mentions.
 
@@ -745,12 +881,20 @@ def trees() -> Gate:
 # TODO(p3) divandmod.py:23-25 `nested_div: (x%(k*c))//c -> (x//c)%k (requires k>0);
 #   `x.src[1].divides(c)`. THE WALL THIS NAMED IS MEASURED FALSE (2026-11-06): `divides` IS
 #   MEASURED CASES -- `(x*4).divides(4)` IS `MUL(x, 1)`, `(x*4+8).divides(4)` IS
-# TODO(p3) divandmod.py:27-35 `remove_nested_mod in sum: (a%4 + b)%2 -> (a+b)%2` --
+# DONE(p3) divandmod.py:27-35 `remove_nested_mod in sum: (a%4 + b)%2 -> (a+b)%2` --
+# DONE(p3) divandmod.py:72-77  symbol=fold_divmod_general  `divide_by_gcd: x//y ->
+#   (x//gcd)//(y//gcd)` -- AND THE **MOD HALF** (`ret*gcd`) IS PORTED WITH IT,
+#   AND THE DIFFERENTIAL GATE'S ROWS ARE `gates/divandmod-cases.rows`'s
+#   `gcdmod_fires` AND `gcddiv_fires`.
 # TODO(p3) divandmod.py:37  symbol=fold_divmod_general  `Shared decomposition for folding rules` and :41-48
 # TODO(p3) divandmod.py:50-55  symbol=fold_divmod_general  `gcd_with_remainder: factor out common gcd from
 # TODO(p3) divandmod.py:57-70 `nest_by_factor: x//c -> (x//f)//(c//f),
 #  Variable Denominator / Fallback Rules  -- divandmod.py:72-96. These rules
-# TODO(p3) divandmod.py:77-81  symbol=fold_divmod_general  `divide_by_gcd: x//y -> (x//gcd)//(y//gcd)` and :83-96
+# TODO(p3) divandmod.py:83-96  symbol=fold_divmod_general  `factor_remainder: (d*x+y)//d ->
+#   x+y//d` -- AND IT NEEDS `const_like` (ops.py:572, A TODO IN `ops.bend`) AND
+#   `new_x.vmin` OVER A SUM, AND THE PORT's `UOp.gcd` COUNTS THE **UNPEELED**
+#   TERMS WHERE UPSTREAM COUNTS THE **PEELED** ONES, SO THE TWO GCDs DIFFER IN
+#   SHAPE ON A TERM THAT IS NOT A CONST.
 # TODO(p3) divandmod.py:11  symbol=fold_divmod_general  the `raise` itself -- Python's
 #   * `_min_max` (ops.py:1104) IS `fold.bend:7306` ("DONE(p3) ops.py:1094 def _min_max"), AND
 #     the header above already said "the `_min_max` wall is measured FALSE (2026-11-06)".

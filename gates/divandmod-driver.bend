@@ -148,10 +148,27 @@ def gp.divconst(+ar: O.Arena, k: U32, c: U32) -> O.Found:
   gp.alu(O.Found.ar(b), O.OpsDIV{}, O.Found.i(a), O.Found.i(b))
 
 
+# AND THE `divide_by_gcd` SHAPE, AND IT IS `(c0 + 2x) % (2x)` -- A NUMERATOR
+# WHOSE CONSTANT TERM MAKES IT **NOT EXACTLY DIVISIBLE**, AND A DIVISOR THAT IS
+# ITSELF A MUL SO THE GCD IS **2** AND NOT 1.
+#
+# AND THE SHAPE IS TWO SLOTS AND NOT FIVE: `k` IS THE MULTIPLIER (2) AND `n` IS
+# THE CONSTANT TERM (0 OR 2).
+def gp.gcd(+ar: O.Arena, k: U32, n: U32, ismod: Bool) -> O.Found:
+  +x = gp.param(ar, "x")
+  +kc = gp.const(O.Found.ar(x), k)
+  +mx = gp.alu(O.Found.ar(kc), O.OpsMUL{}, O.Found.i(x), O.Found.i(kc))
+  +cc = gp.const(O.Found.ar(mx), n)
+  +s = gp.alu(O.Found.ar(cc), O.OpsADD{}, O.Found.i(cc), O.Found.i(mx))
+  gp.modroot(O.Found.ar(s), O.Found.i(s), O.Found.i(mx), ismod)
+
+
 def gp.root(+ar: O.Arena, op: String, k: U32, c: U32, n: Nat, d: U32) -> O.Found:
   match op:
     case "MODCONST": gp.modconst(ar, k, c, n, d)
     case "DIVCONST": gp.divconst(ar, k, c)
+    case "GCDMOD": gp.gcd(ar, k, U32.from_nat(n), True{})
+    case "GCDDIV": gp.gcd(ar, k, U32.from_nat(n), False{})
     case "DIV": gp.mod(ar, k, c, n, d, False{})
     case _: gp.mod(ar, k, c, n, d, True{})
 

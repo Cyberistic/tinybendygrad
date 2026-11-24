@@ -159,6 +159,30 @@ def main() -> int:
             if not ok:
                 bad.append("breaking the `usum` association did not redden the lanes")
 
+        # 5 -- THE MOD HALF's MULTIPLICATION: `ret*gcd` BECOMES `ret`, SO THE
+        # MOD's ANSWER IS THE DIV's ANSWER AND THE LANES DISAGREE.
+        #
+        # AND MEASURED 2026-11-24: THIS IS THE CASE THAT PROVES THE **MOD HALF**
+        # IS **LOAD-BEARING** AND NOT A VARIANT OF THE DIV HALF -- THE TWO
+        # ANSWER SHAPES ARE DIFFERENT AND A GATE THAT ONLY PROVED THE DIV HALF
+        # WOULD PASS WITH THE MULTIPLICATION DELETED.
+        case5 = fresh(Path(td) / "case5")
+        f5 = case5 / "tinybendygrad" / "uop" / "divandmod.bend"
+        text5 = f5.read_text()
+        old5 = """    case True{}: Some{dm_dg_mul(O.Found.ar(ret), ret, g)}
+    case False{}: Some{ret}"""
+        new5 = """    case True{}: Some{ret}
+    case False{}: Some{ret}"""
+        if old5 not in text5:
+            bad.append("the MOD half's multiplication moved")
+            print("  5 mod half         COULD NOT MUTATE")
+        else:
+            f5.write_text(text5.replace(old5, new5, 1))
+            ok = not agrees(case5)
+            print(f"  5 mod half         {'RED' if ok else 'NOT RED'}  the MOD half drops ret*gcd")
+            if not ok:
+                bad.append("dropping the MOD half's multiplication did not redden the lanes")
+
     print(f"--plant: {'OK' if not bad else 'FAILED: ' + '; '.join(bad)}")
     return FAIL if bad else PASS
 
