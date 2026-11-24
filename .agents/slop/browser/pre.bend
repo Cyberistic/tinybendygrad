@@ -8,6 +8,7 @@ import ./../../../tinybendygrad/uop/ops.bend as O
 import ./../../../tinybendygrad/uop/fold.bend as F
 import ./../../../tinybendygrad/schedule/realize.bend as RZ
 import ./../../../tinybendygrad/schedule/rangify.bend as RR
+import ./../../../tinybendygrad/schedule/rangeify.bend as RF
 import ./../../../tinybendygrad/schedule/indexing.bend as IX
 import ./fchainl.bend as CH
 
@@ -56,9 +57,9 @@ def rows.go(+ar: O.Arena, +tb: F.Table, +rm: IX.IxRMap, +ns: List<&2, U32>,
                           ",shape=", ids(RR.rr_p1.shape(ar, tb, v)),
                           ",v0after=", Bool.show(O.eq_op(O.Arena.op(ar, O.Arena.src0(ar, v)), O.OpsAFTER{})),
                           ",v0dims=", ids(IX.rr_dims(ar, tb, O.Arena.src0(ar, v))),
-                          ",v0op=", opn(ar, O.Arena.src0(ar, v)),
+                          ",v0op=", RF.eng_op_name(O.Arena.op(ar, O.Arena.src0(ar, v))),
                           ",v1dims=", ids(IX.rr_dims(ar, tb, O.Arena.src0(ar, O.Arena.src0(ar, v)))),
-                          ",v1op=", opn(ar, O.Arena.src0(ar, O.Arena.src0(ar, v)))])]),
+                          ",v1op=", RF.eng_op_name(O.Arena.op(ar, O.Arena.src0(ar, O.Arena.src0(ar, v))))])]),
         acc))
 
 def r2(p: (O.Arena & RR.RrMap), +sink: U32) -> String:
