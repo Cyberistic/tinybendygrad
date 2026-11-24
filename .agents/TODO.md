@@ -26,6 +26,16 @@ render-perf     [########] 6/9          THE RENDER IS ~25% FASTER OVER THE THREE
                                          **THE **TURN **IS **~2.3-3.4 ms** (⇒⇒† AND **THE **DECODE
                                          **~0.95 ms**, **⇒⇒† AND **THE **RENDER **~1.10 ms**, **⇒⇒†
                                          **AND **THE **PRINT **0.084 ms**).
+                                         **⇒⇒† AND **AND **THE **WGSL's **23.7 s** **IS
+                                         **PROFILED** (PARITY §138.28/§138.30): **THE **FOLD **IS
+                                         **76%** (⇒⇒† AND **THE **TABLE's **LINEAR **SCAN **IS
+                                         **1.2 **BILLION **CELL **VISITS**), **⇒⇒† AND **AND
+                                         **`wgsl.bend`'s **66 **`String.concat`** **CALLS **ARE
+                                         **0.5 ms** (⇒⇒† AND **0.002%**) -- **⇒⇒† AND **AND
+                                         **THE **FOLD's **SCAN **NOW **STOPS **AT **THE
+                                         **MATCH** (6327b495b, **⇒⇒† AND **THE **COUNT **FELL
+                                         **30.5%**, **⇒⇒† AND **AND **THE **WGSL **IS **5%
+                                         **FASTER**).
                                          **⇒⇒† AND **THE **NEXT **TARGETS**, **MEASURED**: **THE
                                          **`List.append` **SPINE **IS **NOT **ONE** (THE CEILING **OF
                                          **REMOVING **THE **COPY **IS **0.9853** -- **⇒⇒† AND **THE
