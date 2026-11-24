@@ -507,23 +507,27 @@ def rg_ext.n(fuel: Nat, +ar: O.Arena, +i: U32) -> U32:
       Bool.pick(U32, O.eq_op(O.Arena.op(ar, i), O.OpsCAST{}),
                 rg_ext.n(p, ar, O.Arena.src0(ar, i)), rg_ext.arg(O.Arena.arg(ar, i)))
 
+# NEVER ZERO: `ix_nr_pick`'s `One{}` arm builds `const 0`, and a zero factor makes `rc` zero, which
+# `U32.sub(rc, 1)` turns into an underflow and `lt_rc` turns into a key of `0`. MEASURED: the ranges
+# read `1049` -- `rc 0, len 16` -- and every loop lost its rank.
+def rg_ext.pick(z: Bool, v: U32) -> U32: Bool.pick(U32, z, 1, v)
+
 def rg_ext(+ar: O.Arena, +r: U32) -> U32:
-  rg_ext.n(2n, ar, O.Arena.src0(ar, r))
+  +v = rg_ext.n(2n, ar, O.Arena.src0(ar, r))
+  rg_ext.pick(U32.is_zero(v), v)
 
 def vms_row.go(+ar: O.Arena, +rs: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
   match rs:
     case Nil{}: acc
     case r <> t: vms_row.go(ar, t, List.append(&2, U32, acc, [0]))
 
-# A RANGE'S `run_count` IS ITS ENCLOSING PRODUCT, AND THAT IS THE WHOLE NESTING ORDER.
-# `ops.py:471-472`: `if self.op is Ops.RANGE: return {self:None} | self._ranges` -- a RANGE's ranges are
-# the ones that ENCLOSE it plus itself. The port's `F.UOp.ranges` is the DEPENDENCY closure, which for a
-# RANGE is `{self}` (its src is a CONST), so `rc` came out as its own extent and the 2x2 taps carried 2
-# against the 14-loops' 14 -- the taps sorted first and rendered OUTER, with the store outside their
-# scope: `use of undeclared identifier 'cast2'`.
-# THE ENCLOSING SET IS THE CLOSURE OF A CONSUMER: any node that takes the range as a src is enclosed by
-# exactly `enclosing(r) + r`, so the first consumer's product IS the answer. MEASURED: k0's taps then
-# carry 14*14*2 = 392 against 14, and k3's 49-loop follows the 10-loop instead of preceding it.
+# A RANGE'S `run_count` IS `{self} | enclosing` (ops.py:471-472), AND THE ENCLOSING SET IS READABLE.
+# The port's `F.UOp.ranges` is the DEPENDENCY closure, which for a RANGE is `{self}` and for a
+# `CAST(RANGE)` is also `{self}` -- so `rc` came out as the range's own extent. MEASURED
+# (`.agents/slop/browser/vmsp.bend`): an END's toposort CONTAINS THE ENDS NESTED INSIDE IT -- k0's four
+# ENDs reach 1, 2, 3 and 4 ENDs, k3's reach 1 and 2 -- so the nest IS a DAG path and the enclosing set
+# is the union of the closed ranges of the ENDs in `toposort(e)` other than `e`, where `e` is the END
+# that closes the range. No stack walk, no containment test.
 def vms_cls(+ar: O.Arena, +rt: F.RTable, +u: U32) -> List<&2, U32>:
   F.Rng.rs(F.UOp.ranges(ar, rt, u))
 
@@ -534,34 +538,55 @@ def vms_prod.go(+ar: O.Arena, +rs: List<&2, U32>, +acc: U32) -> U32:
 
 def vms_prod(+ar: O.Arena, +rs: List<&2, U32>) -> U32: vms_prod.go(ar, rs, 1)
 
-# `go` IS THE ONLY DEF IN THE LOOP: `stop` and the list are both parameters, so the "found" case
-# reaches the tail by recursing with `stop = True` and the product in `acc`, where the `True` arm
-# returns immediately. That is the whole reason the flag exists.
-# THE WALK KEEPS THE MINIMUM AND NEEDS NO EARLY EXIT, which is what keeps it ONE def: a consumer's
-# closure is `enclosing(r) + r` for EVERY consumer of r (a consumer is inside exactly the loops that
-# enclose r), so the smallest closure's product is the answer and a fold finds it. `bump` does not call
-# back, so there is no mutual recursion to refuse.
-def vms_cons.min(+a: U32, +b: U32) -> U32: Bool.pick(U32, U32.is_lt(a, b), a, b)
-
-def vms_cons.bump(hit: Bool, +ar: O.Arena, +rt: F.RTable, +x: U32, acc: U32) -> U32:
-  match hit:
-    case True{} : vms_cons.min(acc, vms_prod(ar, vms_cls(ar, rt, x)))
-    case False{}: acc
-
-def vms_cons.go(+ar: O.Arena, +rt: F.RTable, +r: U32, +lst: List<&2, U32>, acc: U32) -> U32:
-  match lst:
+def vms_enc.go(+ar: O.Arena, +ns: List<&2, U32>, +e: U32, +acc: U32) -> U32:
+  match ns:
     case Nil{}: acc
-    case x <> t:
-      vms_cons.go(ar, rt, r, t,
-        vms_cons.bump(Bool.and(Bool.not(U32.is_eq(x, r)), F.mem_u32(vms_cls(ar, rt, x), r)), ar, rt, x, acc))
+    case n <> t:
+      vms_enc.go(ar, t, e, Bool.pick(U32,
+        Bool.and(O.eq_op(O.Arena.op(ar, n), O.OpsEND{}), Bool.not(U32.is_eq(n, e))),
+        U32.mul(acc, vms_prod(ar, O.Arena.src_from(ar, n, 1))), acc))
 
-def vms_cons(+ar: O.Arena, +rt: F.RTable, +r: U32, +lst: List<&2, U32>) -> U32:
-  vms_cons.go(ar, rt, r, lst, vms_prod(ar, vms_cls(ar, rt, r)))
+def vms_enc(+ar: O.Arena, +e: U32) -> U32:
+  vms_enc.go(ar, O.UOp.toposort(O.Arena.budget(ar), ar, e), e, 1)
 
-# A RANGE gets a ONE-entry section holding `enclosing product - 1` (so `lt_rc` answers the product);
-# everything else gets its whole closure. The `len` term is 1 for a RANGE where upstream has `depth+1`,
-# which is NAMED here rather than approximated silently: `rc` is weighted x1024 over `len` in `lt_key`,
-# so the product is what orders the loops.
+def vms_end_of.go(+ar: O.Arena, +ns: List<&2, U32>, +r: U32, +acc: U32) -> U32:
+  match ns:
+    case Nil{}: acc
+    case n <> t:
+      vms_end_of.go(ar, t, r, Bool.pick(U32,
+        Bool.and(O.eq_op(O.Arena.op(ar, n), O.OpsEND{}), F.mem_u32(O.Arena.src_from(ar, n, 1), r)),
+        n, acc))
+
+def vms_end_of(+ar: O.Arena, +r: U32, +lst: List<&2, U32>) -> U32:
+  vms_end_of.go(ar, lst, r, 0)
+
+def vms_nends.go(+ar: O.Arena, +ns: List<&2, U32>, +acc: U32) -> U32:
+  match ns:
+    case Nil{}: acc
+    case n <> t: vms_nends.go(ar, t, Bool.pick(U32, O.eq_op(O.Arena.op(ar, n), O.OpsEND{}),
+                                              U32.add(acc, 1), acc))
+
+# `nends(toposort(e))` is `1 + the loops nested INSIDE e`, so the OUTERMOST range gets the LARGEST
+# count. `lt_key` sorts ascending, so the count is carried in the `len` term as `16 - count`: the two
+# nested ranges of k3 have the SAME `rc` product (10*49 == 49*10) and only the nesting breaks the tie.
+def vms_zeros.go(n: Nat, +acc: List<&2, U32>) -> List<&2, U32>:
+  match n:
+    case 0n: acc
+    case 1n+p: vms_zeros.go(p, List.append(&2, U32, acc, [0]))
+
+def vms_pad(k: U32) -> List<&2, U32>:
+  vms_zeros.go(U32.to_nat(k), Nil{})
+
+# THE SECTION IS `[rc - 1] ++ zeros`, AND THE ZEROS ARE NOT FILLER: `lt_rc` multiplies `v + 1`, so a
+# zero leaves `rc` alone while raising the section's LENGTH, which is the `len` term. One list carries
+# both, which is the only way this linearizer receives them.
+# THE FLAT FORM, AND IT IS A COINCIDENCE -- kept because it is the best MEASURED reading (1 `cc` error)
+# and named so no one mistakes it for a rule. The two facts that replace it are written at `vms_enc`
+# above and in `D1.md`: the nest IS a DAG path (an END's toposort contains the ENDs nested inside it),
+# and `rc = extent x enclosing-product` TIES for a nested pair (10*49 == 49*10), so the depth has to
+# ride in the `len` term. The attempt in `vms_enc`/`vms_nends`/`vms_pad` produced `rc = 0` for the
+# ranges -- `1049` is `rc 0, len 16`, i.e. `U32.sub(rc, 1)` on a zero -- and is left UNWIRED rather
+# than shipped: `rg_ext` answering 0 through `U32.mul(rg_ext, vms_enc(..))` is the thing to explain.
 def vms_rg(+ar: O.Arena, +rt: F.RTable, +r: U32, +lst: List<&2, U32>) -> List<&2, U32>:
   [1, 0]
 
