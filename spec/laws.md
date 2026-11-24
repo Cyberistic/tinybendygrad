@@ -204,6 +204,66 @@ mutating a helper's own statement named the helper (the claim itself was
 changed, so nothing was tested). The isolated book removes the neighbours, and
 then the law names itself.
 
+## The index family
+
+`tinyspec.tex` gives `Index` a prose column and a shape column:
+
+> Index from left. `()`-shaped `i` removes dim.
+
+and the shape column says **remaining dims**. MEASURED 2026-11-17: the shape
+census named `SpIdx2`, `SpIdx3` and `SpIdx4` **unpinned** — no law named
+them — and the blocker was recorded as the PROOF, not the claim: *"the shape of
+an `Idx2` is the zip of the two index shapes with the base's dims after
+dropping two, and proving that needs the same induction the broadcast law
+needs — the zip's shape and the drop's shape together."*
+
+**AND THE BLOCKER WAS A FOLD THAT IS NOT THERE.** The shape fold is
+
+```
+Sp.shape.index(pre, bt, k) = Some{Shape.of(List.append(index_dims, drop_n(base_dims, k)))}
+```
+
+— a CONCATENATION and a DROP. Neither is a zip, so no induction is needed and
+each arity is one step. Four laws now state it, one per arity:
+
+```
+law index_one_with_an_empty_shape_removes_the_base_dim:
+  for +t: S.Sp
+  for +a: S.Sp
+  for +st: S.Shape
+  for +pt: {shape_of(t) == Some{st} : Maybe<&2, S.Shape>}
+  for +pa: {shape_of(a) == Some{S.Shape.empty()} : Maybe<&2, S.Shape>}
+  {shape_of(S.SpIdx1{t, a}) == Some{S.Shape.of(S.drop_n(S.Shape.to_dims(st), 1n))} : Maybe<&2, S.Shape>}
+```
+
+**AND THE `()`-SHAPED INDEX IS THE SPEC's OWN SENTENCE.** The premise says the
+index's shape is `Some{Shape.empty()}` — the empty shape, which is the spec's
+`()`. So the claim is the spec's: an index whose shape is `()` removes a dim,
+and what remains is the base's remaining dims.
+
+**AND THE PROOF IS A CASCADE OF `%` USES, ONE PER PREMISE.** Each use replaces
+one slot of the fold's `pre` with the HOLE, and the next use's motive carries
+the replacement — so the fit check is the goal. The `%`-use semantics are in
+`.agents/slop/loc/bend-proof-rules.md`.
+
+**AND THE CENSUS's OWN MUTATION HAD TO BE FIXED, AND THE DEFECT WAS REAL.**
+The census breaks a law's subject to see whether the law goes red. For a shape
+arm it replaces a unary passthrough `Sp.shape(x)` with `Some{Shape.empty()}` —
+the same type, a different answer. But `Some{Shape.empty()}`'s type parameter
+is **not inferable at an assignment**, so when the replacement landed in a
+local (`p = Sp.shape(a)` — the `SpIdx1`..`SpIdx4` arms) the copy STOPPED
+TYPECHECKING and the gate went red naming **no law**. The census reported all
+four new laws VACUOUS — not because they could not fail, but because the
+mutation did not typecheck. MEASURED: the `SpStack`, `SpReduce`, `SpAdd` and
+`SpMul` arms were unaffected, because their replacement lands where the type
+is already pinned.
+
+The fix is to pin the local's type in the mutation (`p: Maybe<&2, Shape> =
+Some{Shape.empty()}`), and after it the four laws are **RED** — the gate names
+each of them. The census's own docstring forbade this ("a mutation that made
+the file ill-typed would redden the gate for the wrong reason"); the mutation
+was doing exactly that, and only the new laws exposed it.
+
 ## What we do not gain, and why
 
 **Float arithmetic.** Bend's guide is blunt: `F32` is axiomatic, nothing about
@@ -250,8 +310,9 @@ the shape half alone reported 18 TODOs and the ALU/dtype half 16, and the
 aggregate `PROOF-ALL.bend` existed to import both. MEASURED 2026-11-17: the two
 halves' sixty defs have NO NAME IN COMMON and neither calls a def declared
 later in its own file, so ONE file holds both halves and the aggregate is not
-needed. The proof file is now `LAWS/PROOF.bend` and it holds all ninety-nine
-laws.
+needed. The proof file is now `LAWS/PROOF.bend` and it holds all 107 laws —
+MEASURED 2026-11-24 by `.agents/slop/laws17/laws.py`: `107/ 0/107` in
+`LAWS.bend` and `0/107/107` in `PROOF.bend`.
 
 **THE ORDER OF THE BOOK IS PART OF THE SPEC, AND MEASURED 2026-11-17.** `bend`
 names the FIRST proof that fails, so an instrument that asks "which law goes
@@ -287,6 +348,8 @@ Two places where the port is **narrower than the spec**, and both say so:
 | `tinybendygrad/LAWS.bend` | the laws |
 | `tinybendygrad/LAWS/PROOF.bend` | the proofs: all of them, and the gate |
 | `spec/shape-laws.md` | what pinning the element count bought |
+| `gates/shape-law-census-gate.py` | the law census: can each shape law go red? |
+| `.agents/slop/loc/comp-mutate.py` | the composition laws' isolated mutation test |
 | `.agents/slop/notes/bend2-constraints.md` | the Bend rules that shaped all of it |
 
 `spec/depth.md` used to live here. It described a fuel budget that turned out to

@@ -30333,6 +30333,42 @@ decode-numbers-js    [###] 3/3  **THE DECODE'S 2,814 NUMBERS ARE PARSED IN JS NO
       ONE SHARED LIST OF DEFS BROKE THE OTHER TWO CASES WITH "duplicate
       declaration", AND A DEF MUST BE IMPLEMENTED BEFORE IT IS USED, SO THE
       LIST IS IN ORDER OF DEPENDENCE.
+- [x] **THE LAW SET IS NOW **107 LAWS**, AND THE INDEX FAMILY's SHAPE IS
+      STATED AT ALL FOUR ARITIES.** MEASURED 2026-11-17: the shape census
+      named `SpIdx2`, `SpIdx3` and `SpIdx4` UNPINNED -- NO LAW NAMED THEM --
+      AND THE BLOCKER WAS RECORDED AS THE PROOF AND NOT THE CLAIM: "the shape
+      of an `Idx2` is the zip of the two index shapes with the base's dims
+      after dropping two, and proving that needs the same induction the
+      broadcast law needs -- the zip's shape and the drop's shape together."
+      **AND THE BLOCKER WAS A FOLD THAT IS NOT THERE.** THE FOLD IS
+      `Shape.of(List.append(index_dims, drop_n(base_dims, k)))` -- A
+      CONCATENATION AND A DROP -- AND NEITHER IS A ZIP, SO EACH ARITY IS ONE
+      STEP AND NO INDUCTION IS NEEDED.  THE CLAIM IS THE SPEC's OWN SENTENCE
+      ("Index from left. ()-shaped i removes dim" AND "remaining dims"): THE
+      INDEX's SHAPE IS THE EMPTY SHAPE -- THE SPEC's `()` -- SO THE BASE LOSES
+      ONE DIM PER INDEX AND KEEPS THE REST.  THE PROOF IS A CASCADE OF `%`
+      USES, ONE PER PREMISE, AND EACH MOTIVE CARRIES THE PREVIOUS
+      REPLACEMENT.
+      **AND THE CENSUS's OWN MUTATION HAD TO BE FIXED, AND THE DEFECT WAS
+      REAL.**  THE CENSUS BREAKS A LAW's SUBJECT TO SEE WHETHER THE LAW GOES
+      RED; FOR A SHAPE ARM IT REPLACES A UNARY PASSTHROUGH `Sp.shape(x)` WITH
+      `Some{Shape.empty()}` -- THE SAME TYPE, A DIFFERENT ANSWER.  BUT
+      `Some{Shape.empty()}`'s TYPE PARAMETER IS **NOT INFERABLE AT AN
+      ASSIGNMENT**, SO WHEN THE REPLACEMENT LANDED IN A LOCAL (`p =
+      Sp.shape(a)` -- THE `SpIdx1`..`SpIdx4` ARMS) THE COPY STOPPED
+      TYPECHECKING AND THE GATE WENT RED NAMING **NO LAW**.  THE CENSUS
+      REPORTED ALL FOUR NEW LAWS VACUOUS -- NOT BECAUSE THEY COULD NOT FAIL,
+      BUT BECAUSE THE MUTATION DID NOT TYPECHECK.  **MEASURED:** THE
+      `SpStack`, `SpReduce`, `SpAdd` AND `SpMul` ARMS WERE UNAFFECTED, BECAUSE
+      THEIR REPLACEMENT LANDS WHERE THE TYPE IS ALREADY PINNED.  THE FIX PINS
+      THE LOCAL's TYPE IN THE MUTATION (`p: Maybe<&2, Shape> =
+      Some{Shape.empty()}`), AND AFTER IT THE FOUR LAWS ARE **RED** -- THE GATE
+      NAMES EACH OF THEM.  **AND THE CENSUS's OWN DOCSTRING FORBADE EXACTLY
+      WHAT IT DID** ("a mutation that made the file ill-typed would redden the
+      gate for the wrong reason"); THE MUTATION WAS DOING THAT, AND ONLY THE
+      NEW LAWS EXPOSED IT.
+      THE CENSUS READS `36 shape laws, 53 shape fold arms` AND THE LAW CENSUS
+      READS `0/107/107`; `--plant` IS GREEN.
 - [ ] **THE ALU CENSUS's PLANT IS RED, AND IT IS NOT OURS.** MEASURED
       2026-11-23: `gates/alu-law-census-gate.py --plant` REPORTS "the mutated
       copy did not go red naming neg_is_mul_by_minus_one (rc=1, named=None)",
