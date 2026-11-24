@@ -49,11 +49,11 @@ def rows.go(+ar: O.Arena, +tb: F.Table, +rm: IX.IxRMap, +ns: List<&2, U32>,
         O.eq_op(O.Arena.op(ar, n), O.OpsSTORE{}),
         List.append(&2, String, acc,
           [String.concat([U32.show(n), ":has=", Bool.show(IX.ix_rngm_has(rm, n)),
-                          ",inp=", n2(RR.rr_ap_inp.of(IX.ix_rngm_get(rm, n))),
+                          ",inp=", ids(RR.rr_ap_inp.of(IX.ix_rngm_get(rm, n))),
                           ",shape=", ids(RR.rr_p1.shape(ar, tb, n)),
                           ",dst=", ids(IX.rr_dims(ar, tb, O.Arena.src0(ar, n))),
                           " | val=", U32.show(v), ":has=", Bool.show(IX.ix_rngm_has(rm, v)),
-                          ",inp=", n2(RR.rr_ap_inp.of(IX.ix_rngm_get(rm, v))),
+                          ",inp=", ids(RR.rr_ap_inp.of(IX.ix_rngm_get(rm, v))),
                           ",shape=", ids(RR.rr_p1.shape(ar, tb, v)),
                           ",v0after=", Bool.show(O.eq_op(O.Arena.op(ar, O.Arena.src0(ar, v)), O.OpsAFTER{})),
                           ",v0dims=", ids(IX.rr_dims(ar, tb, O.Arena.src0(ar, v))),
@@ -74,12 +74,38 @@ def aft.go(+ar: O.Arena, +tb: F.Table, +ns: List<&2, U32>, +acc: List<&2, String
                           ":d0=", ids(IX.rr_dims(ar, tb, O.Arena.src0(ar, n)))])]),
         acc))
 
+def rn_i(m: Maybe<&2, IX.IxRngs>) -> String:
+  match m:
+    case Some{e}: ids(IX.IxRngs.inp(e))
+    case _: "none"
+
+def rn_o(m: Maybe<&2, IX.IxRngs>) -> String:
+  match m:
+    case Some{e}: ids(IX.IxRngs.outp(e))
+    case _: "none"
+
+def rsh.go(+ar: O.Arena, +tb: F.Table, +rm: IX.IxRMap, +ns: List<&2, U32>,
+           +acc: List<&2, String>) -> List<&2, String>:
+  match ns:
+    case Nil{}: acc
+    case n <> t:
+      rsh.go(ar, tb, rm, t, Bool.pick(List<&2, String>,
+        O.eq_op(O.Arena.op(ar, n), O.OpsRESHAPE{}),
+        List.append(&2, String, acc,
+          [String.concat([U32.show(n), ":ins=", n2(IX.rr_dims(ar, tb, O.Arena.src0(ar, n))),
+                          ",outs=", n2(IX.rr_dims(ar, tb, n)),
+                          ",inp=", rn_i(IX.ix_rngm_get(rm, n)),
+                          ",out=", rn_o(IX.ix_rngm_get(rm, n))])]),
+        acc))
+
 def r2(p: (O.Arena & RR.RrMap), +sink: U32) -> String:
   (+a, +m) = p
   +tb = F.Folded.t(F.folded(a))
   String.concat([String.join(rows.go(a, tb, IX.IxCtx.rngm(RR.RrMap.ctx(m)),
                        O.UOp.toposort(O.Arena.budget(a), a, sink), Nil{}), " || "),
-                 " AFT: ", String.join(aft.go(a, tb, O.UOp.toposort(O.Arena.budget(a), a, sink), Nil{}), " ")])
+                 " AFT: ", String.join(aft.go(a, tb, O.UOp.toposort(O.Arena.budget(a), a, sink), Nil{}), " "),
+                 " RSH: ", String.join(rsh.go(a, tb, IX.IxCtx.rngm(RR.RrMap.ctx(m)),
+                                             O.UOp.toposort(O.Arena.budget(a), a, sink), Nil{}), " ")])
 
 def pre() -> String:
   +q = RZ.rz_rebuild(CH.fchain_prog(), False{}, False{})
