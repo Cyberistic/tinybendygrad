@@ -41,6 +41,18 @@ def nograd.go(+g: G.Grads, +ar: O.Arena, +wk: List<&2, U32>, +acc: List<&2, Stri
 def nograd(+g: G.Grads, +ar: O.Arena, +wk: List<&2, U32>, +acc: List<&2, String>) -> String:
   nograd.go(g, ar, wk, acc, 0)
 
+# the grad TABLE's keys, as op names -- so "the weight is missing from the walk" and "the weight's
+# grad was dropped at the store" are two different rows and not one guess.
+def kops(+ar: O.Arena, +ks: List<&2, U32>, +acc: List<&2, String>) -> String:
+  match ks:
+    case Nil{}: String.join(acc, ",")
+    case k <> t: kops(ar, t, List.append(&2, String, acc, [String.concat([U32.show(k), RF.eng_op_name(O.Arena.op(ar, k))])]))
+
+def wops(+ar: O.Arena, +wk: List<&2, U32>, +acc: List<&2, String>) -> String:
+  match wk:
+    case Nil{}: String.join(acc, " ")
+    case n <> t: wops(ar, t, List.append(&2, String, acc, [RF.eng_op_name(O.Arena.op(ar, n))]))
+
 def rows() -> String:
   # THE FORWARD, with no stores: a training GRAPH is value flow, and the chain's shape is the
   # only thing this row is about. `tn_rop` answers a `Found`, so each stage is re-wrapped by
@@ -75,7 +87,11 @@ def rows() -> String:
   +wk = G.Deep.walk_of(dw)
   +seed = O.UOp.const(T.Tensor.ar(lt), O.CInt{H.i64_of_i32(1)})
   +cs = G.compute_gradient(root, O.Found.i(seed), tg, T.Tensor.ar(lt))
-  String.concat(["tstep.gw1=", Bool.show(gslot_at(G.gslot(G.CState.g_of(cs), T.Tensor.u(w1)))),
+  String.concat(["tstep.tbl=", kops(T.Tensor.ar(lt), G.Grads.ks_of(G.CState.g_of(cs)), Nil{}),
+                 " walkops=", wops(T.Tensor.ar(lt), wk, Nil{}),
+                 " kw1=", U32.show(T.Tensor.u(w1)),
+                 " kw2=", U32.show(T.Tensor.u(w2)),
+                 " gw1=", Bool.show(gslot_at(G.gslot(G.CState.g_of(cs), T.Tensor.u(w1)))),
                  " gw2=", Bool.show(gslot_at(G.gslot(G.CState.g_of(cs), T.Tensor.u(w2)))),
                  " nograd=", nograd(G.CState.g_of(cs), T.Tensor.ar(lt), wk, Nil{}),
                  " walk=", U32.show(U32.from_nat(List.length(&2, U32, wk))),
