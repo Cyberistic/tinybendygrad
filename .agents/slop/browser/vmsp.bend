@@ -81,8 +81,21 @@ def ku_row(+i: U32) -> String:
   +kk = CH.one2.go(SCH.lin_kernels(lin), ar, 0, i, 0)
   ku2(DEV.body_kus(ar, kk))
 
+def all.go(+ks: List<&2, LIN.LtKey>, +acc: List<&2, String>) -> List<&2, String>:
+  match ks:
+    case Nil{}: acc
+    case k <> t: all.go(t, List.append(&2, String, acc,
+      [String.concat([U32.show(LIN.LtKey.i(k)), "=", U32.show(LIN.LtKey.k(k))])]))
+
+def srt(+i: U32) -> String:
+  +l = kg3(i)
+  +a = O.Found.ar(l)
+  +lst = O.UOp.toposort(O.Arena.budget(a), a, O.Found.i(l))
+  String.join(all.go(LIN.lt_sorted(LIN.lt_keys(a, lst, DEV.vms(a, lst))), Nil{}), " ")
+
 def main() -> IO(Unit):
   do IO<Unit>:
     _ : Unit <- IO.print(String.concat(["e3=", rows(3)]))
     _ : Unit <- IO.print(String.concat(["tb3=", tbs(3)]))
-    IO.print(String.concat(["ku3=", ku_row(3)]))
+    _ : Unit <- IO.print(String.concat(["ku3=", ku_row(3)]))
+    IO.print(String.concat(["srt3=", srt(3)]))
