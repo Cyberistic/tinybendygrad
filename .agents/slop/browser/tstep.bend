@@ -16,6 +16,7 @@ import ./../../../tinybendygrad/tensor.bend as T
 import ./../../../tinybendygrad/mixin/movement.bend as MX
 import ./../../../tinybendygrad/LAWS/spec.bend as S
 import ./../../../tinybendygrad/helpers.bend as H
+import ./../../../tinybendygrad/base.bend as FB
 import ./../../../tinybendygrad/mixin/gradient.bend as G
 import ./../../../tinybendygrad/schedule/rangeify.bend as RF
 import ./../../../tinybendygrad/schedule/realize.bend as RZ
@@ -90,6 +91,31 @@ def wid.go(+g: G.Grads, +ar: O.Arena, +wk: List<&2, U32>, +acc: List<&2, String>
                         Bool.pick(String, gslot_at(G.gslot(g, n)), "+", "-"),
                         "<", sids(ar, O.Arena.srcs(ar, n), Nil{}), ">"])]))
 
+# the VALUE of a grad slot, or the arena bottom when the rules answered nothing -- so a `0` here is
+# the same ZERO `tn_bwd_grad` prints and not a crash.
+def gv.of(m: Maybe<&2, G.GSlot>) -> U32:
+  match m:
+    case Some{s}: G.GSlot.v_of(s)
+    case _: 0
+
+def gv(+g: G.Grads, +k: U32) -> U32: gv.of(G.gslot(g, k))
+
+# `w_new = w - lr * g`, built as the graph the scheduler will see: the grad's UOp, a float lr const,
+# a MUL and a SUB. `0.1f` is the lr; 0x3dcccccd.
+def sgd1.mk(+ga: O.Arena, +w: U32, +g: U32, +lr: O.Found) -> String:
+  +gt = T.tn_new(ga, g)
+  +lrt = T.tn_new(T.Tensor.ar(gt), O.Found.i(lr))
+  +sc = T.tn_mul(gt, lrt)
+  +wn = T.tn_sub(T.tn_new(T.Tensor.ar(sc), w), sc)
+  String.concat([RF.eng_op_name(O.Arena.op(T.Tensor.ar(wn), T.Tensor.u(wn))), "/",
+                 U32.show(U32.from_nat(List.length(&2, U32, O.Arena.srcs(T.Tensor.ar(wn), T.Tensor.u(wn)))))])
+
+def sgd1(+cs: G.CState, +w: U32, +ar: O.Arena) -> String:
+  +g = gv(G.CState.g_of(cs), w)
+  +ga = G.CState.ar_of(cs)
+  Bool.pick(String, U32.is_zero(g), "NOGRAD",
+    sgd1.mk(ga, w, g, O.UOp.const(ga, O.CFloat{FB.F32.from_bits(1036831949)})))
+
 def rows() -> String:
   # ONE MONOTONE ARENA, AND THAT IS THE WHOLE FIX (orchestrator's diagnosis, and it is right).
   # `mxw_reshape.go(t, ..)` grows `T.Tensor.ar(t)` -- the arena t CARRIES -- so an operand built from
@@ -132,7 +158,9 @@ def rows() -> String:
   +root = T.Tensor.u(lt)
   # THE SEED'S ARENA, not the loss tensor's: `compute_gradient` must be handed the arena the WALK and
   # the table live in, and the seed is the last thing minted on this chain.
-  +seed = O.UOp.const(T.Tensor.ar(lt), O.CInt{H.i64_of_i32(1)})
+  # `gradient=None -> self.const_like(1.0)` (mixin/op.py:468): the SEED IS A FLOAT CONST, and a CInt
+  # seed in a float32 graph is a dtype the reduce never asked for. 0x3f800000 is 1.0f.
+  +seed = O.UOp.const(T.Tensor.ar(lt), O.CFloat{FB.F32.from_bits(1065353216)})
   +cs = G.compute_gradient(root, O.Found.i(seed), tg, O.Found.ar(seed))
   +ga = G.CState.ar_of(cs)
   String.concat(["tstep.gw1=", Bool.show(gslot_at(G.gslot(G.CState.g_of(cs), T.Tensor.u(w1)))),
@@ -140,6 +168,7 @@ def rows() -> String:
                  " kw1=", U32.show(T.Tensor.u(w1)), " kw2=", U32.show(T.Tensor.u(w2)),
                  " skip=", U32.show(G.CState.skip_of(cs)), " hole=", U32.show(G.CState.hole_of(cs)),
                  " tbl_n=", U32.show(U32.from_nat(List.length(&2, U32, G.Grads.ks_of(G.CState.g_of(cs))))),
+                 " w1new=", sgd1(cs, T.Tensor.u(w1), T.Tensor.ar(lt)),
                  " grads=", T.tn_bwd_grad.of(T.tn_backward(O.Found.ar(seed), T.Tensor.u(lt), T.Tensors.of_list(tg), O.Found.i(seed)))])
 
 def main() -> IO(Unit):
