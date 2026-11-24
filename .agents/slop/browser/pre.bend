@@ -98,12 +98,22 @@ def rsh.go(+ar: O.Arena, +tb: F.Table, +rm: IX.IxRMap, +ns: List<&2, U32>,
                           ",out=", rn_o(IX.ix_rngm_get(rm, n))])]),
         acc))
 
+def cons.go(+ar: O.Arena, +ns: List<&2, U32>, +u: U32, +acc: List<&2, String>) -> List<&2, String>:
+  match ns:
+    case Nil{}: acc
+    case n <> t:
+      cons.go(ar, t, u, Bool.pick(List<&2, String>,
+        F.mem_u32(O.Arena.srcs(ar, n), u),
+        List.append(&2, String, acc, [String.concat([U32.show(n), "[", U32.show(U32.from_nat(List.length(&2, U32, O.Arena.srcs(ar, n)))), "]"])]),
+        acc))
+
 def r2(p: (O.Arena & RR.RrMap), +sink: U32) -> String:
   (+a, +m) = p
   +tb = F.Folded.t(F.folded(a))
   String.concat([String.join(rows.go(a, tb, IX.IxCtx.rngm(RR.RrMap.ctx(m)),
                        O.UOp.toposort(O.Arena.budget(a), a, sink), Nil{}), " || "),
                  " AFT: ", String.join(aft.go(a, tb, O.UOp.toposort(O.Arena.budget(a), a, sink), Nil{}), " "),
+                 " CONS84: ", String.join(cons.go(a, O.UOp.toposort(O.Arena.budget(a), a, sink), U32.from_nat(84n), Nil{}), " "),
                  " RSH: ", String.join(rsh.go(a, tb, IX.IxCtx.rngm(RR.RrMap.ctx(m)),
                                              O.UOp.toposort(O.Arena.budget(a), a, sink), Nil{}), " ")])
 
