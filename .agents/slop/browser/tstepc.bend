@@ -18,6 +18,7 @@ import ./../../../tinybendygrad/schedule/realize.bend as RZ
 import ./../../../tinybendygrad/schedule/rangify.bend as RR
 import ./../../../tinybendygrad/schedule/__init__.bend as SCH
 import ./../../../tinybendygrad/schedule/rangeify.bend as RF
+import ./../../../tinybendygrad/schedule/indexing.bend as IX
 import ./../../../tinybendygrad/runtime/device.bend as DEV
 import ./../../../tinybendygrad/renderer/cstyle.bend as C
 import ./../../../tinybendygrad/base.bend as FB
@@ -38,7 +39,32 @@ def sgd.mk(+ar: O.Arena, +w: U32, +g: U32) -> T.Tensor:
   +sc = T.tn_mul(gt, lrt)
   T.tn_sub(T.tn_new(T.Tensor.ar(sc), w), sc)
 
-def tprog() -> RZ.RZProg:
+type TP is Data:
+  TP{prog: RZ.RZProg, out: U32, lt: U32, g1: U32, g2: U32, w1n: U32, w2n: U32}
+
+def TP.prog(x: TP) -> RZ.RZProg:
+  match x:
+    case TP{prog, out, lt, g1, g2, w1n, w2n}: prog
+def TP.out(x: TP) -> U32:
+  match x:
+    case TP{prog, out, lt, g1, g2, w1n, w2n}: out
+def TP.lt(x: TP) -> U32:
+  match x:
+    case TP{prog, out, lt, g1, g2, w1n, w2n}: lt
+def TP.g1(x: TP) -> U32:
+  match x:
+    case TP{prog, out, lt, g1, g2, w1n, w2n}: g1
+def TP.g2(x: TP) -> U32:
+  match x:
+    case TP{prog, out, lt, g1, g2, w1n, w2n}: g2
+def TP.w1n(x: TP) -> U32:
+  match x:
+    case TP{prog, out, lt, g1, g2, w1n, w2n}: w1n
+def TP.w2n(x: TP) -> U32:
+  match x:
+    case TP{prog, out, lt, g1, g2, w1n, w2n}: w2n
+
+def tprog() -> TP:
   # --- the four inputs, one chain -----------------------------------------------------------------
   +x0 = RZ.rz_input(O.Arena.empty(), 1, 784, [1, 1, 28, 28])
   +w1_0 = RZ.rz_input(T.Tensor.ar(x0), 2, 4, [1, 1, 2, 2])
@@ -93,10 +119,20 @@ def tprog() -> RZ.RZProg:
   +an2 = RZ.rz_after(dn2, T.tn_new(T.Tensor.ar(dn2), T.Tensor.u(w2n)))
   +snk = O.UOp.sink(O.Found.ar(an2),
     [O.Found.i(ao), O.Found.i(als), O.Found.i(ag1), O.Found.i(ag2), O.Found.i(an1), O.Found.i(an2)])
-  RZ.RZProg{O.Found.ar(snk), O.Found.i(snk)}
+  TP{RZ.RZProg{O.Found.ar(snk), O.Found.i(snk)},
+     T.Tensor.u(out), T.Tensor.u(lt), g1, g2, T.Tensor.u(w1n), T.Tensor.u(w2n)}
+
+def dims.go(+xs: List<&2, U32>, +acc: List<&2, String>) -> List<&2, String>:
+  match xs:
+    case Nil{}: acc
+    case x <> t: dims.go(t, List.append(&2, String, acc, [U32.show(x)]))
+
+def sh(+ar: O.Arena, +u: U32) -> String:
+  +ds = IX.rr_dims(ar, F.Folded.t(F.folded(ar)), u)
+  String.concat([":", U32.show(U32.from_nat(List.length(&2, U32, ds))), ":", String.join(dims.go(ds, Nil{}), "x")])
 
 def kg() -> O.Found:
-  +q = RZ.rz_rebuild(tprog(), False{}, False{})
+  +q = RZ.rz_rebuild(TP.prog(tprog()), False{}, False{})
   RR.rr_kernel_graph(RZ.RZProg.ar(q), RZ.RZProg.sink(q))
 
 def mk_emit(p: (O.Arena & List<&2, C.KU>), +i: U32, +acc: List<&2, String>) -> (O.Arena & List<&2, String>):
@@ -139,11 +175,27 @@ def lk1(+ar: O.Arena, +ks: List<&2, U32>, +acc: List<&2, String>) -> String:
                         RF.eng_op_name(O.Arena.op(ar, SCH.sc_src0(ar, k)))])]))
 
 def diag() -> String:
+  # (1) the STOREs BEFORE the kernel split, and (2) the SHAPES of the six stored values. A store whose
+  # value has no shape is a store `rz_rebuild`/`rr_kernel_graph` drops, and the difference between these
+  # two counts is where.
+  +tp = tprog()
+  +cha = RZ.RZProg.ar(TP.prog(tp))
+  +q = RZ.rz_rebuild(TP.prog(tp), False{}, False{})
+  +qa = RZ.RZProg.ar(q)
+  +qs = RZ.RZProg.sink(q)
+  +ns0 = O.UOp.toposort(O.Arena.budget(qa), qa, qs)
   +k = kg()
   +ka = O.Found.ar(k)
   +ns = O.UOp.toposort(O.Arena.budget(ka), ka, O.Found.i(k))
   +lin = SCH.schedule(ka, O.Found.i(k))
-  String.concat(["tsc.kg_n=", U32.show(U32.from_nat(List.length(&2, U32, ns))),
+  String.concat(["tsc.reb_store=", U32.show(cnt(qa, ns0, O.OpsSTORE{})),
+                 " sh_out=", sh(cha, TP.out(tp)),
+                 " sh_lt=", sh(cha, TP.lt(tp)),
+                 " sh_g1=", sh(cha, TP.g1(tp)),
+                 " sh_g2=", sh(cha, TP.g2(tp)),
+                 " sh_w1n=", sh(cha, TP.w1n(tp)),
+                 " sh_w2n=", sh(cha, TP.w2n(tp)),
+                 " tsc.kg_n=", U32.show(U32.from_nat(List.length(&2, U32, ns))),
                  " sink_nsrc=", U32.show(O.Arena.nsrc(ka, O.Found.i(k))),
                  " kg_store=", U32.show(cnt(ka, ns, O.OpsSTORE{})),
                  " kg_index=", U32.show(cnt(ka, ns, O.OpsINDEX{})),
