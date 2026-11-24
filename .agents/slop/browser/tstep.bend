@@ -53,6 +53,27 @@ def wops(+ar: O.Arena, +wk: List<&2, U32>, +acc: List<&2, String>) -> String:
     case Nil{}: String.join(acc, " ")
     case n <> t: wops(ar, t, List.append(&2, String, acc, [RF.eng_op_name(O.Arena.op(ar, n))]))
 
+# DOES ANY NODE IN THE WALK NAME `k` AS A SRC?  A consumer that is IN the walk and FIRED puts `k`'s
+# key; a consumer that is absent means nothing ever could.
+def names(+ar: O.Arena, +ss: List<&2, U32>, +k: U32) -> Bool:
+  match ss:
+    case Nil{}: False{}
+    case h <> t: Bool.or(U32.is_eq(h, k), names(ar, t, k))
+
+def users.go(+ar: O.Arena, +wk: List<&2, U32>, +k: U32, +i: U32, +acc: List<&2, String>) -> String:
+  match wk:
+    case Nil{}: String.join(acc, ",")
+    case n <> t:
+      users.go(ar, t, k, U32.add(i, 1),
+        Bool.pick(List<&2, String>, names(ar, O.Arena.srcs(ar, n), k),
+          List.append(&2, String, acc, [String.concat([U32.show(n), String.take(RF.eng_op_name(O.Arena.op(ar, n)), 3n), "@", U32.show(i)])]),
+          acc))
+
+def one(+ar: O.Arena, +wk: List<&2, U32>, +k: U32) -> String:
+  String.concat([U32.show(k), String.take(RF.eng_op_name(O.Arena.op(ar, k)), 4n),
+                 "/src0=", U32.show(O.Arena.src0(ar, k)), String.take(RF.eng_op_name(O.Arena.op(ar, O.Arena.src0(ar, k))), 3n),
+                 "/users=", users.go(ar, wk, k, 0, Nil{})])
+
 def rows() -> String:
   # THE FORWARD, with no stores: a training GRAPH is value flow, and the chain's shape is the
   # only thing this row is about. `tn_rop` answers a `Found`, so each stage is re-wrapped by
@@ -87,13 +108,21 @@ def rows() -> String:
   +wk = G.Deep.walk_of(dw)
   +seed = O.UOp.const(T.Tensor.ar(lt), O.CInt{H.i64_of_i32(1)})
   +cs = G.compute_gradient(root, O.Found.i(seed), tg, T.Tensor.ar(lt))
-  String.concat(["tstep.tbl=", kops(T.Tensor.ar(lt), G.Grads.ks_of(G.CState.g_of(cs)), Nil{}),
-                 " walkops=", wops(T.Tensor.ar(lt), wk, Nil{}),
+  String.concat(["tstep.tbl=", kops(G.CState.ar_of(cs), G.Grads.ks_of(G.CState.g_of(cs)), Nil{}),
+                 " walkops=", wops(G.CState.ar_of(cs), wk, Nil{}),
                  " kw1=", U32.show(T.Tensor.u(w1)),
                  " kw2=", U32.show(T.Tensor.u(w2)),
+                 " has10=", Bool.show(gslot_at(G.gslot(G.CState.g_of(cs), 10))),
+                 " has11=", Bool.show(gslot_at(G.gslot(G.CState.g_of(cs), 11))),
+                 " has12=", Bool.show(gslot_at(G.gslot(G.CState.g_of(cs), 12))),
+                 " has35=", Bool.show(gslot_at(G.gslot(G.CState.g_of(cs), 35))),
+                 " has36=", Bool.show(gslot_at(G.gslot(G.CState.g_of(cs), 36))),
+                 " own_ar_w1=", U32.show(O.Arena.next(T.Tensor.ar(w1))), "/", RF.eng_op_name(O.Arena.op(T.Tensor.ar(w1), T.Tensor.u(w1))),
+                 " grown_ar=", U32.show(O.Arena.next(G.CState.ar_of(cs))), "/", RF.eng_op_name(O.Arena.op(G.CState.ar_of(cs), T.Tensor.u(w1))),
+                 " n11=(", one(G.CState.ar_of(cs), wk, T.Tensor.u(w1)), ") n36=(", one(G.CState.ar_of(cs), wk, T.Tensor.u(w2)), ")",
                  " gw1=", Bool.show(gslot_at(G.gslot(G.CState.g_of(cs), T.Tensor.u(w1)))),
                  " gw2=", Bool.show(gslot_at(G.gslot(G.CState.g_of(cs), T.Tensor.u(w2)))),
-                 " nograd=", nograd(G.CState.g_of(cs), T.Tensor.ar(lt), wk, Nil{}),
+                 " nograd=", nograd(G.CState.g_of(cs), G.CState.ar_of(cs), wk, Nil{}),
                  " walk=", U32.show(U32.from_nat(List.length(&2, U32, wk))),
                  " skip=", U32.show(G.CState.skip_of(cs)),
                  " hole=", U32.show(G.CState.hole_of(cs)),
