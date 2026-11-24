@@ -1,0 +1,56 @@
+tsc_diag=tsc.reb_store=6 sh_out=:2:1x10 sh_lt=:1:1 sh_g1=:0: sh_g2=:2:49x10 sh_w1n=:0: sh_w2n=:2:49x10 g1=RESHAPE[MUL/6,STACK/1] reb_slots=?,?,?,?,?,? kg_slots=0,4,0,7,0,9 tsc.kg_n=184 sink_nsrc=6 kg_store=6 kg_index=15 kg_red=4 nk=5 lk=STORE>INDEX CALL>SINK STORE>INDEX CALL>SINK STORE>INDEX
+tstep_c=--k0
+
+void test(float* restrict data0_10) {
+  for (int Lidx79 = 0; Lidx79 < 10; Lidx79++) {
+}
+--k1
+
+void test(float* restrict data0_4, float* restrict data1_784) {
+  for (int Lidx2 = 0; Lidx2 < 2; Lidx2++) {
+    for (int Lidx3 = 0; Lidx3 < 14; Lidx3++) {
+      for (int Lidx4 = 0; Lidx4 < 2; Lidx4++) {
+        for (int Lidx5 = 0; Lidx5 < 14; Lidx5++) {
+          float val0 = (*(data1_784+((((int)(Lidx2))+(((int)(Lidx3))<<1)+(28*((int)(Lidx4)))+(56*((int)(Lidx5)))+(784*0)+(784*0))%784)));
+          for (int Lidx0 = 0; Lidx0 < 2; Lidx0++) {
+            for (int Lidx1 = 0; Lidx1 < 2; Lidx1++) {
+              *(data0_4+((((int)(Lidx0))+(((int)(Lidx1))<<1)+(4*0)+(4*0))%4)) = (val0*784.0f);
+            }
+          }
+        }
+      }
+    }
+  }
+}
+--k2
+
+void test(float* restrict data7_490) {
+  for (int Lidx35 = 0; Lidx35 < 10; Lidx35++) {
+    for (int Lidx34 = 0; Lidx34 < 49; Lidx34++) {
+}
+--k3
+
+void test(float* restrict data0_4, float* restrict data1_4, float* restrict data2_784) {
+  for (int Lidx0 = 0; Lidx0 < 2; Lidx0++) {
+    for (int Lidx1 = 0; Lidx1 < 2; Lidx1++) {
+      int alu0 = ((((int)(Lidx0))+(((int)(Lidx1))<<1)+(4*0)+(4*0))%4);
+      float val0 = (*(data1_4+alu0));
+      for (int Lidx2 = 0; Lidx2 < 2; Lidx2++) {
+        for (int Lidx3 = 0; Lidx3 < 14; Lidx3++) {
+          for (int Lidx4 = 0; Lidx4 < 2; Lidx4++) {
+            for (int Lidx5 = 0; Lidx5 < 14; Lidx5++) {
+              float val1 = (*(data2_784+((((int)(Lidx2))+(((int)(Lidx3))<<1)+(28*((int)(Lidx4)))+(56*((int)(Lidx5)))+(784*0)+(784*0))%784)));
+              *(data0_4+alu0) = (val0+(val1*784.0f*0.100000f*-1.0f));
+            }
+          }
+        }
+      }
+    }
+  }
+}
+--k4
+
+void test(float* restrict data9_490) {
+  for (int Lidx1 = 0; Lidx1 < 10; Lidx1++) {
+    for (int Lidx0 = 0; Lidx0 < 49; Lidx0++) {
+}
