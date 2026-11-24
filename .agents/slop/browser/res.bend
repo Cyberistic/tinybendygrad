@@ -35,6 +35,11 @@ def kinds.go(+tbl: List<&2, IX.IxRange>, +rs: List<&2, U32>, +acc: List<&2, Stri
 def kinds(+tbl: List<&2, IX.IxRange>, +rs: List<&2, U32>) -> String:
   String.join(kinds.go(tbl, rs, Nil{}), ",")
 
+def outk(+tbl: List<&2, IX.IxRange>, m: Maybe<&2, IX.IxRngs>) -> String:
+  match m:
+    case Some{e}: kinds(tbl, IX.IxRngs.outp(e))
+    case _: "-"
+
 def row.go(+ar: O.Arena, +tb: F.Table, +rm: IX.IxRMap, +m2: RR.RrMap, +ns: List<&2, U32>,
            +acc: List<&2, String>) -> List<&2, String>:
   match ns:
@@ -49,7 +54,9 @@ def row.go(+ar: O.Arena, +tb: F.Table, +rm: IX.IxRMap, +m2: RR.RrMap, +ns: List<
                           " vdims=", ids(IX.rr_dims(ar, tb, v)),
                           " sdims=", ids(IX.rr_dims(ar, tb, O.Arena.src0(ar, v))),
                           " bcast=", ids(RR.rr_ap_bcast(ar, tb, RR.RrMap.ctx(m2), v, O.Arena.src0(ar, v))),
-                          " kinds=", kinds(RR.RrMap.tbl(m2), RR.rr_ap_bcast(ar, tb, RR.RrMap.ctx(m2), v, O.Arena.src0(ar, v)))])]),
+                          " kinds=", kinds(RR.RrMap.tbl(m2), RR.rr_ap_bcast(ar, tb, RR.RrMap.ctx(m2), v, O.Arena.src0(ar, v))),
+                          " outk=", outk(RR.RrMap.tbl(m2), IX.ix_rngm_get(IX.IxCtx.rngm(RR.RrMap.ctx(m2)), v)),
+                          " tbln=", U32.show(U32.from_nat(List.length(&2, IX.IxRange, RR.RrMap.tbl(m2))))])]),
         acc))
 
 def rr2(p: (O.Arena & RR.RrMap), +sink: U32) -> String:
