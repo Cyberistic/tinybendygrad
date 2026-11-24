@@ -25,11 +25,12 @@ void k0(float* restrict data0_196, float* restrict data1_784, float* restrict da
 }
 
 void k1(float* restrict data0_196, float* restrict data1_196) {
-  for (int Lidx1 = 0; Lidx1 < 14; Lidx1++) {
-    for (int Lidx0 = 0; Lidx0 < 14; Lidx0++) {
-      float val0 = (*(data1_196+0));
-      float alu0 = ((0.0f<val0)?val0:0.0f);
-      *(data0_196+((((int)(Lidx0))+(14*((int)(Lidx1)))+(196*0)+(196*0))%196)) = alu0;
+  for (int Lidx0 = 0; Lidx0 < 14; Lidx0++) {
+    for (int Lidx1 = 0; Lidx1 < 14; Lidx1++) {
+      int alu0 = ((((int)(Lidx0))+(14*((int)(Lidx1)))+(196*0)+(196*0))%196);
+      float val0 = (*(data1_196+alu0));
+      float alu1 = ((0.0f<val0)?val0:0.0f);
+      *(data0_196+alu0) = alu1;
     }
   }
 }
