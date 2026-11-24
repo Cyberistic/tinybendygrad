@@ -1,0 +1,62 @@
+# divandmod-cases.rows -- THE GRAPHS FOR `fold_divmod_general`'s `remove_nested_mod`
+# ARM, ONE PER LINE, AND THE PORT AND THE ORACLE BOTH READ THIS FILE.
+#
+# ONE FILE, TWO READERS: the port's driver (`gates/divandmod-driver.bend`) reads
+# it and prints one answer per case, and the oracle
+# (`gates/divandmod-oracle.py`) READS THIS SAME FILE and builds the same graphs
+# in CPython.  **So the port and the oracle cannot be measuring two different
+# graphs**, which is the defect a hand-written pair of fixtures has by
+# construction.
+#
+# AND THE CASE IS A **FIXED SHAPE** AND NOT AN S-EXPRESSION, AND THE REASON IS
+# MEASURED.  MEASURED 2026-11-24: THE FIRST DRAFT READ A S-EXPRESSION AND THE
+# PORT's PARSER NEEDED A FRAME STACK, BECAUSE `parse` AND `close` NEED EACH
+# OTHER AND **BEND REFUSES MUTUAL RECURSION** -- THE SAME WALL
+# `tinybendygrad/uop/divandmod.bend`'s HEADER NAMES FOR `nest_by_factor`.  AND
+# THE FIX IS NOT A PARSER: IT IS A CASE SHAPE THAT NEEDS NO PARSER.  THE ARM
+# UNDER TEST HAS **ONE** SHAPE -- `(a%k + b)%c` -- AND THE FIXTURE IS THAT
+# SHAPE WITH ITS SLOTS NAMED.
+#
+# THE SIX FIELDS, AND EVERY ROW HAS EXACTLY SIX:
+#
+#   `name`  THE ROW's NAME.
+#   `op`    `MOD` OR `DIV` FOR THE ROOT.
+#   `k`     THE INNER MOD's DIVISOR.  A POSITIVE CONST.
+#   `c`     THE OUTER MOD's DIVISOR.  A POSITIVE CONST, AND THE ARM ONLY FIRES
+#          WHEN `c` **DIVIDES** `k` -- MEASURED, IT IS `divides(c)` ON THE
+#          INNER DIVISOR.
+#   `n`     HOW MANY TERMS THE SUM HAS BESIDE THE INNER MOD.  `0` IS THE SUM
+#          `x%k` ALONE, `1` IS `x%k + y`, AND `2` IS `x%k + y + z`.
+#   `d`     THE ROOT's DIVISOR.
+#
+# AND EVERY PARAM IS SIZED, AND IT IS NOT COSMETIC: MEASURED 2026-11-24, A
+# PARAM WITH AN EMPTY `as_shape` MAKES `_shape` RAISE `IndexError` (ops.py:351
+# ASSERTS `len(self.src[0].as_shape) <= 1`), AND UPSTREAM's ARM THEN RAISES
+# INSTEAD OF ANSWERING.  SO EVERY PARAM HERE IS SIZED AND BOTH READERS SIZE IT
+# THE SAME WAY.
+#
+# AND EVERY CASE NAMES THE UPSTREAM ARM THAT ANSWERS IT, AND THE NAME IS
+# MEASURED BY INSTRUMENTING UPSTREAM's OWN AST -- EVERY `return` IN
+# `fold_divmod_general` IS A NODE, AND THE ARM IS THE ONE WHOSE COMMENT IS THE
+# NEAREST COMMENT ABOVE IT.  AND A CASE THAT REACHES AN ARM THE PORT DOES NOT
+# HAVE IS **NOT** IN THIS FILE: THE PORT CANNOT AGREE WITH AN ARM IT DOES NOT
+# HAVE, AND A CASE THAT COMPARES A PORT ANSWER AGAINST AN UPSTREAM CRASH IS NOT
+# A DIFFERENTIAL ROW.
+#
+# AND THE CONST/CONST ARM (`divandmod.py:12-13`) IS **NOT** HERE, AND THE
+# REASON IS MEASURED: UPSTREAM's `canonicalize` REWRITES `SUB` INTO
+# `ADD(x, MUL(MUL(q,y),C(-1)))` (THE HEADER's DIVERGENCE B), SO THE TWO TREES
+# DIFFER WHILE THE VALUES ARE EQUAL -- AND A ROW THAT COMPARES TREES ON THAT
+# ARM IS A ROW THAT CAN NEVER PASS.  **THE EXISTING GATE ALREADY COVERS THAT
+# ARM BY VALUE** (`gates/divandmod-gate.bend`'s `dmc.den` READS THE FOLDED
+# TREE'S VALUE), SO THE DIFFERENTIAL IS ABOUT THE **NEW** ARM AND NOT ABOUT A
+# ROW THAT EXISTS ALREADY.
+
+# --- `remove_nested_mod` (divandmod.py:27-35).  `(a%k + b)%c -> (a+b)%c`.
+# `k=4 c=2`: 2 DIVIDES 4, SO THE ARM FIRES.
+rmn_fires|MOD|4|2|1|2
+# `k=8 c=2`: 2 DIVIDES 8, SO THE ARM FIRES, AND THE SECOND TERM IS ALSO A
+# NESTED MOD.
+rmn_two|MOD|8|2|2|2
+# --- THE ZERO DIVISOR (divandmod.py:11), AND PYTHON RAISES.
+zero|MOD|4|0|1|0
