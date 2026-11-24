@@ -62,11 +62,24 @@ def rows.go(+ar: O.Arena, +tb: F.Table, +rm: IX.IxRMap, +ns: List<&2, U32>,
                           ",v1op=", RF.eng_op_name(O.Arena.op(ar, O.Arena.src0(ar, O.Arena.src0(ar, v))))])]),
         acc))
 
+def aft.go(+ar: O.Arena, +tb: F.Table, +ns: List<&2, U32>, +acc: List<&2, String>) -> List<&2, String>:
+  match ns:
+    case Nil{}: acc
+    case n <> t:
+      aft.go(ar, tb, t, Bool.pick(List<&2, String>,
+        O.eq_op(O.Arena.op(ar, n), O.OpsAFTER{}),
+        List.append(&2, String, acc,
+          [String.concat([U32.show(n), ":", RF.eng_op_name(O.Arena.op(ar, O.Arena.src0(ar, n))),
+                          ":dims=", ids(IX.rr_dims(ar, tb, n)),
+                          ":d0=", ids(IX.rr_dims(ar, tb, O.Arena.src0(ar, n)))])]),
+        acc))
+
 def r2(p: (O.Arena & RR.RrMap), +sink: U32) -> String:
   (+a, +m) = p
   +tb = F.Folded.t(F.folded(a))
-  String.join(rows.go(a, tb, IX.IxCtx.rngm(RR.RrMap.ctx(m)),
-                       O.UOp.toposort(O.Arena.budget(a), a, sink), Nil{}), " || ")
+  String.concat([String.join(rows.go(a, tb, IX.IxCtx.rngm(RR.RrMap.ctx(m)),
+                       O.UOp.toposort(O.Arena.budget(a), a, sink), Nil{}), " || "),
+                 " AFT: ", String.join(aft.go(a, tb, O.UOp.toposort(O.Arena.budget(a), a, sink), Nil{}), " ")])
 
 def pre() -> String:
   +q = RZ.rz_rebuild(CH.fchain_prog(), False{}, False{})
