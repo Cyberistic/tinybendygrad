@@ -3,12 +3,16 @@
 The port's state. Progress bars are `[###.....] n/m`.
 
 ```
-render-perf     [######] 4/9          THE RENDER IS ~10% FASTER (THE PAIRED MEDIAN 0.9043 AGAINST A
-                                         NOISE FLOOR OF 1.0067), AND THE TWO LANDED CHANGES ARE
-                                         **THE **INDENT **IS **A **TABLE **OF **LITERALS** (d93deb9b6)
-                                         AND **80 **`String.concat`** **CALLS **BECOME **`++`**
-                                         (4ec516fc7) -- **⇒⇒† AND **THE **STRING **WORK **IS **DOWN
-                                         **FROM **0.81 ms **TO **0.15 ms** **A **TURN**.
+render-perf     [########] 6/9          THE RENDER IS ~25% FASTER OVER THE THREE LANDED CHANGES, AND
+                                         **THE **DECIMAL **COUNT **IS **THE **BIGGEST **OF **THEM**
+                                         (44dce3f52, **⇒⇒† AND **THE **PAIRED **MEDIAN **0.8587**
+                                         **AGAINST **A **NOISE **FLOOR **OF **0.9427**).
+                                         THE THREE: **THE **INDENT **IS **A **TABLE **OF **LITERALS**
+                                         (d93deb9b6), **80 **`String.concat`** **CALLS **BECOME
+                                         **`++`** (4ec516fc7), **AND **THE **DIGIT **COUNT **IS **A
+                                         **CHAIN **OF **COMPARISONS **AGAINST **THE **POWERS **OF **TEN**
+                                         (44dce3f52) -- **⇒⇒† AND **THE **STRING **WORK **IS **DOWN
+                                         **FROM **0.81 ms **TO **0.15 ms **A **TURN**.
                                          **⇒⇒† AND **THE **CORPUS **CERTIFICATE **IS **GREEN **ON **THE
                                          **NEW **SUBSTRATE** (38/38, 340/340 repro, witness PASS,
                                          **ON **`61d46bff7`**).
