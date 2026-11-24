@@ -638,6 +638,152 @@ def greshape(+ar: O.Arena, +x: U32, +ds: List<&2, U32>) -> O.Found:
 def gdims(+ar: O.Arena, +u: U32) -> List<&2, U32>:
   IX.rr_dims(ar, F.Folded.t(F.folded(ar)), u)
 
+# --- THE SHAPED-EDGE GRADIENT REDUCTION -- gradient.py:131-133 -------------------------------
+#
+#   `# a shaped edge's gradient is summed to its source's shape`
+#   `if k._shape is not None and v._shape is not None and k._shape != v._shape:`
+#     `v = v.cast(sum_acc_dtype(v.dtype))._rop(Ops.ADD, broadcast_axes(k.shape, v.shape)).reshape(k.shape).cast(v.dtype)`
+#
+# The wall note at `compute_gradient` records why this branch was omitted: the scalar fixture
+# never took it. The training fixture DOES take it, and MEASURED it is the whole bug: `g1` came
+# out `RESHAPE[MUL/6, STACK/1]` with mul=x1x1x14x2x14x2 and marg=[1,1,2,2] -- the 784-element
+# grad of a 4-element reshape output reached `gr_17` unsummed, and `reshape_ok` refused
+# 784 -> 4, which is a reshape CPython itself refuses. The branch is what upstream sums it with.
+#
+# Ported in UOp terms because `tensor.bend` (`tn_rop`'s home) imports THIS file, so the `_rop`
+# dance is minted here with the same three nodes `tn_rop.perm` spells out -- and the same
+# cycle-avoidance reason, recorded there verbatim. The dims are the fold's CONCRETE dims
+# (`IX.rr_dims`), so a dim CPython would `resolve(s == 1, default=False)` answers as its
+# `rr_num` image here.
+#
+# NAMED DIVERGENCES, stated rather than hidden:
+#   * the two `.cast` calls mint nothing: the fixtures are float32 throughout and
+#     `sum_acc_dtype(float32)` is float32 -- the same honesty `gr_14`'s widening records.
+#   * upstream RAISES (`cannot broadcast`) when the grad outranks its source; the port cannot
+#     raise, so such an edge is written UNREDUCED and the mismatch surfaces downstream exactly
+#     the way this session's dropped stores did. It occurs in no fixture below.
+def gshape.of(m: Maybe<&2, Maybe<&2, List<&2, O.Sint>>>) -> Maybe<&2, List<&2, U32>>:
+  match m:
+    case Some{Some{ds}}: Some{IX.rr_dims.go(ds, Nil{})}
+    case _: None{}
+
+def gshape(+ar: O.Arena, +u: U32) -> Maybe<&2, List<&2, U32>>:
+  gshape.of(F.fold.shape(ar, F.Folded.t(F.folded(ar)), u))
+
+# `tuple(range(n))`, ascending, on NAT fuel -- the walk `tn_rop.range.go` is, spelled here for
+# the same cycle reason its comment records.
+def gedge.range.go(fuel: Nat, +n: U32, +acc: List<&2, U32>) -> List<&2, U32>:
+  match fuel:
+    case 0n: acc
+    case 1n++p:
+      +v = U32.sub(U32.sub(n, U32.from_nat(p)), 1)
+      gedge.range.go(p, n, List.append(&2, U32, acc, [v]))
+
+def gedge.range(+n: U32) -> List<&2, U32>:
+  gedge.range.go(U32.to_nat(n), n, Nil{})
+
+def gedge.has(+xs: List<&2, U32>, +k: U32) -> Bool:
+  match xs:
+    case Nil{}: False{}
+    case +x <> t: Bool.or(U32.is_eq(x, k), gedge.has(t, k))
+
+# `vs[i]`, walking from 0; the OOB arm answers 1, which reads as a size-1 axis and drops the
+# axis from the reduce. It cannot fire: every axis is < rank by construction.
+def gedge.dimat.go(vs: List<&2, U32>, +i: U32, +x: U32) -> U32:
+  match vs:
+    case Nil{}: 1
+    case +v <> t:
+      Bool.pick(U32, U32.is_eq(i, x), v, gedge.dimat.go(t, U32.add(i, 1), x))
+
+def gedge.dimat(vs: List<&2, U32>, +x: U32) -> U32:
+  gedge.dimat.go(vs, 0, x)
+
+# `reduce_axis = tuple(x for x in axis if self.shape[x] != 1)` (ops.py:626-627).
+def gedge.rd.go(+axis: List<&2, U32>, +vs: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
+  match axis:
+    case Nil{}: acc
+    case +ax <> t:
+      gedge.rd.go(t, vs, Bool.pick(List<&2, U32>,
+        Bool.not(U32.is_eq(gedge.dimat(vs, ax), 1)),
+        List.append(&2, U32, acc, [ax]), acc))
+
+# `self.permute(perm)`, `perm = reduce_axis + the axes not in reduce_axis` (ops.py:630), with
+# the identity IFF the reduce axes already lead -- `tn_rop.lead`'s walk.
+def gedge.lead.go(+rn: List<&2, U32>, +i: U32, ok: Bool) -> Bool:
+  match rn:
+    case Nil{}: ok
+    case +x <> t: gedge.lead.go(t, U32.add(i, 1), Bool.and(ok, U32.is_eq(x, i)))
+
+def gedge.perm.of(lead: Bool, +ar: O.Arena, +v: U32, +pn: List<&2, U32>) -> O.Found:
+  match lead:
+    case True{}: O.Found{ar, v}
+    case _:
+      # the node `mxw_permute.go` builds, spelled here because `mixin/movement.bend`
+      # imports `tensor.bend` and the edge cannot point back (tn_rop.perm.of's words).
+      +sk = O.shape_arg_found(ar, pn)
+      O.UOp.new(O.Found.ar(sk), O.OpsPERMUTE{}, [v, O.Found.i(sk)], O.ANone{}, O.TNone{})
+
+def gedge.others.go(+ks: List<&2, U32>, +rn: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
+  match ks:
+    case Nil{}: acc
+    case +k <> t:
+      gedge.others.go(t, rn,
+        Bool.pick(List<&2, U32>, gedge.has(rn, k), acc, List.append(&2, U32, acc, [k])))
+
+# `tuple(s for i, s in enumerate(self.shape) if i not in axis)` (ops.py:629, :633).
+def gedge.drop.go(+vs: List<&2, U32>, +i: U32, +axis: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
+  match vs:
+    case Nil{}: acc
+    case +v <> t:
+      gedge.drop.go(t, U32.add(i, 1), axis, Bool.pick(List<&2, U32>, gedge.has(axis, i), acc,
+        List.append(&2, U32, acc, [v])))
+
+# `._rop(Ops.ADD, axis)` -- ops.py:624-633 for the ONE call the edge reduction makes: the
+# no-reduce-axis arm reshapes (`axis` had only size-1 dims), the reduce arm permutes the
+# reduce axes to the front, mints `REDUCE(ADD, len(reduce_axis))`, and reshapes when
+# `axis != reduce_axis`.
+def gedge.tail(same: Bool, +ar: O.Arena, +rn: O.Found, +vs: List<&2, U32>, +axis: List<&2, U32>) -> O.Found:
+  match same:
+    case True{}: rn
+    case _: greshape(ar, O.Found.i(rn), gedge.drop.go(vs, 0, axis, Nil{}))
+
+def gedge.rop.hasrd(+rd: List<&2, U32>, +ar: O.Arena, +v: U32, +axis: List<&2, U32>, +vs: List<&2, U32>) -> O.Found:
+  match rd:
+    case Nil{}: greshape(ar, v, gedge.drop.go(vs, 0, axis, Nil{}))
+    case _:
+      +nd = U32.from_nat(List.length(&2, U32, vs))
+      +pn = List.concat(&2, U32, [rd, gedge.others.go(gedge.range(nd), rd, Nil{})])
+      +pm = gedge.perm.of(gedge.lead.go(rd, 0, True{}), ar, v, pn)
+      +rn = gnew(O.Found.ar(pm), O.OpsREDUCE{}, [O.Found.i(pm)],
+                 O.AReduce{O.OpsADD{}, U32.from_nat(List.length(&2, U32, rd))})
+      gedge.tail(O.eq_u32(axis, rd), O.Found.ar(rn), rn, vs, axis)
+
+# `broadcast_axes` (uop/ops.py:93-96), CONCRETE: `resolve(s == 1, default=False)` is plain
+# equality on the dims. The axes come out ascending -- `range(nleft)` then the expanded ones --
+# which is already `_rop`'s `sorted(axis)` order, so no re-sort happens.
+def gbaxes.drop(+vs: List<&2, U32>, +n: U32) -> Maybe<&2, List<&2, U32>>:
+  match vs:
+    case Nil{}: Bool.pick(Maybe<&2, List<&2, U32>>, U32.is_zero(n), Some{vs}, None{})
+    case _ <> t:
+      Bool.pick(Maybe<&2, List<&2, U32>>, U32.is_zero(n), Some{vs}, gbaxes.drop(t, U32.sub(n, 1)))
+
+def gbaxes.go(+ks: List<&2, U32>, +nleft: U32, +vs: List<&2, U32>, +i: U32, +acc: List<&2, U32>) -> List<&2, U32>:
+  match ks:
+    case Nil{}: acc
+    case +k <> t:
+      +v = gedge.dimat(vs, i)
+      gbaxes.go(t, nleft, vs, U32.add(i, 1), Bool.pick(List<&2, U32>,
+        Bool.and(U32.is_eq(k, 1), Bool.not(U32.is_eq(v, 1))),
+        List.append(&2, U32, acc, [U32.add(nleft, i)]), acc))
+
+def gbaxes.of(neg: Bool, +ks: List<&2, U32>, +vs: List<&2, U32>) -> Maybe<&2, List<&2, U32>>:
+  match neg:
+    case True{}: None{}
+    case _:
+      +nleft = U32.sub(U32.from_nat(List.length(&2, U32, vs)), U32.from_nat(List.length(&2, U32, ks)))
+      +vs2 = Maybe.default(&2, List<&2, U32>, gbaxes.drop(vs, nleft), Nil{})
+      Some{List.concat(&2, U32, [gedge.range(nleft), gbaxes.go(ks, nleft, vs2, 0, Nil{})])}
+
 # --- 14. REDUCE -- gradient.py:82. `reduce_gradient(ctx, ret, ret.arg[0])`
 #
 # DISPATCHED, not inlined: the body is `reduce_gradient`, a top-level Python function with
@@ -1229,16 +1375,15 @@ def gr_rewrite(+ts: O.PMEntrys, +ar: O.Arena, +ctx: U32, +self: U32) -> GRes:
 #       an IN-PLACE update, which is what makes it dict-shaped: append is last-wins, and
 #       Python's `grads[k] = grads[k] + v` overwrites while keeping `k`'s INSERTION position.
 #
-# TWO THINGS DID NOT LAND, and both are the walls already recorded in the header of this file:
-#   * the SHAPED-EDGE REDUCE (:132-133), which needs `broadcast_axes` and `sum_acc_dtype`. It
-#     is not merely deferred here -- MEASURED, it is a place where CPython ITSELF raises:
-#     `oracle-cg.py`'s second fixture drives `compute_gradient` into `RuntimeError: cannot
-#     broadcast ... into ()` at gradient.py:133, so the fixture cannot gate a port of that
-#     line either. The walk is gated on the fixture that does NOT reach it, and every node in
-#     that fixture is a SCALAR -- the leaves are `BUFFER(STACK())`, whose `_shape` is `()`
-#     (ops.py:359, :789) -- so the guard `k._shape is not None and v._shape is not None and
-#     k._shape != v._shape` is FALSE throughout -- the port omits a branch that is not taken,
-#     which is stated rather than hidden.
+# TWO THINGS WERE MISSING, and one has since landed:
+#   * the SHAPED-EDGE REDUCE (:132-133) was the wall for as long as the walk was gated on
+#     `oracle-cg.py`'s scalar fixture, where every node is a SCALAR (`_shape` is `()`,
+#     ops.py:359, :789) and the guard is FALSE throughout -- a branch that is not taken, and
+#     one where CPython ITSELF raises (`RuntimeError: cannot broadcast ... into ()`), so that
+#     fixture could not gate a port of the line. The training fixture (`tstepc.bend`) DOES
+#     take it -- MEASURED, the 784-element grad of a 4-element reshape output reached `gr_17`
+#     unsummed and `reshape_ok` refused the 784 -> 4 reshape -- and the branch is now ported
+#     (`gshape`/`gbaxes`/`gedge`/`cg_edge`), with its divergences named there.
 #   * the BACKWARD-METADATA pass (:140-144), which reads `all_metadata` (ops.py's module-level
 #     dict). It has no observable effect on `grads`, so omitting it changes no row in this
 #     gate; that is a NAMED OMISSION, not a silent one.
@@ -1555,9 +1700,9 @@ def cg_hole.of(is_hole: Bool, hit: Maybe<&2, GSlot>, +s: CState, +k: U32, +v: U3
 #     edge's gradient would carry the broadcast's shape and the next node up would be summing
 #     against a mismatched shape. The condition is `k._shape is not None and v._shape is not
 #     None and k._shape != v._shape` -- TWO `is not None` conjuncts, so a node with an UNKNOWN
-#     shape is left alone rather than reduced. That is the third clause and it is the one the
-#     port's gate exercises: the whole fixture is SCALAR (`_shape` is `()`), so the branch is
-#     never taken.
+#     shape is left alone rather than reduced. PORTED 2026-11-24 (`cg_edge` below): the scalar
+#     fixture never took the branch, and the training fixture does -- `g1` was its measured
+#     failure (`RESHAPE[MUL/6, STACK/1]`, a 784-element grad into a 4-element reshape).
 #   gradient.py:130 -- `if v is None: continue`. A HOLE in the rule's answer is not a zero
 #     gradient; it is "this rule says nothing about this src", and the walk must leave the
 #     existing gradient alone rather than overwrite it. `gs` HOLES are index 0, which is the
@@ -1568,8 +1713,73 @@ def cg_hole.of(is_hole: Bool, hit: Maybe<&2, GSlot>, +s: CState, +k: U32, +v: U3
 # refuses the pair with "expected : a filled definition". Lifting the recursion OUT of the
 # branch is what works: `step` answers the state after ONE (k, v) pair and `go` owns the
 # descent over the tails. `fold.bend`'s `Kahn.gather.go` is the same arrangement.
-def cg_puts.step(+s: CState, +k: U32, +v: U32) -> CState:
+def cg_puts.put(+s: CState, +k: U32, +v: U32) -> CState:
   cg_hole.of(U32.is_zero(v), gslot(CState.g_of(s), k), s, k, v)
+
+# `.reshape(k.shape)` -- the identity in CPython when the shapes already agree (MEASURED,
+# the comment at `greshape`), so the node is minted only on a real disagreement. The dims
+# the `_rop` result carries are the source dims minus the reduced axes, in both arms.
+# THE ARENA MUST COME BACK WITH THE INDEX. MEASURED 2026-11-24: returning the bare `U32`
+# left the RESHAPE outside the state's arena, so the put stored an index the graph could not
+# read -- every fired edge became `NOOP` and the walk died exactly the way the dropped-store
+# rows did. `O.Found` is the file's own threading form (`gnew`/`gedge.perm.of`/`gedge.tail`).
+def cg_edge.rshp(same: Bool, +ar: O.Arena, +x: U32, +ks: List<&2, U32>) -> O.Found:
+  match same:
+    case True{}: O.Found{ar, x}
+    case _: greshape(ar, x, ks)
+
+def cg_edge.axes(neg: Bool, +a: List<&2, U32>, +b: List<&2, U32>, +s: CState, +k: U32, +v: U32) -> CState:
+  match neg:
+    # the grad outranks its source: upstream raises, the port writes the edge UNREDUCED
+    # (the named divergence at `gbaxes`).
+    case True{}: cg_puts.put(s, k, v)
+    case _:
+      +ar = CState.ar_of(s)
+      +axs = Maybe.default(&2, List<&2, U32>, gbaxes.of(False{}, a, b), Nil{})
+      +rd = gedge.rd.go(axs, b, Nil{})
+      +f = gedge.rop.hasrd(rd, ar, v, axs, b)
+      +r = cg_edge.rshp(O.eq_u32(a, gedge.drop.go(b, 0, axs, Nil{})), O.Found.ar(f), O.Found.i(f), a)
+      cg_puts.put(CState.with_ar(s, O.Found.ar(r)), k, O.Found.i(r))
+
+def cg_edge.diff(d: Bool, +a: List<&2, U32>, +b: List<&2, U32>, +s: CState, +k: U32, +v: U32) -> CState:
+  match d:
+    case True{}:
+      cg_edge.axes(U32.is_lt(U32.from_nat(List.length(&2, U32, b)),
+                             U32.from_nat(List.length(&2, U32, a))), a, b, s, k, v)
+    case False{}: cg_puts.put(s, k, v)
+
+# `k._shape is not None and v._shape is not None` -- the port's fold answers the Maybe, so an
+# UNKNOWN shape is left alone exactly as the two `is not None` conjuncts leave it upstream.
+#
+# THE ARM BINDS PLAINLY AND ROUTES THROUGH `eq`, and that is not style. MEASURED 2026-11-24:
+# `case Some{+a} Some{+b}` COMPILES on a two-scrutinee match and NEVER MATCHES -- the cover
+# arm takes every pair, the port's edge fix-up is dead code, and nothing says so. The `+` on a
+# pattern binder is a TWO-READ marker (a one-read binder is plain: `renderer/isa/x86.bend:352`)
+# and the compiler accepts it without checking it here. The plain binder reads each value ONCE
+# and hands it to `eq`, whose `+` params are the duplicable form `cg_edge.axes` already uses.
+def cg_edge.eq(+a: List<&2, U32>, +b: List<&2, U32>, +s: CState, +k: U32, +v: U32) -> CState:
+  cg_edge.diff(Bool.not(O.eq_u32(a, b)), a, b, s, k, v)
+
+def cg_edge.guard.v(+a: List<&2, U32>, vs: Maybe<&2, List<&2, U32>>, +s: CState, +k: U32, +v: U32) -> CState:
+  match vs:
+    case Some{b}: cg_edge.eq(a, b, s, k, v)
+    case _: cg_puts.put(s, k, v)
+
+def cg_edge.guard(ks: Maybe<&2, List<&2, U32>>, vs: Maybe<&2, List<&2, U32>>, +s: CState, +k: U32, +v: U32) -> CState:
+  match ks:
+    case Some{a}: cg_edge.guard.v(a, vs, s, k, v)
+    case _: cg_puts.put(s, k, v)
+
+# `if v is None: continue` (gradient.py:130) comes BEFORE the shape fix-up (:132) -- a hole is
+# "this rule says nothing about this src", and reducing a hole would mint a grad for a src the
+# rule explicitly passed on (the RESHAPE rule's slot 1, the shape stack, is exactly that).
+def cg_edge.hole(is_hole: Bool, +s: CState, +k: U32, +v: U32) -> CState:
+  match is_hole:
+    case True{}: cg_puts.put(s, k, v)
+    case _: cg_edge.guard(gshape(CState.ar_of(s), k), gshape(CState.ar_of(s), v), s, k, v)
+
+def cg_puts.step(+s: CState, +k: U32, +v: U32) -> CState:
+  cg_edge.hole(U32.is_zero(v), s, k, v)
 
 # * the cover arm goes last, and getting it wrong is silent. * With `case _ _:` first
 # it catches EVERY two-scrutinee match -- the arm below it is dead code and the compiler
