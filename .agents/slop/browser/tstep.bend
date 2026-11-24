@@ -91,63 +91,55 @@ def wid.go(+g: G.Grads, +ar: O.Arena, +wk: List<&2, U32>, +acc: List<&2, String>
                         "<", sids(ar, O.Arena.srcs(ar, n), Nil{}), ">"])]))
 
 def rows() -> String:
-  # THE FORWARD, with no stores: a training GRAPH is value flow, and the chain's shape is the
-  # only thing this row is about. `tn_rop` answers a `Found`, so each stage is re-wrapped by
-  # `tn_new` -- the same idiom `fchain_prog` uses.
-  +x = RZ.rz_input(O.Arena.empty(), 1, 784, [1, 1, 28, 28])
-  +w1 = RZ.rz_input(T.Tensor.ar(x), 2, 4, [1, 1, 2, 2])
-  +c1 = T.tn_mul(MX.mxw_reshape.go(x, [1, 1, 14, 2, 14, 2]), MX.mxw_reshape.go(w1, [1, 1, 1, 2, 1, 2]))
+  # ONE MONOTONE ARENA, AND THAT IS THE WHOLE FIX (orchestrator's diagnosis, and it is right).
+  # `mxw_reshape.go(t, ..)` grows `T.Tensor.ar(t)` -- the arena t CARRIES -- so an operand built from
+  # an older arena FORKS, and `tn_mul`'s `Arena.merge` then SHIFTS ids in one of the two. MEASURED:
+  # that is why `T.Tensor.u(w1)=11` stopped naming w1 at 11, and why the grads table's keys looked
+  # like they sat "one view below" the weights. So: the four inputs are created FIRST on one chain,
+  # and every operand is RE-WRAPPED at the latest arena before it is reshaped or permuted.
+  +x0 = RZ.rz_input(O.Arena.empty(), 1, 784, [1, 1, 28, 28])
+  +w1_0 = RZ.rz_input(T.Tensor.ar(x0), 2, 4, [1, 1, 2, 2])
+  +w2_0 = RZ.rz_input(T.Tensor.ar(w1_0), 6, 490, [49, 10])
+  +t_0 = RZ.rz_input(T.Tensor.ar(w2_0), 7, 10, [1, 10])
+  +ar0 = T.Tensor.ar(t_0)
+  +x = T.tn_new(ar0, T.Tensor.u(x0))
+  +w1 = T.tn_new(ar0, T.Tensor.u(w1_0))
+  +w2 = T.tn_new(ar0, T.Tensor.u(w2_0))
+  # conv: lhs first, then the weight re-wrapped at the arena lhs grew
+  +xs = MX.mxw_reshape.go(x, [1, 1, 14, 2, 14, 2])
+  +ws = MX.mxw_reshape.go(T.tn_new(T.Tensor.ar(xs), T.Tensor.u(w1)), [1, 1, 1, 2, 1, 2])
+  +c1 = T.tn_mul(xs, ws)
   +f1 = T.tn_rop(T.Tensor.ar(c1), T.Tensor.u(c1), O.OpsADD{}, [3, 5])
   +v1 = MX.mxw_reshape(T.tn_new(O.Found.ar(f1), O.Found.i(f1)), [1, 1, 14, 14])
   +a2 = T.tn_relu(v1)
-  +v2 = MX.mxw_reshape.go(a2, [1, 1, 7, 2, 7, 2])
+  +v2 = MX.mxw_reshape.go(T.tn_new(T.Tensor.ar(a2), T.Tensor.u(a2)), [1, 1, 7, 2, 7, 2])
   +f3 = T.tn_rop(T.Tensor.ar(v2), T.Tensor.u(v2), O.OpsMAX{}, [3, 5])
   +p3 = T.tn_new(O.Found.ar(f3), O.Found.i(f3))
-  +w2 = RZ.rz_input(T.Tensor.ar(p3), 6, 490, [49, 10])
+  # linear: same shape of fix, and the permute runs at the arena the reshape grew
   +lhs = MX.mxw_reshape.go(p3, [1, 1, 49])
-  +rhs = MX.mxw_permute.go(MX.mxw_reshape.go(w2, [1, 49, 10]), [0, 2, 1])
+  +w2r = MX.mxw_reshape.go(T.tn_new(T.Tensor.ar(lhs), T.Tensor.u(w2)), [1, 49, 10])
+  +rhs = MX.mxw_permute.go(T.tn_new(T.Tensor.ar(w2r), T.Tensor.u(w2r)), [0, 2, 1])
   +c4 = T.tn_mul(lhs, rhs)
   +f4 = T.tn_rop(T.Tensor.ar(c4), T.Tensor.u(c4), O.OpsADD{}, [2])
   +out = T.tn_new(O.Found.ar(f4), O.Found.i(f4))
-  # loss = sum((out - t)^2)
-  +t = RZ.rz_input(T.Tensor.ar(out), 7, 10, [1, 10])
+  # loss = sum((out - t)^2), the target re-wrapped at the latest arena
+  +t = T.tn_new(T.Tensor.ar(out), T.Tensor.u(t_0))
   +d = T.tn_sub(out, t)
   +sq = T.tn_square(d)
   +loss = T.tn_rop(T.Tensor.ar(sq), T.Tensor.u(sq), O.OpsADD{}, [1])
   +lt = T.tn_new(O.Found.ar(loss), O.Found.i(loss))
-  # THE WALK ITSELF, and its own counters. `skip` is "a turn the outer loop passed over";
-  # `hole` is a node the rule table did not claim. Upstream RAISES on a hole; the port STOPS,
-  # so a hole count of 1 with `grads=ZERO` names the node class whose rule is missing.
   +tg: List<&2, U32> = [T.Tensor.u(w1), T.Tensor.u(w2)]
   +root = T.Tensor.u(lt)
-  +dw = G._deepwalk(root, tg, T.Tensor.ar(lt))
-  +wk = G.Deep.walk_of(dw)
+  # THE SEED'S ARENA, not the loss tensor's: `compute_gradient` must be handed the arena the WALK and
+  # the table live in, and the seed is the last thing minted on this chain.
   +seed = O.UOp.const(T.Tensor.ar(lt), O.CInt{H.i64_of_i32(1)})
-  +cs = G.compute_gradient(root, O.Found.i(seed), tg, T.Tensor.ar(lt))
-  String.concat(["tstep.tbl=", kops(G.CState.ar_of(cs), G.Grads.ks_of(G.CState.g_of(cs)), Nil{}),
-                 " walkops=", wops(G.CState.ar_of(cs), wk, Nil{}),
-                 " kw1=", U32.show(T.Tensor.u(w1)),
-                 " kw2=", U32.show(T.Tensor.u(w2)),
-                 " sizes=", U32.show(O.Arena.next(T.Tensor.ar(w1))), ",", U32.show(O.Arena.next(T.Tensor.ar(w2))),
-                 ",", U32.show(O.Arena.next(T.Tensor.ar(x))), ",", U32.show(O.Arena.next(T.Tensor.ar(lt))),
-                 " w1_at_11=", RF.eng_op_name(O.Arena.op(T.Tensor.ar(w1), 11)),
-                 " fwd_at_11=", RF.eng_op_name(O.Arena.op(T.Tensor.ar(x), 11)),
-                 " wid=", wid.go(G.CState.g_of(cs), T.Tensor.ar(lt), wk, Nil{}),
-                 " has10=", Bool.show(gslot_at(G.gslot(G.CState.g_of(cs), 10))),
-                 " has11=", Bool.show(gslot_at(G.gslot(G.CState.g_of(cs), 11))),
-                 " has12=", Bool.show(gslot_at(G.gslot(G.CState.g_of(cs), 12))),
-                 " has35=", Bool.show(gslot_at(G.gslot(G.CState.g_of(cs), 35))),
-                 " has36=", Bool.show(gslot_at(G.gslot(G.CState.g_of(cs), 36))),
-                 " own_ar_w1=", U32.show(O.Arena.next(T.Tensor.ar(w1))), "/", RF.eng_op_name(O.Arena.op(T.Tensor.ar(w1), T.Tensor.u(w1))),
-                 " grown_ar=", U32.show(O.Arena.next(G.CState.ar_of(cs))), "/", RF.eng_op_name(O.Arena.op(G.CState.ar_of(cs), T.Tensor.u(w1))),
-                 " n11=(", one(G.CState.ar_of(cs), wk, T.Tensor.u(w1)), ") n36=(", one(G.CState.ar_of(cs), wk, T.Tensor.u(w2)), ")",
-                 " gw1=", Bool.show(gslot_at(G.gslot(G.CState.g_of(cs), T.Tensor.u(w1)))),
+  +cs = G.compute_gradient(root, O.Found.i(seed), tg, O.Found.ar(seed))
+  +ga = G.CState.ar_of(cs)
+  String.concat(["tstep.gw1=", Bool.show(gslot_at(G.gslot(G.CState.g_of(cs), T.Tensor.u(w1)))),
                  " gw2=", Bool.show(gslot_at(G.gslot(G.CState.g_of(cs), T.Tensor.u(w2)))),
-                 " nograd=", nograd(G.CState.g_of(cs), G.CState.ar_of(cs), wk, Nil{}),
-                 " walk=", U32.show(U32.from_nat(List.length(&2, U32, wk))),
-                 " skip=", U32.show(G.CState.skip_of(cs)),
-                 " hole=", U32.show(G.CState.hole_of(cs)),
-                 " rootop=", RF.eng_op_name(O.Arena.op(T.Tensor.ar(lt), root)),
+                 " kw1=", U32.show(T.Tensor.u(w1)), " kw2=", U32.show(T.Tensor.u(w2)),
+                 " skip=", U32.show(G.CState.skip_of(cs)), " hole=", U32.show(G.CState.hole_of(cs)),
+                 " tbl_n=", U32.show(U32.from_nat(List.length(&2, U32, G.Grads.ks_of(G.CState.g_of(cs))))),
                  " grads=", T.tn_bwd_grad.of(T.tn_backward(O.Found.ar(seed), T.Tensor.u(lt), T.Tensors.of_list(tg), O.Found.i(seed)))])
 
 def main() -> IO(Unit):
