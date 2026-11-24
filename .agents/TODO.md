@@ -5145,15 +5145,26 @@ are NOT free: `grep -c smoothstep tinygrad/` is 0 and there is no `Ops.MIN`.
       answers `F`, and the refusal stops firing. **THE TOPOSORT'S FUEL HAS TO COVER THE
       RE-PUSH** (each kept node is popped twice: once to be kept and pushed back, once to be
       cached) and until it does a bigger graph silently loses nodes.
-- [ ] **THE PORT'S GATED TOPOSORT IS SHALLOW, AND THAT IS A DEFECT OF ITS OWN (2026-11-24).**
-      `sc_topo_of` (`schedule/__init__.bend:539`) answers 7 nodes for the shader's 138-node
-      kernel graph. The graph is walked with `enter_calls=False` (`src_without_body`), so the
-      kernel bodies are not descended into — but the RANGE, the INDEX and the formula ARE
-      in the graph and are NOT in the answer, and the schedule's `pass1` builds its whole
-      dependency graph from that list. **WHAT TO CHECK FIRST**: the fuel (the budget is
-      `next + edges`, and each kept node is popped twice) and `sc_topo.keep2`, which pushes
-      the kept node back with `visited=True` and adds it to the cache only on the second
-      pop.
+- [ ] **THE PORT'S GATED TOPOSORT STOPS WHERE A WORKLIST DOES NOT — FOUR CAUSES RULED OUT
+      (2026-11-24).** `SCH.sc_topo_of` answers **7 nodes** for the shader's 138-node kernel
+      graph, and `O.UOp.toposort_nocalls` answers 7 for the same arena — while the probe's
+      worklist walk (`dfs`, over `O.Arena.srcs`) covers the graph. **RULED OUT, WITH
+      MEASUREMENTS**: (1) the FUEL — `sc_topo_of(100000n, ...)` answers 7 as well, so the
+      budget is not what stops it (`topon=7`, `toponX=7`, `budget=371`, `arena_n=138`); (2)
+      the SRCS — `nsink=1`, `nafter=2`, `nsb_after=2`, so the sink, the AFTER and
+      `Arena.src_without_body` all answer their srcs; (3) the GATE — upstream's
+      `gate_kernel_sink` (`ops.py:1880-1883`) IS `sc_gate` line for line; (4) the visited
+      test's arguments — `List.contains(U32, U32.is_eq, cache, n)` is the shape the port
+      uses everywhere else. **WHAT IS LEFT**: the frame discipline of `Topo.step`
+      (`ops.bend:2223-2243`) and its copy `sc_topo` (`schedule/__init__.bend:498-540`) — the
+      node is cached on its SECOND visit, so a node shared by several parents is
+      re-processed per arrival, and each re-processing re-pushes its whole subtree.
+      **THE CONSTRAINT ON THE FIX**: upstream's result is a POST-order (a node is cached
+      after its subtree, `ops.py:292`), and the schedule's linearization ORDER depends on
+      it — so marking nodes visited on their FIRST visit (the worklist's discipline) would
+      change the result's ORDER, and the visited set cannot be the result list without a
+      second list in the `Topo` record. **THIS IS THE FIRST THING TO FIX**: it gates the
+      realize (below), the schedule's refusal, and every bigger graph.
 - [ ] **`gates/schedsched-gate.py` HAD TWO DEFECTS AND ONE MASKED THE OTHER (2026-11-24).**
       (1) The `bend=` field still pointed at the LIBRARY after `d404c64d9` moved the 135 gate
       rows into the driver `gates/schedule-init-gate.bend`, so the port lane ran a file with no
