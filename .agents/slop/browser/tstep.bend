@@ -16,6 +16,8 @@ import ./../../../tinybendygrad/tensor.bend as T
 import ./../../../tinybendygrad/mixin/movement.bend as MX
 import ./../../../tinybendygrad/LAWS/spec.bend as S
 import ./../../../tinybendygrad/helpers.bend as H
+import ./../../../tinybendygrad/mixin/gradient.bend as G
+import ./../../../tinybendygrad/schedule/rangeify.bend as RF
 import ./../../../tinybendygrad/schedule/realize.bend as RZ
 
 # conv2x2 -> relu -> pool -> linear, then `sum((y-t)^2)`, then `tn_backward` for BOTH weights.
@@ -46,11 +48,20 @@ def rows() -> String:
   +sq = T.tn_square(d)
   +loss = T.tn_rop(T.Tensor.ar(sq), T.Tensor.u(sq), O.OpsADD{}, [1])
   +lt = T.tn_new(O.Found.ar(loss), O.Found.i(loss))
-  +scope = T.Tensors.of_list([T.Tensor.u(w1), T.Tensor.u(w2)])
+  # THE WALK ITSELF, and its own counters. `skip` is "a turn the outer loop passed over";
+  # `hole` is a node the rule table did not claim. Upstream RAISES on a hole; the port STOPS,
+  # so a hole count of 1 with `grads=ZERO` names the node class whose rule is missing.
+  +tg: List<&2, U32> = [T.Tensor.u(w1), T.Tensor.u(w2)]
+  +root = T.Tensor.u(lt)
+  +dw = G._deepwalk(root, tg, T.Tensor.ar(lt))
+  +wk = G.Deep.walk_of(dw)
   +seed = O.UOp.const(T.Tensor.ar(lt), O.CInt{H.i64_of_i32(1)})
-  +b = T.tn_backward(O.Found.ar(seed), T.Tensor.u(lt), scope, O.Found.i(seed))
-  # `Bwd`'s own reader: the SIGNATURE of every target's gradient, from the arena the walk produced.
-  String.concat(["tstep grads=", T.tn_bwd_grad.of(b)])
+  +cs = G.compute_gradient(root, O.Found.i(seed), tg, T.Tensor.ar(lt))
+  String.concat(["tstep.walk=", U32.show(U32.from_nat(List.length(&2, U32, wk))),
+                 " skip=", U32.show(G.CState.skip_of(cs)),
+                 " hole=", U32.show(G.CState.hole_of(cs)),
+                 " rootop=", RF.eng_op_name(O.Arena.op(T.Tensor.ar(lt), root)),
+                 " grads=", T.tn_bwd_grad.of(T.tn_backward(O.Found.ar(seed), T.Tensor.u(lt), T.Tensors.of_list(tg), O.Found.i(seed)))])
 
 def main() -> IO(Unit):
   do IO<Unit>:
