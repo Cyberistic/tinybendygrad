@@ -3,6 +3,22 @@
 The port's state. Progress bars are `[###.....] n/m`.
 
 ```
+render-perf     [######] 4/9          THE RENDER IS ~10% FASTER (THE PAIRED MEDIAN 0.9043 AGAINST A
+                                         NOISE FLOOR OF 1.0067), AND THE TWO LANDED CHANGES ARE
+                                         **THE **INDENT **IS **A **TABLE **OF **LITERALS** (d93deb9b6)
+                                         AND **80 **`String.concat`** **CALLS **BECOME **`++`**
+                                         (4ec516fc7) -- **⇒⇒† AND **THE **STRING **WORK **IS **DOWN
+                                         **FROM **0.81 ms **TO **0.15 ms** **A **TURN**.
+                                         **⇒⇒† AND **THE **CORPUS **CERTIFICATE **IS **GREEN **ON **THE
+                                         **NEW **SUBSTRATE** (38/38, 339/339 repro, witness PASS).
+                                         **⇒⇒† AND **THE **NEXT **TARGETS**, **MEASURED**: **THE
+                                         **`List.append` **SPINE **IS **NOT **ONE** (THE CEILING **OF
+                                         **REMOVING **THE **COPY **IS **0.9853** -- **⇒⇒† AND **THE
+                                         **JS **LANE **COPIES **THE **SPINE **AND **NOT **THE
+                                         **ELEMENTS**), **AND **`eq_op` **IS **NOT **ONE** (0.045 ms
+                                         **OVER **602 **CALLS**).
+                                         **⇒⇒† AND **THE **INSTRUMENTS **ARE **IN
+                                         **`.agents/slop/cpuseam/builds/`** (see PARITY 138.20).
 no-txt          [#########] 3/3      generators, NOT files: `helpers-tc-gate.sh` `$GT.py` ->
                                          `$GT.rows`, `gate_norm.py` `gate.txt` -> `gate.out`,
                                          `census.py` `rows-*.txt` -> `*.rows`; 2 orphans
