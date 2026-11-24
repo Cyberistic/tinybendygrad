@@ -1271,6 +1271,55 @@ def rr_ap_rng_nodes(+ar: O.Arena, +tbl: List<&2, IX.IxRange>, +rs: List<&2, U32>
 def rr_ap_index_node(+ar: O.Arena, +s: U32, +rngs: List<&2, U32>) -> O.Found:
   O.UOp.index(ar, s, rngs)
 
+# THE FOLD, and it is `_apply_reshape`'s own call (`indexing.py:148-160`): ONE flat in-axis, EVERY
+# `out` entry as an out-axis -- the size-1 axes INCLUDED, as `usum` terms that a stride multiplies by
+# zero. Upstream drops those terms afterwards (`symbolic`); the port keeps them as `196*0`, which is
+# the same value and is already how the STORE's index reads.
+# WHY THE SIZE-1 AXES MUST STAY: a filtered fold leaves the entry's RANGE unbound -- the END still
+# binds it -- and the linearizer then EXPANDS that free range into a vector. MEASURED, three times:
+# `float784 val0 = *((float784*)((data1_784+196)))`, `cc` 11 errors. Every entry stays.
+# AND A CONST ENTRY'S `ext` IS **0**, NOT 1 (`indexing.bend:226`, `ix_rg_c0`): as a SHAPE the axis is
+# one element, so the shape read is `max(ext, 1)`. MEASURED without this: `ins=[0]` and every index
+# rendered `%0`, `cc` warned `remainder by zero` and the harness died with SIGKILL (rc=137).
+def rr_ap_ext.one(+e: U32) -> U32: Bool.pick(U32, U32.is_zero(e), 1, e)
+
+def rr_ap_ext.go(+tbl: List<&2, IX.IxRange>, +rs: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
+  match rs:
+    case Nil{}: acc
+    case r <> t: rr_ap_ext.go(tbl, t, List.append(&2, U32, acc, [rr_ap_ext.one(IX.IxRange.ext(IX.ix_tbl_at(tbl, r)))]))
+
+def rr_ap_ext(+tbl: List<&2, IX.IxRange>, +rs: List<&2, U32>) -> List<&2, U32>:
+  rr_ap_ext.go(tbl, rs, Nil{})
+
+# `rr_reshape.go` TAKES NODES, so the fold consumes the same nodes the ordinary path materialises.
+def rr_ap_fold.of(p: (O.Arena & List<&2, U32>)) -> ApSrcs:
+  (+fa, +ns) = p
+  ApSrcs.of(fa, ns)
+
+def rr_ap_fold.pick(ok: Bool, p: (O.Arena & List<&2, U32>), +fa: O.Arena, +ns: List<&2, U32>) -> ApSrcs:
+  match ok:
+    case True{} : rr_ap_fold.of(p)
+    case False{}: ApSrcs.of(fa, ns)
+
+# A ONE-ENTRY LIST IS ALREADY A TWO-SRC INDEX, and folding it again wraps it in `%1` -- MEASURED:
+# `(cast0+(14*cast1)+(196*0)+(196*0))%196` came back as `(...%196)%1`, which is ZERO for every
+# element, and the conv read element 0 for the whole kernel. So the fold is for MULTI-entry lists.
+def rr_ap_fold.n(+rs: List<&2, U32>) -> Bool:
+  U32.is_gt(U32.from_nat(List.length(&2, U32, rs)), 1)
+
+def rr_ap_fold.go(+ar: O.Arena, +tbl: List<&2, IX.IxRange>, +rs: List<&2, U32>) -> ApSrcs:
+  +dims = rr_ap_ext(tbl, rs)
+  +ks = rr_ap_rng_nodes(ar, tbl, rs)
+  +ins: List<&2, U32> = [H.prod_u32(dims)]
+  rr_ap_fold.pick(IX.rr_reshape.ok(ins, dims, ApSrcs.ss(ks)),
+                  IX.rr_reshape.go(ApSrcs.ar(ks), ins, dims, ApSrcs.ss(ks)),
+                  ApSrcs.ar(ks), ApSrcs.ss(ks))
+
+def rr_ap_fd.of(fold: Bool, +ar: O.Arena, +tbl: List<&2, IX.IxRange>, +rs: List<&2, U32>) -> ApSrcs:
+  match fold:
+    case True{} : rr_ap_fold.go(ar, tbl, rs)
+    case False{}: rr_ap_rng_nodes(ar, tbl, rs)
+
 def rr_ap_index_src(+ar: O.Arena, +tb: F.Table, +tbl: List<&2, IX.IxRange>, +ctx: IX.IxCtx,
                     +x: U32, +s: U32, +i: U32, +dsrc_n: U32) -> O.Found:
   +has = IX.ix_rngm_has(IX.IxCtx.rngm(ctx), x)
@@ -1279,9 +1328,9 @@ def rr_ap_index_src(+ar: O.Arena, +tb: F.Table, +tbl: List<&2, IX.IxRange>, +ctx
   # materialising them is what put a `CONST` and a `BUFFER` in the INDEX
   # (MEASURED: `rr_arena`'s `29->43:...INDEX:none:PARAM,CONST,BUFFER`).
   +rs = rr_ap_bcast(ar, tb, ctx, x, s)
-  +rn = rr_ap_rng_nodes(ar, tbl, rs)
-  +ix = rr_ap_index_node(ApSrcs.ar(rn), s, ApSrcs.ss(rn))
-  Bool.pick(O.Found, Bool.and(has, U32.is_lt(i, dsrc_n)), ix, rr_ap_keep(ApSrcs.ar(rn), s))
+  +fd = rr_ap_fd.of(rr_ap_fold.n(rs), ar, tbl, rs)
+  +ix = rr_ap_index_node(ApSrcs.ar(fd), s, ApSrcs.ss(fd))
+  Bool.pick(O.Found, Bool.and(has, U32.is_lt(i, dsrc_n)), ix, rr_ap_keep(ApSrcs.ar(fd), s))
 
 # EVERYTHING ELSE BECOMES A `STAGE` (`indexing.py:90-92`): `new_src =
 # UOp(Ops.STAGE, src=(new_src,)+closed_ranges, arg=opts)`, => AND THEN IT IS INDEXED IF
