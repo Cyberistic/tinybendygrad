@@ -32,10 +32,16 @@ def gv.of(m: Maybe<&2, G.GSlot>) -> U32:
 def gv(+g: G.Grads, +k: U32) -> U32: gv.of(G.gslot(g, k))
 
 # `w - lr*g`, with `lr = 0.1f` (0x3dcccccd): MUL then SUB, and SUB is `ADD(x, MUL(y,-1))` upstream.
+# `lr` IS MINTED, so every wrapper after it must read `O.Found.ar(lr)` -- the arena that CONTAINS lr.
+# `T.Tensor.ar(gt)` is the arena from BEFORE lr existed, so `T.tn_new(it, O.Found.i(lr))` interned an
+# INDEX PAST THE END (a NOOP), and `tn_mul(gt, lrt)` was a shape MISMATCH against that NOOP: shapeless,
+# which is what killed the store. (Orchestrator's catch; MEASURED as `sh_w2n=:0:` with `sh_g2=:2:49x10`
+# in the same arena.)
 def sgd.mk(+ar: O.Arena, +w: U32, +g: U32) -> T.Tensor:
   +lr = O.UOp.const(ar, O.CFloat{FB.F32.from_bits(1036831949)})
-  +gt = T.tn_new(ar, g)
-  +lrt = T.tn_new(T.Tensor.ar(gt), O.Found.i(lr))
+  +a1 = O.Found.ar(lr)
+  +gt = T.tn_new(a1, g)
+  +lrt = MX.mxw_bcast(T.tn_new(a1, O.Found.i(lr)), IX.rr_dims(a1, F.Folded.t(F.folded(a1)), g))
   +sc = T.tn_mul(gt, lrt)
   T.tn_sub(T.tn_new(T.Tensor.ar(sc), w), sc)
 
