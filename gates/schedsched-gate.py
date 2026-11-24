@@ -132,7 +132,15 @@ PINS = tuple((lane, row) for lane in ("py", "bd")
 
 GATE = Gate(
     "schedsched-gate",
-    bend="tinybendygrad/schedule/__init__.bend",
+    # THE DRIVER, AND NOT THE LIBRARY. `d404c64d9` MOVED THE 135 GATE ROWS OUT OF
+    # `tinybendygrad/schedule/__init__.bend` AND INTO `gates/schedule-init-gate.bend` (the
+    # port file was 3439 lines and 964 of them were gate rows), AND THIS FIELD WAS NOT
+    # MOVED WITH THEM -- so the port lane ran the LIBRARY, which has no `main` and answers
+    # bend's proof check: TWO lines, "ALL PROOFS CHECK". MEASURED: the driver emits 135
+    # rows (`bin/bend gates/schedule-init-gate.bend | wc -l` = 135) and the library emits 2,
+    # and the declared `rows=135` could not be met by the file this field named. THE ORACLE
+    # LANE'S OWN FAILURE MASKED IT: the oracle raises before the port lane runs.
+    bend="gates/schedule-init-gate.bend",
     oracle="gates/schedsched-oracle.py",
     rows=ROWS,
     compared=ROWS - len(PORT_ONLY),

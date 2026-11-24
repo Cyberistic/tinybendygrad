@@ -5096,18 +5096,40 @@ are NOT free: `grep -c smoothstep tinygrad/` is 0 and there is no `Ops.MIN`.
       the chain that is absent rather than unwired.**
 - [ ] **THE SHADER COMPILES TO A WRONG KERNEL, AND THE ROOT CAUSE IS NOW MEASURED (2026-11-24).**
       `shader-run.bend` takes the graph through `rr_kernel_graph` — rangeify stage 1 IS ported —
-      and renders `*(buf0+Lidx0) = 1`. The chain, all in `shaders/README.md`: the rangify apply
-      consumes `SHRINK` (`rangify.bend:680`) but keeps `PAD` as a wall (`rr_ap_wall_hit`,
-      `rangify.bend:1474`); the surviving PAD's 2-D marg over the flattened kernel graph is
-      refused by the fold, the END loses its fold row, `fold.ended(END)` is `None` (structural
-      answer 2), the 2 WEAK ranges read as open, `sk_open=False`, no `CALL` is built, and the
-      store's value is dropped. **The fix is upstream's pad lane** — `apply_movement_op`'s
-      `(r-off).valid(gate)` (`indexing.py:169-173`, = `gate.where(r-off, Invalid)`,
-      `ops.py:636`) plus `convert_pad_to_where_to_keep_behavior_local` (`indexing.py:98-103`,
-      the value-level `WHERE(valid, value, 0)`) plus the realize-forcing of movement-op
-      sources (the shift can only apply to a buffered read). That is the other half of W3;
-      see the README for why a partial arm would be silently wrong at the border instead of
-      loudly `= 1`.
+      and the schedule now REFUSES: `kernels=0`, `refused=unbacked-end`. The chain, all in
+      `shaders/README.md`: the rangify apply consumes `SHRINK` (`rangify.bend:680`) but keeps
+      `PAD` as a wall (`rr_ap_wall_hit`, `rangify.bend:1474`); the surviving PAD's 2-D marg over
+      the flattened kernel graph is refused by the fold, the END loses its fold row,
+      `fold.ended(END)` is `None` (structural answer 2), the 2 WEAK ranges read as open,
+      `sk_open=False`, no `CALL` is built, and the store's value is dropped. **THE FIX IS
+      UPSTREAM'S PAD LANE** — `apply_movement_op`'s `(r-off).valid(gate)` (`indexing.py:169-173`,
+      = `gate.where(r-off, Invalid)`, `ops.py:636`) plus
+      `convert_pad_to_where_to_keep_behavior_local` (`indexing.py:98-103`, the value-level
+      `WHERE(valid, value, 0)`) plus the realize-forcing of movement-op sources (the shift can
+      only apply to a buffered read, and the port's range model has NO valid predicate at all:
+      `IxRange{kind, idx, ext}`). That is the other half of W3 and it is a MODEL change, not a
+      patch; see the README for why a partial arm would be silently wrong at the border instead
+      of loudly `= 1`.
+- [x] **THE PORT NO LONGER RENDERS A KERNEL WHOSE VALUE WAS DROPPED (2026-11-24).** Upstream
+      `create_schedule` ASSERTS that an END's src0 is a CALL (`schedule/__init__.py:46`); the
+      port had no such check, so an unsplit kernel graph became a kernel that wrote a constant
+      (`*(buf0+Lidx0) = 1`). The port now answers an EMPTY schedule for that graph
+      (`sched_unbacked` in `schedule/__init__.bend`), because a schedule missing a kernel is a
+      schedule missing an output. MEASURED before/after on one tree: `kernels=1` +
+      `*(buf0+Lidx0) = 1` -> `kernels=0` + `refused=unbacked-end`, no C compiled. The 135
+      schedule-gate rows DO NOT MOVE — so the change is inert for every fixture, WHICH IS ITS
+      GAP: no fixture exercises it, and a row that cannot go red is worse than no row.
+- [ ] **`gates/schedsched-gate.py` HAD TWO DEFECTS AND ONE MASKED THE OTHER (2026-11-24).**
+      (1) The `bend=` field still pointed at the LIBRARY after `d404c64d9` moved the 135 gate
+      rows into the driver `gates/schedule-init-gate.bend`, so the port lane ran a file with no
+      `main` and read bend's proof check ("ALL PROOFS CHECK", 2 lines) instead of 135 rows.
+      **FIXED** — the field names the driver, which emits 135 rows and compiles natively
+      (rc=0). (2) The CPython lane DIES FIRST on master and has since the re-vendor:
+      `RuntimeError: cycle detected in assign graph` out of `tinygrad/schedule/__init__.py:78`,
+      measured at BOTH `081719ab4` and `35221f97c` and with the worktree's own vendored
+      `tinygrad/` on `PYTHONPATH`. So the gate REFUSES and the port lane never runs — the
+      oracle's fixtures need rebasing against the re-vendored `create_schedule`, and THAT is
+      the job that would give the schedule a live instrument again.
 
 ---
 

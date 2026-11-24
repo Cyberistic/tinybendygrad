@@ -98,6 +98,26 @@ not do: the pad's zero-fill is load-bearing at the last column, so a wrong arm t
 answers `kernels=1` **and renders the add**, so the scheduler is not broken — this graph's
 pad is.
 
+## The schedule now refuses instead of rendering a wrong kernel
+
+Upstream's `create_schedule` **asserts** that an END's src0 is a CALL
+(`schedule/__init__.py:46`) — the graph whose kernel graph was never split — and the port
+had no such check: it unwrapped the END to its STORE, dropped the store's value, and
+rendered `*(buf0+Lidx0) = 1`. The port now answers an **empty schedule** for that graph
+(`sched_unbacked`), because a schedule missing a kernel is a schedule missing an output.
+MEASURED, before and after, same tree: `kernels=1` + `*(buf0+Lidx0) = 1` → `kernels=0` +
+`refused=unbacked-end`, and no C is compiled at all.
+
+**And the gate that should have caught it had two defects, one masking the other.** The
+schedule gate's `bend=` field still pointed at the **library** after `d404c64d9` moved the
+135 rows into the driver `gates/schedule-init-gate.bend` — so the port lane ran a file with
+no `main` and read bend's proof check ("ALL PROOFS CHECK", 2 lines) instead of 135 rows.
+The CPython lane **dies first** on master (`RuntimeError: cycle detected in assign graph`,
+the re-vendor changed `create_schedule`), which is why the stale field went unnoticed. The
+field is fixed (the driver emits 135 rows and compiles natively, rc=0); the oracle's
+rebasing is a separate job, and the port change is **inert for every fixture** (no one of
+the 135 rows moves) — which is also its gap: no fixture exercises it yet.
+
 **And a genuinely missing port.** An `ALLOC` has no realize-time rebind: `UOp.new_buffer` is
 `TODO(p3)` in `ops.bend`, and upstream's `linear_with_vars` swaps `ALLOC` → `BUFFER` there.
 That is why the runner takes `mxw_buf` (BUFFERs) and why a graph built the `Tensor.empty`

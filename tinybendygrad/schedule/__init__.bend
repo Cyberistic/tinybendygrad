@@ -1292,8 +1292,38 @@ def lin_ar(+x: Lin) -> O.Arena: Lin.ar(x)
 def linear(+x: Lin) -> O.Found:
   O.UOp.new(Lin.ar(x), O.OpsLINEAR{}, Lin.out(x), O.ANone{}, O.TNone{})
 
+# UPSTREAM'S ASSERT, AS A QUESTION AND AS AN EMPTY ANSWER.
+# `schedule/__init__.py:46`: `if k.op is Ops.END: assert k.src[0].op is Ops.CALL,
+# f"END src[0] should be KERNEL, not {k.src[0].op}"`.
+#
+# THE PORT CANNOT ASSERT, AND WHAT IT DID INSTEAD WAS THE WORST ANSWER: the END is
+# unwrapped to its STORE (`kernel.of`), `replace` keeps the destination and the
+# buffers and DROPS the value, and the schedule renders a kernel that writes a
+# constant -- `*(buf0+Lidx0) = 1`. SO AN END WHOSE src0 IS NOT A CALL IS NOT A
+# KERNEL, AND A SCHEDULE HOLDING ONE IS EMPTY: a schedule missing a kernel is a
+# schedule missing an output, and upstream's answer to that graph is a crash.
+def sc_unbacked(+ar: O.Arena, +i: U32) -> Bool:
+  Bool.and(sc_is(ar, i, O.OpsEND{}), Bool.not(sc_is(ar, sc_src0(ar, i), O.OpsCALL{})))
+
+def sched_unbacked.go(+ar: O.Arena, +us: List<&2, U32>, acc: Bool) -> Bool:
+  match us:
+    case Nil{}: acc
+    case u <> t: sched_unbacked.go(ar, t, Bool.or(acc, sc_unbacked(ar, u)))
+
+# THE QUESTION, FOR THE CALLER: does this graph carry an END that no CALL backs?
+# A graph whose kernel graph was never SPLIT -- `split_store` refused -- is the
+# graph that answers True, and it is the graph upstream asserts on.
+def sched_unbacked(+ar: O.Arena, +sink: U32) -> Bool:
+  sched_unbacked.go(ar, sc_topo_of(O.Arena.budget(ar), ar, sink), False{})
+
+def sched_pick(+ar: O.Arena, +c: Ctx, unbacked: Bool) -> Lin:
+  match unbacked:
+    case True{}: Lin{ar, c, Nil{}}
+    case _: lin(ar, c)
+
 def schedule(+ar: O.Arena, +sink: U32) -> Lin:
-  lin(ar, pass2(ar, pass1(ar, sink)))
+  +c = pass2(ar, pass1(ar, sink))
+  sched_pick(ar, c, sched_unbacked(ar, sink))
 
 # `if any(in_degree.values()): raise RuntimeError("cycle detected in assign
 # graph")` -- a raise the TODO above cannot make, so what IS observable is the

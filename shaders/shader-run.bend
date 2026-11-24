@@ -1,10 +1,14 @@
 # shaders/shader-run.bend -- THE SHADER THROUGH THE PORT'S OWN COMPILER, END TO END.
 #
-# VERDICT: **THE CHAIN RUNS AND THE KERNEL IS WRONG.** `kernels=1`, the C renders, and the
-# body is `*(buf0+Lidx0) = 1` for one buffer instead of the 256-cell circle over three.
-# **THIS FILE IS A MEASURED NEGATIVE AND NOT A RENDERER**, and it is kept because the four
-# links below each answered ZERO (or `UNHANDLED`) rather than an error, and the next agent
-# should start from the last measurement rather than from the beginning.
+# VERDICT: **THE CHAIN RUNS AND THE SCHEDULE REFUSES.** `kernels=0` and
+# `refused=unbacked-end`: the kernel graph was never SPLIT (the `PAD` the neighbour reads
+# need is not lowered, so upstream's `create_schedule` would ASSERT -- `schedule/__init__.py:46`
+# -- where the port answers an empty schedule). BEFORE THAT, the port built a kernel whose
+# value was dropped, and the body was `*(buf0+Lidx0) = 1` for one buffer instead of the
+# 256-cell circle over three. **THIS FILE IS A MEASURED REFUSAL AND NOT A RENDERER**, and it
+# is kept because the four links below each answered ZERO (or `UNHANDLED`) rather than an
+# error, and the next agent should start from the last measurement rather than from the
+# beginning. THE ROOT CAUSE IS IN `README.md`: the rangify apply keeps `PAD` as a wall.
 #
 # THE CHAIN, and what each link cost:
 #
@@ -24,12 +28,15 @@
 #                        comes out with ONE op. Widths come from `F.UOp.vmax` (the port's
 #                        own reader) and NOT from `linrender`'s hand-rolled chain walk.
 #
-# THE UNRESOLVED DEFECT. The kernel graph ITSELF is right -- `eng_dump` shows
-# `SINK(AFTER(INDEX, END(STORE, RANGE x4)))` and the formula's `SQRT`, `RECIP`, `MAX` and the
-# two `PAD`s -- so the loss is between `create_schedule` and the CU list. `buf-schedules.bend`
-# is the control: the same chain over `a + b` on two BUFFERs answers `kernels=1` AND renders
-# the add, so the scheduler is not simply broken; something about this graph (PAD/SHRINK, or
-# two reads of one buffer) does not survive.
+# THE UNRESOLVED DEFECT, NOW PINNED. The kernel graph ITSELF carries the formula -- `eng_dump`
+# shows `SINK(AFTER(INDEX, END(STORE, RANGE x4)))` and the `SQRT`, `RECIP`, `MAX` and the two
+# `PAD`s -- and the loss is the `PAD`: the rangify apply CONSUMES the `SHRINK` but keeps the
+# `PAD` as a wall (`rr_ap_wall_hit`, `schedule/rangify.bend:1474`), so the `PAD` reaches the
+# kernel graph with a 2-D marg over a flattened graph, the fold refuses it, the `END` loses
+# its fold row, and the schedule has no kernel to build. `README.md` has the chain and
+# upstream's cure. `buf-schedules.bend` is the control: the same chain over `a + b` on two
+# BUFFERs answers `kernels=1` AND renders the add, so the scheduler is not simply broken;
+# this graph's `PAD` is.
 #
 # AND THE FOURTH LINK, WHICH IS A MISSING PORT AND NOT A WIRING GAP: an ALLOC has no
 # realize-time rebind. `UOp.new_buffer` is `TODO(p3)` in `ops.bend`, and upstream's
@@ -61,19 +68,28 @@ def N() -> U32: 16
 def NCELLS() -> U32: 256
 
 type Kern is Data:
-  Kern{name: String, bufs: List<&2, String>, c: String}
+  Kern{name: String, bufs: List<&2, String>, c: String, refused: String}
 
 def Kern.name(x: Kern) -> String:
   match x:
-    case Kern{name, bufs, c}: name
+    case Kern{name, bufs, c, refused}: name
 
 def Kern.bufs(x: Kern) -> List<&2, String>:
   match x:
-    case Kern{name, bufs, c}: bufs
+    case Kern{name, bufs, c, refused}: bufs
 
 def Kern.c(x: Kern) -> String:
   match x:
-    case Kern{name, bufs, c}: c
+    case Kern{name, bufs, c, refused}: c
+
+# THE REFUSAL, WHEN THERE IS ONE. Upstream's `create_schedule` ASSERTS that an END's src0
+# is a CALL (`schedule/__init__.py:46`) -- the graph whose kernel graph was never SPLIT --
+# and the port answers an EMPTY schedule for it (`sched_unbacked`), because a schedule
+# missing a kernel is a schedule missing an output. The runner NAMES the refusal instead of
+# rendering a kernel whose value was dropped.
+def Kern.refused(x: Kern) -> String:
+  match x:
+    case Kern{name, bufs, c, refused}: refused
 
 def names.go(+bs: List<&2, C.BArg>, +acc: List<&2, String>) -> List<&2, String>:
   match bs:
@@ -87,10 +103,10 @@ def names.go(+bs: List<&2, C.BArg>, +acc: List<&2, String>) -> List<&2, String>:
 # upstream and the port's kernel graph carries NONE (its `END` prints `:none:`), so
 # `C.St.name` answers `test`. `render_kernel` takes the name as an argument, so the harness
 # supplies it and no `KernelInfo` has to be invented.
-def kern_at(+s: C.St, +ks: List<&2, C.KU>, +nm: String) -> Kern:
+def kern_at(+s: C.St, +ks: List<&2, C.KU>, +nm: String, +refused: String) -> Kern:
   Kern{nm, names.go(C.St.bufs(s), Nil{}),
     C.render_kernel(C.dev_clang(), True{}, nm,
-      List.reverse(&2, String, C.St.kernel(s)), C.St.bufs(s), ks, 1)}
+      List.reverse(&2, String, C.St.kernel(s)), C.St.bufs(s), ks, 1), refused}
 
 # `List.concat` IS `concat(n, T, List<List<T>>)` -- it flattens a LIST OF LISTS and cannot
 # append one flat list to another (MEASURED: the four-argument form expects `List<List<KU>>`
@@ -149,10 +165,17 @@ def cus_go(+ar: O.Arena, +fx: F.Folded, +bt: F.BTable, +rt: F.RTable, ks: List<&
 # (MEASURED: bend answers "a def whose body is implemented before the def is used" naming a
 # generated binder, with the shader's 55-node formula and the buffer construction in one term).
 def sink_of() -> O.Found:
-  +xv = MX.mxw_buf(O.Arena.empty(), 1, 256)
-  +yv = MX.mxw_buf(T.Tensor.ar(xv), 2, 256)
+  # `UOp.new_buffer` AND NOT `mxw_buf`: the general def is the port's `new_buffer`
+  # (`ops.bend`, `ops.py:809`), which was a `TODO(p3)` until it was written. Using it here is
+  # what proves it builds the node `mxw_buf` builds -- `mxw_buf` is the f32/GLOBAL shortcut
+  # over exactly this call.
+  +x0 = O.UOp.new_buffer(O.Arena.empty(), S.D1{0}, 256, S.single(), Some{1})
+  +xv = T.tn_wrap_uop(O.Found.ar(x0), O.Found.i(x0))
+  +y0 = O.UOp.new_buffer(T.Tensor.ar(xv), S.D1{0}, 256, S.single(), Some{2})
+  +yv = T.tn_wrap_uop(O.Found.ar(y0), O.Found.i(y0))
   +t = SH.sh_graph_on(xv, yv)
-  +o = MX.mxw_buf(O.Found.ar(t), 0, 256)
+  +o0 = O.UOp.new_buffer(O.Found.ar(t), S.D1{0}, 256, S.single(), Some{0})
+  +o = T.tn_wrap_uop(O.Found.ar(o0), O.Found.i(o0))
   T.tn_assign_store(T.Tensor.ar(o), T.Tensor.u(o), O.Found.i(t))
 
 # THE WHOLE PORT-SIDE CHAIN.
@@ -173,7 +196,8 @@ def build() -> Kern:
   +bt = F.mm.sweep(ar, F.Folded.t(fx))
   +rt = F.rng_sweep(ar, F.Folded.t(fx))
   +kus = cus_go(ar, fx, bt, rt, SCH.lin_kernels(lin), Nil{})
-  kern_at(C._render(C.dev_clang(), kus), kus, "circle")
+  +ref = Bool.pick(String, SCH.sched_unbacked(O.Found.ar(kg), O.Found.i(kg)), "unbacked-end", "")
+  kern_at(C._render(C.dev_clang(), kus), kus, "circle", ref)
 
 def buf_at(+ns: List<&2, String>, i: Nat) -> String:
   Maybe.default(&2, String, List.get(&2, String, ns, i), "<missing>")
@@ -252,6 +276,9 @@ def diag() -> List<&2, String>:
    String.concat(["topo=", U32.show(U32.from_nat(List.length(&2, U32, ns)))]),
    String.concat(["kout0=", O.Ops.name(O.Arena.op(SCH.lin_ar(lin), k0))]),
    String.concat(["kout0_src0=", O.Ops.name(O.Arena.op(SCH.lin_ar(lin), O.Arena.src(SCH.lin_ar(lin), k0, 0)))]),
+   String.concat(["body_nodes=", U32.show(U32.from_nat(List.length(&2, U32, O.UOp.toposort_nocalls(O.Arena.budget(SCH.lin_ar(lin)), SCH.lin_ar(lin), k0))))]),
+   String.concat(["body_value_nodes=", U32.show(U32.from_nat(List.length(&2, U32, O.UOp.toposort_nocalls(O.Arena.budget(SCH.lin_ar(lin)), SCH.lin_ar(lin), O.Arena.src(SCH.lin_ar(lin), k0, 1)))))]) ,
+   String.concat(["kout0_dump=", RG.eng_dump(SCH.lin_ar(lin), k0)]),
    String.concat(["kout0_nsrc=", U32.show(U32.from_nat(List.length(&2, U32, O.Arena.srcs(SCH.lin_ar(lin), k0))))]),
    String.concat(["kg=", RG.eng_dump(O.Found.ar(kg), O.Found.i(kg))])]
 
@@ -269,15 +296,20 @@ def go(+k: Kern, c_only: Bool) -> IO(Unit):
     Unit <- put(diag())
     Unit <- IO.print(String.concat(["# sig=", sig(k)]))
     Unit <- IO.print(String.concat(["# c_len=", U32.show(U32.from_nat(String.length(Kern.c(k))))]))
-    Bool.pick(IO(Unit), c_only,
-      IO.print(Kern.c(k)),
+    Bool.pick(IO(Unit), String.eq(Kern.refused(k), ""),
       do IO<Unit>:
-        f : File <- IO.try(File, File.open(C_PATH(), "w"))
-        f2 : File <- IO.bind(File & Result<&1, &1, U32 & String, Unit>, File,
-          File.write(f, drv(k)), wrote)
-        Unit <- File.close(f2)
-        Unit <- run("cc", "cc", ["-O1", "-o", BIN_PATH(), C_PATH()])
-        run("run", BIN_PATH(), []))
+        Bool.pick(IO(Unit), c_only,
+          IO.print(Kern.c(k)),
+          do IO<Unit>:
+            f : File <- IO.try(File, File.open(C_PATH(), "w"))
+            f2 : File <- IO.bind(File & Result<&1, &1, U32 & String, Unit>, File,
+              File.write(f, drv(k)), wrote)
+            Unit <- File.close(f2)
+            Unit <- run("cc", "cc", ["-O1", "-o", BIN_PATH(), C_PATH()])
+            run("run", BIN_PATH(), [])),
+      do IO<Unit>:
+        Unit <- IO.print(String.concat(["# refused=", Kern.refused(k)]))
+        IO.pure(Unit, Unit{}))
 
 def main() -> IO(Unit):
   do IO<Unit>:
