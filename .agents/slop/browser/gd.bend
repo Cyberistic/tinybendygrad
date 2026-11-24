@@ -11,8 +11,14 @@ import ./fchainl.bend as CH
 
 def n2(+xs: List<&2, U32>) -> String: U32.show(U32.from_nat(List.length(&2, U32, xs)))
 
+# `sk_open`'s OWN expression: `F.UOp.ranges(F.Ranged.ar(g), F.Ranged.rt(g), self)` with `g = F.ranged(ar)`.
+# Using `rng_sweep(ar, folded(ar))` instead was the whole reason the first version of this row read `rngs=0`.
+def rg(+ar: O.Arena, +e: U32) -> List<&2, U32>:
+  +g = F.ranged(ar)
+  F.Rng.rs(F.UOp.ranges(F.Ranged.ar(g), F.Ranged.rt(g), e))
+
 def rngs(+ar: O.Arena, +tb: F.Table, +e: U32) -> List<&2, U32>:
-  F.Rng.rs(F.UOp.ranges(ar, F.rng_sweep(ar, tb), e))
+  rg(ar, e)
 
 def row.go(+ar: O.Arena, +tb: F.Table, +ns: List<&2, U32>, +acc: List<&2, String>) -> List<&2, String>:
   match ns:
