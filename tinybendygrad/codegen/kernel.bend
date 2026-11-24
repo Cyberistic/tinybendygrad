@@ -577,31 +577,68 @@ def kn_map1(+tb: F.Table, +s: U32, +r: ALS) -> ALS:
 # arms, so asking `kn_map1` speculatively would MINT a LOAD node in an arena the caller then throws
 # away -- and the next mint lands on that same index, which is the stale-arena class this file's
 # header records. The `match` arms are the non-strict branch, so only the chosen one runs.
-# THE TEST IS THE OP, AND THE TWO FAILURES IT LEAVES ARE NAMED AT THE FOOT OF THIS COMMENT.
-# `s2 != s` happens for TWO reasons and only ONE means "already in the ALU": the walk rewrote the KIND
-# (`MUL(INDEX,INDEX) -> MUL(LOAD,LOAD)`), or it rebuilt the SAME kind with new srcs (an INDEX whose
-# buffer changed). A rebuilt INDEX is still a GLOBAL pointer and must be loaded -- MEASURED, an
-# identity test skipped it and left `data1_784+idx` in three of four kernels.
-# THE OP TEST IS STILL NOT THE WHOLE ANSWER, and saying so is cheaper than pretending:
-# `MUL(LOAD,LOAD)` has the same op as `MUL(INDEX,INDEX)`, so its space is read off the ORIGINAL and the
-# multiply gets loaded (`float val2 = (*(val1*val0));`). ops.py:870-880 answers it from the SUBSTITUTED
-# graph -- void is ALU, Elementwise is ALU iff EVERY src is -- and that walk is MUTUAL RECURSION (op ->
-# all-srcs -> op), which bend refuses. The shape that lands it is an ALU-FLAG MAP threaded through the
-# walk beside `Sub`: the walk is already bottom-up, so each node's flag is a fold over its srcs' flags.
-# TODO(p3) codegen/__init__.py:205  the ALU-flag map that makes this test read the SUBSTITUTED node
-def kn_map1.sub2(same: Bool, +tb: F.Table, +s2: U32, +s: U32, +r: ALS) -> ALS:
-  match same:
-    case True{} : kn_map1.of(kn_alu_loadable(tb, ALS.ar(r), s), s2, r)
+# `maybe_load(s)` -- `u.load() if u.addrspace in (GLOBAL, LOCAL, REG) else u` (codegen/__init__.py:205),
+# AND THE ONE BIT IT NEEDS IS "IS THIS NODE MEMORY-BACKED", NOT ITS FULL ADDRSPACE. ops.py:870-880 says
+# a BUFFER/PARAM/ALLOC has its arg's space, INDEX/CAST/AFTER inherit src[0]'s, Elementwise is ALU iff
+# every src is -- and upstream always loads a memory src AT ITS CONSUMER, so by the time an elementwise
+# node is matched every src is already ALU and the node IS ALU. The two rules collapse to:
+#   memory leaf -> memory;  an op that inherits src[0] -> src[0]'s bit;  everything else -> ALU.
+# THAT IS A ONE-BIT FOLD OVER THE WALK, which is why it needs no recursion: the walk is bottom-up, so
+# the src's bit is already in the map.
+#
+# THREE SPELLINGS OF THE TEST WERE MEASURED AND TWO WERE WRONG, and each wrong one is a row:
+#   * `kn_alu_loadable` on the ORIGINAL fold: `MUL(INDEX,INDEX)` is GLOBAL there, so the PARENT loaded
+#     the multiply -- `float val2 = (*(val1*val0));`, `indirection requires pointer operand`;
+#   * an IDENTITY test (`s2 != s`): a rebuilt INDEX is a different node with the SAME op and is still
+#     memory, so its load was skipped and three of four kernels kept `data1_784+idx`;
+#   * an ALU flag computed from the ORIGINAL srcs: the INDEXes' bit is "memory", so the MUL inherited
+#     `not all ALU` and was loaded -- the same `*(val1*val0)` from the other direction.
+def mem_flag.code(+op: O.Op) -> U32:
+  match op:
+    case O.OpsBUFFER{}: 1
+    case O.OpsPARAM{}: 1
+    case O.OpsALLOC{}: 1
+    case O.OpsREFPARAM{}: 1
+    case O.OpsINDEX{}: 2
+    case O.OpsCAST{}: 2
+    case O.OpsAFTER{}: 2
+    case O.OpsUNSHARD{}: 2
+    case O.OpsMSTACK{}: 2
+    case O.OpsMSELECT{}: 2
+    case _: Bool.pick(U32, O.GroupOp.movement(op), 2, 0)
+
+def mem_flag.pick(code: U32, src0_mem: Bool) -> Bool:
+  match code:
+    case 1: True{}
+    case 2: src0_mem
+    case _: False{}
+
+def mem_flag(+op: O.Op, src0_mem: Bool) -> Bool:
+  mem_flag.pick(mem_flag.code(op), src0_mem)
+
+def Sub.fl(now: U32) -> Bool: U32.is_eq(now, 1)
+
+def flag_get.go(+k: U32, +fm: List<&2, Sub>) -> Maybe<&2, Bool>:
+  match fm:
+    case Nil{}: None{}
+    case Sub{was, now} <> t:
+      Bool.pick(Maybe<&2, Bool>, U32.is_eq(was, k), Some{Sub.fl(now)}, flag_get.go(k, t))
+
+# A SRC THE MAP HAS NOT SEEN ANSWERS `False` (ALU, do not load), and that default is what a bottom-up
+# walk makes sound: every src is visited before its consumer. `# TODO(p3)` if that ever stops holding.
+def flag_get(+fm: List<&2, Sub>, +k: U32) -> Bool:
+  Maybe.default(&2, Bool, flag_get.go(k, fm), False{})
+
+# A MEMORY NODE IS LOADED; AN ALU NODE IS LEFT ALONE.
+def kn_map1.sub2(mem: Bool, +s2: U32, +r: ALS) -> ALS:
+  match mem:
+    case True{} : kn_map1.of(True{}, s2, r)
     case False{}: ALS{ALS.ar(r), List.append(&2, U32, ALS.ss(r), [s2])}
 
-def kn_map1.sub(+sub: List<&2, Sub>, +tb: F.Table, +s: U32, +r: ALS) -> ALS:
-  +s2 = lw_find(sub, s)
-  kn_map1.sub2(O.eq_op(O.Arena.op(ALS.ar(r), s2), O.Arena.op(ALS.ar(r), s)), tb, s2, s, r)
-
-def kn_map_load.go(ss: List<&2, U32>, +sub: List<&2, Sub>, +tb: F.Table, r: ALS) -> ALS:
+def kn_map_load.go(ss: List<&2, U32>, +sub: List<&2, Sub>, +fm: List<&2, Sub>, r: ALS) -> ALS:
   match ss:
     case Nil{}   : r
-    case +s <> t : kn_map_load.go(t, sub, tb, kn_map1.sub(sub, tb, s, r))
+    case +s <> t : kn_map_load.go(t, sub, fm, kn_map1.sub2(flag_get(fm, s), lw_find(sub, s), r))
 
 # `x.replace(src=tuple(map(maybe_load, x.src)))` -- and the REPLACE is `UOp.new` in the arena
 # the mapping GREW, which is why `ALS.ar(r)` is the arena and `ar` is only read for `self`.
@@ -614,12 +651,13 @@ def al_0.of(+shaped: Bool, +ar: O.Arena, +self: U32, +r: ALS) -> Ker:
 # `x.replace(src=(x.src[0], maybe_load(x.src[1]))+x.src[2:])` -- the STORE arm
 # (:231). Note it is `src[1]` and not every src: a STORE's value is the ONLY src
 # that is loaded, and `al_store_src` is the row that pins the position.
-def al_store_src(+sub: List<&2, Sub>, +tb: F.Table, +ar: O.Arena, +self: U32) -> ALS:
-  +m = kn_map1.sub(sub, tb, kn_src(ar, self, 1), ALS{ar, [kn_src0(ar, self)]})
+def al_store_src(+sub: List<&2, Sub>, +fm: List<&2, Sub>, +ar: O.Arena, +self: U32) -> ALS:
+  +v = kn_src(ar, self, 1)
+  +m = kn_map1.sub2(flag_get(fm, v), lw_find(sub, v), ALS{ar, [kn_src0(ar, self)]})
   ALS{ALS.ar(m), List.concat(&2, U32, [ALS.ss(m), O.Arena.src_from(ALS.ar(m), self, 2)])}
 
-def al_1(+sub: List<&2, Sub>, +tb: F.Table, +ar: O.Arena, +self: U32) -> Ker:
-  al_0.of(kn_is(ar, self, O.OpsSTORE{}), ar, self, al_store_src(sub, tb, ar, self))
+def al_1(+sub: List<&2, Sub>, +fm: List<&2, Sub>, +ar: O.Arena, +self: U32) -> Ker:
+  al_0.of(kn_is(ar, self, O.OpsSTORE{}), ar, self, al_store_src(sub, fm, ar, self))
 
 # The table: `pm_add_loads`, __init__.py:223-227. TWO rules, and the first is a
 # GroupOp over `{REDUCE, WMMA, STACK}` plus every Elementwise op -- an op SET this
@@ -631,20 +669,21 @@ def al_table() -> List<&2, O.PMEntry>:
   [O.PMEntry{0, [O.OpsREDUCE{}, O.OpsWMMA{}, O.OpsSTACK{}], Nil{}},   # :224 Elementwise|{REDUCE,WMMA,STACK}
    O.PMEntry{1, [O.OpsSTORE{}], Nil{}}]                                # :226 STORE
 
-def kn_map_load(ss: List<&2, U32>, +sub: List<&2, Sub>, +tb: F.Table, +ar: O.Arena) -> ALS:
-  kn_map_load.go(ss, sub, tb, ALS{ar, Nil{}})
+def kn_map_load(ss: List<&2, U32>, +sub: List<&2, Sub>, +fm: List<&2, Sub>, +ar: O.Arena) -> ALS:
+  kn_map_load.go(ss, sub, fm, ALS{ar, Nil{}})
 
-def al_dispatch(+sub: List<&2, Sub>, tag: U32, +tb: F.Table, +ar: O.Arena, +self: U32) -> Ker:
+def al_dispatch(+sub: List<&2, Sub>, +fm: List<&2, Sub>, tag: U32, +ar: O.Arena, +self: U32) -> Ker:
   match tag:
     case 0: al_0.of(Bool.or(Bool.or(kn_is(ar, self, O.OpsREDUCE{}), kn_is(ar, self, O.OpsWMMA{})),
                              Bool.or(kn_is(ar, self, O.OpsSTACK{}), Bool.not(kn_is_bitcast(ar, self)))),
-                    ar, self, kn_map_load(kn_srcs(ar, self), sub, tb, ar))
-    case 1: al_1(sub, tb, ar, self)
+                    ar, self, kn_map_load(kn_srcs(ar, self), sub, fm, ar))
+    case 1: al_1(sub, fm, ar, self)
     case _: Ker{ar, 0}
 
-def al_try.go(ok: Bool, tag: U32, +sub: List<&2, Sub>, +tb: F.Table, +ar: O.Arena, +self: U32) -> Ker:
+def al_try.go(ok: Bool, tag: U32, +sub: List<&2, Sub>, +fm: List<&2, Sub>,
+              +ar: O.Arena, +self: U32) -> Ker:
   match ok:
-    case True{} : ker_self(al_dispatch(sub, tag, tb, ar, self), self)
+    case True{} : ker_self(al_dispatch(sub, fm, tag, ar, self), self)
     case False{}: Ker{ar, 0}
 
 # THE FOLD, first-wins on the ACCUMULATOR: `PatternMatcher.rewrite` returns the
@@ -684,12 +723,12 @@ def al_elemwise(+ar: O.Arena, i: U32) -> Bool:
 def al_ok(+ops: List<&2, O.Op>, +ar: O.Arena, +self: U32) -> Bool:
   Bool.or(O.pm_claimed(ops, ar, self), al_elemwise(ar, self))
 
-def al_scan(rs: List<&2, O.PMEntry>, +sub: List<&2, Sub>, +tb: F.Table, +ar: O.Arena,
+def al_scan(rs: List<&2, O.PMEntry>, +sub: List<&2, Sub>, +fm: List<&2, Sub>, +ar: O.Arena,
             +self: U32, +h: Ker) -> Ker:
   match rs:
     case Nil{}  : h
-    case +e <> t: al_scan(t, sub, tb, ar, self, al_next(h,
-      al_try.go(al_ok(O.PMEntry.ops(e), ar, self), O.PMEntry.tag(e), sub, tb, ar, self)))
+    case +e <> t: al_scan(t, sub, fm, ar, self, al_next(h,
+      al_try.go(al_ok(O.PMEntry.ops(e), ar, self), O.PMEntry.tag(e), sub, fm, ar, self)))
 
 # THE ARENA IS THE CALLER'S, AND THAT IS NOT A CONVENIENCE. `pm_add_loads` is called once per node
 # by a walk that keeps growing the graph, so minting from `F.Folded.ar(fx)` -- the FOLD's arena, the
@@ -697,8 +736,9 @@ def al_scan(rs: List<&2, O.PMEntry>, +sub: List<&2, Sub>, +tb: F.Table, +ar: O.A
 # four kernels as `void test() { }`, an empty body from collided nodes, because `Arena.op` answers
 # the BOTTOM for an index the arena it is read from does not contain. The walk passes `Lt.ar(st)`,
 # the newest arena at every step.
-def pm_add_loads(+fx: F.Folded, +ar: O.Arena, +sub: List<&2, Sub>, self: U32) -> Ker:
-  al_scan(al_table(), sub, F.Folded.t(fx), ar, self, Ker{ar, 0})
+def pm_add_loads(+fx: F.Folded, +ar: O.Arena, +sub: List<&2, Sub>, +fm: List<&2, Sub>,
+                 self: U32) -> Ker:
+  al_scan(al_table(), sub, fm, ar, self, Ker{ar, 0})
 
 # `_is_local_store` -- __init__.py:247. PORTED. `x.op is Ops.STORE and
 # x.addrspace is AddrSpace.LOCAL`, and the `is` on an enum is an identity test, so
@@ -1101,7 +1141,7 @@ def k_of(+kx: K, n: Nat) -> Ker:
   pm_alloc_to_buf(F.Folded.ar(K.fx(kx)), K.at(kx, n))
 
 def k_al(+kx: K, n: Nat) -> Ker:
-  pm_add_loads(K.fx(kx), F.Folded.ar(K.fx(kx)), Nil{}, K.at(kx, n))
+  pm_add_loads(K.fx(kx), F.Folded.ar(K.fx(kx)), Nil{}, Nil{}, K.at(kx, n))
 
 def k_np_of(+kx: K, n: Nat, c: U32) -> NP:
   pm_number_params(c, F.Folded.ar(K.fx(kx)), K.at(kx, n))

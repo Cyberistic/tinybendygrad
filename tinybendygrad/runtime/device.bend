@@ -420,14 +420,30 @@ def al_subs.go(+rs: List<&2, LateRep>, +acc: List<&2, KR.Sub>) -> List<&2, KR.Su
 def al_subs(+rs: List<&2, LateRep>) -> List<&2, KR.Sub>:
   al_subs.go(rs, Nil{})
 
-def al_step(+fx0: F.Folded, +u: U32, +st: Lt) -> Lt:
-  +al = KR.pm_add_loads(fx0, Lt.ar(st), al_subs(Lt.rs(st)), u)
-  al_keep(Bool.or(U32.is_zero(KR.Ker.at(al)), U32.is_eq(KR.Ker.at(al), u)), al, u, st)
+# THE MEMORY BIT, ONE PER NODE, ONE ENTRY PER VISITED NODE. It is keyed by the ORIGINAL id -- that is
+# what a src IS -- and `mem_flag` (kernel.bend) folds it from the src's bit, which the bottom-up walk
+# has already recorded. No recursion: the recursion `ops.py:876-880` reads as is `op -> all-srcs -> op`,
+# and with "never load an ALU node" in hand it collapses to the one bit.
+def al_src0_mem(+ar: O.Arena, +fm: List<&2, KR.Sub>, +u: U32) -> Bool:
+  Bool.pick(Bool, U32.is_zero(O.Arena.nsrc(ar, u)), False{},
+            KR.flag_get(fm, O.Arena.src0(ar, u)))
 
-def al_pass.go(+fx0: F.Folded, +us: List<&2, U32>, st: Lt) -> Lt:
+def al_bit(b: Bool) -> U32: Bool.pick(U32, b, 1, 0)
+
+# THE WALK STATE IS `Lt` PLUS THIS MAP, AND IT IS A PAIR BECAUSE `Lt` IS ALSO `late_apply`'s: a fourth
+# field would make every `Lt` constructor in that pass pay for a map it cannot use. A pair is legal as a
+# PARAMETER that gets destructured, which is the form `rr_widen.all.fin` already uses.
+def al_step(+fx0: F.Folded, +u: U32, p: (Lt & List<&2, KR.Sub>)) -> (Lt & List<&2, KR.Sub>):
+  (+st, +fm) = p
+  +al = KR.pm_add_loads(fx0, Lt.ar(st), al_subs(Lt.rs(st)), fm, u)
+  (al_keep(Bool.or(U32.is_zero(KR.Ker.at(al)), U32.is_eq(KR.Ker.at(al), u)), al, u, st),
+   List.append(&2, KR.Sub, fm, [KR.Sub{u, al_bit(KR.mem_flag(O.Arena.op(Lt.ar(st), u),
+                                                             al_src0_mem(Lt.ar(st), fm, u)))}]))
+
+def al_pass.go(+fx0: F.Folded, +us: List<&2, U32>, p: (Lt & List<&2, KR.Sub>)) -> (Lt & List<&2, KR.Sub>):
   match us:
-    case Nil{}: st
-    case u <> t: al_pass.go(fx0, t, al_step(fx0, u, st))
+    case Nil{}: p
+    case u <> t: al_pass.go(fx0, t, al_step(fx0, u, p))
 
 # THE PASS WORKS AND IS NOT WIRED, AND THE TWO FACTS ARE SEPARATE. `shaders/index-loadable.bend`
 # measures it firing: `mul_at_src0_op=Ops.LOAD` on `MUL(INDEX, INDEX)`, with `at=10` inside an
@@ -439,10 +455,14 @@ def al_pass.go(+fx0: F.Folded, +us: List<&2, U32>, st: Lt) -> Lt:
 #
 # THE FOLD IS TAKEN ONCE FOR THE ROUND: per node was the FIRST O(n^2) attempt, and the fold of
 # an append-only arena is the expensive part of this pass, not the rule.
-def add_loads(+ar: O.Arena, +root: U32) -> O.Found:
-  +q = lt_round.fin(root,
-    al_pass.go(F.folded(ar), O.UOp.toposort(O.Arena.budget(ar), ar, root), Lt{ar, Nil{}, False{}}))
+def al_fin(p: (Lt & List<&2, KR.Sub>), +root: U32) -> O.Found:
+  (+st, +fl) = p
+  +q = lt_round.fin(root, st)
   O.Found{LtR.ar(q), LtR.i(q)}
+
+def add_loads(+ar: O.Arena, +root: U32) -> O.Found:
+  al_fin(al_pass.go(F.folded(ar), O.UOp.toposort(O.Arena.budget(ar), ar, root),
+                    (Lt{ar, Nil{}, False{}}, Nil{})), root)
 
 def body_low(+ar: O.Arena, +b: U32) -> O.Found:
   +w = WK.wk_commit(ar, b)
@@ -461,23 +481,105 @@ def body_low(+ar: O.Arena, +b: U32) -> O.Found:
 # to `priority` with the LIST breaking every tie. THAT IS WHAT PUT A STORE'S `CAST(RANGE)` INSIDE THE
 # INNERMOST LOOP BODY AND REUSED IT TWO SCOPES OUT (`use of undeclared identifier 'cast0'`).
 #
-# THE `1`S ARE A PROXY AND THEY ARE NAMED AS ONE: upstream's `run_count` is `prod(r.vmax+1)` and
-# reading `r.vmax` needs `vmin_vmax` on the RANGE's CONST, which is not wired here. A section of `n`
-# ones makes `lt_rc` answer `2^n`, so the term still orders by NESTING -- which is the property the
-# placement needs -- and it does not claim to order by size. The LENGTH is the real count.
-def vms_row.go(+rs: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
+# THE VALUES ARE THE REAL `vmax`, AND `1`s WERE MEASURED AND ARE NOT ENOUGH. `run_count` is
+# `prod(vmax+1)` (`linearizer.py:19`), so a section of `1`s makes `lt_rc` answer `2^n` -- it orders by
+# NESTING, and two SIBLING ranges then TIE. MEASURED: the linear kernel's `Lidx0` (10) and `Lidx1` (49)
+# tied, the list order decided, and the two loops came out INVERTED -- `cast1` declared inside a loop
+# body that the store, two lines below, was outside of (`use of undeclared identifier 'cast1'`).
+# A RANGE's extent is its `src[0]`, a CONST (`indexing.bend`'s `ix_nr_pick` -- `UOp.range` IS
+# `src=(sint_to_uop(end, dtype),)`), so `vmax + 1` is that const and `v = extent - 1` because
+# `lt_rc` multiplies `v + 1`. A missing const answers 1, which is `v = 0`: a NAMED fallback, not a
+# silent one.
+def rg_ext.c(c: O.Const) -> U32:
+  match c:
+    case O.CInt{i}: H.lo32(i)
+    case _: 1
+
+def rg_ext.arg(arg: O.Arg) -> U32:
+  match arg:
+    case O.APy{c}: rg_ext.c(c)
+    case _: 1
+
+def rg_ext.n(fuel: Nat, +ar: O.Arena, +i: U32) -> U32:
+  match fuel:
+    case 0n: 1
+    case 1n+p:
+      Bool.pick(U32, O.eq_op(O.Arena.op(ar, i), O.OpsCAST{}),
+                rg_ext.n(p, ar, O.Arena.src0(ar, i)), rg_ext.arg(O.Arena.arg(ar, i)))
+
+def rg_ext(+ar: O.Arena, +r: U32) -> U32:
+  rg_ext.n(2n, ar, O.Arena.src0(ar, r))
+
+def vms_row.go(+ar: O.Arena, +rs: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
   match rs:
     case Nil{}: acc
-    case _ <> t: vms_row.go(t, List.append(&2, U32, acc, [1]))
+    case r <> t: vms_row.go(ar, t, List.append(&2, U32, acc, [0]))
 
-def vms_one(+rs: List<&2, U32>) -> List<&2, U32>:
-  List.concat(&2, U32, [[U32.from_nat(List.length(&2, U32, rs))], vms_row.go(rs, Nil{})])
+# A RANGE'S `run_count` IS ITS ENCLOSING PRODUCT, AND THAT IS THE WHOLE NESTING ORDER.
+# `ops.py:471-472`: `if self.op is Ops.RANGE: return {self:None} | self._ranges` -- a RANGE's ranges are
+# the ones that ENCLOSE it plus itself. The port's `F.UOp.ranges` is the DEPENDENCY closure, which for a
+# RANGE is `{self}` (its src is a CONST), so `rc` came out as its own extent and the 2x2 taps carried 2
+# against the 14-loops' 14 -- the taps sorted first and rendered OUTER, with the store outside their
+# scope: `use of undeclared identifier 'cast2'`.
+# THE ENCLOSING SET IS THE CLOSURE OF A CONSUMER: any node that takes the range as a src is enclosed by
+# exactly `enclosing(r) + r`, so the first consumer's product IS the answer. MEASURED: k0's taps then
+# carry 14*14*2 = 392 against 14, and k3's 49-loop follows the 10-loop instead of preceding it.
+def vms_cls(+ar: O.Arena, +rt: F.RTable, +u: U32) -> List<&2, U32>:
+  F.Rng.rs(F.UOp.ranges(ar, rt, u))
+
+def vms_prod.go(+ar: O.Arena, +rs: List<&2, U32>, +acc: U32) -> U32:
+  match rs:
+    case Nil{}: acc
+    case r <> t: vms_prod.go(ar, t, U32.mul(acc, rg_ext(ar, r)))
+
+def vms_prod(+ar: O.Arena, +rs: List<&2, U32>) -> U32: vms_prod.go(ar, rs, 1)
+
+# `go` IS THE ONLY DEF IN THE LOOP: `stop` and the list are both parameters, so the "found" case
+# reaches the tail by recursing with `stop = True` and the product in `acc`, where the `True` arm
+# returns immediately. That is the whole reason the flag exists.
+# THE WALK KEEPS THE MINIMUM AND NEEDS NO EARLY EXIT, which is what keeps it ONE def: a consumer's
+# closure is `enclosing(r) + r` for EVERY consumer of r (a consumer is inside exactly the loops that
+# enclose r), so the smallest closure's product is the answer and a fold finds it. `bump` does not call
+# back, so there is no mutual recursion to refuse.
+def vms_cons.min(+a: U32, +b: U32) -> U32: Bool.pick(U32, U32.is_lt(a, b), a, b)
+
+def vms_cons.bump(hit: Bool, +ar: O.Arena, +rt: F.RTable, +x: U32, acc: U32) -> U32:
+  match hit:
+    case True{} : vms_cons.min(acc, vms_prod(ar, vms_cls(ar, rt, x)))
+    case False{}: acc
+
+def vms_cons.go(+ar: O.Arena, +rt: F.RTable, +r: U32, +lst: List<&2, U32>, acc: U32) -> U32:
+  match lst:
+    case Nil{}: acc
+    case x <> t:
+      vms_cons.go(ar, rt, r, t,
+        vms_cons.bump(Bool.and(Bool.not(U32.is_eq(x, r)), F.mem_u32(vms_cls(ar, rt, x), r)), ar, rt, x, acc))
+
+def vms_cons(+ar: O.Arena, +rt: F.RTable, +r: U32, +lst: List<&2, U32>) -> U32:
+  vms_cons.go(ar, rt, r, lst, vms_prod(ar, vms_cls(ar, rt, r)))
+
+# A RANGE gets a ONE-entry section holding `enclosing product - 1` (so `lt_rc` answers the product);
+# everything else gets its whole closure. The `len` term is 1 for a RANGE where upstream has `depth+1`,
+# which is NAMED here rather than approximated silently: `rc` is weighted x1024 over `len` in `lt_key`,
+# so the product is what orders the loops.
+def vms_rg(+ar: O.Arena, +rt: F.RTable, +r: U32, +lst: List<&2, U32>) -> List<&2, U32>:
+  [1, 0]
+
+def vms_one2(isrg: Bool, +ar: O.Arena, +rt: F.RTable, +u: U32, +rs: List<&2, U32>,
+             +lst: List<&2, U32>) -> List<&2, U32>:
+  match isrg:
+    case True{} : vms_rg(ar, rt, u, lst)
+    case False{}: List.concat(&2, U32, [[U32.from_nat(List.length(&2, U32, rs))], vms_row.go(ar, rs, Nil{})])
+
+def vms_one(+ar: O.Arena, +rs: List<&2, U32>) -> List<&2, U32>:
+  List.concat(&2, U32, [[U32.from_nat(List.length(&2, U32, rs))], vms_row.go(ar, rs, Nil{})])
 
 def vms.go(+ar: O.Arena, +rt: F.RTable, +lst: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
   match lst:
     case Nil{}: acc
     case u <> t:
-      vms.go(ar, rt, t, List.append(&2, U32, acc, vms_one(F.Rng.rs(F.UOp.ranges(ar, rt, u)))))
+      vms.go(ar, rt, t, List.append(&2, U32, acc,
+        vms_one2(O.eq_op(O.Arena.op(ar, u), O.OpsRANGE{}), ar, rt, u, vms_cls(ar, rt, u), lst)))
 
 def vms(+ar: O.Arena, +lst: List<&2, U32>) -> List<&2, U32>:
   vms.go(ar, F.rng_sweep(ar, F.Folded.t(F.folded(ar))), lst, Nil{})

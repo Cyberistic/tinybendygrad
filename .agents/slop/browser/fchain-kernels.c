@@ -16,8 +16,7 @@ void k0(float* restrict data0_196, float* restrict data1_784, float* restrict da
           float val0 = (*(data2_4+((cast2+(2*0)+(cast3<<1)+alu0+alu0+alu0)%4)));
           *buf0 = 0;
           float val1 = (*(data1_784+((cast2+(cast0<<1)+(28*cast3)+(56*cast1)+(784*0)+(784*0))%784)));
-          float val2 = (*(val1*val0));
-          *buf0 = ((*buf0)+val2);
+          *buf0 = ((*buf0)+(val1*val0));
         }
       }
       *(data0_196+((cast0+(14*cast1)+(196*0)+(196*0))%196)) = (*buf0);
@@ -64,8 +63,7 @@ void k3(float* restrict data0_10, float* restrict data1_49, float* restrict data
       int cast1 = ((int)(Lidx0));
       *buf0 = 0;
       float val1 = (*(data2_490+((cast1+(10*cast0)+(490*0))%490)));
-      float val2 = (*(val0*val1));
-      *buf0 = ((*buf0)+val2);
+      *buf0 = ((*buf0)+(val0*val1));
     }
     *(data0_10+((cast1+(10*0))%10)) = (*buf0);
   }
