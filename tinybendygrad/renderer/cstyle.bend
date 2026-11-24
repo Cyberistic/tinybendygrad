@@ -1538,14 +1538,33 @@ def st_name(+st: St, nm: String) -> St:
   St.of(St.r(st), St.kernel(st), St.bufs(st), St.c(st), St.depth(st), nm)
 
 # THE INDENT: `"  "*depth` (cstyle.py:260).
+#
+# `++` IS `String.append`, AND THE COMPILER MAKES IT `($0 + $1)` -- A NATIVE CONCAT WITH NO
+# `List.Cons` ALLOCATION AND NO CALL (MEASURED, `bend2/comp.ts:213`: `"String.append": { JS:
+# "($0 + $1)" }`). `String.concat([acc, "  "])` BUILDS A TWO-CELL LIST AND RECURSES THROUGH IT.
 def ku_indent.go(depth: Nat, acc: String) -> String:
   match depth:
     case 0n: acc
-    case 1n+p: ku_indent.go(p, String.concat([acc, "  "]))
+    case 1n+p: ku_indent.go(p, acc ++ "  ")
 
 # THE CHILD COUNT -- cstyle.py:212:
+#
+# THE DEPTH IS MATCHED AGAINST LITERALS, AND EACH ARM RETURNS ITS OWN STRING CONSTANT -- SO THE
+# COMMON DEPTHS COST NO ALLOCATION AND NO LOOP. MEASURED: THE DEPTHS ARE 1..5 (81/44/50/145/87 A
+# TURN) AND THE INDENT WAS 18% OF `String.concat`'s 9,967 CALLS A TURN AND 0.22 ms OF THE RENDER.
+#
+# THE FALLBACK IS THE OLD SHAPE, SO A DEPTH PAST THE TABLE IS STILL `"  "*depth`.
 def ku_indent(depth: U32) -> String:
-  ku_indent.go(U32.to_nat(depth), "")
+  match depth:
+    case 0: ""
+    case 1: "  "
+    case 2: "    "
+    case 3: "      "
+    case 4: "        "
+    case 5: "          "
+    case 6: "            "
+    case 7: "              "
+    case _: ku_indent.go(U32.to_nat(depth), "")
 
 def ku_inline2a(+op: O.Op, k: KU, +kus: List<&2, List<&2, KU>>) -> Bool:
   Bool.or(Bool.and(is_cast(op), ku_is_const_at(kus, KU.src0(k))),
