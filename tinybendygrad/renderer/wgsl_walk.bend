@@ -156,9 +156,21 @@ def con_text(+dt: S.Dt, +r: R) -> String:
 # THE OPERAND LOOKUP: a name/text from the map, or -- for a CONST, which the map never holds --
 # the materialised literal. `dt` is the dtype the value is CONSUMED as, which is upstream's
 # `x.dtype` in the `cvar.cast` patterns.
+# A REG BUFFER IS AN ARRAY AND IS READ AT ITS ONE ELEMENT. `sr_buffer` declares it
+# `var buf0: array<f32,1>;` (upstream's text, and the row gate says so), and the port's kernel IR
+# references the reduce accumulator DIRECTLY -- no INDEX node -- so the `[0]` has to be added here.
+# THE C LANE HAS THE SAME SPECIAL CASE in its own spelling (`(*buf0)`, `cstyle.bend`'s REG arm),
+# so this is the WGSL half of one rule, not a new one. MEASURED: without it the module assigns a
+# scalar to `array<f32,1>` and WebGPU rejects the pipeline.
+def is_reg(a: S.Addr) -> Bool:
+  match a:
+    case S.AReg{}: True{}
+    case _: False{}
+
 def tx0(+op: O.Op, +r: R, +dt: S.Dt, +nm: String) -> String:
   match op:
     case O.OpsCONST{}: con_text(dt, r)
+    case O.OpsBUFFER{}: Bool.pick(String, is_reg(R.addr(r)), String.concat([nm, "[0]"]), nm)
     case _: nm
 
 def tx(+all: List<&2, R>, +names: List<&2, String>, +k: U32, +dt: S.Dt) -> String:
@@ -214,11 +226,6 @@ def c_bump(+c: List<&2, U32>, +ix: U32) -> List<&2, U32>:
 # had already taken `alu1` -- same text, same size, different names.
 def c_maybe(+c: List<&2, U32>, +ix: U32, +inl: Bool) -> List<&2, U32>:
   Bool.pick(List<&2, U32>, inl, c, c_bump(c, ix))
-
-def is_reg(a: S.Addr) -> Bool:
-  match a:
-    case S.AReg{}: True{}
-    case _: False{}
 
 def is_con(+op: O.Op) -> Bool: Bool.pick(Bool, O.eq_op(op, O.OpsCONST{}), True{}, False{})
 
