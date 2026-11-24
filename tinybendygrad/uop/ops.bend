@@ -3211,8 +3211,19 @@ def split_uop.step(nd: Nd, work: List<&2, U32>, out: List<&2, U32>) -> Wk:
   match nd:
     case Nd{go, srcs, i}:
       match go:
+        # AND THE ORDER IS UPSTREAM's.  MEASURED 2026-11-24: ON `ADD(x, y)`
+        # THE PORT YIELDS `x, y` AND UPSTREAM YIELDS `x, y`
+        # (`for s in self.src: yield from s.split_uop(sep)`, ops.py:656), AND
+        # THE PORT's `work` IS A STACK WHOSE SRCS GO ON THE FRONT AND WHOSE
+        # HEAD IS POPPED -- SO THE TERMS COME OUT REVERSED AT ONE LEVEL AND
+        # **THE `out` IS BUILT BY APPENDING**, WHICH RESTORES THEM AT EVERY
+        # LEVEL, BECAUSE A NESTED SRC's OWN TERMS ARE REVERSED THE SAME WAY.
+        # AND A FIRST DRAFT READ THE STACK AS A QUEUE AND "FIXED" IT WITH A
+        # PREPEND, AND THAT MADE IT **WRONG** -- MEASURED, `3 2` INSTEAD OF
+        # `2 3` -- SO THE ORDER IS RIGHT AND THE COMMENT IS WHAT WAS WRONG.
         case True{}: Wk{List.append(&2, U32, srcs, work), out}
         case False{}: Wk{work, List.append(&2, U32, out, [i])}
+
 
 def UOp.split_uop.pop(fuel: Nat, +ar: Arena, +sep: Op, w: Wk) -> Wk:
   match fuel:
@@ -4181,6 +4192,48 @@ def UOp.divides.one(one: Bool, +fuel: Nat, +ar: Arena, +v: H.I64, +i: U32) -> Dv
 
 def UOp.divides(fuel: Nat, +ar: Arena, +v: H.I64, +i: U32) -> Dv:
   UOp.divides.one(dv.is1(v), fuel, ar, v, i)
+
+# `UOp.usum` -- mixin/elementwise.py:40.
+#     `def usum(self, *uops) -> Self: return functools.reduce(operator.or_ if
+#      self.dtype is dtypes.bool else operator.add, argfix(*uops), self)`
+#
+# AND IT LIVES HERE AND NOT IN `schedule/indexing.bend`, AND THE REASON IS THE
+# IMPORT DIRECTION.  MEASURED 2026-11-24: `schedule/indexing.bend` IMPORTS
+# `uop/ops.bend`, SO `uop/` CANNOT IMPORT `schedule/` -- AND `uop/divandmod.bend`
+# NEEDS `usum` FOR THE `remove_nested_mod` ARM (`divandmod.py:33`).  SO IT IS
+# HERE, WHERE BOTH CAN REACH IT, AND `schedule/indexing.bend`'s `rr_usum` IS
+# THE SAME OPERATION AND IS REPLACED BY THIS.
+#
+# AND THE SHAPE IS A LIST AND NOT A VARARG, AND THE SEMANTICS ARE THE SAME:
+# UPSTREAM'S `argfix(*uops)` UNWRAPS A SINGLE LIST ARGUMENT, SO `UOp.usum(a, b,
+# c)` IS `reduce(add, (b, c), a)` -- THE FIRST IS THE RECEIVER AND THE REST ARE
+# THE ARGUMENTS.  SO THE SUM IS OVER A LIST, LEFT-NESTED, AND AN EMPTY LIST IS
+# THE IDENTITY `CONST 0` (`identity_element(Ops.ADD, dt)` IS `0`, ops.py:57).
+#
+# AND THE ASSOCIATION IS LEFT-NESTED BECAUSE UPSTREAM'S `reduce` IS, AND
+# `schedule/indexing.bend`'s `rr_usum` IS **RIGHT**-NESTED (`x <> t => ADD(x,
+# rr_usum(t))`) AND IS **NOT** CHANGED BY THIS.  THE REASON IS MEASURED: THE
+# CORPUS COMPARES CANONICAL FORMS **BYTE-IDENTICALLY**, SO A DIFFERENT
+# ASSOCIATION IN THE RESHAPE'S AXIS COMBINATION WOULD BE A CORPUS DIVERGENCE --
+# AND THE DENOTATION IS THE SAME EITHER WAY, SO NOTHING WOULD BE WRONG AND THE
+# BYTES WOULD DIFFER.  TWO CALL SITES, TWO MEASURED SHAPES, AND ONE OF THEM
+# CHANGED.
+def UOp.usum.pair(+f: Found, x: U32, +ar: Arena) -> Found:
+  UOp.alu(Found.ar(f), OpsADD{}, [Found.i(f), x])
+
+# AND THE FOLD IS LEFT-NESTED, AND `reduce(add, (b, c), a)` IS `((a+b)+c)`:
+# SO THE ACCUMULATOR IS THE SUM SO FAR AND THE NEXT TERM IS ADDED **ON THE
+# RIGHT** OF IT, AND THE LIST IS WALKED FROM THE FRONT.
+def UOp.usum.go(xs: List<&2, U32>, +acc: Found, +ar: Arena) -> Found:
+  match xs:
+    case Nil{}: acc
+    case x <> t: UOp.usum.go(t, UOp.usum.pair(acc, x, ar), ar)
+
+def UOp.usum(+ar: Arena, +xs: List<&2, U32>) -> Found:
+  match xs:
+    case Nil{}: UOp.const(ar, CInt{H.i64_of_i32(0)})
+    case x <> Nil{}: Found{ar, x}
+    case x <> t: UOp.usum.go(t, Found{ar, x}, ar)
 
 # THE TABLE IS IN `.agents/slop/tables/uop-ops-6972.md` -- `UOp.gcd` AND `UOp.divide_exact` -- ops.py:1073-1079.
 def UOp.pop_const_node.isconst(+ar: Arena, +i: U32) -> Bool:

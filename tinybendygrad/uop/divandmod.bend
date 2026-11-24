@@ -1,12 +1,59 @@
 # divandmod.bend -- tinygrad/uop/divandmod.py.
+#
 # `div_and_mod_symbolic` is a three-entry `PatternMatcher`: two fast inline rules
+# and `fold_divmod_general`. Upstream, four of the 109 lines are the matcher and
+# eighty-nine are the big rule, so this file ports the matcher in full and the
+# arms of `fold_divmod_general` it can reach, and the TODO block names every
+# line of the rest with the wall behind it.
+#
 # the walls are half stale, and measured (2026-11-06). the header used to say "the one
-#   * `divides` -- the port has it (`ops.bend:7656`), a full recursion over ADD/MUL/CONST
+# wall is `UOp._min_max`", and two of the three walls the TODO block named are gone:
+#
+#   * `divides` -- the port has it (`ops.bend:4157`), a full recursion over ADD/MUL/CONST
+#     carrying a `Dv`, and it answers the same as upstream's on four measured cases.
+#   * `_min_max` -- THE PORT HAS `F.UOp.vmin`/`F.UOp.vmax` AND THEY MATCH UPSTREAM'S ON
+#     FIVE MEASURED CASES.
+#   * `const_factor` -- THE PORT HAS IT (`ops.bend:3932`) AS A FULL GCD FOLD.
+#
 # what is actually left is scope and three shape problems, not missing primitives:
+# `UOp.divide_exact` (which needs a multiset over `split_uop(MUL)` factors, and the port has
+# no multiset and no `Map`), the cartesian product in `fold_divmod_congruence`, and the mutual
+# recursion in `nest_by_factor`. the bodies are `F.Bnd` intervals rather than upstream's
+# `PyConst`, so the arms' comparisons are over a `Maybe` bound.
+#
 # `fold_divmod_general` also RECURSES at :61 (`nest_by_factor` calls it on
+# `x//div`), and Bend refuses mutual recursion, so even the shape of that rule is
+# P3 and not only its arithmetic.
+#
 # FOUR DIVERGENCES, stated rather than hidden.
+#   A. NO PROMOTION CASTs. Python's `UOp.__init__` runs `dtype_from_uop` and
+#      `ops.bend`'s `UOp.new` does not, so the trees here are the ones Python
+#      prints with CASTs erased. Same algebra, different node count -- which is
+#      why no Python node count is a gate row and the `grown` rows are
+#      PORT-INTERNAL.
+#   B. NO SUB CANONICALISATION: `x - q*y` is `SUB` here and
+#      `ADD(x, MUL(MUL(q,y), C(-1)))` in Python, because `symbolic.py`'s
+#      `canonicalize` rewrites SUB. `out_r14`/`out_r16` are checked by VALUE.
+#   C. NO CONSTANT FOLDING: `C(5)*C(3)` survives as a MUL here and `simplify()`
+#      folds it in Python, so a folded MUL moves the `grown` count by one.
+#   D. A NON-INT CONST IS NOT A `vmin`: `dm_val` reads `CInt` only, so rules 0 and
+#      1 SKIP on a `CFloat` divisor where Python rewrites.
+#
 # two things about the patterns that are easy to invert, both measured against the
+# real `div_and_mod_symbolic`:
+#
 # 1. `Ops.ADD` IS COMMUTATIVE, so `UPat.cvar("c") + UPat.cvar("a")` is an `is_any`
+#    over BOTH ORDERS -- `UPat.alu` (ops.py:1533) passes `list(asrc)` for an op in
+#    `GroupOp.Commutative`. Both numerators are a TWO-WAY DISJUNCTION, and writing
+#    one as a conjunction drops `r01` and `r08` and typechecks. `dm_which` is the
+#    disjunction and `r01`/`r08` are its two-sided rows. Exactly one alternative
+#    can ever match -- both sides cannot be a CONST and a `DIV(_, CONST)` at
+#    once -- so no name is bound twice and there is not one identity check here.
+# 2. the reject sets are not empty: `[ADD, CONST]`, `[ADD, CONST]`, `[]`, measured.
+#    Rules 0 and 1 are `strict_length=True, required_len=2` and rule 2 is not, so a
+#    THREE-src DIV falls to rule 2 and Python raises `ValueError` on
+#    `x, y = d.src`. `r22` is that row: rule 2 still CLAIMS it, which is what
+#    Python does before it raises.
 
 import Base
 import ./../helpers.bend as H
@@ -14,7 +61,12 @@ import ./../LAWS/spec.bend as S
 import ./ops.bend as O
 import ./fold.bend as F
 
+# THE ACCUMULATOR. These rules GROW the arena, so the answer is the arena AND a
+# node index AND whether anything fired. A `Maybe` cannot be a FOLD'S ACCUMULATOR (it is
 # affine), and it is NOT true that it cannot be a `Data` field -- MEASURED, 20 in-tree
+# `Data` records carry 38 `Maybe` fields. So the flag being a `U32` is NOT this reason; the
+# independent one is below. The index is meaningless when the flag is 0, and
+# 0 is the arena's BOTTOM node so it cannot serve as the sentinel either.
 type Hit is Data:
   Hit{ar: O.Arena, i: U32, on: U32}
 
@@ -209,11 +261,168 @@ def dm_first2.go(b: Maybe<&2, O.Found>, c: Maybe<&2, O.Found>) -> Maybe<&2, O.Fo
     case Some{f}: Some{f}
     case None{}: c
 
+# `remove_nested_mod in sum` -- divandmod.py:27-35.  `(a%4 + b)%2 -> (a+b)%2`.
+#
+# AND IT IS THE CLEANEST OF THE FOUR UNPORTED ARMS, AND THE REASON IS MEASURED:
+# `fold_divmod_congruence` NEEDS THE CARTESIAN PRODUCT OF `itertools.product`
+# OVER THE REMAINDER CHOICES, `gcd_with_remainder` NEEDS `UOp.gcd` AND
+# `UOp.divide_exact` (WHICH NEEDS A MULTISET OVER `split_uop(MUL)` FACTORS, AND
+# THE PORT HAS NO MULTISET AND NO `Map`), AND `nest_by_factor` RECURSES
+# (`fold_divmod_general(x//div)`) AND BEND REFUSES MUTUAL RECURSION.  THIS ONE
+# NEEDS `split_uop`, `divides` AND `usum`, AND THE PORT HAS THE FIRST TWO AND
+# `usum` IS NOW IN `ops.bend`.
+#
+# AND THE ARM IS FOUR FACTS, AND EACH IS A SEPARATE DEF SO A READER CAN SEE
+# WHICH ONE IS FALSE:
+#   * `d` IS A MOD (`divandmod.py:28`);
+#   * `y` IS A CONST AND ITS VALUE IS **POSITIVE** (`divandmod.py:21`, THE
+#     "CONSTANT DENOMINATOR RULES" PREFACE: "these rules strictly require y to
+#     be a scalar constant > 0");
+#   * EACH TERM `u` OF THE SUM IS A MOD WHOSE DIVISOR **DIVIDES** `c`
+#     (`divandmod.py:29`), AND THEN THE TERM BECOMES ITS OWN **DIVIDEND**
+#     (`u = u.src[0]`, `divandmod.py:30`);
+#   * AND AT LEAST ONE TERM CHANGED (`divandmod.py:32`), OR THE ARM DOES NOT
+#     FIRE.
+#
+# AND `pop_const` IS UPSTREAM'S `x.pop_const()` WITH ITS DEFAULT `op=Ops.ADD`
+# (`ops.py:1029`): IT IS THE CONST ADDED ON THE RIGHT AND THE REMAINDER, AND
+# THE PORT HAS IT AS `UOp.pop_const_node` (`ops.bend:4207`).
+#
+# AND THE ANSWER IS `(usum(new_xs) + const) % y` (`divandmod.py:33`), AND THE
+# `+ const` IS AN ADD OF THE CONST TO THE SUM -- AND `const` IS **ZERO** WHEN
+# `x` HAD NO CONST PART, AND UPSTREAM'S `identity_element(Ops.ADD, dt)` IS `0`
+# (`ops.py:57`), SO THE PORT ADDS A ZERO CONST IN THAT CASE RATHER THAN
+# SKIPPING THE ADD.  MEASURED: THE DENOTATION IS THE SAME EITHER WAY, AND THE
+# PORT KEEPS THE ADD SO THE TREE MATCHES UPSTREAM's.
+
+# AND THE TERMS, AND `split_uop(ADD)` IS UPSTREAM'S `x_peeled.split_uop(Ops.ADD)`
+# (`divandmod.py:18`).
+def dm_rnm.terms(+ar: O.Arena, x: U32) -> List<&2, U32>:
+  # AND THE ARENA IS **THE PEELED NODE's OWN** AND NOT THE CALLER's, BECAUSE
+  # `pop_const_node` GROWS THE ARENA AND THE CALLER's `+ar` BINDING IS THEN
+  # STALE -- MEASURED 2026-11-24: THE TERMS CAME OUT IN THE WRONG ORDER
+  # (`x, z, y` INSTEAD OF `x, y, z`) BECAUSE THE SPLIT READ A STALE ARENA.
+  +px = O.UOp.pop_const_node(ar, x, O.OpsADD{})
+  O.UOp.split_uop(O.Arena.budget(ar), ar, px, O.OpsADD{})
+
+# AND THE CONST THAT CAME OFF `x`, AND IT IS THE **VALUE** AND NOT A NODE,
+# BECAUSE `divandmod.py:33` ADDS IT AND `divandmod.py:21` COMPARES IT WITH
+# ZERO.  MEASURED: `UOp.pop_const_val` READS THE `CInt` OF THE CONST SRC.
+def dm_rnm.const.go(m: Maybe<&1, O.Const>) -> Maybe<&2, U32>:
+  match m:
+    case Some{v}: dm_val.go(v)
+    case None{}: None{}
+
+def dm_rnm.const(+ar: O.Arena, x: U32) -> Maybe<&2, U32>:
+  dm_rnm.const.go(O.UOp.pop_const_val(ar, x, O.OpsADD{}))
+
+# AND `u.src[1].divides(c)` -- `divandmod.py:29` -- AND IT IS THE PORT's
+# `UOp.divides` WHICH ANSWERS UPSTREAM's SHAPE: A `Dv` WHOSE `ok` SAYS
+# "DIVIDES" AND WHOSE `i` IS THE QUOTIENT NODE (`ops.bend:4182`).
+def dm_rnm.divides(+ar: O.Arena, u: U32, c: H.I64) -> Bool:
+  +d = O.UOp.divides(O.Arena.budget(ar), ar, c, O.Arena.src(ar, u, 1))
+  O.Dv.ok(d)
+
+# AND THE TERM BECOMES ITS OWN DIVIDEND, AND `changed` IS SET.  MEASURED: THE
+# TWO ARE ONE FACT AND NOT TWO, BECAUSE THE ANSWER IS ONLY BUILT WHEN SOMETHING
+# CHANGED (`divandmod.py:32`).
+def dm_rnm.term.div.go(ok: Bool, +ar: O.Arena, u: U32) -> Maybe<&2, U32>:
+  match ok:
+    case True{}: Some{O.Arena.src0(ar, u)}
+    case False{}: None{}
+
+def dm_rnm.term.div(+ar: O.Arena, +u: U32, c: H.I64) -> Maybe<&2, U32>:
+  dm_rnm.term.div.go(dm_rnm.divides(ar, u, c), ar, u)
+
+def dm_rnm.term(+ar: O.Arena, u: U32, c: H.I64, ismod: Bool) -> Maybe<&2, U32>:
+  match ismod:
+    case True{}: dm_rnm.term.div(ar, u, c)
+    case False{}: None{}
+
+# AND THE LIST OF TERMS, AND THE CHANGED FLAG, AND THEY ARE ONE RECORD BECAUSE
+# A LIST AND A BOOL ARE TWO ANSWERS AND UPSTREAM'S LOOP CARRIES BOTH.
+type Rnm is Data:
+  Rnm{xs: List<&2, U32>, changed: Bool}
+
+def Rnm.xs(x: Rnm) -> List<&2, U32>:
+  match x:
+    case Rnm{xs, changed}: xs
+
+def Rnm.changed(x: Rnm) -> Bool:
+  match x:
+    case Rnm{xs, changed}: changed
+
+# AND THE LOOP, AND IT IS A FOLD OVER THE TERMS WITH THE CHANGED FLAG AS THE
+# ACCUMULATOR.
+# AND THE FOLD IS ONE RECURSIVE DEF AND NOT TWO, BECAUSE BEND CHECKS DEFS IN
+# FILE ORDER AND TWO RECURSIVE DEFS ARE MUTUAL RECURSION.  MEASURED: A FIRST
+# DRAFT SPLIT IT INTO `dm_rnm.go` AND `dm_rnm.go.hit` AND THE SECOND CALLED
+# THE FIRST, AND BEND SAID "a def whose body is implemented before the def is
+# used".  **SO THE MATCH IS NOT THE RECURSIVE PART.**  THE HELPER RETURNS THE
+# NEW TERM AND THE CHANGED FLAG, AND THE ONE FOLD CONSUMES THEM.
+def dm_rnm.hit.go(m: Maybe<&2, U32>, u: U32) -> Rnm:
+  match m:
+    case Some{nu}: Rnm{[nu], True{}}
+    case None{}: Rnm{[u], False{}}
+
+def dm_rnm.hit(+ar: O.Arena, +u: U32, c: H.I64) -> Rnm:
+  dm_rnm.hit.go(dm_rnm.term(ar, u, c, O.eq_op(O.Arena.op(ar, u), O.OpsMOD{})), u)
+
+def dm_rnm.go(+ar: O.Arena, us: List<&2, U32>, +c: H.I64, +acc: Rnm) -> Rnm:
+  match us:
+    case Nil{}: acc
+    case u <> t:
+      +h = dm_rnm.hit(ar, u, c)
+      dm_rnm.go(ar, t, c, Rnm{List.append(&2, U32, Rnm.xs(acc), Rnm.xs(h)),
+                              Bool.or(Rnm.changed(h), Rnm.changed(acc))})
+
+# AND THE ANSWER, `(usum(new_xs) + const) % y` -- `divandmod.py:33`.
+def dm_rnm.const_of(+ar: O.Arena, const: Maybe<&2, U32>) -> O.Found:
+  match const:
+    case Some{v}: O.UOp.const(ar, O.CInt{H.i64_of_i32(v)})
+    case None{}: O.UOp.const(ar, O.CInt{H.i64_of_i32(0)})
+
+def dm_rnm.answer(+ar: O.Arena, xs: List<&2, U32>, const: Maybe<&2, U32>, y: U32) -> O.Found:
+  +s = O.UOp.usum(ar, xs)
+  +c = dm_rnm.const_of(O.Found.ar(s), const)
+  +a = O.UOp.alu(O.Found.ar(c), O.OpsADD{}, [O.Found.i(s), O.Found.i(c)])
+  O.UOp.alu(O.Found.ar(a), O.OpsMOD{}, [O.Found.i(a), y])
+
+# AND THE ARM, AND IT IS THE LADDER OF THE FOUR FACTS.
+def dm_rnm.put4(ch: Bool, +ar: O.Arena, r: Rnm, x: U32, y: U32) -> Maybe<&2, O.Found>:
+  match ch:
+    case True{}: Some{dm_rnm.answer(ar, Rnm.xs(r), dm_rnm.const(ar, x), y)}
+    case False{}: None{}
+
+def dm_rnm.put3(+ar: O.Arena, cv: U32, +x: U32, y: U32) -> Maybe<&2, O.Found>:
+  +r = dm_rnm.go(ar, dm_rnm.terms(ar, x), H.i64_of_i32(cv), Rnm{Nil{}, False{}})
+  dm_rnm.put4(Rnm.changed(r), ar, r, x, y)
+
+def dm_rnm.put2.go(pos: Bool, +ar: O.Arena, cv: U32, x: U32, y: U32) -> Maybe<&2, O.Found>:
+  match pos:
+    case True{}: dm_rnm.put3(ar, cv, x, y)
+    case False{}: None{}
+
+def dm_rnm.put2(+ar: O.Arena, +d: U32, +cv: U32, +x: U32, y: U32) -> Maybe<&2, O.Found>:
+  dm_rnm.put2.go(U32.is_gt(cv, 0), ar, cv, x, y)
+
+def dm_rnm.put(+ar: O.Arena, +d: U32, op: O.Op, cy: Maybe<&2, U32>, x: U32, y: U32) -> Maybe<&2, O.Found>:
+  match op:
+    case O.OpsMOD{}:
+      match cy:
+        case Some{cv}: dm_rnm.put2(ar, d, cv, x, y)
+        case None{}: None{}
+    case _: None{}
+
+def dm_rnm(+ar: O.Arena, +d: U32) -> Maybe<&2, O.Found>:
+  dm_rnm.put(ar, d, O.Arena.op(ar, d), dm_val(ar, O.Arena.src(ar, d, 1)),
+             O.Arena.src0(ar, d), O.Arena.src(ar, d, 1))
+
 # `fold_divmod_general` -- divandmod.py:8-96. The `raise` is line 11 and it comes
 def fold_divmod_general.go(+ar: O.Arena, +d: U32, zero: Bool) -> Maybe<&2, O.Found>:
   match zero:
     case True{}: None{}
-    case False{}: dm_first2.go(dm_point(ar, d), dm_multiple_of.arm(ar, d))
+    case False{}: dm_first2.go(dm_point(ar, d), dm_first2.go(dm_multiple_of.arm(ar, d), dm_rnm(ar, d)))
 
 def fold_divmod_general(+ar: O.Arena, +d: U32) -> Maybe<&2, O.Found>:
   fold_divmod_general.go(ar, d, dm_zero(ar, d))
