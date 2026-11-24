@@ -1772,6 +1772,18 @@ def rr_run_rangeify(+ar: O.Arena, sink: U32) -> O.Found:
 def rr_kernel_graph(+ar: O.Arena, sink: U32) -> O.Found:
   +r = rr_run_rangeify(ar, sink)
   RG.eng_after_rangeify(O.Found.ar(r), O.Found.i(r))
+# THE SAME GRAPH, WITH THE MAP IT WAS BUILT FROM -- so a probe can read the table the apply actually used.
+# `sk_open` builds its OWN tables from the arena and answers trivially true on the RETURNED graph
+# (three instruments measured `rngs=0` there), so the verdict is interior to `rr_run_rangeify`. This entry
+# point is ADDITIVE: no existing caller changes, so the corpus is untouched by construction.
+def rr_kernel_graph.map.go(p: (O.Arena & RrMap), +sink: U32, +tb: F.Table) -> (O.Found & RrMap):
+  (+ar, +m) = p
+  +f = rr_run_rangeify.go((ar, m), sink, tb)
+  (RG.eng_after_rangeify(O.Found.ar(f), O.Found.i(f)), m)
+
+def rr_kernel_graph.map(+ar: O.Arena, +sink: U32) -> (O.Found & RrMap):
+  +tb = F.Folded.t(F.folded(ar))
+  rr_kernel_graph.map.go(rr_range_map(ar, tb, sink), sink, tb)
 
 def rr_ap_rebuilt.go(+ar: O.Arena, +ss: List<&2, U32>, +es: List<&2, ApRep>,
                      +acc: List<&2, U32>) -> List<&2, U32>:
