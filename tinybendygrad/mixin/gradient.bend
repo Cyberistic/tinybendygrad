@@ -32,6 +32,7 @@ import ./../LAWS/spec.bend as S
 import ./../helpers.bend as H
 import ./../uop/ops.bend as O
 import ./../uop/fold.bend as F
+import ./../schedule/indexing.bend as IX
 
 
 # THE ANSWER TYPE. `GFired` carries the per-src gradient list and the grown arena;
@@ -667,6 +668,17 @@ def gr_13(ar: O.Arena, +ctx: U32, +self: U32) -> GRes: gr_13.go(ar, ctx, self)
 # TODO(p3) mixin/gradient.py:8  reduce_gradient -- `_rop`'s `resolve(self.shape[x]!=1)` and
 #   `_broadcast_to`'s `broadcast_axes` are both `resolve` on a `Sint`, and `symbolic.py`'s
 #   `resolve` is not ported. Phase P3 owns `symbolic`.
+# * the three arms are `reduce_gradient`'s (`gradient.py:8-18`), and the ADD arm needs
+# `ctx._broadcast_to(ret.src[0].shape)`. THE BLOCKER IS NOT `symbolic`, WHICH IS WHAT THE TODO
+# BELOW USED TO SAY -- AND IT IS NOT A MISSING HELPER EITHER. It is a LAYER: `_broadcast_to` is
+# squeeze + EXPAND + PERMUTE, and EXPAND's arg type `ADims` is declared in `tensor.bend:1226` --
+# the file that imports THIS one. `mixin/movement.bend` is above the same edge. So from here the
+# EXPAND node cannot be built at all, and neither `mxw_bcast` nor `mxw_expand` is seeable.
+#
+# THE FIX IS ONE DECLARATION, NOT ONE ALGORITHM: move `ADims` (and the RESHAPE/EXPAND/PAD/SHRINK/
+# PERMUTE arg shapes beside it) down into `ops.bend`, which every layer below can see -- the same
+# move `indexing.bend`'s header records for `_apply_reshape`. Until then the ADD/MAX arms stay
+# SKIPS and this comment is the measurement, so nobody re-blames `symbolic`.
 def gr_14(ar: O.Arena, ctx: U32, self: U32) -> GRes: GSkip{}
 
 # --- 15. CONTIGUOUS_BACKWARD -- gradient.py:82. `(ctx.contiguous(),)`
@@ -699,7 +711,52 @@ def gr_16(ar: O.Arena, ctx: U32, +self: U32) -> GRes: fired([ctx], ar)
 #
 # `ctx.reshape(shape)` is `_mop(Ops.RESHAPE, arg=shape)` (movement.py:164), and the shape is
 # `ret.src[0].shape` -- a FOLD read, plus `prod` for the `-1` arm.
-def gr_17(ar: O.Arena, ctx: U32, self: U32) -> GRes: GSkip{}
+# WHY THIS IS A LAYER QUESTION AND NOT A MISSING HELPER. Upstream's body is `ctx.reshape(shape)`,
+# a METHOD on the UOp; the port's UOps are arena indices, so the builder is `mxw_reshape` -- and
+# `mixin/movement.bend` imports `tensor.bend`, which imports THIS file. So the builder is not
+# reachable from here, and `ops.bend` (which is) has the shape-arg helper but no RESHAPE
+# constructor. The node is therefore built here, in the same two-line style as `gnew`/`gmul`/
+# `gwhere` above: `O.shape_arg_found` is `ops.bend`'s OWN shape builder (upstream's
+# `shape_to_shape_arg`), NOT a copy of `mxw_stk`.
+#
+# AND THE SHAPE IS `ret.src[0].shape`, read through `IX.rr_dims` -- `indexing.bend` imports only
+# Base/H/O/F/S, so it is seeable from here and it is the port's one concrete-dims reader.
+def gdims(+ar: O.Arena, +u: U32) -> List<&2, U32>:
+  IX.rr_dims(ar, F.Folded.t(F.folded(ar)), u)
+
+def greshape(+ar: O.Arena, +x: U32, +ds: List<&2, U32>) -> O.Found:
+  +sk = O.shape_arg_found(ar, ds)
+  O.UOp.new(O.Found.ar(sk), O.OpsRESHAPE{},
+            List.append(&2, U32, [x], [O.Found.i(sk)]), O.ANone{}, O.TNone{})
+
+def gdim_eq(+a: List<&2, U32>, +b: List<&2, U32>) -> Bool:
+  match a:
+    case Nil{}:
+      match b:
+        case Nil{}: True{}
+        case _: False{}
+    case x <> t:
+      match b:
+        case Nil{}: False{}
+        case y <> u: Bool.and(U32.is_eq(x, y), gdim_eq(t, u))
+
+# `ctx.reshape(shape)` -- and `Tensor.reshape` to the SAME shape is the IDENTITY in CPython
+# (MEASURED, `.agents/slop/browser` probe: `t.reshape(1,1,14,14)` answered the same node), so the
+# equal case mints nothing. The TWO SLOTS are upstream's arity, which this file's own TODO records:
+# `pm_gradient.rewrite(RESHAPE)` returns 2 for a one-src node, and `compute_gradient` on it raises
+# `AssertionError: got 2 gradient, expected 1`. The port reproduces the arity, so slot 1 is a HOLE.
+def gr_17.mk(+ar: O.Arena, +ctx: U32, +ds: List<&2, U32>) -> GRes:
+  +f = greshape(ar, ctx, ds)
+  fired([O.Found.i(f), 0], O.Found.ar(f))
+
+def gr_17.pick(same: Bool, +ar: O.Arena, +ctx: U32, +ds: List<&2, U32>) -> GRes:
+  match same:
+    case True{} : fired([ctx, 0], ar)
+    case False{}: gr_17.mk(ar, ctx, ds)
+
+def gr_17(+ar: O.Arena, +ctx: U32, +self: U32) -> GRes:
+  +ds = gdims(ar, O.Arena.src(ar, self, 0))
+  gr_17.pick(gdim_eq(gdims(ar, ctx), ds), ar, ctx, ds)
 
 # --- 18. EXPAND -- gradient.py:86. `(ctx, None)`
 # Two slots, the second a hole, for a two-src EXPAND (a value and its shape). Same
