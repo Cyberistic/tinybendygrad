@@ -364,6 +364,55 @@ ARM". The control now *makes* such an arm by removing the law that reads it.
 `SpEnd` and the gate went RED, proving the census's "unpinned" verdict for
 `SpEnd` was wrong. It is now pinned by a law, and the control is GREEN.
 
+## A failure in a helper is not a law failing
+
+MEASURED 2026-11-24: the ALU census's `--plant` had one red row since
+2026-11-23 — *"the mutated copy did not go red naming
+`neg_is_mul_by_minus_one` (rc=1, named=None)"*. And the reading recorded at
+the time was wrong in three places: it said the mutation "is not landing on
+the subject it claims to", and that the law's proof being `{==}` explained
+the failure.
+
+**None of that was true. The mutation lands exactly on its subject, the law
+is present, and the law is load-bearing.** The reason is that `bend` reports
+the FIRST failing proof, and the first failing proof was a **helper**:
+
+```
+Location: alu_neg_one_eq
+1134 |   def alu_neg_one_eq() -> {A.neg(A.one()) == S.SpMul{A.one(), A.one()} : S.Sp}:
+```
+
+A failure in a helper is not a law failing — and it is not "no law failed"
+either: the row said "no law" because the failure's `Location:` named a def
+and not a `L.` law.
+
+**AND THE HELPER WAS UNNECESSARY.** `alu_neg_one_eq` stated
+`A.neg(A.one()) == S.SpMul{A.one(), A.one()}`, and `A.neg(a)` is
+`S.SpMul{a, one()}` — so at `a = A.one()` the fact is **definitional**. The
+arange proof's `c2` step closes with `{==}` directly. The helper went, and
+with it went the "failure in a helper" class: a LOC reduction and a class
+removal at once.
+
+**AND WHAT REMAINED WAS A MASK, AND THE ALU CENSUS NOW ASKS IT.** The arange
+law reads `A.neg(A.one())` and `neg_is_mul_by_minus_one` reads `A.neg(a)`, so
+they share the subject, and the arange law comes first in the book. The ALU
+census now masks exactly as the shape census does — remove the masking law,
+re-check — and the law is **MASKED**: the gate goes red naming the arange
+law, and with the masker removed it names `neg_is_mul_by_minus_one`. **So the
+law can fail; it is just not the failure `bend` reports first.**
+
+**AND THE PLANT's CLAIM WAS ASSERTING SOMETHING THE BOOK's ORDER MAKES
+FALSE.** It said "must redden naming **its** law", and for this law that is
+not satisfiable while the arange law comes first. A plant that asserts
+something false is not a control, so it now asserts the claim that is true:
+the law must be **reachable**, masked or not.
+
+**AND THE FIVE `vacuous-on-mask` LAWS REMAIN, AND THEY ARE A DOCUMENTED
+STRUCTURAL LIMIT.** `A.one()` and `A.zero()` are the same term — both are
+`S.SpConst{S.SpInvalid{}, S.index()}` — because the spec IR is structural and
+its consts carry no number, which is also why the spec's `min_max` arithmetic
+cells are not stated.
+
 ## What we do not gain, and why
 
 **Float arithmetic.** Bend's guide is blunt: `F32` is axiomatic, nothing about
