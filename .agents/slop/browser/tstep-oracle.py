@@ -81,6 +81,17 @@ def main():
         fd = (lp - lm) / (2 * h)
         print("FD %s: analytic %.6f fd %.6f rel %.2e" % (label, gval, fd, abs(fd - gval) / max(1e-9, abs(gval))))
 
+    # THE SECOND STEP, TWO READINGS, because they answer DIFFERENT questions:
+    #   loss2  -- the loss at (w1n, w2n), i.e. at the step THE PORT RENDERS (lr = 0.1). This is
+    #             the exact-match row, and MEASURED it is HIGHER than `loss`: with this seed the
+    #             gradient's scale (~33 on w1) makes 0.1 a step that overshoots.
+    #   loss2s -- the loss at a SMALL step (lr = 0.001) along the SAME gradient. It is the
+    #             descent proof: the direction is right and 0.1 is a magnitude, not a sign.
+    loss2 = loss_at(w1n, w2n)
+    lrs = 0.001
+    loss2s = loss_at(w1v - lrs * gw1, w2v - lrs * gw2)
+    print("loss %.6f -> lr0.1 %.6f -> lr0.001 %.6f" % (lossv, loss2, loss2s))
+
     rows = []
     for i, v in enumerate(outv):  rows.append(("out_%d" % i, v))
     rows.append(("loss", lossv))
@@ -92,6 +103,19 @@ def main():
     for i, v in enumerate(w1v):   rows.append(("w1_%d" % i, v))
     for i, v in enumerate(xv[:8]): rows.append(("x_%d" % i, v))
     for i, v in enumerate(w2v[:8]): rows.append(("w2_%d" % i, v))
+
+    rows.append(("loss2", loss2))
+    rows.append(("loss2s", loss2s))
+
+    # THE WGSL LANE'S FORM (`fchain-want.json`): raw f32 BIT PATTERNS per buffer.
+    import struct
+    def bits(a):
+        return [struct.unpack("<I", struct.pack("<f", float(v)))[0] for v in a]
+    import json
+    want = {"out": bits(outv), "loss": bits([lossv]), "gw1": bits(gw1),
+            "gw2": bits(gw2), "w1n": bits(w1n), "w2n": bits(w2n), "loss2": bits([loss2])}
+    with open(".agents/slop/browser/tstep-want.json", "w") as jf:
+        json.dump({"want": want}, jf)
 
     with open(".agents/slop/browser/tstep-want.rows", "w") as f:
         for k, v in rows:
