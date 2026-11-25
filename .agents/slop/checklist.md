@@ -62,6 +62,11 @@ Baseline measured 2026-11-25 (re-run the commands to move it):
       WAS IN FLIGHT`, so it discarded the mixture and retried. A run that had silently averaged
       two trees would have emitted a clean-looking artifact set describing neither.
 
+      **Re-established with the fifth conjunct, 2026-11-25:** `claim=REPRODUCIBLE` with
+      `witness.clean=dirty 0` over 450 hashed paths, so this one is a certificate over a
+      **commit** and not over a working copy. 340 of 340 artifacts identical across two clean
+      runs.
+
 - [x] **1.5 The certificate covers the WORKING TREE, not HEAD — found, measured, closed.**
       `claim=ESTABLISHED` held while `tinybendygrad/uop/ops.bend` carried 33 uncommitted
       insertions from another unit, and the digest was *correct*: the certificate hashed
