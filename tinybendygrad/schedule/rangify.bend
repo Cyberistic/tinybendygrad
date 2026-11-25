@@ -753,18 +753,23 @@ def rr_p1.real(+ar: O.Arena, +tb: F.Table, +ctx: IX.IxCtx, +m: RrMap, +x: U32) -
   +shape = rr_p1.shape(ar, tb, x)
   +n = rr_new.all(shape, RrMap.tbl(m), Nil{})
   RrMap{rr_real(ctx, x, rr_axes(U32.from_nat(List.length(&2, U32, shape)))),
-        RrMap.ends(m), RrRs.tbl(n), RrRs.rs(n), Nil{}, False{}, RrMap.b(m), RrMap.ne(m)}
+        RrMap.ends(m), RrRs.tbl(n), RrRs.rs(n), RrRs.rs(n), False{}, RrMap.b(m), RrMap.ne(m)}
 
 def rr_p1.none(+ar: O.Arena, +tb: F.Table, +ctx: IX.IxCtx, +m: RrMap, +x: U32) -> RrMap:
   RrMap{ctx, RrMap.ends(m), RrMap.tbl(m), Nil{}, Nil{}, RrMap.e(m), RrMap.b(m), True{}}
 
+# UPSTREAM'S `rngs = out_rngs` (`indexing.py:283`): A NODE'S INPUT RANGES ARE ITS OUTPUT
+# RANGES. THE PORT'S `inp` WAS `Nil{}` FOR EVERY NODE, AND `rr_one_rngs` -- THE THING THE
+# REALIZE DECISION COMPARES -- READS `IxRngs.inp`, SO THE COMPARISON WAS OVER EMPTY LISTS
+# AND THE REALIZE COULD NEVER SEE A NODE READ AT TWO DIFFERENT RANGES.
 def rr_p1.one(+ar: O.Arena, +tb: F.Table, +ctx: IX.IxCtx, +m: RrMap, x: U32, +c: U32) -> RrMap:
-  RrMap{ctx, RrMap.ends(m), RrMap.tbl(m), rr_one_rngs(ar, tb, ctx, c, x), Nil{},
+  +o = rr_one_rngs(ar, tb, ctx, c, x)
+  RrMap{ctx, RrMap.ends(m), RrMap.tbl(m), o, o,
         RrMap.e(m), RrMap.b(m), RrMap.ne(m)}
 
 def rr_p1.many(+ar: O.Arena, +tb: F.Table, +ctx: IX.IxCtx, +m: RrMap, +x: U32) -> RrMap:
   +n = rr_merge(ar, tb, ctx, x, RrMap.tbl(m))
-  RrMap{ctx, RrMap.ends(m), RrRs.tbl(n), RrRs.rs(n), Nil{}, RrMap.e(m), RrMap.b(m), RrMap.ne(m)}
+  RrMap{ctx, RrMap.ends(m), RrRs.tbl(n), RrRs.rs(n), RrRs.rs(n), RrMap.e(m), RrMap.b(m), RrMap.ne(m)}
 
 def rr_p1.pick(zero: Bool, one: Bool, +ar: O.Arena, +tb: F.Table, +ctx: IX.IxCtx, +m: RrMap,
                +x: U32, +c: U32) -> RrMap:
