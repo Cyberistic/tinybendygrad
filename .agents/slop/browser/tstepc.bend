@@ -300,6 +300,29 @@ def afts.go(+ar: O.Arena, +ss: List<&2, U32>, +acc: List<&2, String>) -> String:
                         RF.eng_op_name(O.Arena.op(ar, O.Arena.src0(ar, h))), ">",
                         RF.eng_op_name(O.Arena.op(ar, O.Arena.src(ar, h, 1)))])]))
 
+def axs.go(+ar: O.Arena, +rs: List<&2, U32>, +acc: List<&2, String>) -> String:
+  match rs:
+    case Nil{}: String.join(acc, "-")
+    case r <> t: axs.go(ar, t, List.append(&2, String, acc,
+      [Bool.pick(String, RF.rf_axis_is(ar, r, O.AXIS_DEVICE{}), "D", "o")]))
+
+def rng1(+ar: O.Arena, +u: U32) -> String:
+  +g = F.ranged(ar)
+  +r = F.UOp.ranges(F.Ranged.ar(g), F.Ranged.rt(g), u)
+  +tb = F.Folded.t(F.folded(ar))
+  +ended = Maybe.default(&2, List<&2, U32>, F.UOp.ended_ranges(ar, tb, u), Nil{})
+  +rem = RF.sk_rg_del.go(F.Rng.rs(r), ended, Nil{})
+  String.concat([U32.show(U32.from_nat(List.length(&2, U32, F.Rng.rs(r)))), "/",
+                 U32.show(U32.from_nat(List.length(&2, U32, ended))), "/",
+                 U32.show(U32.from_nat(List.length(&2, U32, rem))), ":",
+                 axs.go(ar, rem, Nil{})])
+
+def rngc.go(+ar: O.Arena, +ss: List<&2, U32>, +acc: List<&2, String>) -> String:
+  match ss:
+    case Nil{}: String.join(acc, ",")
+    case h <> t:
+      rngc.go(ar, t, List.append(&2, String, acc, [rng1(ar, O.Arena.src(ar, h, 1))]))
+
 def gshape.none.of(m: Maybe<&2, List<&2, U32>>) -> Bool:
   match m:
     case Some{ds}: False{}
@@ -427,7 +450,8 @@ def diag() -> String:
                  " pairs=", pairs.go(cha, G.Grads.ks_of(TP.csg(tp)), G.Grads.vs_of(TP.csg(tp)), Nil{}),
                  " sinkk=", kids.go(ka, O.Arena.srcs(ka, O.Found.i(k)), Nil{}),
                  " afts=", afts.go(ka, O.Arena.srcs(ka, O.Found.i(k)), Nil{}),
-                 " skopen=", skgo.go(ka, O.Arena.srcs(ka, O.Found.i(k)), Nil{})])
+                 " skopen=", skgo.go(ka, O.Arena.srcs(ka, O.Found.i(k)), Nil{}),
+                 " rng=", rngc.go(ka, O.Arena.srcs(ka, O.Found.i(k)), Nil{})])
 
 def main() -> IO(Unit):
   do IO<Unit>:
