@@ -323,6 +323,21 @@ kernel graph have fold dims `256` (`seedbuf= 54=256 2=256 7=256`) -- FLAT, not `
 -- so even a working realize map would mint ONE range of 256, and upstream's kernel has
 TWO. The `STORE` itself has no fold dims at all (`seedstore= 204=`).
 
+**AND A CONTRADICTION THE NEXT INSTRUMENT RAISED.** The probe now calls the def itself
+on the runner's graph and censuses that graph's toposort:
+
+    sreal=
+    tcensus=Ops.NOOP
+
+**THE REALIZE DEF ANSWERS NOTHING FOR EVERY `STORE`** (`sreal=` is empty ✓ -- the
+`STORE`s are listed with the LENGTH of `rr_realize_one`'s answer ✓, and every one of
+them is 0 ✓) **AND THE RUNNER's GRAPH's TOPOSORT READS AS A SINGLE `NOOP`** ✗ -- while
+the KERNEL graph, built from that same sink, has 64 nodes and a `STORE` in it ✓ (the
+`kg=` dump ✓). So the toposort the realize map is built from and the graph the kernel
+comes from DISAGREE ✗✗ -- and one of the two readings is the probe's own ✗ (the
+`tcensus` row is new ✗ and unverified ✗). Either way it is the toposort or the def, and
+both are in `rr_realize`/`rr_realize_one` ✓.
+
 **SO THE NEXT READING IS ONE LINE: WHY DOES `rr_realize_one` ANSWER NOTHING FOR A
 `STORE`?** `rr_is_store` is `O.eq_op(O.Arena.op(ar, u), O.OpsSTORE{})` and
 `rr_store_entries` is `rr_store_real` -- the same shape as upstream's rule. Either the
