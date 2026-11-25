@@ -365,10 +365,6 @@ def bcast.first(als: List<&2, Sized>) -> Maybe<&2, List<&2, O.Sint>>:
   match als:
     case Nil{}: None{}
     case a <> t: bcast.go(t, Sized.s(a))
-
-def Kahn.seed.keep(deg: U32, k: U32, acc: List<&2, U32>) -> List<&2, U32>:
-  add_if(&2, U32, U32.is_zero(deg), k, acc)
-
 # _broadcast_shape -- ops.py:80, the `zip(*_align_left(*shapes))` fold.
 def bcast_shape(m: Maybe<&2, Shapes>) -> Maybe<&2, List<&2, O.Sint>>:
   match m:
@@ -1871,9 +1867,6 @@ def derived(ar: O.Arena, i: U32, nd: O.Node, ss: List<&2, Derived>) -> Maybe<&2,
   derived.of(ar, i, nd, srcs(ss))
 
 
-type Kahn is Data:
-  Kahn{pend: List<&2, U32>, work: List<&2, U32>, out: Table}
-
 type Resolved is Data:
   Resolved{i: U32, d: Derived}
 
@@ -1897,7 +1890,7 @@ def Table.es(tb: Table) -> List<&2, Resolved>:
 # **STOP **AT **IT**)**
 def Table.put(tb: Table, r: Resolved) -> Table:
   match tb:
-    case Table{es}: Table{List.append(&2, Resolved, es, [r])}
+    case Table{es}: Table{r <> es}
 
 def Table.len(tb: Table) -> Nat:
   List.length(&2, Resolved, Table.es(tb))
@@ -1978,91 +1971,6 @@ def Kahn.get.go(+i: U32, es: List<&2, Resolved>) -> Maybe<&2, Derived>:
 
 
 
-
-
-def Kahn.new() -> Kahn:
-  Kahn{Nil{}, Nil{}, Table{Nil{}}}
-
-def Kahn.out_of(k: Kahn) -> Table:
-  match k:
-    case Kahn{pend, work, out}: out
-
-def Kahn.pend(k: Kahn) -> List<&2, U32>:
-  match k:
-    case Kahn{pend, work, out}: pend
-
-def Kahn.work(k: Kahn) -> List<&2, U32>:
-  match k:
-    case Kahn{pend, work, out}: work
-
-def Kahn.degree(nd: O.Node) -> U32:
-  U32.from_nat(List.length(&2, U32, O.Node.src(nd)))
-
-def Kahn.seed.work(ns: List<&2, O.Node>, +k: U32, acc: List<&2, U32>) -> List<&2, U32>:
-  match ns:
-    case Nil{}: acc
-    case nd <> t: Kahn.seed.work(t, U32.add(k, 1), Kahn.seed.keep(Kahn.degree(nd), k, acc))
-
-def Kahn.seed.pend(ns: List<&2, O.Node>, acc: List<&2, U32>) -> List<&2, U32>:
-  match ns:
-    case Nil{}: acc
-    case nd <> t: Kahn.seed.pend(t, List.append(&2, U32, acc, [Kahn.degree(nd)]))
-
-def Kahn.seed(+ar: O.Arena) -> Kahn:
-  Kahn{Kahn.seed.pend(O.Arena.nodes(ar), Nil{}), Kahn.seed.work(O.Arena.nodes(ar), 0, Nil{}), Table{Nil{}}}
-
-def Kahn.edges.f(e: U32, nd: O.Node) -> U32:
-  U32.add(e, Kahn.degree(nd))
-
-def Kahn.edges(ar: O.Arena) -> U32:
-  List.foldl(&2, O.Node, U32, Kahn.edges.f, O.Arena.nodes(ar), 0)
-
-def Kahn.budget(+ar: O.Arena) -> Nat:
-  U32.to_nat(U32.add(O.Arena.next(ar), Kahn.edges(ar)))
-
-def Kahn.dec.go(ps: List<&2, U32>, k: Nat) -> List<&2, U32>:
-  match ps k:
-    case Nil{} _: Nil{}
-    case c <> t 0n: U32.sub(c, 1) <> t
-    case c <> t 1n+p: c <> Kahn.dec.go(t, p)
-
-def Kahn.dec(pend: List<&2, U32>, k: U32) -> List<&2, U32>:
-  Kahn.dec.go(pend, U32.to_nat(k))
-
-def Kahn.zero(m: Maybe<&2, U32>) -> Bool:
-  match m:
-    case Some{0}: True{}
-    case _: False{}
-
-def Kahn.dec_k(+k: Kahn, s: U32) -> Kahn:
-  Kahn{Kahn.dec(Kahn.pend(k), s), Kahn.work(k), Kahn.out_of(k)}
-
-def Kahn.reached.of(zero: Bool, +k: Kahn, s: U32) -> Kahn:
-  match zero:
-    case True{}: Kahn{Kahn.pend(k), List.append(&2, U32, Kahn.work(k), [s]), Kahn.out_of(k)}
-    case _: k
-
-def Kahn.reached(+k: Kahn, +s: U32) -> Kahn:
-  Kahn.reached.of(Kahn.zero(List.get(&2, U32, Kahn.pend(k), U32.to_nat(s))), k, s)
-
-def Kahn.src_count.add(same: Bool, n: U32) -> U32:
-  match same:
-    case True{}: U32.add(n, 1)
-    case _: n
-
-def Kahn.src_count.f(s: U32, +u: U32, n: U32) -> U32:
-  Kahn.src_count.add(U32.is_eq(s, u), n)
-
-def Kahn.src_count.go(srcs: List<&2, U32>, +u: U32, n: U32) -> U32:
-  match srcs:
-    case Nil{}: n
-    case s <> t: Kahn.src_count.go(t, u, Kahn.src_count.f(s, u, n))
-
-def Kahn.src_count(nd: O.Node, u: U32) -> U32:
-  Kahn.src_count.go(O.Node.src(nd), u, 0)
-
-def Kahn.consumers.dec(+v: U32, +k: Kahn) -> Kahn:
-  Kahn.reached(Kahn.dec_k(k, v), v)
 
 def Kahn.settled(ar: O.Arena, tb: Table) -> Bool:
   Nat.is_eq(Table.len(tb), U32.to_nat(O.Arena.next(ar)))
@@ -3063,36 +2971,6 @@ def dt_row(nm: String, lo: Bnd, hi: Bnd) -> IO(Unit):
 
 def row(nm: String, b: Bool) -> IO(Unit):
   IO.print(String.concat([nm, "=", Bool.show(b)]))
-
-def Kahn.consumers.times(c: Nat, +v: U32, +k: Kahn) -> Kahn:
-  match c:
-    case 0n: k
-    case 1n+p: Kahn.consumers.times(p, v, Kahn.consumers.dec(v, k))
-
-def Kahn.consumers.step(nd: O.Node, +u: U32, +v: U32, +k: Kahn) -> Kahn:
-  Kahn.consumers.times(U32.to_nat(Kahn.src_count(nd, u)), v, k)
-
-def Kahn.consumers.go(ns: List<&2, O.Node>, +u: U32, +v: U32, +k: Kahn) -> Kahn:
-  match ns:
-    case Nil{}: k
-    case +nd <> t: Kahn.consumers.go(t, u, U32.add(v, 1), Kahn.consumers.step(nd, u, v, k))
-
-def Kahn.consumers(+ar: O.Arena, +u: U32, +k: Kahn) -> Kahn:
-  Kahn.consumers.go(O.Arena.nodes(ar), u, 0, k)
-
-def Kahn.ans.of(r: Maybe<&2, Derived>, ar: O.Arena, +i: U32, rest: List<&2, U32>, pend: List<&2, U32>, tb: Table) -> Kahn:
-  match r:
-    case Some{d}: Kahn.consumers(ar, i, Kahn{pend, rest, Table.put(tb, Resolved{i, d})})
-    case None{}: Kahn{pend, rest, tb}
-
-def Kahn.ans(+ar: O.Arena, +i: U32, rest: List<&2, U32>, pend: List<&2, U32>, tb: Table, ss: List<&2, Derived>) -> Kahn:
-  Kahn.ans.of(derived(ar, i, O.Arena.node(ar, i), ss), ar, i, rest, pend, tb)
-
-def Kahn.go.of(gs: Maybe<&2, List<&2, Derived>>, ar: O.Arena, i: U32, rest: List<&2, U32>, pend: List<&2, U32>, tb: Table) -> Kahn:
-  match gs:
-    case Some{ss}: Kahn.ans(ar, i, rest, pend, tb, ss)
-    case None{}: Kahn{pend, rest, tb}
-
 def Kahn.get(i: U32, tb: Table) -> Maybe<&2, Derived>:
   Kahn.get.go(i, Table.es(tb))
 
@@ -3287,51 +3165,44 @@ def Kahn.gather.go(srcs: List<&2, U32>, +tb: Table, +g: Gathered) -> Maybe<&2, L
     case Nil{}: Kahn.gather.done(Gathered.acc(g), Gathered.ok(g))
     case s <> t: Kahn.gather.go(t, tb, Kahn.gather.step(Kahn.get(s, tb), g))
 
-def Kahn.gather(ar: O.Arena, i: U32, tb: Table) -> Maybe<&2, List<&2, Derived>>:
-  Kahn.gather.go(O.Arena.srcs(ar, i), tb, Gathered{Nil{}, True{}})
+def Kahn.gather.of(srcs: List<&2, U32>, tb: Table) -> Maybe<&2, List<&2, Derived>>:
+  Kahn.gather.go(srcs, tb, Gathered{Nil{}, True{}})
 
 def shape_is(+x: Folded, i: U32, want: List<&2, O.Sint>) -> Bool:
   shape_is.go(fold.shape(Folded.ar(x), Folded.t(x), i), want)
-
-def Kahn.go(+ar: O.Arena, +i: U32, rest: List<&2, U32>, pend: List<&2, U32>, +tb: Table) -> Kahn:
-  Kahn.go.of(Kahn.gather(ar, i, tb), ar, i, rest, pend, tb)
-
-# **THE **POP **RESOLVES **THE **NODE**, **AND **THE **DEDUP **IS **GONE** (⇒⇒† AND **AND **THIS
-# **IS **THE **FOLD's **SECOND **BIGGEST **COST**).
+# THE FOLD IS ONE FORWARD PASS OVER THE ARENA, NOT A SORT.
 #
-# **⇒⇒† AND **MEASURED **IN **THE **WGSL **LANE**: **THE **OLD **FORM's **`Kahn.get(i, tb)`** **WAS
-# **A **SCAN **OF **THE **WHOLE **TABLE** (⇒⇒† AND **AND **THE **SCAN **STOPPED **AT **THE **MATCH**,
-# **⇒⇒† AND **AND **A **MISS **SCANNED **EVERYTHING**), **⇒⇒† AND **AND **IT **HIT **0 **TIMES **IN
-# **893,576 **POPS** (⇒⇒† AND **AND **THAT **IS **THE **INSTRUMENT's **OWN **COUNT**, **⇒⇒† AND **AND
-# **THE **INSTRUMENT **IS **`.agents/slop/wgslperf/pop-hits.py`**, **⇒⇒† AND **AND **IT **PATCHES **THE
-# **COMPILED **FORM**)**.
+# MEASURED (`.agents/slop/wgslperf/topo-check.py`, THE COMPILED FORM's OWN COUNT): OVER 1,815
+# FOLDS, 886,514 NODES AND 1,698,277 EDGES, NO NODE's SRC HAS AN INDEX AT OR ABOVE THE
+# NODE's OWN INDEX. SO THE ARENA's INDEX ORDER IS A TOPOLOGICAL ORDER, AND THE FOLD IS A WALK.
 #
-# **⇒⇒† AND **WHY **THE **MISS **IS **ALWAYS **A **MISS** (⇒⇒† AND **AND **THIS **IS **A **PROPERTY
-# **OF **THE **ALGORITHM**, **⇒⇒† AND **NOT **OF **THE **DATA**): **A **NODE **ENTERS **THE **`work`
-# **LIST **ONLY **WHEN **ITS **DEGREE **HITS **EXACTLY **ZERO** (⇒⇒† AND **AND **`Kahn.reached`**
-# **CHECKS **FOR **ZERO**, **⇒⇒† AND **AND **THE **DEGREE **ONLY **DECREASES**), **⇒⇒† AND **AND **SO
-# **THE **`work` **LIST **HOLDS **A **NODE **ONCE** (⇒⇒† AND **AND **THE **SECOND **DECREMENT
-# **UNDERFLOWS **PAST **ZERO**, **⇒⇒† AND **AND **IT **IS **NOT **ZERO**)**.
-# **⇒⇒† AND **AND **A **NODE **IS **PUT **IN **THE **TABLE **ONLY **BY **`Kahn.ans`**, **⇒⇒† AND **AND
-# **THAT **RUNS **ONCE **PER **POP** -- **⇒⇒† AND **AND **SO **THE **TABLE's **INDICES **ARE **UNIQUE**,
-# **⇒⇒† AND **AND **THE **SCAN's **EARLY-EXIT **STILL **HOLDS**).
-def Kahn.pop(ar: O.Arena, +i: U32, rest: List<&2, U32>, pend: List<&2, U32>, +tb: Table) -> Kahn:
-  Kahn.go(ar, i, rest, pend, tb)
+# THE SORT COST THREE WALKS A TURN (MEASURED, `.agents/slop/wgslperf/count-calls.py`): EVERY POP
+# WALKED THE WHOLE ARENA FOR THE POPPED NODE's CONSUMERS (495,015,580 VISITS), EVERY RESOLUTION
+# WALKED THE ARENA FOR THE NODE ITSELF (`O.Arena.at` IS A LINEAR LIST WALK, 5,333,512 WALKS),
+# AND EVERY PUT COPIED THE WHOLE TABLE (`List.append` COPIES, 866,746 COPIES).
+def Kahn.ans.of(d: Maybe<&2, Derived>, i: U32, +tb: Table) -> Table:
+  match d:
+    case Some{x}: Table.put(tb, Resolved{i, x})
+    case None{}: tb
 
-def Kahn.step(ar: O.Arena, k: Kahn) -> Kahn:
-  match k:
-    case Kahn{pend, work, out}:
-      match work:
-        case Nil{}: k
-        case i <> rest: Kahn.pop(ar, i, rest, pend, out)
+def Kahn.ans(+ar: O.Arena, nd: O.Node, +i: U32, +tb: Table, ss: List<&2, Derived>) -> Table:
+  Kahn.ans.of(derived(ar, i, nd, ss), i, tb)
 
-def Kahn.run(fuel: Nat, +ar: O.Arena, k: Kahn) -> Table:
-  match fuel:
-    case 0n: Kahn.out_of(k)
-    case 1n+p: Kahn.run(p, ar, Kahn.step(ar, k))
+def Kahn.step.of(gs: Maybe<&2, List<&2, Derived>>, +ar: O.Arena, nd: O.Node, i: U32, +tb: Table) -> Table:
+  match gs:
+    case Some{ss}: Kahn.ans(ar, nd, i, tb, ss)
+    case None{}: tb
+
+def Kahn.step(+ar: O.Arena, +nd: O.Node, i: U32, +tb: Table) -> Table:
+  Kahn.step.of(Kahn.gather.of(O.Node.src(nd), tb), ar, nd, i, tb)
+
+def Kahn.walk(+ar: O.Arena, ns: List<&2, O.Node>, +i: U32, +tb: Table) -> Table:
+  match ns:
+    case Nil{}: tb
+    case nd <> t: Kahn.walk(ar, t, U32.add(i, 1), Kahn.step(ar, nd, i, tb))
 
 def UOp.fold(+ar: O.Arena) -> Table:
-  Kahn.run(Kahn.budget(ar), ar, Kahn.seed(ar))
+  Kahn.walk(ar, O.Arena.nodes(ar), 0, Table{Nil{}})
 # THE RANGES FOLD -- ops.py:483 `UOp._ranges` and ops.py:497 `UOp.ranges`. This is
 
 def folded(+ar: O.Arena) -> Folded:
