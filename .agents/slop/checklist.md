@@ -54,10 +54,13 @@ Baseline measured 2026-11-25 (re-run the commands to move it):
 
 ## Phase 2 — the one red row
 
-- [x] **2.1 Re-run the corpus.** Same single row, `grad`. **This run is a working-tree
-      measurement, not a certificate**: another unit had `uop/divandmod.bend`,
-      `uop/fold.bend` and `schedule/rangify.bend` dirty while it ran, so the substrate it
-      recorded is not a commit. Re-run when the tree is quiet.
+- [x] **2.1 Re-run the corpus.** 38/38 agree, 0 disagree, 0 refused, byte-identical 38,
+      plants 8/8, conflations 4/4, controls 5/5, stability 5/5, both selfchecks OK. The run is
+      **self-consistent** (`substrate-start == substrate-end`) and records
+      `substrate-head=2cb2437c2`.
+      **Still not a certificate**: `uop/fold.bend` and `schedule/rangify.bend` were dirty
+      (another unit) while it ran, so the digest describes a working tree rather than that
+      commit. A `repro` on a quiet tree is what turns this into one.
 - [x] **2.2 Fix `grad`.** Root cause was not the walk: `gmul_bc` passed
       `gs_solid(gbcast(...))` to `gmul` as an operand, and `gs_solid` is the **count of
       non-holes**, not a node. On this fixture the count is `1`, which is arena node 1 — the
@@ -90,6 +93,12 @@ Baseline measured 2026-11-25 (re-run the commands to move it):
       `rej` is a filter, so narrower costs time and not an answer).
       *Still to do:* `uop/fold.bend` and `codegen/decomp/dtype.bend` are the same class and are
       not covered yet — `fold.bend` has no `PMEntry` at all, so its table has a different shape.
+
+      **The behaviour is validated, and this is what validated it:** the three rows went from
+      dead/filtered to live in `bd4be1206`, and the full corpus run after it is green — 38/38
+      agree, byte-identical 38, plants 8/8 — so making them fire rewrote nothing CPython does
+      not also rewrite. That is the difference between "the gate says the table matches" and
+      "the rules do what the table claims".
 
 ## Phase 5 — make upstream's tests the population (2 weeks)
 
