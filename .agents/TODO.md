@@ -5167,23 +5167,26 @@ are NOT free: `grep -c smoothstep tinygrad/` is 0 and there is no `Ops.MIN`.
       so the decision fires on FIVE nodes where upstream would fire on one or two, and each
       firing mints new ranges for every axis and stages the value: the graph becomes a nest
       of STAGEs and the fw term falls out of it. **AND THE PORT'S COMPARISON IS
-      UPSTREAM-SHAPED**: `IxRngs{inp, outp}` is the (INPUT ranges, OUTPUT ranges) pair
-      (`indexing.bend:250-252` ✓), upstream compares `range_map[c][0]` -- the INPUT ranges
-      (`indexing.py:222` ✓) -- and the port's `rr_one_rngs` reads `IxRngs.inp` ✓, so the
-      comparison itself is not the divergence. **BUT THE PAIR'S SECOND ELEMENT IS NOT
-      UPSTREAM'S**: upstream's `range_map[x]` is `(input ranges, CLOSED ranges)` -- the
-      ranges that END at x (`indexing.py:14` ✓) -- while the port's second element holds
-      the node's OUTPUT ranges ✓, and the port's realize branch sets the realized node's
-      INPUT ranges to `Nil{}` ✓ where upstream sets them to the node's NEW ranges
-      (`rngs = out_rngs`, `indexing.py:283` ✓). **AND THE PORT'S `rr_ap_closed` READS THAT
-      SECOND ELEMENT** (`rangify.bend:1033-1036` ✓) -- so **THE PORT'S `STAGE` HOLDS THE
-      OUTPUT RANGES WHERE UPSTREAM'S HOLDS THE CLOSED ONES** (`indexing.py:82` ✓), measured
-      in the kernel graph (`STAGE:none:MAX,RANGE,RANGE` ✓). **AND THE PORT'S MODEL CANNOT
-      EXPRESS UPSTREAM'S CLOSED-RANGES LIST AT ALL**: its ending is a per-POSITION Bool
-      (`rr_ends_of`, `rangify.bend:429` ✓) where upstream's is a per-NODE list of RANGES
-      (`ending_ranges[x]`, `indexing.py:207` ✓) -- so this is a MODEL change, the same scale
-      as the range model itself. **THAT IS THE NEXT READING**, and it is why the realize is
-      not a patch. **WHAT UPSTREAM DOES WITH THE OLD RANGES IS**:
+      UPSTREAM-SHAPED -- BUT THE PORT'S `inp` FIELD IS DEAD.** Upstream's pair IS
+      `(rngs, out_rngs)` (`indexing.py:307` ✓), so the port's `(inp, outp)`
+      (`indexing.bend:250-252` ✓) is upstream's pair, and upstream's
+      `closed_ranges = ctx.range_map[s][1]` (`indexing.py:82` ✓) IS the output ranges the
+      port's `rr_ap_closed` reads ✓ -- the NAME is upstream's, the VALUE is the same ✓, and an
+      earlier revision of this file said otherwise and was WRONG ✓. **THE REAL GAP**: upstream
+      sets `rngs = out_rngs` for EVERY node (`indexing.py:283` ✓) -- a node's input ranges ARE
+      its output ranges ✓ -- while the port's `inp` is `Nil{}` for every node (`rr_p1.one`,
+      `rr_p1.real`, `rr_p1.many` ✓), and `rr_one_rngs` -- the thing the realize decision
+      compares ✓ -- reads `IxRngs.inp` ✓. **SO THE PORT'S COMPARISON IS OVER EMPTY LISTS** ✓,
+      which is why the decision's granularity (whole list vs per axis ✓) changed nothing when I
+      measured it ✓. **AND THE FIVE `STAGE`s ARE NOT THE PORT'S NEW RULE FIRING**: that rule
+      needs a disagreement ✓, and with empty lists there is never one ✓ -- so they come from
+      the port's OTHER realize rules ✓ (the WAR rule ✓, `realize_store_after_src` ✓), which
+      the newly minted ranges perturb ✓. **THE REALIZE THIS GRAPH NEEDS IS UPSTREAM'S
+      RANGE-MAP-TIME ONE** (`indexing.py:267` ✓) -- a node read at two different ranges ✓ --
+      and the port cannot see that, because its per-node input ranges are empty ✓. **THAT IS
+      THE NEXT READING**, and it is a model change: the port's range map needs upstream's
+      `rngs = out_rngs` before its realize can be upstream's. **WHAT UPSTREAM DOES WITH THE
+      OLD RANGES IS**:
       upstream ENDS the realized node's old ranges (`ending_ranges[x] = []`,
       `indexing.py:226-228` ✓) and KEEPS the consumers' ranges where they agree ✓ — the
       port's `rr_merge` mints a new range for every axis ✓ (its documented fallback ✓) and

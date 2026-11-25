@@ -158,27 +158,21 @@ where they agree, while the port's `rr_merge` mints a new range for *every* axis
 nothing. **That is the next thing to read** — the realize's *ending*, not its decision —
 and the realize is not landed.
 
-**And the pair underneath it.** The port's comparison is upstream-shaped
-(`IxRngs{inp, outp}` is the (input ranges, output ranges) pair — `indexing.bend:250-252` —
-and upstream compares `range_map[c][0]`, the input ranges, `indexing.py:222`; the port's
-`rr_one_rngs` reads `IxRngs.inp` ✓). But **the pair's second element is not upstream's**:
-upstream's `range_map[x]` is `(input ranges, **closed** ranges)` — the ranges that *end* at
-x (`indexing.py:14`) — while the port's second element holds the node's *output* ranges, and
-the port's realize branch sets the realized node's *input* ranges to `Nil{}` where upstream
-sets them to the node's new ranges (`rngs = out_rngs`, `indexing.py:283`). That pair decides
-what the `STAGE` holds (upstream's `closed_ranges`, `indexing.py:82`) and what the consumers
-compare — **it is the next reading**.
-
-**And the pair's second element is where it bites.** Upstream's `range_map[x]` is
-`(input ranges, **closed** ranges)` — the ranges that *end* at x (`indexing.py:14`) — and
-the `STAGE` holds the closed ones (`indexing.py:82`). The port's `rr_ap_closed` reads the
-pair's second element (`rangify.bend:1033-1036`), which holds the node's **output** ranges,
-so **the port's `STAGE` holds the output ranges where upstream's holds the closed ones**
-(measured in the kernel graph: `STAGE:none:MAX,RANGE,RANGE`). And the port's model cannot
-express upstream's closed-ranges list at all: its ending is a per-*position* Bool
-(`rr_ends_of`) where upstream's is a per-*node* list of ranges (`ending_ranges[x]`,
-`indexing.py:207`) — so this is a **model** change, the same scale as the range model
-itself, and it is why the realize is not a patch.
+**And the pair underneath it.** Upstream's pair IS `(rngs, out_rngs)` (`indexing.py:307`) — so
+the port's `(inp, outp)` (`indexing.bend:250-252`) is upstream's pair, and upstream's
+`closed_ranges` (`indexing.py:82`) is the output ranges the port's `rr_ap_closed` reads; the
+name is upstream's, the value is the same. *(An earlier revision of this file said the pair's
+second element was not upstream's. It was wrong.)* The real gap is one line: upstream sets
+`rngs = out_rngs` for **every** node (`indexing.py:283`) — a node's input ranges *are* its
+output ranges — while the port's `inp` is `Nil{}` for every node, and `rr_one_rngs`, the
+thing the realize decision compares, reads `IxRngs.inp`. **So the port's comparison is over
+empty lists**, which is why the decision's granularity changed nothing when I measured it,
+and why the five `STAGE`s are not the new rule firing: that rule needs a disagreement, and
+with empty lists there is never one — they come from the port's *other* realize rules (the
+WAR rule, `realize_store_after_src`), which the newly minted ranges perturb. The realize this
+graph needs is upstream's **range-map-time** one (`indexing.py:267`) — a node read at two
+different ranges — and the port cannot see that, because its per-node input ranges are
+empty. **That is the next reading**, and it is a model change.
 
 *(An earlier revision of this file called the port's gated toposort shallow — 7 of 138
 nodes — and that was WRONG: it was the flat-(256,) graph. With the (16,16) buffers the same
