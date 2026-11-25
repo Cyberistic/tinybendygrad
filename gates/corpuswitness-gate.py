@@ -128,8 +128,9 @@ confident false claim is not.
 SO THE ROW IS A DERIVATION -- AND NOT OF THE WITNESS's VERDICT. **THE CLAIM IS THE CONJUNCTION**:
 `verdict.current` (the recorded verdict describes THIS tree), `witness.substrate` (the
 reproducibility witness holds and names this tree), `witness.fresh` (the witness was taken AFTER
-the verdict it describes) and `freshness.source` (the clock that measured that ordering is the
-one this gate declares). **`witness.fresh` IS THE CLOCK, AND NO OTHER INSTRUMENT IN THIS TREE
+the verdict it describes), `freshness.source` (the clock that measured that ordering is the one this
+gate declares) and `witness.clean` (the tree that was hashed is a COMMIT, not a working copy
+with edits in it). **`witness.fresh` IS THE CLOCK, AND NO OTHER INSTRUMENT IN THIS TREE
 READS ONE** -- `checks/corpus-figure.py` has 0 `st_mtime` occurrences and `checks/differ.py` has 1,
 and it is the sentence saying never to. **SO THE ROW IS NOT AN ECHO OF THE WITNESS: A WITNESS THAT
 SAYS `rc=0` AND IS FOUR DAYS OLD STILL REDS THIS ROW.** That is the case
@@ -157,6 +158,7 @@ import importlib.util
 import inspect
 import os
 import pathlib
+import subprocess
 import sys
 
 HERE = pathlib.Path(__file__).resolve().parent
@@ -214,7 +216,8 @@ def mtime_ns(path: pathlib.Path) -> int:
 #: PRECONDITION on the comparator and not a reading of the tree; `freshness.source` is the
 #: PROVENANCE of the clock, and it IS a conjunct because a reading taken with an instrument the
 #: gate cannot name is not a measurement of anything.
-CLAIM_CONJUNCTS = ("verdict.current", "witness.fresh", "freshness.source", "witness.substrate")
+CLAIM_CONJUNCTS = ("verdict.current", "witness.fresh", "freshness.source", "witness.substrate",
+                   "witness.clean")
 
 
 def judge_state(reading: str, state: str, **kv) -> str:
@@ -250,6 +253,24 @@ def judge(reading: str, ok: bool, absent: bool, **kv) -> str:
   `OK?OK` would look like a measured verdict token and name no instrument. Absent a field beats
   a fake one: an unread column is notice, a wrong one is a lie somebody quotes."""
   return judge_state(reading, "REFUSED" if absent else ("OK" if ok else "FAIL"), **kv)
+
+
+def uncommitted(paths: list[str]) -> list[str]:
+  """Declared paths that are NOT what `HEAD` has: modified, or written and never added.
+
+  A `RuntimeError` means git could not answer, which is `REFUSED` and not `CLEAN` -- an
+  unreadable state is the one answer this must never guess at.
+  """
+  mod = subprocess.run(["git", "-C", str(ROOT), "diff", "--name-only", "HEAD", "--", *paths],
+                       capture_output=True, text=True)
+  if mod.returncode != 0:
+    raise RuntimeError((mod.stderr.strip().splitlines() or ["git diff failed"])[0])
+  add = subprocess.run(["git", "-C", str(ROOT), "ls-files", "--others", "--exclude-standard",
+                        "--", *paths], capture_output=True, text=True)
+  if add.returncode != 0:
+    raise RuntimeError((add.stderr.strip().splitlines() or ["git ls-files failed"])[0])
+  return sorted({p for p in mod.stdout.split("\n") if p} |
+                {p for p in add.stdout.split("\n") if p})
 
 
 def main(argv=None) -> int:
@@ -400,6 +421,32 @@ def main(argv=None) -> int:
                       reported=reported, derived=derived,
                       verdict="AGREE" if cohere else "DISAGREE", **report))
 
+  # --- READING 5: IS THE TREE A COMMIT? A digest over a WORKING TREE certifies the working
+  # tree, and the summary's own `substrate-head` names a COMMIT -- two different things the
+  # moment any declared input is uncommitted, which is the ordinary state of this clone.
+  #
+  # MEASURED 2026-11-25, AND IT IS WHY THIS ROW EXISTS: `claim` read `REPRODUCIBLE` while
+  # `tinybendygrad/uop/ops.bend` carried 33 uncommitted insertions, and NOTHING WAS LYING --
+  # the digest had hashed the working tree's `8ed2524b` where `HEAD:.../ops.bend` is
+  # `c8bb0345`. Every reading above was true and the claim still said more than it meant.
+  #
+  # THE POPULATION IS `differ.substrate_entries()`, the same 450 paths the digest hashes, so
+  # this row cannot drift from what it guards. TWO git calls, because neither alone is enough:
+  # `diff HEAD` sees a MODIFIED tracked file and `ls-files --others` sees one that was written
+  # and never added. `--exclude-standard` IS REQUIRED AND NOT A LOOSENING: `bin/bend` is a
+  # declared input that `.gitignore:5` ignores ON PURPOSE (a local shim onto the compiler), so
+  # flagging it would red this row forever for a file that cannot be committed by design. What
+  # the filter leaves out is exactly what a committed `.gitignore` says is not content.
+  paths = sorted({rel for rel, _ in differ.substrate_entries()})
+  try:
+    dirty = uncommitted(paths)
+  except RuntimeError as e:
+    rows.append(judge("witness.clean", False, True, why=str(e)[:140]))
+  else:
+    rows.append(judge("witness.clean", not dirty, False,
+                      verdict="CLEAN" if not dirty else "DIRTY",
+                      paths=len(paths), dirty=len(dirty), first=",".join(dirty[:3]) or "-"))
+
   # --- WHAT is claimed. THE line, IN a row, SO it cannot be lost in prose. ---------------------
   # AND IT IS A DERIVATION, NOT A WORD. The row used to be `judge("claim", True, False,
   # verdict="REPRODUCIBLE")` -- a LITERAL, so a witness saying `repro-rc=rc=0` and one saying
@@ -422,7 +469,8 @@ def main(argv=None) -> int:
     # this row is checked, against `differ.REPRO_PINS`.
     "repro-rc": got.get("repro-rc", "ABSENT"),
     "means": "the recorded verdict is CURRENT for this tree, the reproducibility witness holds "
-             "and names this tree, and the witness was taken AFTER the verdict it describes",
+             "and names this tree, the witness was taken AFTER the verdict it describes, and "
+             "the tree it names is a COMMIT rather than a working copy",
     "not_measured": "CORRECTNESS",
     "correctness_judged_by": "differ.unhealthy()+differ.PINS"}))
 
