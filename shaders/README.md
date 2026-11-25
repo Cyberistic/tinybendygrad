@@ -266,6 +266,33 @@ field's `__builtin_sqrtf` in it and the store `*(data0_256+((Lidx0+(16*Lidx1))%2
 | `weakint Lidx0` | the strong dtype: upstream's `UOp.dtype` is a property that never returns `weakint` (`tinygrad/mixin/dtype.py:17`), and the port has neither it nor `commit_int`. |
 | four nested range loops | the kernel's `END` closes FOUR ranges where upstream's closes TWO (`kg0_0_end_srcs=STORE RANGE RANGE`). |
 
+**THE MEASUREMENT THAT EXPLAINS THE REST: THE RANGE MAP IS EMPTY.** The probe's row
+`rmpad` (the range map's entry for the shader's `PAD`) reads
+
+    rmpad=rm=False False in= out= tbl=1 rmn=0
+
+`rmn=0` is the range map's SIZE and `tbl=1` is the RANGE TABLE's size -- **the range map
+holds NOTHING and the table holds only the CONST 0**. So the port's whole range-map
+stage is INERT for this graph: the PAD arm, the SHRINK arm, the zero-fill and the gate
+never run, and the kernel graph's four ranges and its `WHERE` come from the ENGINE's own
+stage (`eng_after_rangeify`), which is why the schedule builds a kernel but the gate does
+not ride.
+
+**WHY, AND IT IS UPSTREAM's LINE.** Upstream's propagation starts at the REALIZED node:
+`if x in rctx.realize_map: out_rngs = tuple(rctx.new_range(s) for s in x.shape)`
+(`indexing.py:222-225`) -- and everything else inherits its ranges from its consumers
+(`indexing.py:233-235`). The port has that shape (`rr_p1.real` mints, `rr_p1.one`
+inherits, `rr_p1.none` is upstream's `continue`), but `rr_p1.real` mints NOTHING, because
+the shape it reads is the FOLD's shape and **the fold has no row for the node** -- the
+same fold refusal this file already named ("the fold refuses its 2-D marg -> END has no
+fold row"). An empty shape mints no ranges, the propagation has no seed, and the range
+map stays empty.
+
+**SO THE ORDER OF THE REMAINING WORK IS REVERSED FROM WHAT THE PLAN SAID.** The gate
+cannot ride before the fold gives the range map a seed: the fold's refusal is upstream of
+the gate, the PAD arm and the zero-fill. The plan's `THE GATE DOES NOT RIDE` is a
+symptom; the fold's missing row is the disease.
+
 **AND THE GRAPH IS STILL ONE KERNEL WHERE UPSTREAM'S IS ONE KERNEL BUT NOT THE SAME
 ONE.** The oracle's body has `INDEX=7 WHERE=4 CMPLT=2 SQRT=3`; the port's has
 `INDEX=4 WHERE=1 AND=1 SQRT=1` -- the port's distance field is NOT materialized (upstream
