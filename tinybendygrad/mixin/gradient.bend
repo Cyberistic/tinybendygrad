@@ -925,8 +925,20 @@ def gr_14(+ar: O.Arena, +ctx: U32, +self: U32) -> GRes:
 #   The rule's OBSERVABLE effect for a non-weak, device-bearing, non-identity node is
 #   exactly `alu(Ops.STAGE)`, and `stage_*` covers that node; the four early returns are
 #   what is missing.
+# `left.has_buffer_identity()` ... no: this is `gradient.py`'s SCALAR test, and its TWO ways of
+# being rank 0 must not merge. MEASURED 2026-11-25: `gdims` answers `[]` for a shape the fold
+# cannot read, so a rank-6 PERMUTE mid-walk read as "scalar", `gmul_bc` took the broadcast arm,
+# and `gbcast` minted `EXPAND(x, stack)` -- which the fold reads as `stack ++ x.shape`, i.e.
+# rank 12 for a rank-6 x. CPython never mints those nodes (`gr=(1,10,49)` for the same edge,
+# measured with `.venv/bin/python`). `gshape` keeps the two apart: `None` is unknown, and an
+# unknown shape is NOT a scalar -- it is an operand whose broadcast must be left to the ALU.
+def gscalar.of(m: Maybe<&2, List<&2, U32>>) -> Bool:
+  match m:
+    case Some{ds}: U32.is_zero(U32.from_nat(List.length(&2, U32, ds)))
+    case _: False{}
+
 def gscalar(+ar: O.Arena, +u: U32) -> Bool:
-  U32.is_zero(U32.from_nat(List.length(&2, U32, gdims(ar, u))))
+  gscalar.of(gshape(ar, u))
 
 def gmul_bc.pick(xs: Bool, ys: Bool, +ar: O.Arena, +x: U32, +y: U32) -> O.Found:
   match xs:
@@ -1744,8 +1756,16 @@ def cg_edge.axes(neg: Bool, +a: List<&2, U32>, +b: List<&2, U32>, +s: CState, +k
 def cg_edge.diff(d: Bool, +a: List<&2, U32>, +b: List<&2, U32>, +s: CState, +k: U32, +v: U32) -> CState:
   match d:
     case True{}:
-      cg_edge.axes(U32.is_lt(U32.from_nat(List.length(&2, U32, b)),
-                             U32.from_nat(List.length(&2, U32, a))), a, b, s, k, v)
+      # THE GRAD OUTRANKS ITS SOURCE WHEN `len(v.shape) > len(k.shape)` -- MEASURED: the
+      # port had this polarity inverted, so the one edge where upstream RAISES
+      # (`broadcast_axes` refuses a bigger input into a smaller shape) was the one edge
+      # the port tried to reduce. Its axes came back `[0,1,2]`, the sum left 10 elements
+      # where the source has 490, and `greshape` minted a 10 -> 490 reshape the fold
+      # answers None for -- which made `g2` unreadable and stopped four of six stores
+      # from splitting. The named divergence at `gbaxes` (write the edge UNREDUCED) is
+      # this arm.
+      cg_edge.axes(U32.is_lt(U32.from_nat(List.length(&2, U32, a)),
+                             U32.from_nat(List.length(&2, U32, b))), a, b, s, k, v)
     case False{}: cg_puts.put(s, k, v)
 
 # `k._shape is not None and v._shape is not None` -- the port's fold answers the Maybe, so an

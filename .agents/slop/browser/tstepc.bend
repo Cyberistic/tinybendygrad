@@ -271,12 +271,34 @@ def g1row(+ar: O.Arena, +u: U32) -> String:
                  " mul=", dshow(ar, O.Arena.src0(ar, u)),
                  " marg=", mshow(ar, u)])
 
+def store_of.op(fuel: Nat, +ar: O.Arena, +x: U32, op: O.Op) -> U32:
+  match fuel:
+    case 0n: x
+    case 1n+p:
+      match op:
+        case O.OpsCALL{}: store_of.op(p, ar, O.Arena.src0(ar, x), O.Arena.op(ar, O.Arena.src0(ar, x)))
+        case O.OpsSINK{}: store_of.op(p, ar, O.Arena.src0(ar, x), O.Arena.op(ar, O.Arena.src0(ar, x)))
+        case O.OpsEND{}: store_of.op(p, ar, O.Arena.src0(ar, x), O.Arena.op(ar, O.Arena.src0(ar, x)))
+        case _: x
+
+def store_of(+ar: O.Arena, +x: U32) -> U32:
+  store_of.op(4n, ar, x, O.Arena.op(ar, x))
+
+def skgo.go(+ar: O.Arena, +ss: List<&2, U32>, +acc: List<&2, String>) -> String:
+  match ss:
+    case Nil{}: String.join(acc, ",")
+    case h <> t:
+      skgo.go(ar, t, List.append(&2, String, acc,
+        [U32.show(Bool.pick(U32, RF.sk_open(ar, store_of(ar, h)), 1, 0))]))
+
 def afts.go(+ar: O.Arena, +ss: List<&2, U32>, +acc: List<&2, String>) -> String:
   match ss:
     case Nil{}: String.join(acc, ",")
     case h <> t:
       afts.go(ar, t, List.append(&2, String, acc,
-        [String.concat([RF.eng_op_name(O.Arena.op(ar, h)), ">", RF.eng_op_name(O.Arena.op(ar, O.Arena.src0(ar, h)))])]))
+        [String.concat([RF.eng_op_name(O.Arena.op(ar, h)), ">",
+                        RF.eng_op_name(O.Arena.op(ar, O.Arena.src0(ar, h))), ">",
+                        RF.eng_op_name(O.Arena.op(ar, O.Arena.src(ar, h, 1)))])]))
 
 def gshape.none.of(m: Maybe<&2, List<&2, U32>>) -> Bool:
   match m:
@@ -404,7 +426,8 @@ def diag() -> String:
                  " dimPer=", dshow(O.Found.ar(h_f), O.Arena.src(O.Found.ar(h_f), O.Found.i(h_f), 0)),
                  " pairs=", pairs.go(cha, G.Grads.ks_of(TP.csg(tp)), G.Grads.vs_of(TP.csg(tp)), Nil{}),
                  " sinkk=", kids.go(ka, O.Arena.srcs(ka, O.Found.i(k)), Nil{}),
-                 " afts=", afts.go(ka, O.Arena.srcs(ka, O.Found.i(k)), Nil{})])
+                 " afts=", afts.go(ka, O.Arena.srcs(ka, O.Found.i(k)), Nil{}),
+                 " skopen=", skgo.go(ka, O.Arena.srcs(ka, O.Found.i(k)), Nil{})])
 
 def main() -> IO(Unit):
   do IO<Unit>:
