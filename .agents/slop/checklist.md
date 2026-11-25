@@ -62,15 +62,19 @@ Baseline measured 2026-11-25 (re-run the commands to move it):
       WAS IN FLIGHT`, so it discarded the mixture and retried. A run that had silently averaged
       two trees would have emitted a clean-looking artifact set describing neither.
 
-- [ ] **1.5 The certificate covers the WORKING TREE, not HEAD — measured, not suspected.**
+- [x] **1.5 The certificate covers the WORKING TREE, not HEAD — found, measured, closed.**
       `claim=ESTABLISHED` held while `tinybendygrad/uop/ops.bend` carried 33 uncommitted
-      insertions from another unit, and the digest is *correct*: the certificate hashed
-      `8ed2524b…` while HEAD's bytes are `c8bb0345…`. So `substrate-head=3e9df2d9f` names a
-      commit whose `ops.bend` is not what was hashed — the head row and the digest describe
+      insertions from another unit, and the digest was *correct*: the certificate hashed
+      `8ed2524b…` while HEAD's bytes are `c8bb0345…`. So `substrate-head=3e9df2d9f` named a
+      commit whose `ops.bend` is not what was hashed — the head row and the digest described
       different things, and a reader assumes they do not.
-      *Fix, not done because it is the certificate instrument and not a table:* a
-      `witness.clean` conjunct that reads `git status --porcelain -- <substrate paths>` and reds
-      the claim while any of them is modified, so `ESTABLISHED` means "this commit".
+      **Closed in `815c8dad1`:** `witness.clean` is the fifth conjunct — `git diff --name-only
+      HEAD` over the same 450 paths the digest hashes, plus `ls-files --others
+      --exclude-standard` for a file written and never added. `--exclude-standard` is required
+      and is not a loosening: `bin/bend` is a declared input that `.gitignore:5` ignores on
+      purpose, so flagging it would red the row forever for a file that cannot be committed.
+      *Pass:* both directions measured, not argued — a tracked clean path answers `[]`, a
+      planted untracked path answers `['checks/__plant__.rows']`, cleanup answers `[]`.
 
 ## Phase 2 — the one red row
 
@@ -111,12 +115,13 @@ Baseline measured 2026-11-25 (re-run the commands to move it):
       *Pass:* gate reports `sym_table 131/131 · rm_table 2/2 · valid_table 2/2`, 0 hazards,
       1 documented 6-row permutation, and 77 rows that drop a fast path (counted, not failed —
       `rej` is a filter, so narrower costs time and not an answer).
-      *Still to do:* `uop/fold.bend` — measured, and it is a different job. It has no `PMEntry`:
-      it is a **topological property fold** (`dtype` and `shape` answered together as one
-      `DtShape`, one arm per op, ~127 rows), so its upstream counterpart is `dtype_from_uop`
-      (`ops.py:123-190`) and `_shape`, not a `PatternMatcher`. A derivation there means
-      projecting upstream's per-op dtype/shape rules, which is not this gate's projection and
-      not a 30-minute change. It is also the one file another unit had open all session.
+      *Still to do:* `uop/fold.bend`'s PUBLISHED remainder, and it is measured: the constant-dtype
+      arms are done (`gates/fold-dtype-gate.py`, 11 of 11 — `CMPLT/CMPNE/CMPEQ→boolean`,
+      `GETADDR/THREEFRY→uint64`, `BINARY→uint8`, and five `void`), which was the part already
+      right. What is *not* covered is the other nine arms, and they cannot be projected: they
+      **compute** a dtype from their sources (`promo_dtype`, `least_upper_float`, pass-through),
+      so a table check needs execution against CPython's own nodes, not a parse. That is a
+      fixture job on a 4.7k-line topological fold, not an extension of these gates.
 
       **4.1b `codegen/decomp/dtype.bend` — a different answer, and the difference is the finding.**
       Its rule table is **not** projectable: `l2i_pair` (`dtype.py:89`) wraps a rule as
