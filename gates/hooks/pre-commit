@@ -7,8 +7,14 @@
 set -eu
 
 CLAIM='graphs-agree=[0-9]|graphs-disagree=[0-9]|byte-identical=[0-9]|repro-identical=[0-9]'
-# This file DEFINES the vocabulary, so it is excluded: a rule is not a record of a run.
-added=$(git diff --cached -U0 -- . ':(exclude)gates/hooks/pre-commit' | grep -E '^\+' | grep -vE '^\+\+\+' | grep -E "$CLAIM" || true)
+# Two exclusions, both ADMITTED rather than implied, because this is a rule over the tree's own
+# write sites (doctrine 1c) and not a discovery:
+#   gates/hooks/pre-commit  DEFINES the vocabulary; a rule is not a record of a run.
+#   .agents/slop/agend/     ARCHIVES A DOCUMENT.  An archived page asserts what was true of an
+#                           older tree BY CONSTRUCTION -- that is what an archive is for -- so
+#                           reading it as a present claim makes the archive impossible to keep.
+added=$(git diff --cached -U0 -- . ':(exclude)gates/hooks/pre-commit' ':(exclude).agents/slop/agend/*' \
+  | grep -E '^\+' | grep -vE '^\+\+\+' | grep -E "$CLAIM" || true)
 [ -z "$added" ] && exit 0
 
 py=.venv/bin/python
