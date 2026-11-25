@@ -233,7 +233,7 @@ def sd_cval.arg(a: O.Arg) -> U32:
 
 def sd_cval.node(n: O.Node) -> U32:
   match n:
-    case O.Node{op, src, arg, tag, _}: sd_cval.arg(arg)
+    case O.Node{op, src, arg, tag, _, _}: sd_cval.arg(arg)
 
 def sd_cval(+t: T.Tensor) -> U32:
   sd_cval.node(O.Arena.node(T.Tensor.ar(t), T.Tensor.u(t)))

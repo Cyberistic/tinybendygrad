@@ -703,7 +703,7 @@ def CallInfo.of() -> CallInfo:
 # THE TABLE IS IN `.agents/slop/tables/uop-ops-1294.md` -- `CallInfo.__repr__` (ops.py:1401) is at the end of the equality block, because it
 
 type Node is Data:
-  Node{op: Op, src: List<&2, U32>, arg: Arg, tag: Tag, d: U32}
+  Node{op: Op, src: List<&2, U32>, arg: Arg, tag: Tag, d: U32, ov: U32}
 
 # THE ARENA IS A SPINE OF CHUNKS BESIDE THE NODES, THE SAME SHAPE AS THE FOLD's OWN TABLE: THE
 # NODE OF INDEX `i` IS IN CHUNK `i / 32`, AND THE ARENA GROWS BY APPENDING, SO THE CHUNKS FILL
@@ -739,26 +739,32 @@ def Arena.n(x: Arena) -> U32:
 
 def Node.d(x: Node) -> U32:
   match x:
-    case Node{op, src, arg, tag, d}: d
+    case Node{op, src, arg, tag, d, _}: d
+
+# THE OP's NUMBER, WHICH THE NODE CARRIES SO THAT THE COMPARISON IS A FIELD READ AND NOT A
+# SIXTY-ARM MATCH.
+def Node.ov(x: Node) -> U32:
+  match x:
+    case Node{op, src, arg, tag, d, ov}: ov
 
 def Node.op(x: Node) -> Op:
   match x:
-    case Node{op, src, arg, tag, _}: op
+    case Node{op, src, arg, tag, _, _}: op
 
 def Node.src(x: Node) -> List<&2, U32>:
   match x:
-    case Node{op, src, arg, tag, _}: src
+    case Node{op, src, arg, tag, _, _}: src
 
 def Node.arg(x: Node) -> Arg:
   match x:
-    case Node{op, src, arg, tag, _}: arg
+    case Node{op, src, arg, tag, _, _}: arg
 
 def Node.tag(x: Node) -> Tag:
   match x:
-    case Node{op, src, arg, tag, _}: tag
+    case Node{op, src, arg, tag, _, _}: tag
 
 def Arena.bottom() -> Node:
-  Node{OpsNOOP{}, Nil{}, ABad{}, TNone{}, 0}
+  Node{OpsNOOP{}, Nil{}, ABad{}, TNone{}, 0, Ops.value(OpsNOOP{})}
 
 def Arena.empty() -> Arena:
   Arena{[Arena.bottom()], [[Arena.bottom()]], 1}
@@ -866,7 +872,7 @@ def Arena.src_without_body.op(op: Op, src: List<&2, U32>) -> List<&2, U32>:
 
 def Arena.src_without_body.node(nd: Node) -> List<&2, U32>:
   match nd:
-    case Node{op, src, arg, tag, _}: Arena.src_without_body.op(op, src)
+    case Node{op, src, arg, tag, _, _}: Arena.src_without_body.op(op, src)
 
 def Arena.src_without_body(ar: Arena, i: U32) -> List<&2, U32>:
   Arena.src_without_body.node(Arena.node(ar, i))
@@ -1585,8 +1591,8 @@ def eq_tag(x: Tag, y: Tag) -> Bool:
 
 def eq_node(x: Node, y: Node) -> Bool:
   match x y:
-    case Node{op, src, arg, tag, d} Node{o2, s2, a2, t2, d2}:
-      Bool.and(U32.is_eq(Ops.value(op), Ops.value(o2)),
+    case Node{op, src, arg, tag, d, ov} Node{o2, s2, a2, t2, d2, ov2}:
+      Bool.and(U32.is_eq(ov, ov2),
         Bool.and(eq_u32(src, s2),
           Bool.and(eq_arg(arg, a2), Bool.and(eq_tag(tag, t2), U32.is_eq(d, d2)))))
 
@@ -1601,7 +1607,7 @@ def eq_node.ov.go(same_op: Bool, x: Node, y: Node) -> Bool:
   match same_op:
     case True{}:
       match x y:
-        case Node{_, src, arg, tag, d} Node{_, s2, a2, t2, d2}:
+        case Node{_, src, arg, tag, d, ov} Node{_, s2, a2, t2, d2, ov2}:
           Bool.and(eq_u32(src, s2),
             Bool.and(eq_arg(arg, a2), Bool.and(eq_tag(tag, t2), U32.is_eq(d, d2))))
     case False{}: False{}
@@ -1702,7 +1708,7 @@ def intern.find.pick(hit: Bool, k: U32, +nxt: Maybe<&2, U32>) -> Maybe<&2, U32>:
 # AND THE WANTED NODE's OP VALUE IS HOISTED OUT OF THE SCAN: THE OP DOES NOT CHANGE, AND
 # `Ops.value` IS A SIXTY-ARM MATCH (THE COUNT IS IN `eq_node.ov.go`'s COMMENT).
 def intern.find.same(ov: U32, +nd: Node, +want: Node) -> Bool:
-  eq_node.ov.go(U32.is_eq(Ops.value(Node.op(nd)), ov), nd, want)
+  eq_node.ov.go(U32.is_eq(Node.ov(nd), ov), nd, want)
 
 # THE SCAN STOPS AT THE MATCH, AND THE MATCH IS THE HEAD'S VERDICT, WHICH THE CALLER
 # COMPUTES (⇒⇒† AND **AND **A `match` **CANNOT **SCRUTINIZE **A **COMPUTED **VALUE**, **⇒⇒† AND
@@ -1733,7 +1739,7 @@ def intern.find.hit(ns: List<&2, Node>, +want: Node, ov: U32) -> Bool:
     case +nd <> _: intern.find.same(ov, nd, want)
 
 def intern.find(+ns: List<&2, Node>, +k: U32, +want: Node) -> Maybe<&2, U32>:
-  +ov = Ops.value(Node.op(want))
+  +ov = Node.ov(want)
   intern.find.go(ns, intern.find.hit(ns, want, ov), k, want, ov)
 
 
@@ -1776,7 +1782,7 @@ def UOp.make.intern(+ar: Arena, +want: Node) -> Arena:
   UOp.make.intern.put(ar, intern.find(Arena.nodes(ar), 0, want), want)
 
 def UOp.make.shp(+ar: Arena, +op: Op, +src: List<&2, U32>, +arg: Arg, +tag: Tag, +depth: U32) -> Arena:
-  UOp.make.intern(ar, Node{op, src, arg, tag, depth})
+  UOp.make.intern(ar, Node{op, src, arg, tag, depth, Ops.value(op)})
 
 def UOp.make(+ar: Arena, +op: Op, +src: List<&2, U32>, +arg: Arg, +tag: Tag) -> Arena:
   UOp.make.shp(ar, op, src, arg, tag, 0)
@@ -1793,7 +1799,7 @@ def UOp.of.intern(+ar: Arena, +want: Node) -> U32:
   UOp.of.intern.put(ar, intern.find(Arena.nodes(ar), 0, want), want)
 
 def UOp.of.shp(+ar: Arena, +op: Op, +src: List<&2, U32>, +arg: Arg, +tag: Tag, +depth: U32) -> U32:
-  UOp.of.intern(ar, Node{op, src, arg, tag, depth})
+  UOp.of.intern(ar, Node{op, src, arg, tag, depth, Ops.value(op)})
 
 def UOp.of(+ar: Arena, +op: Op, +src: List<&2, U32>, +arg: Arg, +tag: Tag) -> U32:
   UOp.of.shp(ar, op, src, arg, tag, 0)
@@ -1982,7 +1988,7 @@ def Merge.go(nodes: List<&2, Node>, +ar: Arena, +map: List<&2, U32>) -> Merge:
     case Nil{}: Merge{ar, map}
     case h <> t:
       match h:
-        case Node{op, src, arg, tag, _}:
+        case Node{op, src, arg, tag, _, _}:
           +f = UOp.new(ar, op, Merge.remap(map, src), arg, tag)
           Merge.go(t, Found.ar(f), List.append(&2, U32, map, [Found.i(f)]))
 
@@ -3592,9 +3598,9 @@ def t_cycle_terminates() -> Bool:
 def key_same(p: Node, q: Node) -> Bool: eq_node(p, q)
 
 def t_key_eq() -> Bool:
-  Bool.and(Bool.and(key_same(Node{OpsADD{}, [1, 2], ANone{}, TNone{}, 0}, Node{OpsADD{}, [1, 2], ANone{}, TNone{}, 0}),
-    Bool.not(key_same(Node{OpsADD{}, [1, 2], ANone{}, TNone{}, 0}, Node{OpsADD{}, [1, 3], ANone{}, TNone{}, 0}))),
-    Bool.not(key_same(Node{OpsADD{}, [1, 2], ANone{}, TNone{}, 0}, Node{OpsADD{}, [1, 2], ANone{}, TStr{"t"}, 0})))
+  Bool.and(Bool.and(key_same(Node{OpsADD{}, [1, 2], ANone{}, TNone{}, 0, Ops.value(OpsADD{})}, Node{OpsADD{}, [1, 2], ANone{}, TNone{}, 0, Ops.value(OpsADD{})}),
+    Bool.not(key_same(Node{OpsADD{}, [1, 2], ANone{}, TNone{}, 0, Ops.value(OpsADD{})}, Node{OpsADD{}, [1, 3], ANone{}, TNone{}, 0, Ops.value(OpsADD{})}))),
+    Bool.not(key_same(Node{OpsADD{}, [1, 2], ANone{}, TNone{}, 0, Ops.value(OpsADD{})}, Node{OpsADD{}, [1, 2], ANone{}, TStr{"t"}, 0, Ops.value(OpsADD{})})))
 
 # dtype.py:59-62 is the oracle and it is an IDENTITY: `DType` is
 def t_eq_dt() -> Bool:
@@ -3885,20 +3891,20 @@ def s5.dn(n: U32) -> S.Dev: S.Dn{UOp.replicate(1, n)}
 def s5.ga.arena() -> Arena:
   Arena.of([
     Arena.bottom(),
-    Node{OpsBUFFER{}, Nil{}, AParam{s5.pa(1)}, TNone{}, 0},
-    Node{OpsALLOC{}, Nil{}, AParam{s5.pa(2)}, TNone{}, 0},
-    Node{OpsPARAM{}, Nil{}, AParam{s5.pa(3)}, TNone{}, 0},
-    Node{OpsSHRINK{}, [1], ATuple{Nil{}}, TNone{}, 0},
-    Node{OpsBITCAST{}, [1], ADt{S.single()}, TNone{}, 0},
-    Node{OpsBINARY{}, [1], ANone{}, TNone{}, 0},
-    Node{OpsMSTACK{}, [1], ANone{}, TNone{}, 0},
-    Node{OpsMSELECT{}, [1, 2], AInt{0}, TNone{}, 0},
-    Node{OpsLINEAR{}, [1], ANone{}, TNone{}, 0},
-    Node{OpsCONST{}, Nil{}, APy{CInt{H.i64_of_i32(3)}}, TNone{}, 0},
-    Node{OpsRESHAPE{}, [1, 14], ATuple{[0]}, TNone{}, 0},
-    Node{OpsAFTER{}, [1], ANone{}, TNone{}, 0},
-    Node{OpsADD{}, [1, 1], ANone{}, TNone{}, 0},
-    Node{OpsSTACK{}, [10, 10], ANone{}, TNone{}, 0}
+    Node{OpsBUFFER{}, Nil{}, AParam{s5.pa(1)}, TNone{}, 0, Ops.value(OpsBUFFER{})},
+    Node{OpsALLOC{}, Nil{}, AParam{s5.pa(2)}, TNone{}, 0, Ops.value(OpsALLOC{})},
+    Node{OpsPARAM{}, Nil{}, AParam{s5.pa(3)}, TNone{}, 0, Ops.value(OpsPARAM{})},
+    Node{OpsSHRINK{}, [1], ATuple{Nil{}}, TNone{}, 0, Ops.value(OpsSHRINK{})},
+    Node{OpsBITCAST{}, [1], ADt{S.single()}, TNone{}, 0, Ops.value(OpsBITCAST{})},
+    Node{OpsBINARY{}, [1], ANone{}, TNone{}, 0, Ops.value(OpsBINARY{})},
+    Node{OpsMSTACK{}, [1], ANone{}, TNone{}, 0, Ops.value(OpsMSTACK{})},
+    Node{OpsMSELECT{}, [1, 2], AInt{0}, TNone{}, 0, Ops.value(OpsMSELECT{})},
+    Node{OpsLINEAR{}, [1], ANone{}, TNone{}, 0, Ops.value(OpsLINEAR{})},
+    Node{OpsCONST{}, Nil{}, APy{CInt{H.i64_of_i32(3)}}, TNone{}, 0, Ops.value(OpsCONST{})},
+    Node{OpsRESHAPE{}, [1, 14], ATuple{[0]}, TNone{}, 0, Ops.value(OpsRESHAPE{})},
+    Node{OpsAFTER{}, [1], ANone{}, TNone{}, 0, Ops.value(OpsAFTER{})},
+    Node{OpsADD{}, [1, 1], ANone{}, TNone{}, 0, Ops.value(OpsADD{})},
+    Node{OpsSTACK{}, [10, 10], ANone{}, TNone{}, 0, Ops.value(OpsSTACK{})}
   ])
 
 type CLike is Data:

@@ -180,6 +180,13 @@ def main():
       continue
     print(f"  {k:28s} {C[k]:14,}")
   by = C.get("Ops.value.by", {})
+  # **⇒⇒† AND **THE **HISTOGRAM **GOES **TO **A **FILE**, **⇒⇒† AND **AND **THE **REORDER **SCRIPT
+  # **READS **IT** (⇒⇒† AND **AND **THE **ORDER **IS **A **COUNT **AND **NOT **A **NUMBER
+  # **SOMEONE **REMEMBERS**) ✓.
+  if by:
+    out = HERE / "ops-value-freq.json"
+    out.write_text(json.dumps(by))
+    print(f"  THE HISTOGRAM IS IN {out.name}")
   if by:
     tot = sum(by.values())
     weighted = sum(int(k) * v for k, v in by.items())

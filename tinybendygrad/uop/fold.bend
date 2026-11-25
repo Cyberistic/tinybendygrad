@@ -1859,7 +1859,7 @@ def derived.put(ds: Maybe<&2, DtShape>, +ar: O.Arena, +i: U32, +op: O.Op, +arg: 
 
 def derived.of(+ar: O.Arena, +i: U32, nd: O.Node, +x: Srcs) -> Maybe<&2, Derived>:
   match nd:
-    case O.Node{+op, src, +arg, tag, _}:
+    case O.Node{+op, src, +arg, tag, _, _}:
       derived.put(dt_shape(ar, i, op, arg, Srcs.ss(x)), ar, i, op, arg, x)
 
 

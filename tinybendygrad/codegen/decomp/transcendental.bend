@@ -163,7 +163,7 @@ def tx_cf(+ar: O.Arena, +v: F32) -> O.Found:
 # dedup is not observable; a second use would need `intern.find` on the bits.
 def tx_cf_neg0(+ar: O.Arena) -> O.Found:
   +i = O.Arena.next(ar)
-  O.Found{O.intern.put(ar, O.Node{O.OpsCONST{}, Nil{}, O.APy{O.CFloat{F32.neg(0.0)}}, O.TNone{}, 0}), i}
+  O.Found{O.intern.put(ar, O.Node{O.OpsCONST{}, Nil{}, O.APy{O.CFloat{F32.neg(0.0)}}, O.TNone{}, 0, O.Ops.value(O.OpsCONST{})}), i}
 
 # `2y` for the Python-int `y` every `shr`/`shl` in this file gets.
 # `H.i64_of_i32` SIGN-EXTENDS, so `1 << 31` would come out negative; the two

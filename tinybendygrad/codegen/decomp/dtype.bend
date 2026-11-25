@@ -2059,7 +2059,7 @@ def dd_lab.node(+op: O.Op, +arg: O.Arg) -> String:
 
 def dd_lab.nd(nd: O.Node) -> String:
   match nd:
-    case O.Node{+op, +src, +arg, +tag, _}: dd_lab.node(op, arg)
+    case O.Node{+op, +src, +arg, +tag, _, _}: dd_lab.node(op, arg)
 
 def dd_lab(ar: O.Arena, u: U32) -> String:
   dd_lab.nd(O.Arena.node(ar, u))
