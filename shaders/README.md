@@ -288,6 +288,22 @@ same fold refusal this file already named ("the fold refuses its 2-D marg -> END
 fold row"). An empty shape mints no ranges, the propagation has no seed, and the range
 map stays empty.
 
+**THE SEED, AND WHERE IT IS READ.** The seed is the REALIZED node, and the realized node
+is the `STORE` (upstream's `pm_generate_realize_map` realizes every `STORE`:
+`tinygrad/schedule/indexing.py:36-37`), and upstream's `STORE` shape IS ITS DST's shape
+(this file said so before: "upstream reads `x.shape`, and for a STORE that IS
+`src[0].shape`"). The port reads the same thing (`rr_p1.shape`: a `STORE` reads its
+dst's dims). So the seed is the dst's DIMS -- and the dst in the kernel graph is a
+`BUFFER`, and the probe's `gaps` row already says the `BUFFER` HAS a fold row
+(`#54:Ops.BUFFER`) while the `END` and the `STORE` do not
+(`#170:Ops.END:GAP,#169:Ops.STORE:GAP`).
+
+**AND A DIVERGENCE THAT IS NOT THE BLOCKER BUT IS REAL:** upstream's `END` shape is the
+RANGES IT CLOSES (`tinygrad/uop/ops.py:446`: `if self.op is Ops.END: return tuple(r for
+r in self.src[1:] if r.op is Ops.RANGE)`) and the port's fold says `thru0` -- the first
+src's shape (`tinybendygrad/uop/fold.bend:1756`). It is not the blocker (the `END` is
+not the seed; the `STORE` is) but it is a divergence and it is on the list.
+
 **SO THE ORDER OF THE REMAINING WORK IS REVERSED FROM WHAT THE PLAN SAID.** The gate
 cannot ride before the fold gives the range map a seed: the fold's refusal is upstream of
 the gate, the PAD arm and the zero-fill. The plan's `THE GATE DOES NOT RIDE` is a
