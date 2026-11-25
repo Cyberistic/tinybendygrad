@@ -1,5 +1,5 @@
 # port-compile: one `bin/bend --check-only` per .bend under tinybendygrad/, ONE AT A TIME, under checks/bounded.py.
-# taken=2026-11-17T04:37:30Z  population=199  ceiling 2048 MB, 300 s each.
+# taken=2026-11-18T19:10:53Z  population=198  ceiling 2048 MB, 300 s each.
 # state= COMPILES | COMPILES-AS-C | COLD-BY-DESIGN | FINDING | NO-MEASUREMENT
 # COMPILES       `--check-only` says `ALL PROOFS CHECK`.
 # COMPILES-AS-C  the checker refuses for a PROMISE (the file binds foreign or
@@ -9,7 +9,7 @@
 #   or foreign code:` (the file PARSES AND TYPE-CHECKS; the SAFETY verdict is
 #   what fails).  Only FINDING is a defect.
 state	file	detail
-COLD-BY-DESIGN	tinybendygrad/LAWS.bend	Error: 50 TODOs found. -- and the compiler does NOT emit C
+COLD-BY-DESIGN	tinybendygrad/LAWS.bend	Error: 101 TODOs found. -- and the compiler does NOT emit C
 COMPILES	tinybendygrad/__init__.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/base.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/device.bend	ALL PROOFS CHECK
@@ -18,9 +18,8 @@ COMPILES	tinybendygrad/function.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/helpers.bend	ALL PROOFS CHECK
 COLD-BY-DESIGN	tinybendygrad/sz.bend	Error: 7 defs rely on unsafe or foreign code: -- and the EMIT lane was NOT-MEASURED (KILLED-ON-MEMORY), so the EMIT is NOT a verdict about this file
 COMPILES	tinybendygrad/tensor.bend	ALL PROOFS CHECK
-COMPILES	tinybendygrad/LAWS/PROOF.bend	ALL PROOFS CHECK
+FINDING	tinybendygrad/LAWS/PROOF.bend	Error:
 COMPILES	tinybendygrad/LAWS/alu.bend	ALL PROOFS CHECK
-COMPILES	tinybendygrad/LAWS/spec-mut.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/LAWS/spec.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/codegen/__init__.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/codegen/gpudims.bend	ALL PROOFS CHECK
@@ -106,7 +105,7 @@ COMPILES	tinybendygrad/nn/torch.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/renderer/__init__.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/renderer/cstyle.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/renderer/estimates.bend	ALL PROOFS CHECK
-FINDING	tinybendygrad/renderer/kuconv.bend	Error:
+COMPILES	tinybendygrad/renderer/kuconv.bend	ALL PROOFS CHECK
 COLD-BY-DESIGN	tinybendygrad/renderer/live.bend	Error: 7 defs rely on unsafe or foreign code: -- and the EMIT lane was NOT-MEASURED (KILLED-ON-MEMORY), so the EMIT is NOT a verdict about this file
 COMPILES	tinybendygrad/renderer/llvmir.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/renderer/nir.bend	ALL PROOFS CHECK

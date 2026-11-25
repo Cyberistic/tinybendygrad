@@ -37,12 +37,12 @@ def rows() -> List<&2, String>:
   +ml = O.UOp.new(O.Found.ar(ix2), O.OpsMUL{}, [O.Found.i(ix), O.Found.i(ix2)], O.ANone{}, O.TNone{})
   +ar = O.Found.ar(ml)
   +tb = F.Folded.t(F.folded(ar))
-  +mu = K.pm_add_loads(F.folded(ar), O.Found.i(ml))
+  +mu = K.pm_add_loads(F.folded(ar), ar, Nil{}, Nil{}, O.Found.i(ml))
   +ma = K.Ker.ar(mu)
   +mi = K.Ker.at(mu)
-  +mm = K.kn_map_load([O.Found.i(ix)], tb, ar)
-  +tr = K.al_try.go(True{}, 0, tb, ar, O.Found.i(ml))
-  +a0 = K.al_0.of(True{}, ar, O.Found.i(ml), K.kn_map_load.go([O.Found.i(ix), O.Found.i(ix2)], tb, K.ALS{ar, Nil{}}))
+  +mm = K.kn_map_load([O.Found.i(ix)], Nil{}, Nil{}, ar)
+  +tr = K.al_try.go(True{}, 0, Nil{}, Nil{}, ar, O.Found.i(ml))
+  +a0 = K.al_0.of(True{}, ar, O.Found.i(ml), K.kn_map_load.go([O.Found.i(ix), O.Found.i(ix2)], Nil{}, Nil{}, K.ALS{ar, Nil{}}))
   [String.concat(["buffer_addr=", addr_s(F.fold.addr(ar, tb, O.Found.i(b)))]),
    String.concat(["index_addr=", addr_s(F.fold.addr(ar, tb, O.Found.i(ix)))]),
    String.concat(["index_loadable=", yn(K.kn_alu_loadable(tb, ar, O.Found.i(ix)))]),
