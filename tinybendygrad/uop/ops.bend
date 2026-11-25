@@ -817,8 +817,16 @@ def Arena.at(ar: Arena, +i: U32) -> Maybe<&1, Node>:
   Arena.at.chunk.go(Arena.at.spine.go(Arena.cs(ar), U32.to_nat(U32.shrn(i, 5n))),
     U32.to_nat(U32.and(i, 31)))
 
+# THE BOTTOM NODE IS BUILT ONLY WHEN THE LOOKUP MISSES: `Maybe.default` EVALUATES ITS DEFAULT
+# EAGERLY, AND THE ARENA's LOOKUP IS THE HOTTEST PATH IN THE PORT (MEASURED: 3,577,720 LOOKUPS
+# A TURN, SO EVERY ONE OF THEM BUILT A NODE IT DID NOT USE).
+def Arena.node.at(hit: Maybe<&1, Node>) -> Node:
+  match hit:
+    case Some{nd}: nd
+    case None{}: Arena.bottom()
+
 def Arena.node(ar: Arena, i: U32) -> Node:
-  Maybe.default(&1, Node, Arena.at(ar, i), Arena.bottom())
+  Arena.node.at(Arena.at(ar, i))
 
 def Arena.depth(ar: Arena, i: U32) -> U32:
   Node.d(Arena.node(ar, i))
@@ -2306,9 +2314,13 @@ def Topo.empty() -> Topo:
   Topo{Nil{}, Nil{}, True{}}
 
 
+# THE CACHE IS CONSED, NOT APPENDED: `List.append` COPIES THE WHOLE LIST, AND THE CACHE IS ONE
+# ENTRY PER NODE (MEASURED: `Topo.cache_add` IS 2.6% OF THE WGSL TURN's EXCLUSIVE TIME, V8's OWN
+# CPU PROFILE OF THE COMPILED FORM). AND THE ORDER IS RESTORED ONCE, AT THE END, WHERE THE
+# TOPOSORT's OUTPUT IS THE VISIT ORDER.
 def Topo.cache_add(n: U32, t: Topo) -> Topo:
   match t:
-    case Topo{cache, stack, calls}: Topo{List.append(&2, U32, cache, [n]), stack, calls}
+    case Topo{cache, stack, calls}: Topo{n <> cache, stack, calls}
 
 
 def Arena.push_srcs.go(srcs: List<&2, U32>, st: List<&2, Frame>) -> List<&2, Frame>:
@@ -2373,7 +2385,7 @@ def Arena.budget(+ar: Arena) -> Nat:
 
 def toposort(fuel: Nat, +ar: Arena, t: Topo) -> List<&2, U32>:
   match fuel:
-    case 0n: Topo.cache_of(t)
+    case 0n: List.reverse(&2, U32, Topo.cache_of(t))
     case 1n+p: toposort(p, ar, Topo.step(ar, t))
 
 

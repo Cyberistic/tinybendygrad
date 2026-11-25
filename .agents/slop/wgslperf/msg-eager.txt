@@ -1,0 +1,27 @@
+arena: the bottom node is built only on a miss, and the toposort's cache is consed
+
+TWO EAGER ALLOCATIONS, BOTH MEASURED IN V8's OWN CPU PROFILE OF THE COMPILED FORM.
+
+1. `Arena.node` IS `Maybe.default(&1, Node, Arena.at(ar, i), Arena.bottom())`, AND
+   `Maybe.default` EVALUATES ITS DEFAULT EAGERLY -- SO EVERY LOOKUP BUILT A NODE IT DID NOT
+   USE, AND THE ARENA's LOOKUP IS THE HOTTEST PATH IN THE PORT (3,577,720 LOOKUPS A TURN). THE
+   DEFAULT IS NOW BUILT IN THE MISS ARM.
+
+2. `Topo.cache_add` APPENDED TO THE TOPOSORT's CACHE, AND `List.append` COPIES THE WHOLE LIST,
+   SO THE CACHE WAS O(n) PER NODE. THE CACHE IS NOW CONSED, AND THE ORDER IS RESTORED ONCE, AT
+   THE END, WHERE THE TOPOSORT's OUTPUT IS THE VISIT ORDER (⇒⇒† AND **AND **THE ORDER **IS **THE
+   **ONLY **THING **THE **CACHE's **ORDER **IS **FOR**). MEASURED: `Topo.cache_add` WAS 2.6% OF
+   THE TURN's EXCLUSIVE TIME.
+
+MEASURED, THE WGSL TURN (`.agents/slop/wgslperf/bench-ab.py`, WHICH BUILDS BOTH TREES NOW AND
+ALTERNATES THEM, SO A DRIFT IN THE SHARED MACHINE HITS BOTH): 1,218 ms -> 1,112 ms OF WALL AND
+1,733 ms -> 1,669 ms OF CPU. THE WGSL IS BYTE-IDENTICAL: 3,773 bytes, THE SAME SHA256, FROM
+BOTH BUILDS.
+
+AND THE GATES ARE GREEN: `gates/ops-core-gate.py`, `gates/fold-vbase-gate.py`,
+`gates/specfold-gate.py`, `gates/decomp_graph_census-gate.py`, `gates/ew_graph_census-gate.py`
+AND `gates/gr_graph_census-gate.py`.
+
+THE CORPUS CERTIFICATE IS NOT CLAIMED HERE: THIS CHANGE MOVES THE SUBSTRATE, SO
+`gates/corpuswitness-gate.py` READS `claim state=FAIL verdict=NOT-ESTABLISHED` UNTIL THE CORPUS
+RUNS AGAIN ON THE SETTLED TREE.
