@@ -103,7 +103,7 @@ def main():
   patch_fn("UOp_make_intern", "UOp.make.intern")
   patch_fn("UOp_of_intern", "UOp.of.intern")
   patch_fn("intern_put_shp", "intern.put.shp")
-  patch_fn("eq_node", "eq_node")
+  patch_fn("eq_node_ov_go", "eq_node.ov.go")
   patch_fn("eq_u32", "eq_u32")
   patch_fn("eq_arg", "eq_arg")
   patch_fn("eq_tag", "eq_tag")
@@ -125,6 +125,29 @@ def main():
   body = body.replace("{", "{\n  globalThis.__CC(\"Ops.value\");", 1)
   body = re.sub(r"return (\d+);", r'return globalThis.__CH("Ops.value.by", \1), \1;', body)
   out = out[:i] + body + out[end:]
+
+  # THE MATCH POSITION: `intern.find.pick` IS THE HEAD'S VERDICT, AND IT IS TRUE FOR THE NODE
+  # THAT MATCHED, SO THE HISTOGRAM OF ITS `k` IS THE HISTOGRAM OF WHERE THE MATCH WAS.
+  pat = re.compile(r"function (\$[A-Za-z0-9_]*intern_find_pick)\(")
+  ms = pat.findall(out)
+  if len(ms) == 1:
+    fname = ms[0]
+    i, end = find_fn(out, fname)
+    body = out[i:end]
+    body = body.replace("if (_hit_0) {",
+                        "if (_hit_0) {\n    globalThis.__CH(\"intern.hit\", _k_0);", 1)
+    out = out[:i] + body + out[end:]
+
+  # THE DEPTH THE ARENA STORES: `intern.put.shp` IS THE ONLY WRITER, AND THE DEPTH IS PART OF
+  # THE INTERNING's KEY (`sh == depth`), SO THE HISTOGRAM SAYS WHETHER THE KEY IS TRIVIAL.
+  pat = re.compile(r"function (\$[A-Za-z0-9_]*intern_put_shp)\(")
+  ms = pat.findall(out)
+  if len(ms) == 1:
+    fname = ms[0]
+    i, end = find_fn(out, fname)
+    body = out[i:end]
+    body = body.replace("{", "{\n  globalThis.__CH(\"arena.depth\", _depth_0);", 1)
+    out = out[:i] + body + out[end:]
 
   m = re.search(r"function (\$chain_wgsl)\(([^)]*)\)\s*\{", out)
   if not m:
@@ -153,7 +176,7 @@ def main():
   C = json.loads(pathlib.Path(env["__WGSL_OUT"]).read_text())
   print("THE COUNTS:")
   for k in sorted(C):
-    if k.endswith(".by"):
+    if k.endswith(".by") or k in ("intern.hit", "arena.depth"):
       continue
     print(f"  {k:28s} {C[k]:14,}")
   by = C.get("Ops.value.by", {})
@@ -166,6 +189,23 @@ def main():
     print("  THE TOP ARMS:")
     for k, v in sorted(by.items(), key=lambda kv: -kv[1])[:12]:
       print(f"    value {k:>3s}  {v:12,}  ({100.0*v/tot:5.1f}%)")
+  dep = C.get("arena.depth", {})
+  if dep:
+    tot = sum(dep.values())
+    print()
+    print(f"THE DEPTH THE ARENA STORES: {tot:,} NODES, AND THE HISTOGRAM IS "
+          + ", ".join(f"{k}:{v}" for k, v in sorted(dep.items(), key=lambda kv: -kv[1])[:6]))
+  hit = C.get("intern.hit", {})
+  if hit:
+    tot = sum(hit.values())
+    mean = sum(int(k) * v for k, v in hit.items()) / max(tot, 1)
+    print()
+    print(f"THE MATCH POSITION: {tot:,} HITS, THE MEAN INDEX {mean:.1f}")
+    print("  THE DISTRIBUTION (THE BUCKETS ARE THE MATCH'S INDEX):")
+    for lo in range(0, 512, 32):
+      n = sum(v for k, v in hit.items() if lo <= int(k) < lo + 32)
+      if n:
+        print(f"    {lo:4d}-{lo + 31:4d}  {n:12,}  ({100.0*n/tot:5.1f}%)")
 
 
 if __name__ == "__main__":

@@ -41,8 +41,9 @@ def main():
       continue
     mine += c
     parts = []
+    depth = int(sys.argv[3]) if len(sys.argv) > 3 else 8
     p = par.get(nid)
-    while p is not None and len(parts) < 8:
+    while p is not None and len(parts) < depth:
       parts.append(nm(p))
       p = par.get(p)
     chains[" <- ".join(parts)] += c

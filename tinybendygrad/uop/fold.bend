@@ -1911,8 +1911,9 @@ def Table.put(i: U32, tb: Table, r: Resolved) -> Table:
   match tb:
     case Table{cs, cur, ci}: Table{cs, r <> cur, ci}
 
-# THE CHUNK ENDS WITH THE NODE WHOSE INDEX IS `32k + 31`.
-def Kahn.chunk_end(i: U32) -> Bool:
+# THE CHUNK ENDS WITH THE NODE WHOSE INDEX IS `32k + 31`. THE FOLD's TABLE AND THE RANGE
+# TABLE CHUNK THE SAME WAY, SO THE RULE IS NAMED ONCE.
+def chunk_end(i: U32) -> Bool:
   U32.is_zero(U32.and(U32.add(i, 1), 31))
 
 # THE FULL CHUNK GOES ON THE SPINE AND THE NEXT ONE STARTS EMPTY.
@@ -1922,7 +1923,7 @@ def Kahn.roll.of(end: Bool, +tb: Table) -> Table:
     case False{}: tb
 
 def Kahn.roll(tb: Table, i: U32) -> Table:
-  Kahn.roll.of(Kahn.chunk_end(i), tb)
+  Kahn.roll.of(chunk_end(i), tb)
 
 def Table.len(+tb: Table) -> Nat:
   Nat.add(List.length(&2, List<&2, Resolved>, Table.cs(tb)), List.length(&2, Resolved, Table.cur(tb)))
@@ -3286,36 +3287,87 @@ def set_del(xs: List<&2, U32>, +ds: List<&2, U32>, +acc: List<&2, U32>) -> List<
     case Nil{}: acc
     case +x <> t: set_del(t, ds, Bool.pick(List<&2, U32>, mem_u32(ds, x), acc, List.append(&2, U32, acc, [x])))
 
+# THE RANGE TABLE IS A SPINE OF CHUNKS, THE SAME SHAPE AS THE FOLD's OWN TABLE: THE ENTRY FOR
+# INDEX `i` IS IN CHUNK `i / 32`, AND THE SWEEP PUTS ONE ENTRY PER NODE OF THE ARENA IN ARENA
+# ORDER, SO THE CHUNKS FILL IN ORDER.
+#
+# MEASURED, THE FLAT TABLE's SCAN WAS 8.7% OF THE TURN (V8's OWN CPU PROFILE OF THE COMPILED
+# FORM) AND ITS CELLS WERE 757,574 SCANS OVER AN ARENA OF ~244 ENTRIES; A CHUNKED LOOKUP IS
+# ~31 CELLS AND NOT ~244.
 type RTable is Data:
-  RTable{es: List<&2, Rng>}
+  RTable{cs: List<&2, List<&2, Rng>>, cur: List<&2, Rng>, ci: U32}
 
-def RTable.es(t: RTable) -> List<&2, Rng>:
+def RTable.cs(t: RTable) -> List<&2, List<&2, Rng>>:
   match t:
-    case RTable{es}: es
+    case RTable{cs, cur, ci}: cs
+
+def RTable.cur(t: RTable) -> List<&2, Rng>:
+  match t:
+    case RTable{cs, cur, ci}: cur
+
+def RTable.ci(t: RTable) -> U32:
+  match t:
+    case RTable{cs, cur, ci}: ci
 
 # **⇒⇒† AND **THE **SAME **PREPEND** (⇒⇒† AND **AND **THE **SAME **REASON**)
 # THE RANGE TABLE IS PREPENDED, NOT APPENDED: `List.append` COPIES THE WHOLE LIST, AND THE
 # TABLE IS PUT ONCE PER NODE OF THE ARENA (MEASURED: `RTable.put` IS 12.8% OF THE TURN's
 # EXCLUSIVE TIME, V8's OWN CPU PROFILE, `.agents/slop/wgslperf/prof-callers.py`).
 #
-# AND THE ORDER DOES NOT MATTER: THE ONLY READERS ARE `RTable.get` (A SCAN FOR A MATCHING
-# INDEX, AND THE INDICES ARE UNIQUE) AND `RTable.len` (A COUNT). AND THE PREPEND IS ALSO THE
-# FASTER SCAN: THE RANGE MAP IS BUILT IN ARENA ORDER, SO THE MOST RECENT ENTRY IS FIRST AND A
-# LOOKUP FOR A RECENT NODE STOPS SOON.
+# AND THE ORDER DOES NOT MATTER: THE ONLY READER IS `RTable.get` (A SCAN FOR A MATCHING INDEX,
+# AND THE INDICES ARE UNIQUE).
 def RTable.put(t: RTable, r: Rng) -> RTable:
   match t:
-    case RTable{es}: RTable{r <> es}
+    case RTable{cs, cur, ci}: RTable{cs, r <> cur, ci}
 
-def RTable.get.step(i: U32, +r: Rng, acc: Rng) -> Rng:
-  Bool.pick(Rng, U32.is_eq(i, Rng.i(r)), r, acc)
+# THE FULL CHUNK GOES ON THE SPINE AND THE NEXT ONE STARTS EMPTY.
+def RTable.roll.of(end: Bool, +tb: RTable) -> RTable:
+  match end:
+    case True{}:
+      RTable{List.append(&2, List<&2, Rng>, RTable.cs(tb), [RTable.cur(tb)]), Nil{}, U32.add(RTable.ci(tb), 1)}
+    case False{}: tb
 
-def RTable.get.go(+i: U32, rs: List<&2, Rng>, acc: Rng) -> Rng:
+def RTable.roll(tb: RTable, i: U32) -> RTable:
+  RTable.roll.of(chunk_end(i), tb)
+
+# THE SCAN STOPS AT THE MATCH, AND THE `Maybe` IS THE HIT AND NOT AN ACCUMULATOR (THE FOLD's
+# OWN TABLE DOES THIS, AND THE COMMENT ABOVE `Kahn.get.at` SAYS WHY).
+def RTable.get.at(hit: Bool, r: Rng) -> Maybe<&2, Rng>:
+  match hit:
+    case True{}: Some{r}
+    case False{}: None{}
+
+def RTable.get.chunk.go(+i: U32, rs: List<&2, Rng>, acc: Maybe<&2, Rng>) -> Maybe<&2, Rng>:
   match rs:
     case Nil{}: acc
-    case r <> t: RTable.get.go(i, t, RTable.get.step(i, r, acc))
+    case +r <> t:
+      match acc:
+        case Some{f}: acc
+        case None{}: RTable.get.chunk.go(i, t, RTable.get.at(U32.is_eq(i, Rng.i(r)), r))
 
-def RTable.get(t: RTable, +i: U32) -> Rng:
-  RTable.get.go(i, RTable.es(t), Rng{i, Nil{}, False{}})
+def RTable.get.chunk(i: U32, rs: List<&2, Rng>) -> Maybe<&2, Rng>:
+  RTable.get.chunk.go(i, rs, None{})
+
+# THE SPINE WALK: THE CHUNK OF INDEX `i` IS THE `i / 32`th ONE, AND THE LIST AND THE COUNT
+# ARE MATCHED TOGETHER (THE TREE's OWN PATTERN, `Kahn.get.spine.go`).
+def RTable.get.spine.go(cs: List<&2, List<&2, Rng>>, +i: U32, k: Nat) -> List<&2, Rng>:
+  match cs k:
+    case Nil{} _: Nil{}
+    case c <> t 0n: c
+    case _ <> t 1n+p: RTable.get.spine.go(t, i, p)
+
+def RTable.get.spine(+i: U32, cs: List<&2, List<&2, Rng>>) -> List<&2, Rng>:
+  RTable.get.spine.go(cs, i, U32.to_nat(U32.shrn(i, 5n)))
+
+def RTable.get.of(hit: Bool, +i: U32, +tb: RTable) -> Maybe<&2, Rng>:
+  match hit:
+    case True{}: RTable.get.chunk(i, RTable.cur(tb))
+    case False{}: RTable.get.chunk(i, RTable.get.spine(i, RTable.cs(tb)))
+
+def RTable.get(+t: RTable, +i: U32) -> Rng:
+  Maybe.default(&2, Rng,
+    RTable.get.of(U32.is_eq(U32.shrn(i, 5n), RTable.ci(t)), i, t),
+    Rng{i, Nil{}, False{}})
 
 # `UOp.ranges` -- ops.py:497. The ONLY difference from `_ranges` is this prepend, and a
 def rng_of.put(i: U32, pre: Bool, +r: Rng) -> Rng:
@@ -3381,10 +3433,10 @@ def rng_of.node(+ar: O.Arena, +main: Table, +t: RTable, +i: U32) -> Rng:
 def rng_sweep.go(+ar: O.Arena, +main: Table, ns: List<&2, O.Node>, +k: U32, +t: RTable) -> RTable:
   match ns:
     case Nil{}: t
-    case _ <> tl: rng_sweep.go(ar, main, tl, U32.add(k, 1), RTable.put(t, rng_of.node(ar, main, t, k)))
+    case _ <> tl: rng_sweep.go(ar, main, tl, U32.add(k, 1), RTable.roll(RTable.put(t, rng_of.node(ar, main, t, k)), k))
 
 def rng_sweep(+ar: O.Arena, +main: Table) -> RTable:
-  rng_sweep.go(ar, main, O.Arena.nodes(ar), 0, RTable{Nil{}})
+  rng_sweep.go(ar, main, O.Arena.nodes(ar), 0, RTable{Nil{}, Nil{}, 0})
 
 def UOp.ranges(ar: O.Arena, rt: RTable, i: U32) -> Rng:
   rng_of(ar, rt, i)
