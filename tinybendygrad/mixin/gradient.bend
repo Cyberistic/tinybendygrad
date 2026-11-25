@@ -855,6 +855,23 @@ def gbcast(+ar: O.Arena, +ctx: U32, +ds: List<&2, U32>) -> GRes:
   +f = BC.bcast(ar, ctx, ds)
   fired([O.Found.i(f)], O.Found.ar(f))
 
+# THE SINGLE NODE A `gbcast` PRODUCED, WITH THE ARENA IT GREW.
+#
+# `gs_solid` is the COUNT of non-holes -- the `t_cmplt_solid` rows and their siblings
+# compare it with CPython's number -- and `gmul_bc` was reading it as a node INDEX. On the
+# `grad` graph that count is 1, so the port multiplied by arena node 1, which is the `STACK`
+# a BUFFER keeps its shape in: CPython builds `MUL(BUFFER, ctx)`, the port built
+# `MUL(STACK, ctx)`, and because both operands then resolved to the same `STACK` the two
+# gradients interned onto ONE node. MEASURED 2026-11-25 with `.agents/slop/probe/mulrule.bend`,
+# where `gmul(3,9)` answers `MUL(3,9)` and `gmul_bc(3,9)` answered `MUL(1,9)`.
+#
+# RETURNING A `Found` AND NOT A `U32` IS THE SECOND HALF OF THE FIX: `bcast` may MINT nodes
+# (a scalar broadcast to a shaped operand is a RESHAPE/EXPAND), and the old spelling passed
+# the ORIGINAL arena to `gmul`, leaving those indices dangling.
+def bcast_node(+ar: O.Arena, +x: U32, +ds: List<&2, U32>) -> O.Found:
+  +g = gbcast(ar, x, ds)
+  O.Found{gs_ar(g), gs_get(g, 0n)}
+
 def gr_14.naxes.of(a: O.Arg) -> U32:
   match a:
     case O.AReduce{rop, num_axes}: num_axes
@@ -919,12 +936,20 @@ def gscalar.of(m: Maybe<&2, List<&2, U32>>) -> Bool:
 def gscalar(+ar: O.Arena, +u: U32) -> Bool:
   gscalar.of(gshape(ar, u))
 
+def gmul_bc.xs(+ar: O.Arena, +x: U32, +y: U32) -> O.Found:
+  +f = bcast_node(ar, x, gdims(ar, y))
+  gmul(O.Found.ar(f), O.Found.i(f), y)
+
+def gmul_bc.ys(+ar: O.Arena, +x: U32, +y: U32) -> O.Found:
+  +f = bcast_node(ar, y, gdims(ar, x))
+  gmul(O.Found.ar(f), x, O.Found.i(f))
+
 def gmul_bc.pick(xs: Bool, ys: Bool, +ar: O.Arena, +x: U32, +y: U32) -> O.Found:
   match xs:
-    case True{} : gmul(ar, gs_solid(gbcast(ar, x, gdims(ar, y))), y)
+    case True{} : gmul_bc.xs(ar, x, y)
     case False{}:
       match ys:
-        case True{} : gmul(ar, x, gs_solid(gbcast(ar, y, gdims(ar, x))))
+        case True{} : gmul_bc.ys(ar, x, y)
         case False{}: gmul(ar, x, y)
 
 def gmul_bc(+ar: O.Arena, +x: U32, +y: U32) -> O.Found:
