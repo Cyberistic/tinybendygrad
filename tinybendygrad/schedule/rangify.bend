@@ -584,6 +584,47 @@ def rr_merge(+ar: O.Arena, +tb: F.Table, +ctx: IX.IxCtx, +x: U32, +tbl: List<&2,
   +n = rr_new.all(IX.rr_dims(ar, tb, x), tbl, Nil{})
   RrRs{0, RrRs.rs(n), RrRs.tbl(n)}
 
+# THE AXES ON WHICH THE CONSUMERS DISAGREE -- upstream's `_realize_axis`
+# (`indexing.py:245-267`): UPSTREAM COMPARES THE CONSUMERS' RANGES PER AXIS AND REALIZES
+# THE AXES WHERE THEY DIFFER. THE FIRST DRAFT COMPARED THE WHOLE LISTS, SO IT REALIZED
+# EVERY AXIS WHEN THE CONSUMERS DIFFERED AT ALL -- A COARSER DECISION THAN UPSTREAM'S, AND
+# THE COARSE ONE DISCONNECTED THE FW TERM (the reachable set fell 64 -> 39 and the END left
+# it).
+def rr_axis_same.go(+ar: O.Arena, +tb: F.Table, +ctx: IX.IxCtx, +cs: List<&2, U32>,
+                    +x: U32, +ref: List<&2, U32>, +i: Nat, acc: Bool) -> Bool:
+  match cs:
+    case Nil{}: acc
+    case c <> t:
+      +a = Bool.and(acc, U32.is_eq(IX.ix_nth(rr_one_rngs(ar, tb, ctx, c, x), i), IX.ix_nth(ref, i)))
+      rr_axis_same.go(ar, tb, ctx, t, x, ref, i, a)
+
+def rr_disagree_axis.go(+ar: O.Arena, +tb: F.Table, +ctx: IX.IxCtx, +cs: List<&2, U32>,
+                        +x: U32, +ref: List<&2, U32>, +i: Nat, +n: Nat,
+                        acc: List<&2, U32>) -> List<&2, U32>:
+  match n:
+    case 0n: acc
+    case 1n+k:
+      +l = acc
+      +a = Bool.pick(List<&2, U32>, rr_axis_same.go(ar, tb, ctx, cs, x, ref, i, True{}),
+                List.append(&2, U32, l, [U32.from_nat(i)]), l)
+      rr_disagree_axis.go(ar, tb, ctx, cs, x, ref, i, k, a)
+
+def rr_disagree_axes(+ar: O.Arena, +tb: F.Table, +ctx: IX.IxCtx, +cs: List<&2, U32>,
+                      +x: U32) -> List<&2, U32>:
+  match cs:
+    case Nil{}: Nil{}
+    case c <> t:
+      +ref = rr_one_rngs(ar, tb, ctx, c, x)
+      List.reverse(&2, U32, rr_disagree_axis.go(ar, tb, ctx, t, x, ref, 0n,
+        List.length(&2, U32, IX.rr_dims(ar, tb, x)), Nil{}))
+
+# UPSTREAM'S REALIZE SET: THE AXES WHERE THE CONSUMERS DISAGREE (`_realize_axis`), AND
+# NOT EVERY AXIS.
+def rr_realize_axes(axes: List<&2, U32>, +ctx: IX.IxCtx, +x: U32) -> IX.IxCtx:
+  match axes:
+    case Nil{}: ctx
+    case _ <> t: rr_real(ctx, x, axes)
+
 def rr_marg.of(a: O.Arg) -> Maybe<&2, List<&2, U32>>:
   match a:
     case O.ATuple{ys}: Some{ys}
@@ -767,24 +808,26 @@ def rr_p1.one(+ar: O.Arena, +tb: F.Table, +ctx: IX.IxCtx, +m: RrMap, x: U32, +c:
   RrMap{ctx, RrMap.ends(m), RrMap.tbl(m), o, o,
         RrMap.e(m), RrMap.b(m), RrMap.ne(m)}
 
-def rr_p1.many(+ar: O.Arena, +tb: F.Table, +ctx: IX.IxCtx, +m: RrMap, +x: U32) -> RrMap:
+def rr_p1.many(+ar: O.Arena, +tb: F.Table, +ctx: IX.IxCtx, +m: RrMap, +x: U32,
+               +cs: List<&2, U32>) -> RrMap:
   +n = rr_merge(ar, tb, ctx, x, RrMap.tbl(m))
-  RrMap{ctx, RrMap.ends(m), RrRs.tbl(n), RrRs.rs(n), RrRs.rs(n), RrMap.e(m), RrMap.b(m), RrMap.ne(m)}
+  +ctx2 = rr_realize_axes(rr_disagree_axes(ar, tb, ctx, cs, x), ctx, x)
+  RrMap{ctx2, RrMap.ends(m), RrRs.tbl(n), RrRs.rs(n), RrRs.rs(n), RrMap.e(m), RrMap.b(m), RrMap.ne(m)}
 
 def rr_p1.pick(zero: Bool, one: Bool, +ar: O.Arena, +tb: F.Table, +ctx: IX.IxCtx, +m: RrMap,
-               +x: U32, +c: U32) -> RrMap:
+               +x: U32, +c: U32, +cs: List<&2, U32>) -> RrMap:
   match zero:
     case True{}: rr_p1.none(ar, tb, ctx, m, x)
     case False{}:
       match one:
         case True{}: rr_p1.one(ar, tb, ctx, m, x, c)
-        case False{}: rr_p1.many(ar, tb, ctx, m, x)
+        case False{}: rr_p1.many(ar, tb, ctx, m, x, cs)
 
 def rr_p1.pick2(real: Bool, zero: Bool, one: Bool, +ar: O.Arena, +tb: F.Table, +ctx: IX.IxCtx,
-                +m: RrMap, +x: U32, +c: U32) -> RrMap:
+                +m: RrMap, +x: U32, +c: U32, +cs: List<&2, U32>) -> RrMap:
   match real:
     case True{}: rr_p1.real(ar, tb, ctx, m, x)
-    case False{}: rr_p1.pick(zero, one, ar, tb, ctx, m, x, c)
+    case False{}: rr_p1.pick(zero, one, ar, tb, ctx, m, x, c, cs)
 
 def rr_p1(+ar: O.Arena, +tb: F.Table, +rev: List<&2, U32>, +m: RrMap, +x: U32) -> RrMap:
   +ctx = RrMap.ctx(m)
@@ -793,7 +836,7 @@ def rr_p1(+ar: O.Arena, +tb: F.Table, +rev: List<&2, U32>, +m: RrMap, +x: U32) -
   +cnt = U32.from_nat(List.length(&2, U32, cs))
   +hd = Maybe.default(&2, U32, List.head(&2, U32, cs), 0)
   rr_p1.pick2(IX.ix_rmap_has(IX.IxCtx.rmap(ctx), x), U32.is_eq(cnt, 0), U32.is_eq(cnt, 1),
-             ar, tb, ctx, m, x, hd)
+             ar, tb, ctx, m, x, hd, cs)
 
 # THE P2 PHASE: `if len(ending_ranges[x]) and x.op in Elementwise|{REDUCE}` --
 # realize every axis and give the node new ranges (`indexing.py:264-270`).

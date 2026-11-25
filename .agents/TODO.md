@@ -5171,7 +5171,16 @@ are NOT free: `grep -c smoothstep tinygrad/` is 0 and there is no `Ops.MIN`.
       not ✓ — so the port's realize must be upstream's, per axis ✓, and it must land AFTER
       the pad arm ✓ (which is what removes the PAD from the kernel graph ✓). **NONE OF THIS
       IS LANDABLE YET**: every piece moves `tinybendygrad/`, and the corpus is red on the
-      `grad` row for another session's bisect ✓.
+      `grad` row for another session's bisect ✓. **PIECE (1) IS LANDED (2026-11-25,
+      `fdca42d3b`) AND THE REALIZE WITH IT** -- upstream's range-map-time realize, per axis
+      (`indexing.py:245-267` ✓), on top of the one line ✓. **AND THE MEASUREMENT THAT SETS
+      THE ORDER**: with both in place the realize **DOES NOT FIRE** on this graph (zero
+      `STAGE`s ✓, the reachable set whole at 64 ✓, `cyc=0` ✓, the 135 rows unmoved ✓) --
+      **because the PAD's arm is what shifts the PAD's output ranges ✓, and that shift is
+      what makes `dd`'s consumers disagree ✓**. So the PAD ARM COMES FIRST ✓✓✓ (the reverse
+      of what an earlier revision of this file said ✓): upstream's PAD arm
+      (`indexing.py:169-173` ✓) shifts the ranges ✓, the consumers disagree ✓, the realize
+      fires on `dd` ✓, and only then is the neighbour read a buffered read ✓.
 - [ ] **THE REALIZE THE MERGE FORGOT — MEASURED, AND NOT LANDED (2026-11-25).**
       Upstream's merge ends with `if len(_realize_axis): rctx.realize_map[x] = _realize_axis`
       (`indexing.py:267`); the port's `rr_merge` (`rangify.bend:583`) minted the new RANGE and
