@@ -345,9 +345,23 @@ node's op, by id, not by toposort -- and the toposort's size:
     arops=Ops.NOOP,Ops.CONST,Ops.BUFFER,Ops.CONST,Ops.STACK,Ops.RESHAPE,Ops.MUL,Ops.BUFFER,
            Ops.RESHAPE,Ops.MUL,Ops.ADD,Ops.SQRT,...,Ops.PAD,...,Ops.SHRINK,...,Ops.PAD,...,Ops.SHRINK,...
 
-**THE RUNNER's SINK's SUBTREE IS ONE NODE** (`tsz=1`) **AND THE WHOLE FORMULA IS IN THE
-ARENA BUT NOT UNDER THAT SINK** (the census ✓ -- the `PAD`s, the `SHRINK`s, the `SQRT`,
-the `MAX` ✓, all of it ✓).
+**THE PORT's TOPOSORT OF THE RUNNER's SINK IS ONE NODE** (`tsz=1`) **AND THE WHOLE
+FORMULA IS IN THE ARENA** (the census ✓ -- the `PAD`s, the `SHRINK`s, the `SQRT`, the
+`MAX` ✓, all of it ✓).
+
+**AND A CORRECTION TO THE WORDING, BECAUSE THE DISTINCTION IS THE FIX.** The formula IS
+the sink's subtree: `sink_of()` returns the `AFTER` (`tn_assign_store` returns
+`O.UOp.after`, `tensor.bend:1550-1552`), and the `AFTER`'s srcs are the dst and the
+`STORE`, and the `STORE`'s srcs are the dst and the value -- the formula. So the graph
+is fine. **WHAT IS NOT FINE IS THE PORT's TOPOSORT**: `O.UOp.toposort` is upstream's
+UNGATED walk (`ops.py:280`, the default gate is "everything" ✓) and it answers ONE node
+for a sink whose subtree is the whole graph ✗ -- so the port's toposort GATES the
+`AFTER` ✗✗. Upstream's range map runs on `tsink.toposort(gate_kernel_sink)`
+(`indexing.py:194`), whose gate is about KERNEL boundaries ✓ -- and the port's
+`rr_range_map` calls the ungated `O.UOp.toposort` ✓ and gets the gated answer ✗.
+
+**=> THE NEXT READING IS IN THE PORT's TOPOSORT, NOT IN THE RUNNER's GRAPH: WHAT GATES
+THE `AFTER`?** (`O.UOp.toposort` -> `Topo.push` -> the worker.)
 
 **=> THE PORT's RANGE-MAP STAGE AND THE ENGINE LOOK AT DIFFERENT GRAPHS.** The range-map
 stage works on the sink's subtree (`rr_range_map` walks `rr_rev(topo)` -- one node ✗),
