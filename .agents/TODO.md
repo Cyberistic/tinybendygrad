@@ -13,7 +13,7 @@ Closed categories keep one row and no prose. Open ones keep the head of their bl
 | category | bar | done | status |
 |---|---|---|---|
 | `recovery` | `[########.......]` | 11/15 | the plan is `.agents/slop/checklist.md`; Phases 0-2 and 4.1 done 2026-11-25 |
-| `wgsl-perf` | `[#######...]` | 7/10 | THE WGSL TURN IS 7.9x FASTER (24,862 ms -> ~3,150 ms): THE FOLD WAS |
+| `wgsl-perf` | `[########..]` | 8/10 | THE WGSL TURN IS ~16x FASTER (24,862 ms -> ~1,560 ms): THE FOLD WAS |
 84% OF IT AND WAS A KAHN SORT OF AN ARENA WHOSE INDEX ORDER IS ALREADY A TOPOLOGICAL ORDER
 (0 VIOLATIONS IN 1,698,277 EDGES), AND THE TABLE's LOOKUP WAS 35.7% OF THE TURN. THE NEXT
 LEVER IS THE ARENA's O(n) ACCESSORS. |
@@ -189,12 +189,12 @@ LEVER IS THE ARENA's O(n) ACCESSORS. |
 
 ## Open categories, in full
 
-### wgsl-perf  `[#######...]` 7/10
+### wgsl-perf  `[########..]` 8/10
 
-wgsl-perf     [#######...] 7/10      THE WGSL TURN IS 7.9x FASTER: 24,862 ms -> ~3,150 ms, AND
+wgsl-perf     [########..] 8/10        THE WGSL TURN IS ~16x FASTER: 24,862 ms -> ~1,560 ms, AND
                                          THE WGSL IS BYTE-IDENTICAL (3,773 bytes, sha256
                                          366d44bb...eea30) AT EVERY STEP.
-                                         THE **FIVE **CHANGES, **AND **EVERY **ONE **IS **MEASURED**:
+                                         THE **SEVEN **CHANGES, **AND **EVERY **ONE **IS **MEASURED**:
                                          **THE **FOLD **WAS **A **KAHN **SORT, **AND **THE **ARENA's
                                          **INDEX **ORDER **IS **ALREADY **A **TOPOLOGICAL **ORDER**
                                          (`.agents/slop/wgslperf/topo-check.py`: **0 **VIOLATIONS **IN
@@ -219,22 +219,30 @@ wgsl-perf     [#######...] 7/10      THE WGSL TURN IS 7.9x FASTER: 24,862 ms -> 
                                          **THE **OP **MATCHES** (⇒⇒† AND **`Bool.and` **EVALUATES **BOTH
                                          **OF **ITS **ARGUMENTS**): **21,325,576 **CALLS **AND
                                          **801,275,119 **TAG **COMPARISONS**, **⇒⇒† AND **AND **`eq_arg`
-                                         **20,735,255 -> 1,136,865**. **THE **TURN **3,725 **ms ->
-                                         **2,946 **ms** (**.agents/slop/wgslperf/bench-ab.py**: **HEAD
-                                         **AND **THE **TREE **ALTERNATE**, **SO **A **DRIFT **IN **THE
-                                         **SHARED **MACHINE **HITS **BOTH**).
-                                         THE **NUMBERS**: **THE **FOLD **20,946 **ms -> ~700 **ms**, **THE
-                                         **TURN **24,862 **ms -> ~3,150 **ms**, **V8's **PROFILE **5,225
-                                         **SAMPLES -> 2,583**.
+                                         **20,735,255 -> 1,136,865**. **AND **THE **RANGE **TABLE **IS
+                                         **A **SPINE **OF **CHUNKS** (⇒⇒† AND **THE **SAME **SHAPE **AS
+                                         **THE **FOLD's **OWN **TABLE**). **AND **THE **ARENA's **NODES
+                                         **ARE **CHUNKED** (⇒⇒† AND **`O.Arena.at` **WAS **21.5% **OF **THE
+                                         **TURN** **AND **492,349,364 **CELLS **WALKED **A **TURN**),
+                                         **⇒⇒† AND **AND **THE **NODE's **DEPTH **IS **IN **THE **NODE**
+                                         (⇒⇒† AND **THE **DEPTH **IS **ZERO **FOR **EVERY **NODE**,
+                                         **⇒⇒† AND **17,554 **NODES, **ALL **ZERO**, **⇒⇒† AND **AND **A
+                                         **PARALLEL **`shp` **LIST **IS **A **SECOND **SOURCE **OF
+                                         **TRUTH**).
+                                         THE **THREE **CHANGES **OF **THIS **UNIT**: **THE **TURN
+                                         **3,429 **ms -> 1,562 **ms **OF **WALL** (⇒⇒† AND **3,967 **ms
+                                         -> 2,128 **ms **OF **CPU**), **⇒⇒† AND **AND **THE **WGSL **IS
+                                         **BYTE-IDENTICAL**.
                                          THE **NEXT **LEVERS, **AND **THEY **ARE **MEASURED** (⇒⇒† AND
-                                         **V8's **PROFILE**: **`.agents/slop/wgslperf/prof-read.py`**):
-                                         **THE **ARENA's **O(n) **ACCESSORS** -- **`O.Arena.at` **IS **~24%
-                                         **OF **THE **TURN** (⇒⇒† AND **492,349,364 **CELLS **WALKED **A
-                                         **TURN**) **AND **THE **RANGE **TABLE's **LOOKUP **IS **~10%**
-                                         (⇒⇒† AND **757,574 **SCANS**) **⇒⇒† AND **AND **BOTH **ARE **THE
-                                         **SAME **SHAPE **AS **THE **FOLD's **TABLE**, **⇒⇒† AND **WHICH **IS
-                                         **A **SPINE **OF **CHUNKS** ✓; **AND **THE **GC **IS **~3%** ✓.
-                                         THE RECORD: **`.agents/slop/PARITY.md` **§138.32-§138.38**.
+                                         **V8's **OWN **PROFILE **OF **THE **COMPILED **FORM **AT **1,226
+                                         **SAMPLES**): **THE **INTERNING's **SCAN **IS **16.1%** (⇒⇒† AND
+                                         **THE **EARLY **EXIT**, **⇒⇒† AND **AND **THE **MATCH **IS **AT
+                                         **A **MEAN **INDEX **OF **147.7 **OF **~244**) **⇒⇒† AND **AND
+                                         **`Ops.value` **IS **11.6%** **⇒⇒† AND **AND **`List.append` **IS
+                                         **8.3%** (⇒⇒† AND **THE **ARENA's **FLAT **LIST **IS **O(n) **TO
+                                         **APPEND**) **⇒⇒† AND **AND **THE **FOLD's **TABLE **IS **~9%**
+                                         **⇒⇒† AND **AND **THE **GC **IS **3.5%** ✓.
+                                         THE RECORD: **`.agents/slop/PARITY.md` **§138.32-§138.41**.
 
 ### render-perf  `[########]` 6/9
 

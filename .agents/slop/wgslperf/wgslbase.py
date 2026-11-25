@@ -30,20 +30,20 @@ BEND = R / "bin/bend"
 PORT = "./../../../tinybendygrad/"
 
 
-def head_port(dirname: str) -> pathlib.Path:
+def head_port(dirname: str, base: str = "HEAD") -> pathlib.Path:
   """**A **COPY **OF **THE **PORT **WITH **EVERY **FILE **THE **WORKING **TREE **TOUCHED **PUT
-  **BACK **TO **`HEAD`** -- **⇒⇒† AND **SO **THE **ONLY **DIFFERENCE **IS **THE **CHANGE **UNDER
-  **TEST**."""
+  **BACK **TO **THE **BASE **REVISION** -- **⇒⇒† AND **SO **THE **ONLY **DIFFERENCE **IS **THE
+  **CHANGE **UNDER **TEST**."""
   dest = HERE / dirname / "tinybendygrad"
   if dest.exists():
     shutil.rmtree(dest)
   dest.parent.mkdir(parents=True, exist_ok=True)
   shutil.copytree(R / "tinybendygrad", dest)
-  out = subprocess.run(["git", "diff", "--name-only", "HEAD"], capture_output=True, text=True,
+  out = subprocess.run(["git", "diff", "--name-only", base], capture_output=True, text=True,
                        cwd=str(R)).stdout.split()
   for f in [f for f in out if f.startswith("tinybendygrad/")]:
     (dest / f[len("tinybendygrad/"):]).write_text(
-      subprocess.run(["git", "show", f"HEAD:{f}"], capture_output=True, text=True,
+      subprocess.run(["git", "show", f"{base}:{f}"], capture_output=True, text=True,
                      cwd=str(R)).stdout)
   return dest
 

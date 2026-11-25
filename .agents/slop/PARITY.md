@@ -8829,3 +8829,111 @@ ms**, **⇒⇒† AND **AND **the **`append` **0.041 ms**.
 **(`O.Arena.at` **IS **20% **OF **THE **TURN**, **AND **THE **OP **INTERNING's **LINEAR **SEARCH **IS
 **~23%**)** ⇒⇒† AND **⇒⇒† AND **AND **THE **FIX **FOR **BOTH **IS **THE **ARENA's **REPRESENTATION**
 (⇒⇒† AND **43 **`Arena.nodes`/`Arena.node` **USES **ACROSS **16 **FILES**)** ✓
+
+### 138.38 **THE **OP **COMPARISON **IS **HALVED, **AND **THE **TURN **IS **20.9% **FASTER
+
+**⇒⇒† AND **V8's **OWN **CPU **PROFILE **OF **THE **COMPILED **FORM **NAMES **THE **COST**:
+**`Ops.value` **IS **13.1% **OF **THE **TURN's **EXCLUSIVE **TIME**, **AND **`eq_arg`, **`eq_u32`
+**AND **`eq_tag` **ARE **ANOTHER **8.4%** -- **AND **ALL **OF **IT **IS **ONE **FUNCTION**, **THE
+**INTERNING's **NODE **COMPARISON** ✓.
+
+**⇒⇒† AND **THE **COUNT**, **FROM **THE **COMPILED **FORM**
+**(`.agents/slop/wgslperf/count-intern.py` **COUNTS **IT**)**:
+
+| | **before** | **after** |
+|---|---|---|
+| **`intern.find`** | **20,818,516 **NODE **COMPARISONS**, **OVER **85,340 **SCANS **OF **AN **ARENA **OF **~244 **NODES** | **20,818,516** |
+| **`Ops.value`** | **41,973,508 **CALLS**, **1,684,550,390 **TAG **COMPARISONS** | **21,325,576 **CALLS**, **801,275,119 **TAG **COMPARISONS** |
+| **`eq_arg`** | **20,735,255 **CALLS** | **1,136,865 **CALLS** |
+| **`eq_u32`** | **40,105,790 **CALLS** | **2,691,180 **CALLS** |
+| **`eq_tag`** | **20,735,255 **CALLS** | **1,136,865 **CALLS** |
+
+**⇒⇒† AND **TWO **CAUSES**, **AND **BOTH **ARE **IN **`eq_node`**: **THE **WANTED **NODE's **OP
+**VALUE **IS **HOISTED **OUT **OF **THE **SCAN** (⇒⇒† AND **THE **OP **IS **FIXED **FOR **THE
+**WHOLE **SCAN**, **⇒⇒† AND **`Ops.value` **IS **A **SIXTY-ARM **MATCH**), **⇒⇒† AND **AND **THE
+**SRCS, **THE **ARG **AND **THE **TAG **ARE **COMPARED **ONLY **WHEN **THE **OP **MATCHES**
+(⇒⇒† AND **`Bool.and` **EVALUATES **BOTH **OF **ITS **ARGUMENTS**, **⇒⇒† AND **SO **THE **OLD
+**FORM **PAID **FOR **THEM **ON **EVERY **NODE**)** ✓.
+
+**⇒⇒† AND **MEASURED**, **THE **WGSL **TURN** (`.agents/slop/wgslperf/bench-ab.py`, **WHICH
+**BUILDS **BOTH **TREES **NOW **AND **ALTERNATES **THEM**, **⇒⇒† AND **SO **A **DRIFT **IN **THE
+**SHARED **MACHINE **HITS **BOTH**)** **3,725 **ms → 2,946 **ms **OF **WALL **AND **4,228 **ms →
+3,461 **ms **OF **CPU** ✓ **AND **THE **WGSL **IS **BYTE-IDENTICAL** ✓.
+
+### 138.39 **THE **RANGE **TABLE **IS **A **SPINE **OF **CHUNKS, **AND **THE **TURN **IS **18.8%
+**FASTER
+
+**⇒⇒† AND **`RTable.get.go` **WAS **8.7% **OF **THE **TURN's **EXCLUSIVE **TIME**, **AND **`Rng.i`
+**(THE **FIELD **READ **THE **SCAN **DOES **PER **CELL**) **IS **ANOTHER **1.7%** ✓ **AND **THE
+**SCAN **WAS **757,574 **SCANS **A **TURN **OVER **AN **ARENA **OF **~244 **ENTRIES** ✓.
+
+**⇒⇒† AND **THE **FOLD's **OWN **TABLE **IS **ALREADY **A **SPINE **OF **CHUNKS** -- **THE
+**ENTRY **FOR **INDEX **`i` **IS **IN **CHUNK **`i / 32`**, **AND **THE **CHUNKS **ARE **BY **THE
+**NODE **INDEX**, **AND **THE **FOLD **WALKS **THE **ARENA **IN **INDEX **ORDER**, **SO **THE
+**CHUNKS **FILL **IN **ORDER** (⇒⇒† AND **THE **COMMENT **ABOVE **`type Table` **SAYS **SO**)** ✓
+**⇒⇒† AND **THE **RANGE **TABLE **IS **PUT **ONCE **PER **NODE **OF **THE **ARENA **IN **ARENA
+**ORDER**, **SO **IT **CHUNKS **THE **SAME **WAY** ✓ **⇒⇒† AND **AND **A **LOOKUP **IS **~31
+**CELLS **AND **NOT **~244** ✓ **⇒⇒† AND **AND **THE **SCAN **STOPS **AT **THE **MATCH** ✓.
+
+**⇒⇒† AND **MEASURED**, **THE **WGSL **TURN** **2,740 **ms → 2,226 **ms **OF **WALL **AND
+**3,287 **ms → 2,794 **ms **OF **CPU** ✓ **AND **THE **WGSL **IS **BYTE-IDENTICAL** ✓ **AND **THE
+**CHANGE **WAS **TESTED **ON **A **SCRATCH **COPY **OF **THE **TREE**, **BECAUSE **`fold.bend` **IS
+**A **SHARED **FILE** ✓.
+
+### 138.40 **THE **ARENA's **NODES **ARE **CHUNKED, **AND **THE **TURN **IS **27.4% **FASTER
+
+**⇒⇒† AND **`O.Arena.at` **WAS **21.5% **OF **THE **TURN's **EXCLUSIVE **TIME**, **AND **IT **IS
+**A **WALK **OVER **A **FLAT **LIST**: **3,577,720 **LOOKUPS **WALKED **492,349,364 **LIST
+**CELLS**, **⇒⇒† AND **SO **A **LOOKUP **WALKED **~137 **CELLS **OF **AN **ARENA **OF **~244
+**NODES** ✓.
+
+**⇒⇒† AND **THE **ARENA **IS **NOW **A **SPINE **OF **CHUNKS **BESIDE **THE **NODES** -- **THE
+**SAME **SHAPE **AS **THE **FOLD's **OWN **TABLE** ✓ **⇒⇒† AND **A **LOOKUP **WALKS **~8
+**CELLS **OF **THE **SPINE **AND **~16 **OF **THE **CHUNK** ✓.
+
+**⇒⇒† AND **THE **CHUNKS **ARE **BESIDE **THE **NODES **AND **NOT **INSTEAD **OF **THEM**, **AND
+**THE **REASON **IS **A **BEND **CONSTRAINT **AND **NOT **A **PREFERENCE**: **THE **SCAN **AND
+**THE **WALKERS **NEED **ONE **LIST**, **⇒⇒† AND **A **SCAN **OVER **CHUNKS **IS **TWO **DEFS
+**THAT **CALL **EACH **OTHER**, **⇒⇒† AND **AND **BEND **HAS **NO **FORWARD **REFERENCES**, **⇒⇒†
+**AND **SO **TWO **DEFS **THAT **CALL **EACH **OTHER **CANNOT **BE **WRITTEN** ✓.
+
+**⇒⇒† AND **THE **NODE's **DEPTH **IS **IN **THE **NODE**, **AND **NOT **IN **A **PARALLEL
+**`shp` **LIST**: **THE **DEPTH **IS **ZERO **FOR **EVERY **NODE** (⇒⇒† AND **MEASURED **IN **THE
+**COMPILED **FORM**: **17,554 **NODES, **ALL **ZERO**), **⇒⇒† AND **SO **THE **PARALLEL **ARRAY
+**WAS **A **SECOND **SOURCE **OF **TRUTH **THAT **CARRIED **NOTHING** -- **⇒⇒† AND **AND **THE
+**PORT's **OWN **FIXTURES **DID **NOT **EVEN **KEEP **IT **IN **STEP** (⇒⇒† AND **`Arena{[...15
+**NODES...], [0]}` **IS **A **SHAPE **LIST **OF **ONE**)** ✓ **⇒⇒† AND **AND **THE **INTERNING's
+**SHAPE **CHECK **MOVES **INTO **`eq_node`**, **WHERE **IT **BELONGS**, **⇒⇒† AND **SO **THE
+**INTERNING **WALKS **ONE **LIST **AND **NOT **TWO** ✓.
+
+**⇒⇒† AND **MEASURED**, **THE **WGSL **TURN** **2,162 **ms → 1,569 **ms **OF **WALL **AND
+**2,727 **ms → 2,136 **ms **OF **CPU** ✓ **AND **THE **WGSL **IS **BYTE-IDENTICAL** ✓ **AND **THE
+**ARENA's **LOOKUP **IS **CHECKED **AGAINST **THE **NODE **LIST**
+(`.agents/slop/wgslperf/arena-test.bend`: **41 **NODES, **2 **CHUNKS, **0 **BAD **LOOKUPS**) ✓.
+
+### 138.41 **THE **THREE **CHANGES **TOGETHER**: **THE **TURN **IS **54.4% **FASTER **AND **THE
+**WGSL **IS **BYTE-IDENTICAL**
+
+| | **before** | **after** |
+|---|---|---|
+| **the **whole **turn** | **3,429 **ms **OF **WALL** | **1,562 **ms **OF **WALL** |
+| **the **same **in **CPU **TIME** | **3,967 **ms** | **2,128 **ms** |
+| **the **WGSL** | **3,773 **bytes** | **THE **SAME **BYTES** |
+
+**⇒⇒† AND **THE **BASE **IS **THE **COMMIT **BEFORE **THE **FIRST **OF **THE **THREE** (`5483dc2ef`),
+**AND **BOTH **TREES **ARE **BUILT **NOW **AND **ALTERNATED** ✓ **⇒⇒† AND **AND **THE **WHOLE
+**ARC **IS **24,862 **ms → ~1,560 **ms**, **⇒⇒† AND **THAT **IS **~16x** ✓.
+
+**⇒⇒† AND **AND **THE **REMAINING **HOT **SPOTS**, **AND **THEY **ARE **MEASURED** (⇒⇒† AND
+**V8's **OWN **PROFILE **OF **THE **COMPILED **FORM **AT **1,226 **SAMPLES**): **THE **INTERNING's
+**SCAN **IS **16.1%** (⇒⇒† AND **AND **IT **IS **THE **EARLY **EXIT**, **⇒⇒† AND **AND **THE
+**MATCH **IS **AT **A **MEAN **INDEX **OF **147.7 **OF **~244**, **⇒⇒† AND **SO **THE **SCAN **CAN
+**STOP **AT **~40% **EARLIER**) **⇒⇒† AND **AND **`Ops.value` **IS **11.6%** (⇒⇒† AND **THE
+**SIXTY-ARM **MATCH **IS **THE **OP **COMPARISON**) **⇒⇒† AND **AND **`List.append` **IS **8.3%**
+(⇒⇒† AND **THE **ARENA's **FLAT **LIST **IS **APPENDED **AT **O(n)**, **⇒⇒† AND **AND **THE
+**FOLD's **TABLE **LOOKUP **IS **~9%**) ✓ **⇒⇒† AND **AND **THE **GC **IS **3.5%** ✓.
+
+**⇒⇒† AND **THE **CORPUS **CERTIFICATE **IS **NOT **CLAIMED **FOR **THE **LAST **TWO **COMMITS**:
+**THEY **MOVE **THE **SUBSTRATE**, **⇒⇒† AND **AND **`gates/corpuswitness-gate.py` **READS
+**`claim state=FAIL verdict=NOT-ESTABLISHED` **UNTIL **THE **CORPUS **RUNS **AGAIN **ON **THE
+**SETTLED **TREE** ✓.

@@ -65,7 +65,8 @@ def bench_pair(a_js: pathlib.Path, b_js: pathlib.Path, n: int):
 def main():
   n = int(sys.argv[1]) if len(sys.argv) > 1 and sys.argv[1].isdigit() else 5
   scratch = "--scratch" in sys.argv
-  base_port = wgslbase.head_port("baseline")
+  base = sys.argv[sys.argv.index("--base") + 1] if "--base" in sys.argv else "HEAD"
+  base_port = wgslbase.head_port("baseline", base)
   base_driver = wgslbase.bundle("baseline", base_port)
   if scratch:
     # **⇒⇒† AND **THE **SCRATCH **TREE **IS **THE **UNIT's **OWN**, **⇒⇒† AND **AND **IT **IS **NOT
