@@ -144,13 +144,27 @@ def vms_go(+ar: O.Arena, +bt: F.BTable, +rt: F.RTable, ns: List<&2, U32>,
       vms_go(ar, bt, rt, t,
         List.concat(&2, U32, [acc, [U32.from_nat(List.length(&2, U32, w))], w]))
 
+# THE SCHEDULER HANDS BACK CALLs (`create_schedule`: `k.replace(src=(k.body, *buf_uops))`,
+# `tinygrad/schedule/__init__.py:71`) AND THE LINEARIZER TAKES THE BODY, AND
+# `toposort_nocalls` DOES NOT DESCEND INTO A CALL -- so A CALL's WALK IS THE CALL ITSELF
+# AND THE BODY IS NEVER RENDERED. THE BODY IS THE CALL's FIRST SRC (`k.body`) ✓.
+def cus_body.pick(+ar: O.Arena, +k: U32, iscall: Bool) -> U32:
+  match iscall:
+    case True{}: O.Arena.src0(ar, k)
+    case False{}: k
+
+def cus_body(+ar: O.Arena, +k: U32) -> U32:
+  cus_body.pick(ar, k, O.eq_op(O.Arena.op(ar, k), O.OpsCALL{}))
+
+
 def cus_go(+ar: O.Arena, +fx: F.Folded, +bt: F.BTable, +rt: F.RTable, ks: List<&2, U32>,
            +acc: List<&2, C.KU>) -> List<&2, C.KU>:
   match ks:
     case Nil{}: acc
     case +k <> t:
-      +ns = O.UOp.toposort_nocalls(O.Arena.budget(ar), ar, k)
-      +ix = LT.linearize(ar, ns, vms_go(ar, bt, rt, ns, Nil{}), k)
+      +body = cus_body(ar, k)
+      +ns = O.UOp.toposort_nocalls(O.Arena.budget(ar), ar, body)
+      +ix = LT.linearize(ar, ns, vms_go(ar, bt, rt, ns, Nil{}), body)
       cus_go(ar, fx, bt, rt, t, List.concat(&2, C.KU, [acc, KUC.kuconv.convert(fx, ix)]))
 
 # THE WHOLE PORT-SIDE CHAIN, AS ONE PURE DEF.

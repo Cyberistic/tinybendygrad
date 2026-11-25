@@ -326,3 +326,5 @@ checks/.e2e-fixture/opsbend-milestone/PACKET.out
 .agents/slop/cpuseam/out/*.js
 .agents/slop/cpuseam/out/*.bin
 shaders/.plant.bend
+# THE RUNNER's GENERATED C -- IT IS WHERE A RUN WRITES, NOT A REQUIRED INPUT.
+shaders/out/

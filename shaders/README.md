@@ -240,16 +240,37 @@ an ARENA INDEX. It reads `ix_tbl_at(tbl, pos)` now and materialises the range fr
 MEASURED, minting a fresh entry moved the END and the index math onto different RANGE
 nodes, so `_ranges` saw two open ranges and `split_store` refused.
 
-**WHAT IS STILL MISSING, IN UPSTREAM'S ORDER.** The `PAD` is still a WALL in the port's
-apply stage (`rr_ap_wall_hit`, `rangify.bend:1586`): upstream's rule 2 replaces the `PAD`
-with `valid.where(bufferized_source, 0)`, the valid being the AND of the input ranges'
-valids (`indexing.py:98-103`) -- and the port's PAD arm now RIDES THAT VALID ON THE RANGE
-NODE, so the rule has what it needs. Upstream's rule 5
-(`remove_movement_op_after_rangeify`, `indexing.py:126-127`) drops the movement op for
-its source, and the port HAS it (`rr_ap_r5`). Then the materialize-the-distance-field
-decision (`indexing.py:267`) has to split the graph into two kernels. Until it does, the
-port's schedule refuses -- `refused=END src[0] should be KERNEL, not Ops.STORE` -- which
-is the honest answer for a graph that is one kernel too few.
+**RULE 2, LANDED: THE `PAD` IS A `WHERE` NOW.** Upstream's rule 2
+(`convert_pad_to_where_to_keep_behavior_local`, `indexing.py:98-103`) replaces the `PAD`
+with `valid.where(source, 0)`, the valid being the AND of the input ranges' valids
+(`ops.py:640`: a range's valid is the gate its `WHERE` carries) -- and the port has it
+(`rr_ap_pad_where`). The `STACK` stays the only wall (rule 3 needs `_stack_select`).
+MEASURED, the schedule builds a kernel where it built none (`kernels=1`), and the graph
+is `SINK -> AFTER -> (INDEX, CALL)` with a `CALL` of three buffers -- upstream's shape
+(`PARAM=3` in the oracle's census).
+
+**AND THE RUNNER EMITS C FOR THE SHADER.** `create_schedule` hands back the kernel
+BODIES as `CALL`s (`tinygrad/schedule/__init__.py:71`: `k.replace(src=(k.body,
+*buf_uops))`), and the linearizer takes the BODY, and `toposort_nocalls` does not descend
+into a `CALL` -- so a `CALL`'s walk was the `CALL` itself and the body was never
+rendered: the C said `UNHANDLED(Ops.CALL)`. The runner unwraps it (`cus_body`) and the
+kernel is now `circle(data0_256, data1_256, data2_256)`, 788 lines, with the distance
+field's `__builtin_sqrtf` in it and the store `*(data0_256+((Lidx0+(16*Lidx1))%256))`.
+
+**FOUR DEFECTS ARE LEFT IN THE C, AND EACH ONE IS NAMED.**
+
+| what | why |
+|---|---|
+| `UNHANDLED(Ops.MAX)` | the port's `code_for_base` is upstream's 21-key dict (`cstyle.py:153-161`) and that dict has no `MAX` arm -- **and neither does upstream's** (`cstyle.py` has no `MAX` at all). A `MAX` reaches the C because the port does not run upstream's symbolic normalization, which is a recorded deviation (`rangify.bend`: "the symbolic normalization upstream runs after it is NOT applied"). The `MAX` has to be lowered before the C, not taught to the emitter. |
+| `(&)?alu1:0.0f` | the `WHERE`'s CONDITION is missing: the gate is not riding on the range. MEASURED, the port's `AND` has two `CONST` operands where upstream's gate is a `CMPLT` -- so the valid is `True` and the zero-fill is unconditional. |
+| `weakint Lidx0` | the strong dtype: upstream's `UOp.dtype` is a property that never returns `weakint` (`tinygrad/mixin/dtype.py:17`), and the port has neither it nor `commit_int`. |
+| four nested range loops | the kernel's `END` closes FOUR ranges where upstream's closes TWO (`kg0_0_end_srcs=STORE RANGE RANGE`). |
+
+**AND THE GRAPH IS STILL ONE KERNEL WHERE UPSTREAM'S IS ONE KERNEL BUT NOT THE SAME
+ONE.** The oracle's body has `INDEX=7 WHERE=4 CMPLT=2 SQRT=3`; the port's has
+`INDEX=4 WHERE=1 AND=1 SQRT=1` -- the port's distance field is NOT materialized (upstream
+realizes it, `indexing.py:267`), so the neighbour read is a register read, not a buffered
+one.
 
 ## What this folder does not do
 
