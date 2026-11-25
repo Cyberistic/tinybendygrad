@@ -85,14 +85,28 @@ plant exercises the corpus without overwriting the tree's evidence.
 `*.txt.err` is each step's stderr and is legitimately empty; every other `.txt` must have a
 body, or `repro` refuses the run.
 
-## Why these 139 names end in `.txt`, and why that is not `checks/no-txt.py`'s business
+**READING A CANON ROW (`D2-canon-*.txt`): the `iN` in it is the CANON'S id, not an arena index.**
+Each node is labelled by its whole subtree (`differ.py`'s `canon_key`), the rows are ordered by
+that label, and the ids are assigned `1..n` in THAT order -- so the same `iN` names the same
+SUBTREE on both sides, and it names whatever the arena happens to hold at `N` on neither.
+`canon_bijection()` checks the form is `1..n` once each on every graph of every run. COMPARING A
+CANON ID WITH A PROBE'S ARENA DUMP IS A CATEGORY ERROR, and it has cost one already: a
+`MUL(i1, ...)` read as "arena node 1" looks like a missing leaf (MEASURED 2026-11-25 in
+`.agents/slop/browser/D1.md` row 85, corrected in row 86 by a probe that printed the arena's own
+indices).
 
-`checks/no-txt.py` refuses `.txt` everywhere else in this project and carves out exactly the 139
-names `differ.declared()` returns. The reason is that these names are an **output contract between two
-drivers**, not constants in one script: `.agents/slop/diffpy/oracle-run.sh` writes all 139 and is
+## Why these names end in `.txt`, and why that is not `checks/no-txt.py`'s business
+
+`checks/no-txt.py` refuses `.txt` everywhere else in this project and carves out exactly the
+names `differ.declared()` returns -- re-derive the count, never remember it:
+`.venv/bin/python -c "import sys; sys.path.insert(0,'checks'); import differ; print(len(differ.declared()))"`
+(270 at 2026-11-25). The reason is that these names are an **output contract between two
+drivers**, not constants in one script: `.agents/slop/diffpy/oracle-run.sh` writes all of them and is
 **sha256-pinned** by `differ.py:58`, and `oracle-repro.sh` — pinned the same way — reads
 `D0-run-summary.txt` by name at `:61` and globs `*.txt` at `:105`. `checks/corpus-figure.py:72`
-reads `D0-run-summary.txt` and refuses on it. **All 139 are named by two or more instruments.**
+reads `D0-run-summary.txt` and refuses on it. **"NAMED BY TWO OR MORE INSTRUMENTS" WAS THE
+PROPERTY MEASURED WHEN THE CARVE-OUT WAS 139 NAMES; re-read it before restating it at the count
+above, because nothing re-checks that property as the declarations grow.**
 
 Renaming them is not merely effortful; it is that **a sha256 over an oracle's BYTES does not cover
 the names that oracle READS.** Measured 2026-10-05 in `.agents/slop/difftxt/`, by changing one
@@ -109,7 +123,8 @@ third row is the sharper one: **it reported zero on a directory holding nothing,
 revealed a guard that was never one.** So `artefacts_ok()` now takes its population from
 `differ.declared()` — the generator's own declaration — and reports `MISSING` for a declared
 artifact that is absent and `UNEXPECTED` for one no command writes. On the renamed population it
-now reports **139 `MISSING`** where it used to report none.
+reported `MISSING` for every declared artifact -- **139 when the carve-out was that size, and the
+count is `len(differ.declared())`, not a constant here** -- where it used to report none.
 
 **The carve-out is the declared set, imported — not the directory.** A `.txt` under
 `runs/graphcmp/D/` that `differ.declared()` does not name is still reported, by `no-txt.py` and by
