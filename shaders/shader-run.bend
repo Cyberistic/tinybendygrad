@@ -169,13 +169,23 @@ def sink_of() -> O.Found:
   # (`ops.bend`, `ops.py:809`), which was a `TODO(p3)` until it was written. Using it here is
   # what proves it builds the node `mxw_buf` builds -- `mxw_buf` is the f32/GLOBAL shortcut
   # over exactly this call.
+  #
+  # THE BUFFERS ARE (16,16) AND NOT (256,). Upstream's `Tensor.empty((16,16))` is
+  # `ALLOC(prod)` + `RESHAPE(shape)` (`tensor.py`), and the formula is TWO-DIMENSIONAL, so a
+  # flat buffer is a graph upstream would never build: the `PAD`'s marg has TWO pairs and a
+  # flat input has ONE dim, and the fold refuses that on the length check (upstream's
+  # `len(ps) != len(self.marg)`, `ops.py:397-405`). MEASURED, THE RUNNER'S OWN TENSOR GRAPH:
+  # the first `PAD` answers `18:GAP` with the flat buffers and `21:ok` with the (16,16) ones.
   +x0 = O.UOp.new_buffer(O.Arena.empty(), S.D1{0}, 256, S.single(), Some{1})
-  +xv = T.tn_wrap_uop(O.Found.ar(x0), O.Found.i(x0))
+  +xvw = T.tn_wrap_uop(O.Found.ar(x0), O.Found.i(x0))
+  +xv = MX.mxw_reshape.go(xvw, [16, 16])
   +y0 = O.UOp.new_buffer(T.Tensor.ar(xv), S.D1{0}, 256, S.single(), Some{2})
-  +yv = T.tn_wrap_uop(O.Found.ar(y0), O.Found.i(y0))
+  +yvw = T.tn_wrap_uop(O.Found.ar(y0), O.Found.i(y0))
+  +yv = MX.mxw_reshape.go(yvw, [16, 16])
   +t = SH.sh_graph_on(xv, yv)
   +o0 = O.UOp.new_buffer(O.Found.ar(t), S.D1{0}, 256, S.single(), Some{0})
-  +o = T.tn_wrap_uop(O.Found.ar(o0), O.Found.i(o0))
+  +ow = T.tn_wrap_uop(O.Found.ar(o0), O.Found.i(o0))
+  +o = MX.mxw_reshape.go(ow, [16, 16])
   T.tn_assign_store(T.Tensor.ar(o), T.Tensor.u(o), O.Found.i(t))
 
 # THE WHOLE PORT-SIDE CHAIN.

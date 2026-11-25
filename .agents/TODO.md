@@ -5119,7 +5119,12 @@ are NOT free: `grep -c smoothstep tinygrad/` is 0 and there is no `Ops.MIN`.
       only apply to a buffered read, and the port's range model has NO valid predicate at all:
       `IxRange{kind, idx, ext}`). That is the other half of W3 and it is a MODEL change, not a
       patch; see the README for why a partial arm would be silently wrong at the border instead
-      of loudly `= 1`.
+      of loudly `= 1`. **LANDED ALONGSIDE IT (2026-11-25): the runner's buffers are (16,16) and
+      not (256,)** because upstream's `Tensor.empty((16,16))` is ALLOC+RESHAPE and the formula
+      is two-dimensional — MEASURED on the runner's own tensor graph, the first `PAD` answers
+      `18:GAP` with the flat buffers and `21:ok` with the (16,16) ones. `shaders/` is not in
+      the substrate walks (`tinybendygrad`, `tinygrad`), so that change does not stale the
+      corpus.
 - [x] **THE PORT NO LONGER RENDERS A KERNEL WHOSE VALUE WAS DROPPED (2026-11-24).** Upstream
       `create_schedule` ASSERTS that an END's src0 is a CALL (`schedule/__init__.py:46`); the
       port had no such check, so an unsplit kernel graph became a kernel that wrote a constant

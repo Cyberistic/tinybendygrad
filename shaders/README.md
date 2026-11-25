@@ -118,6 +118,16 @@ field is fixed (the driver emits 135 rows and compiles natively, rc=0); the orac
 rebasing is a separate job, and the port change is **inert for every fixture** (no one of
 the 135 rows moves) — which is also its gap: no fixture exercises it yet.
 
+**And the runner's buffers were flat where upstream's are (16,16).** Upstream's
+`Tensor.empty((16,16))` is `ALLOC(prod)` + `RESHAPE(shape)` and the formula is
+two-dimensional, so a flat `(256,)` buffer is a graph upstream would never build — the
+`PAD`'s marg has two pairs and a flat input has one dim, and the fold refuses that on the
+length check (`len(ps) != len(self.marg)`, `ops.py:397-405`). MEASURED on the runner's
+**own** tensor graph: the first `PAD` answers `18:GAP` with the flat buffers and `21:ok`
+with the (16,16) ones. The runner reshapes all three buffers now (`shaders/` is not in
+the substrate, so this does not stale the corpus). The kernel graph's PAD wall is a
+separate matter — above.
+
 ## The realize the merge forgot, and what it exposed
 
 Upstream's merge ends with `if len(_realize_axis): rctx.realize_map[x] = _realize_axis`
