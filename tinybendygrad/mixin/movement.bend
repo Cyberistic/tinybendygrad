@@ -55,6 +55,7 @@ import ./../LAWS/spec.bend as S
 import ./../uop/ops.bend as O
 import ./../uop/fold.bend as F
 import ./../tensor.bend as T
+import ./bcast.bend as BC
 import ./op.bend as MO
 
 # SECTION A -- the shape algebra. Everything here is a `List<&2, U32>` of
@@ -1699,74 +1700,6 @@ def main() -> IO(Unit):
     pool_wide_row()
     mxw_resh_row(mxw_base())
 
-# THE TABLE IS IN `.agents/slop/tables/mixin-movement-1919.md` -- THE MEASURED MUTATION TABLE. Twenty-seven mutations: sixteen on the READ half
-def mxw_bc_exp(s: U32, d: U32) -> Bool: Bool.and(U32.is_eq(s, 1), Bool.not(U32.is_eq(d, 1)))
-
-# THE MARG'S TAIL -- `tuple(new_shape[n_left+i] for i in expand_at)`. The walk is
-# over the SOURCE and the TARGET's tail together, so the pair IS the zip.
-def mxw_bc_mg.go(+ss: List<&2, U32>, +dd: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
-  match ss dd:
-    case s <> st d <> dt:
-      mxw_bc_mg.go(st, dt, Bool.pick(List<&2, U32>, mxw_bc_exp(s, d),
-        List.append(&2, U32, acc, [d]), acc))
-    case _ _: acc
-
-def mxw_bc_mg(+ss: List<&2, U32>, +dd: List<&2, U32>) -> List<&2, U32>:
-  mxw_bc_mg.go(ss, dd, Nil{})
-
-# THE SQUEEZED DIMS -- `tuple(self.shape[i] for i in kept)`.
-def mxw_bc_sq.go(+ss: List<&2, U32>, +dd: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
-  match ss dd:
-    case s <> st d <> dt:
-      mxw_bc_sq.go(st, dt, Bool.pick(List<&2, U32>, mxw_bc_exp(s, d),
-        acc, List.append(&2, U32, acc, [s])))
-    case _ _: acc
-
-def mxw_bc_sq(+ss: List<&2, U32>, +dd: List<&2, U32>) -> List<&2, U32>:
-  mxw_bc_sq.go(ss, dd, Nil{})
-
-# the state of the permute walk. three lists, because a `U32` is consumed once
-# and the walk needs each of its counters TWICE -- once for the entry and once
-# for the increment -- while a LIST is `&2` and can be read as often as the walk
-# likes. `ex` AND `kp` ARE THE COUNTERS: their LENGTHS are the slot numbers, and
-# they are SEEDED with `base` (resp. `base + ne`) entries so that CPython's perm
-# falls out of them and NEITHER CONSTANT APPEARS IN THE WALK.
-type MxPm is Data:
-  MxPm{acc: List<&2, U32>, ex: List<&2, U32>, kp: List<&2, U32>}
-
-# THE PERMUTE ORDER -- `perm = tuple(range(n_left)) + tuple(n_left +
-# (expand_at.index(i) if i in expand_at else len(expand_at) + kept.index(i)) for
-# i in range(len(self.shape)))` (movement.py:141-143). THE TWO `.index` CALLS ARE
-# THE TWO RUNNING COUNTS, and the two counts ARE the two list lengths: `ex` has
-# one entry per expanded axis and `kp` one per kept axis, so the slot of the next
-# expanded axis is `len(ex)` and the slot of the next kept axis is `len(kp)`.
-def mxw_bc_perm.go(+ss: List<&2, U32>, +dd: List<&2, U32>, +r: MxPm) -> MxPm:
-  match ss dd r:
-    case s <> st d <> dt MxPm{a, e, k}:
-      mxw_bc_perm.go(st, dt, Bool.pick(MxPm, mxw_bc_exp(s, d),
-        MxPm{List.append(&2, U32, a, [U32.from_nat(List.length(&2, U32, e))]),
-              List.append(&2, U32, e, [0]), k},
-        MxPm{List.append(&2, U32, a, [U32.from_nat(List.length(&2, U32, k))]),
-              e, List.append(&2, U32, k, [0])}))
-    case _ _ _: r
-
-def MxPm.acc(m: MxPm) -> List<&2, U32>:
-  match m:
-    case MxPm{acc, ex, kp}: acc
-
-# THE EXPAND NODE -- `UOp(Ops.EXPAND, src=(self, STACK))` (ops.py:834-835), with
-# the marg interned as a STACK of CONSTs. `tn_mop`'s EMPTY-arg NOOP (ops.py:823)
-# is inside `tn_mop`, so an empty marg builds NO node, exactly as CPython does.
-def mxw_ks.go(+xs: List<&2, U32>, +acc: List<&2, O.Const>) -> List<&2, O.Const>:
-  match xs:
-    case Nil{}: acc
-    case x <> t: mxw_ks.go(t, List.append(&2, O.Const, acc, [MO.mo_ki(x)]))
-
-def mxw_ks(+xs: List<&2, U32>) -> List<&2, O.Const>: mxw_ks.go(xs, Nil{})
-
-def mxw_expand(+t: T.Tensor, +ds: List<&2, U32>) -> T.Tensor:
-  T.tn_alu.put(T.tn_mop(T.Tensor.ar(t), T.Tensor.u(t), O.OpsEXPAND{}, T.ADims{mxw_ks(ds)}))
-
 # `_broadcast_to` -- `self._broadcast_to(new_shape)`, i.e. `Tensor.expand`
 # (movement.py:149-162) for a CONCRETE target.
 #
@@ -1778,15 +1711,12 @@ def mxw_expand(+t: T.Tensor, +ds: List<&2, U32>) -> T.Tensor:
 # caller: `expand` onto a narrower shape is CPython's `ValueError`
 # (movement.py:131) and nothing here asks for it. IT IS KEPT AS A LIST BECAUSE A
 # `U32` is consumed once and it is needed four times.
+# THE DANCE LIVES IN `mixin/bcast.bend` AND THIS IS ITS TENSOR-LEVEL CALLER. It used to be the
+# only copy -- the walk, the three mints and the permute state, all here -- and `gradient.bend`
+# needed the same dance and could not import this file (`movement -> tensor -> gradient`), so
+# it grew a second, WRONG one (one EXPAND carrying the full target: rank `len(dst)+len(src)`,
+# measured 6 and 12, nodes CPython never mints). THE SHAPE READ STAYS `mxw_dims_of`, because a
+# movement node's declared shape is not the fold's answer for it; the walk itself is shared.
 def mxw_bcast(+t: T.Tensor, +dst: List<&2, U32>) -> T.Tensor:
-  +src = mxw_dims_of(T.Tensor.ar(t), T.Tensor.u(t))
-  +bs = MO.mo_range(U32.to_nat(U32.sub(U32.from_nat(mxw_len_nat(dst)), U32.from_nat(mxw_len_nat(src)))))
-  +tail = List.drop(&2, U32, dst, List.length(&2, U32, bs))
-  +mg = mxw_bc_mg(src, tail)
-  +ne = U32.from_nat(mxw_len_nat(mg))
-  +pm = mxw_bc_perm.go(src, tail, MxPm{Nil{}, bs, MO.mo_range((List.length(&2, U32, bs) + U32.to_nat(ne) : Nat))})
-  +perm = List.append(&2, U32, bs, MxPm.acc(pm))
-  +marg = List.append(&2, U32, List.take(&2, U32, dst, List.length(&2, U32, bs)), mg)
-  +sqt = mxw_reshape(t, mxw_bc_sq(src, tail))
-  +exp = mxw_expand(sqt, marg)
-  mxw_permute(exp, perm)
+  +f = BC.bcast.of(T.Tensor.ar(t), T.Tensor.u(t), mxw_dims_of(T.Tensor.ar(t), T.Tensor.u(t)), dst)
+  T.tn_new(O.Found.ar(f), O.Found.i(f))

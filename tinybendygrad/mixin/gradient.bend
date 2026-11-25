@@ -33,6 +33,7 @@ import ./../helpers.bend as H
 import ./../uop/ops.bend as O
 import ./../uop/fold.bend as F
 import ./../schedule/indexing.bend as IX
+import ./bcast.bend as BC
 
 
 # THE ANSWER TYPE. `GFired` carries the per-src gradient list and the grown arena;
@@ -839,42 +840,17 @@ def gr_13.go(+ar: O.Arena, +ctx: U32, +ret: U32) -> GRes:
 
 def gr_13(ar: O.Arena, +ctx: U32, +self: U32) -> GRes: gr_13.go(ar, ctx, self)
 
-def g_expand0(+ar: O.Arena, +x: U32) -> O.Found: O.Found{ar, x}
-
-def g_expand(+ar: O.Arena, +x: U32, +ds: List<&2, U32>) -> O.Found:
-  +sk = O.shape_arg_found(ar, ds)
-  O.UOp.new(O.Found.ar(sk), O.OpsEXPAND{}, [x, O.Found.i(sk)], O.ANone{}, O.TNone{})
-
-def g_expand.pick(empty: Bool, +ar: O.Arena, +x: U32, +ds: List<&2, U32>) -> O.Found:
-  match empty:
-    case True{} : g_expand0(ar, x)
-    case False{}: g_expand(ar, x, ds)
-
-def g_ndims(+ds: List<&2, U32>) -> U32: U32.from_nat(List.length(&2, U32, ds))
-
-# the LEFT pad of `_align_left`: `len(new_shape) - len(self.shape)` ones in front.
-def g_dims_pad(+ctx_ds: List<&2, U32>, +n: Nat) -> List<&2, U32>:
-  List.concat(&2, U32, [List.replicate(U32, n, 1), ctx_ds])
-
-def gbcast.reshape(same: Bool, +ar: O.Arena, +ctx: U32, +al: List<&2, U32>) -> O.Found:
-  match same:
-    case True{} : O.Found{ar, ctx}
-    case False{}: greshape(ar, ctx, al)
-
-def gbcast.go(+ar: O.Arena, +ctx: U32, +ds: List<&2, U32>) -> GRes:
-  +cd = gdims(ar, ctx)
-  +al = g_dims_pad(cd, Nat.sub(List.length(&2, U32, ds), List.length(&2, U32, cd)))
-  +r = gbcast.reshape(gdim_eq(cd, al), ar, ctx, al)
-  +e = g_expand.pick(U32.is_zero(g_ndims(ds)), O.Found.ar(r), O.Found.i(r), ds)
-  fired([O.Found.i(e)], O.Found.ar(e))
-
-def gbcast.pick(same: Bool, +ar: O.Arena, +ctx: U32, +ds: List<&2, U32>) -> GRes:
-  match same:
-    case True{} : fired([ctx], ar)
-    case False{}: gbcast.go(ar, ctx, ds)
-
+# `_broadcast_to` for a concrete target -- CPYTHON'S DANCE, AND ITS SHAPE IS MEASURED:
+# `Tensor.ones(1,1,49).expand(1,10,49)` is `PERMUTE(EXPAND(x'), STACK(perm))` with
+# `EXPAND(x').shape == (10,1,49)` and `x'.shape == (1,49)`. THE OLD IMPLEMENTATION HERE
+# ALIGNED LEFT AND MINTED ONE EXPAND CARRYING THE FULL TARGET, which the fold reads as
+# `marg ++ src.shape` -- rank `len(dst)+len(src)`, measured 6 and 12 in the training
+# fixture, and nodes CPython never mints. The dance now lives in `mixin/bcast.bend`,
+# where `mxw_bcast` can share it: the copy was the price of the cycle
+# (`movement -> tensor -> gradient`) that kept this file from importing movement.
 def gbcast(+ar: O.Arena, +ctx: U32, +ds: List<&2, U32>) -> GRes:
-  gbcast.pick(gdim_eq(gdims(ar, ctx), ds), ar, ctx, ds)
+  +f = BC.bcast(ar, ctx, ds)
+  fired([O.Found.i(f)], O.Found.ar(f))
 
 def gr_14.naxes.of(a: O.Arg) -> U32:
   match a:
