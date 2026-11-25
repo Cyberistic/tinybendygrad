@@ -124,3 +124,49 @@ fr_mod|FRMOD|1|1|0|0
 fr_k20|FRDIV|20|5|0|0
 # AND A NUMERATOR WITH THREE TERMS, AND THE EXTRA CONST TERMS GO TO `rem`.
 fr_three|FRDIV|1|1|2|0
+#
+# --- `nested_div` (divandmod.py:23).  `(x%(k*c))//c -> (x//c)%k`.
+#
+# AND THE SHAPE IS `(x % kc) // c` WITH `x` A **SIZED** PARAM AND `kc` AND
+# `c` CONSTs.  AND THE ARM'S THREE FACTS ARE `d.op is Ops.DIV`, `x.op is
+# Ops.MOD` AND `x.src[1].divides(c) IS NOT None AND k.vmin > 0` -- SO `c`
+# DIVIDES `kc` AND THE QUOTIENT IS POSITIVE.
+#
+# AND `k` IS THE **INNER** DIVISOR's WHOLE VALUE AND `c` IS THE **OUTER** ONE,
+# AND BOTH READERS TAKE THEM THE SAME WAY.  AND `n` AND `d` ARE UNUSED BY THIS
+# SHAPE AND ARE ZERO.
+nd_8_4|ND|8|4|0|0
+# AND `12` AND `4`, AND THE QUOTIENT IS `3` -- SO THE ANSWER'S `k` IS NOT `2`.
+nd_12_4|ND|12|4|0|0
+# AND THE **SMALLEST** FIRING SHAPE, AND `k` IS `2`.
+nd_4_2|ND|4|2|0|0
+# AND THE QUOTIENT IS `4`, AND IT IS **NOT** THE OTHER ORDER.
+nd_8_2|ND|8|2|0|0
+# AND `k` IS **1**, AND THE ARM **STILL FIRES**, BECAUSE UPSTREAM's TEST IS
+# `k.vmin > 0` AND `1 > 0` IS TRUE -- MEASURED 2026-11-25: UPSTREAM ANSWERS
+# `MOD(DIV(x,c8),c1)`.
+nd_8_8|ND|8|8|0|0
+#
+# --- `factor_remainder`'s **CONSTANT BRANCH** (divandmod.py:83-85).  AND IT IS
+# A DIFFERENT SHAPE AND NOT A VARIANT: `(k*a + b) op c` WITH `c` A **CONST**
+# AND `k` **NOT** DIVIDING `c`.
+#
+# AND A CONST DIVISOR IS REACHABLE **HERE** AND NOT BEHIND `divide_by_gcd`, AND
+# THE REASON IS THE SHAPE AND NOT THE DIVISOR: `divide_by_gcd`'s GUARD IS
+# `gcd.op is Ops.CONST and gcd.val==1` (divandmod.py:74) AND THE GCD IS
+# `UOp.gcd(*all_uops, y)` (divandmod.py:73) WHOSE ANSWER IS
+# `uops[0].const_like(gcd)` (ops.py:1037) -- AND `uops[0]` IS `k*a`, A **VARIABLE**
+# DERIVATION WHOSE `_shape` IS `()`, SO ITS `const_like` IS A **BARE `CONST`**
+# AND NOT AN `EXPAND`.  SO THE GCD IS `CONST(1)` AND THE ARM IS **REACHED**.
+# MEASURED 2026-11-25 ON CPYTHON AT THE PIN: THE ANSWER IS
+# `ADD(DIV(ADD(ADD(ADD(c0,MUL(MUL(a,c1),c2)),b),c0),c4),ADD(c0,MUL(MUL(a,c1),c1)))`.
+#
+# AND THE `c` IS `4` AND THE `k` IS `6`, AND `6 % 4 != 6` -- SO THE ARM's OWN
+# TEST `(c:=u.const_factor())%y.val!=c` FIRES (divandmod.py:83).  AND THE `6`
+# IS **NOT** A FACTOR OF THE `4`, SO `u.divides(6)` IS NOT A FACTOR OF THE
+# `4` AND `u.divide_exact(y)` IS `None` (divandmod.py:82) -- **THE CONSTANT
+# BRANCH IS THE ONLY ONE THAT FIRES.**
+frc_6a_b_4|FRC|6|4|0|0
+# AND THE **MOD HALF** OF THE SAME SHAPE, AND IT IS `new_x%y` (divandmod.py:91)
+# AND NOT `new_x//y+sum(quo)` -- **A SECOND ANSWER SHAPE AND NOT A VARIANT.**
+frcm_6a_b_4|FRCM|6|4|0|0

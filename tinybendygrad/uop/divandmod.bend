@@ -269,6 +269,104 @@ def dm_first2.go(b: Maybe<&2, O.Found>, c: Maybe<&2, O.Found>) -> Maybe<&2, O.Fo
     case Some{f}: Some{f}
     case None{}: c
 
+# `nested_div` -- divandmod.py:23-25.  `(x%(k*c))//c -> (x//c)%k`.
+#
+# AND IT IS **INSIDE** THE "Constant Denominator Rules" BLOCK AND SO IT IS
+# **BEFORE** `remove_nested_mod` (divandmod.py:26), AND THE PORT's LADDER
+# MUST KEEP THAT ORDER: `remove_nested_mod` IS A **MOD** ARM AND `nested_div`
+# IS A **DIV** ARM, SO THEY DO NOT OVERLAP -- BUT THE ORDER IS UPSTREAM's AND
+# THE PORT's LADDER FOLLOWS IT.
+#
+# AND IT IS **REACHABLE** AND MEASURED, AND THE ANSWER IS MEASURED ON CPYTHON
+# AT THE PIN:
+#   `(x%8)//4`  -> `MOD(DIV(x,c4),c2)`  -- AND `k` IS `8/4` = 2
+#   `(x%8)//2`  -> `MOD(DIV(x,c2),c4)`
+#   `(x%12)//4` -> `MOD(DIV(x,c4),c3)`
+#   `(x%4)//2`  -> `MOD(DIV(x,c2),c2)`
+#
+# AND THE THREE FACTS UPSTREAM's LINE ASKS FOR (divandmod.py:23):
+#   `d.op is Ops.DIV`   -- THE ROOT IS A DIVISION.
+#   `x.op is Ops.MOD`   -- THE NUMERATOR IS A MODULATION.
+#   `x.src[1].divides(c) IS NOT None` AND `k.vmin > 0` -- THE INNER MOD's
+#     DIVISOR IS **DIVISIBLE BY** THE OUTER DIVISOR, AND THE QUOTIENT IS
+#     **POSITIVE**.
+#
+# AND `divides` IS **THE PORT's `UOp.divides`**, WHICH ANSWERS UPSTREAM's SHAPE:
+# A `Dv` WHOSE `ok` SAYS "DIVIDES" AND WHOSE `f` IS THE **QUOTIENT NODE**.
+# MEASURED ON CPYTHON AT THE PIN: `c8.divides(4)` IS `CONST(2)`,
+# `c8.divides(2)` IS `CONST(4)`, `c8.divides(3)` IS `None` AND
+# `c8.divides(8)` IS `CONST(1)`.
+#
+# AND `k.vmin > 0` IS READ FROM THE **QUOTIENT NODE** AND NOT FROM A `vmin`
+# FOLD, BECAUSE THE QUOTIENT IS A **CONST** AND A CONST's VALUE IS ITS `arg`.
+# AND `k` IS `1` FOR `(x%8)//8` AND THE ARM STILL FIRES -- MEASURED: UPSTREAM
+# ANSWERS `MOD(DIV(x,c8),c1)` -- BECAUSE UPSTREAM's TEST IS `k.vmin > 0` AND
+# `1 > 0` IS TRUE.
+
+# AND THE QUOTIENT, AND IT IS `x.src[1].divides(c)` WHERE `c` IS THE **OUTER**
+# DIVISOR's VALUE.
+def dm_nd.divides.go(ok: Bool, +d: O.Dv) -> Maybe<&2, O.Found>:
+  match ok:
+    case True{}: Some{O.Dv.f(d)}
+    case False{}: None{}
+
+def dm_nd.divides(+ar: O.Arena, +x: U32, c: H.I64) -> Maybe<&2, O.Found>:
+  +d = O.UOp.divides(O.Arena.budget(ar), ar, c, O.Arena.src(ar, x, 1))
+  dm_nd.divides.go(O.Dv.ok(d), d)
+
+# AND THE OUTER DIVISOR's VALUE, AND IT IS A **CONST** AND NOT A VARIABLE --
+# UPSTREAM's RULE IS INSIDE `if y.op is Ops.CONST and (c := y.val) > 0:`.
+def dm_nd.cval(+ar: O.Arena, y: U32) -> H.I64:
+  O.UOp.const_factor(O.Arena.budget(ar), ar, y)
+
+def dm_nd.pos.go(isconst: Bool, v: H.I64) -> Bool:
+  match isconst:
+    case True{}: Bool.not(H.i64_is_zero(v))
+    case False{}: False{}
+
+# AND THE QUOTIENT IS POSITIVE, AND IT IS `k.vmin > 0` (divandmod.py:23).
+def dm_nd.pos(+k: O.Found) -> Bool:
+  dm_nd.pos.go(O.eq_op(O.Arena.op(O.Found.ar(k), O.Found.i(k)), O.OpsCONST{}),
+               O.UOp.const_factor(O.Arena.budget(O.Found.ar(k)), O.Found.ar(k), O.Found.i(k)))
+
+# AND THE ANSWER, AND IT IS `x.src[0] // y % k` (divandmod.py:23) -- **A DIV
+# AND THEN A MOD**, AND NOT A MOD OF A DIV.
+def dm_nd.answer(+ar: O.Arena, +x: U32, y: U32, +k: O.Found) -> O.Found:
+  +q = O.UOp.alu(O.Found.ar(k), O.OpsDIV{}, [O.Arena.src0(ar, x), y])
+  O.UOp.alu(O.Found.ar(q), O.OpsMOD{}, [O.Found.i(q), O.Found.i(k)])
+
+def dm_nd.arm.go4(pos: Bool, +k: O.Found, +ar: O.Arena, +d: U32, x: U32, y: U32) -> Maybe<&2, O.Found>:
+  match pos:
+    case True{}: Some{dm_nd.answer(O.Found.ar(k), x, y, k)}
+    case False{}: None{}
+
+def dm_nd.arm.go3(k: Maybe<&2, O.Found>, +ar: O.Arena, +d: U32, x: U32, y: U32) -> Maybe<&2, O.Found>:
+  match k:
+    case Some{+kk}: dm_nd.arm.go4(dm_nd.pos(kk), kk, ar, d, x, y)
+    case None{}: None{}
+
+def dm_nd.arm.go2(+ar: O.Arena, +d: U32) -> Maybe<&2, O.Found>:
+  +x = O.Arena.src0(ar, d)
+  +y = O.Arena.src(ar, d, 1)
+  +k = dm_nd.divides(ar, x, dm_nd.cval(ar, y))
+  dm_nd.arm.go3(k, ar, d, x, y)
+
+def dm_nd.arm.go1(ismod: Bool, +ar: O.Arena, +d: U32) -> Maybe<&2, O.Found>:
+  match ismod:
+    case True{}: dm_nd.arm.go2(ar, d)
+    case False{}: None{}
+
+def dm_nd.arm.go(isdiv: Bool, ismod: Bool, +ar: O.Arena, +d: U32) -> Maybe<&2, O.Found>:
+  match isdiv:
+    case True{}: dm_nd.arm.go1(ismod, ar, d)
+    case False{}: None{}
+
+# AND THE ARM, AND IT IS THE THREE FACTS AND THE ANSWER.
+def dm_nd.arm(+ar: O.Arena, +d: U32) -> Maybe<&2, O.Found>:
+  dm_nd.arm.go(O.eq_op(O.Arena.op(ar, d), O.OpsDIV{}),
+               O.eq_op(O.Arena.op(ar, O.Arena.src0(ar, d)), O.OpsMOD{}),
+               ar, d)
+
 # `remove_nested_mod in sum` -- divandmod.py:27-35.  `(a%4 + b)%2 -> (a+b)%2`.
 #
 # AND IT IS THE CLEANEST OF THE FOUR UNPORTED ARMS, AND THE REASON IS MEASURED:
@@ -651,69 +749,60 @@ def dm_fr.sum(+ar: O.Arena, l: List<&2, U32>) -> O.Found:
 # VARIABLE's NUMERATOR THE `_shape` IS `()` SO IT IS A **BARE `CONST 0`** AND
 # NOT AN `EXPAND` (ops.py:572-574: `ret._mop(Ops.EXPAND, arg=self._shape) if
 # self._shape and ...` -- AND `self._shape` IS FALSY FOR `()`).
-
-# AND THE ZERO TERM, AND IT IS `x.const_like(0)` (divandmod.py:89) -- AND FOR A
-# VARIABLE's NUMERATOR THE `_shape` IS `()` SO IT IS A **BARE `CONST 0`** AND
-# NOT AN `EXPAND` (ops.py:572-574: `ret._mop(Ops.EXPAND, arg=self._shape) if
-# self._shape and ...` -- AND `self._shape` IS FALSY FOR `()`).
 def dm_fr.zero(+ar: O.Arena) -> O.Found:
   O.UOp.const(ar, O.CInt{H.i64_of_i32(0)})
 
 # AND THE `quo` TERM OF THE CONSTANT BRANCH, AND IT IS
 # `u.divides(c)*(c//y.val)` FOR A DIV AND `u.const_like(0)` FOR A MOD
-# (divandmod.py:85).
-
-# AND THE `quo` TERM OF THE CONSTANT BRANCH, AND IT IS
-# `u.divides(c)*(c//y.val)` FOR A DIV AND `u.const_like(0)` FOR A MOD
-# (divandmod.py:85).
-def dm_fr.quo_of.go(isdiv: Bool, +ar: O.Arena, +d: O.Dv, c: H.I64, +y: H.I64) -> Maybe<&2, O.Found>:
+# (divandmod.py:85) -- **A MULTIPLICATION** -- AND THE FIRST DRAFT BUILT A
+# **DIVISION**, AND MEASURED 2026-11-25 ON `(6a+b)//4` THE PORT ANSWERED A DEEP
+# `ADD(c0, ADD(c0, ... ADD(c0,Pb),Pb)...)` NEST WHERE UPSTREAM ANSWERS
+# `ADD(DIV(ADD(ADD(ADD(c0,MUL(MUL(a,c1),c2)),b),c0),c4),ADD(c0,MUL(MUL(a,c1),c1)))`.
+def dm_fr.quo_of.go(isdiv: Bool, +ar: O.Arena, +d: O.Dv, c: H.I64, +y: H.I64) -> O.Found:
   match isdiv:
     case True{}:
-      +cc = O.UOp.const(O.Found.ar(O.Dv.f(d)), O.CInt{H.i64_div(c, y)})
-      +q = O.UOp.alu(O.Found.ar(cc), O.OpsDIV{}, [O.Found.i(O.Dv.f(d)), O.Found.i(cc)])
-      Some{q}
-    case False{}: Some{dm_fr.zero(O.Found.ar(O.Dv.f(d)))}
+      +cc = O.UOp.const(ar, O.CInt{H.i64_div(c, y)})
+      O.UOp.alu(O.Found.ar(cc), O.OpsMUL{}, [O.Found.i(O.Dv.f(d)), O.Found.i(cc)])
+    case False{}: dm_fr.zero(ar)
 
-def dm_fr.quo_of(+ar: O.Arena, +d: O.Dv, c: H.I64, +y: H.I64, isdiv: Bool) -> Maybe<&2, O.Found>:
+def dm_fr.quo_of(+ar: O.Arena, +d: O.Dv, c: H.I64, +y: H.I64, isdiv: Bool) -> O.Found:
   dm_fr.quo_of.go(isdiv, ar, d, c, y)
 
 # AND THE `rem` TERM OF THE CONSTANT BRANCH, AND IT IS `u.divides(c)*(c%y.val)`
 # (divandmod.py:84).
+#
+# AND `d`'s QUOTIENT INDEX IS READ IN `ar`, AND THAT IS CORRECT BECAUSE `ar`
+# **CONTAINS** THE ARENA `UOp.divides` ANSWERED IN: AN ARENA IS APPEND-ONLY,
+# SO A DESCENDANT READS EVERY ANCESTOR's INDEX AS THE SAME NODE.
+def dm_fr.rem_of(+ar: O.Arena, +d: O.Dv, c: H.I64, +y: H.I64) -> O.Found:
+  +cc = O.UOp.const(ar, O.CInt{H.i64_mod(c, y)})
+  O.UOp.alu(O.Found.ar(cc), O.OpsMUL{}, [O.Found.i(O.Dv.f(d)), O.Found.i(cc)])
 
-# AND THE `rem` TERM OF THE CONSTANT BRANCH, AND IT IS `u.divides(c)*(c%y.val)`
-# (divandmod.py:84).
-def dm_fr.rem_of(+ar: O.Arena, +d: O.Dv, c: H.I64, +y: H.I64) -> Maybe<&2, O.Found>:
-  +cc = O.UOp.const(O.Found.ar(O.Dv.f(d)), O.CInt{H.i64_mod(c, y)})
-  +q = O.UOp.alu(O.Found.ar(cc), O.OpsMUL{}, [O.Found.i(O.Dv.f(d)), O.Found.i(cc)])
-  Some{q}
-
-# AND THE `Maybe` TO A LIST, AND IT IS THE IDENTITY WHEN THERE IS ONE.
-
-# AND THE `Maybe` TO A LIST, AND IT IS THE IDENTITY WHEN THERE IS ONE.
-def dm_fr.opt(m: Maybe<&2, O.Found>) -> List<&2, U32>:
-  match m:
-    case Some{f}: [O.Found.i(f)]
-    case None{}: Nil{}
-
-# AND THE TERM's FATE, AND IT IS ONE OF THREE AND UPSTREAM's ORDER IS: THE
-# EXACT DIVISION FIRST, THEN THE CONSTANT BRANCH, THEN `rem`.
-
+# AND THE **ARENA** IS **ONE CHAIN** AND NOT A TREE OF BRANCHES: EVERY NODE IS
+# BUILT FROM THE PREVIOUS NODE's ARENA AND THE RECORD's ARENA IS THE **LAST**
+# ONE.  MEASURED 2026-11-25: WITH THE `quo` TERM AND THE `rem` TERM BUILT IN
+# **TWO BRANCHES** OF ONE ARENA THEY READ EACH OTHER's INDICES, AND AN INDEX
+# THAT IS OUT OF RANGE READS THE ARENA's **BOTTOM NOOP NODE** -- AND THE PORT
+# ANSWERED A DEEP NOOP CHAIN WHERE UPSTREAM ANSWERS A TREE.  THE PLANT's
+# CASE 12 IS THIS RULE.
 def dm_fr.term.go7(ok: Bool, +d: O.Dv, +ar: O.Arena, +u: U32, +y: U32, +yv: H.I64, +isdiv: Bool, +acc: Fr, +cf: H.I64) -> Fr:
   match ok:
     case True{}:
-      Fr{ar, List.append(&2, U32, Fr.quo(acc), dm_fr.opt(dm_fr.quo_of(ar, d, cf, yv, isdiv))),
-         List.append(&2, U32, Fr.rem(acc), dm_fr.opt(dm_fr.rem_of(ar, d, cf, yv)))}
+      +q = dm_fr.quo_of(ar, d, cf, yv, isdiv)
+      +r = dm_fr.rem_of(O.Found.ar(q), d, cf, yv)
+      Fr{O.Found.ar(r), List.append(&2, U32, Fr.quo(acc), [O.Found.i(q)]),
+                       List.append(&2, U32, Fr.rem(acc), [O.Found.i(r)])}
     case False{}: Fr{ar, Fr.quo(acc), List.append(&2, U32, Fr.rem(acc), [u])}
 
-# AND THE LOOP, AND IT IS A FOLD OVER THE TERMS WITH THE `quo`/`rem` RECORD AS
-# THE ACCUMULATOR.
-
+# AND THE ARENA IS **THE DIVIDES's OWN** AND NOT THE CALLER's, BECAUSE
+# `UOp.divides` GROWS THE ARENA AND ANSWERS IN THE GROWN ONE, AND A STALE
+# `ar` READS THE ARENA's **BOTTOM NOOP NODE**.
 def dm_fr.term.go6(+ar: O.Arena, +u: U32, +y: U32, +yv: H.I64, +isdiv: Bool, +acc: Fr, +cf: H.I64) -> Fr:
   +d = O.UOp.divides(O.Arena.budget(ar), ar, cf, u)
-  dm_fr.term.go7(O.Dv.ok(d), d, ar, u, y, yv, isdiv, acc, cf)
+  dm_fr.term.go7(O.Dv.ok(d), d, O.Found.ar(O.Dv.f(d)), u, y, yv, isdiv, acc, cf)
 
-def dm_fr.term.go5(zero: Bool, +ar: O.Arena, +u: U32, +y: U32, +yv: H.I64, +isdiv: Bool, +acc: Fr, +cf: H.I64) -> Fr:
-  match zero:
+def dm_fr.term.go5(equal: Bool, +ar: O.Arena, +u: U32, +y: U32, +yv: H.I64, +isdiv: Bool, +acc: Fr, +cf: H.I64) -> Fr:
+  match equal:
     case True{}: Fr{ar, Fr.quo(acc), List.append(&2, U32, Fr.rem(acc), [u])}
     case False{}: dm_fr.term.go6(ar, u, y, yv, isdiv, acc, cf)
 
@@ -721,15 +810,12 @@ def dm_fr.term.go5(zero: Bool, +ar: O.Arena, +u: U32, +y: U32, +yv: H.I64, +isdi
 # -- SO THE CONST FACTOR MUST NOT DIVIDE THE DIVISOR.
 def dm_fr.term.go4(+ar: O.Arena, +u: U32, +y: U32, +yv: H.I64, +isdiv: Bool, +acc: Fr) -> Fr:
   +cf = O.UOp.const_factor(O.Arena.budget(ar), ar, u)
-  dm_fr.term.go5(H.i64_is_zero(H.i64_mod(cf, yv)), ar, u, y, yv, isdiv, acc, cf)
+  dm_fr.term.go5(Cmp.is_eq(H.i64_cmp(H.i64_mod(cf, yv), cf)), ar, u, y, yv, isdiv, acc, cf)
 
 def dm_fr.term.go3(+isconst: Bool, +ar: O.Arena, +u: U32, +y: U32, +yv: H.I64, +isdiv: Bool, +acc: Fr) -> Fr:
   match isconst:
     case True{}: dm_fr.term.go4(ar, u, y, yv, isdiv, acc)
     case False{}: Fr{ar, Fr.quo(acc), List.append(&2, U32, Fr.rem(acc), [u])}
-
-# AND THE CONSTANT BRANCH's OWN TEST, AND IT IS `(c:=u.const_factor())%y.val!=c`
-# -- SO THE CONST FACTOR MUST NOT DIVIDE THE DIVISOR.
 
 def dm_fr.term.go2(ok: Bool, +dq: O.Dq, +ar: O.Arena, +u: U32, +y: U32, +yv: H.I64, +isconst: Bool, +isdiv: Bool, +acc: Fr) -> Fr:
   match ok:
@@ -754,10 +840,6 @@ def dm_fr.go(+us: List<&2, U32>, +y: U32, +yv: H.I64, +isconst: Bool, +isdiv: Bo
 # AND THE ANSWER, AND IT IS `new_x%y` FOR A MOD AND `new_x//y+sum(quo)` FOR A
 # DIV (divandmod.py:91) -- **AND THE `sum(quo)` IS NOT OPTIONAL**, AND A FIRST
 # DRAFT DROPPED IT AND THE PORT ANSWERED A DIFFERENT TREE.
-
-# AND THE ANSWER, AND IT IS `new_x%y` FOR A MOD AND `new_x//y+sum(quo)` FOR A
-# DIV (divandmod.py:91) -- **AND THE `sum(quo)` IS NOT OPTIONAL**, AND A FIRST
-# DRAFT DROPPED IT AND THE PORT ANSWERED A DIFFERENT TREE.
 def dm_fr.answer.go(isdiv: Bool, +ar: O.Arena, +nx: O.Found, +quo: List<&2, U32>, y: U32) -> Maybe<&2, O.Found>:
   match isdiv:
     case True{}:
@@ -774,15 +856,8 @@ def dm_fr.answer(+ar: O.Arena, +nx: O.Found, +quo: List<&2, U32>, y: U32, isdiv:
 # **VARIABLE** DIVISOR IT IS **NOT A CONST AT ALL**, SO `y.op is Ops.CONST` IS
 # **FALSE** AND THE CONSTANT BRANCH OF THE ARM NEVER FIRES.  THAT IS EXACTLY
 # WHY A VARIABLE DIVISOR REACHES THE ARM AT ALL.
-
-# AND `y`'s VALUE, AND IT IS THE CONST's AND NOT A `Maybe` -- AND FOR A
-# **VARIABLE** DIVISOR IT IS **NOT A CONST AT ALL**, SO `y.op is Ops.CONST` IS
-# **FALSE** AND THE CONSTANT BRANCH OF THE ARM NEVER FIRES.  THAT IS EXACTLY
-# WHY A VARIABLE DIVISOR REACHES THE ARM AT ALL.
 def dm_fr.yval(+ar: O.Arena, y: U32) -> H.I64:
   O.UOp.const_factor(O.Arena.budget(ar), ar, y)
-
-# AND THE `vmin` GUARD, AND IT IS `y.vmin<0 or x.vmin<0` (divandmod.py:79).
 
 # AND THE `vmin` GUARD, AND IT IS `y.vmin<0 or x.vmin<0` (divandmod.py:79).
 def dm_fr.neg3(b: F.Bnd) -> Bool:
@@ -801,29 +876,15 @@ def dm_fr.neg2(m: Maybe<&2, F.Bnd>) -> Bool:
 # **NOT NEGATIVE**, SO A STALE ARENA **SILENTLY PASSES THE GUARD**.  THIS IS
 # MEASURED: THE FIRST DRAFT READ `F.UOp.vmin(ar, F.UOp.fold(ar), u)` AND THE
 # PORT ANSWERED A STACK OF `DIV(c2,c2)` NODES.
-
-# AND THE ARENA IS **THE TABLE's OWN** AND NOT THE CALLER's, BECAUSE
-# `F.UOp.fold(ar)` GROWS THE ARENA AND ANSWERS IN THE GROWN ONE, AND A STALE
-# `ar` READS THE ARENA's **BOTTOM NOOP NODE** -- AND THE `vmin` OF A NOOP IS
-# **NOT NEGATIVE**, SO A STALE ARENA **SILENTLY PASSES THE GUARD**.  THIS IS
-# MEASURED: THE FIRST DRAFT READ `F.UOp.vmin(ar, F.UOp.fold(ar), u)` AND THE
-# PORT ANSWERED A STACK OF `DIV(c2,c2)` NODES.
 def dm_fr.neg(+ar: O.Arena, u: U32) -> Bool:
   +fx = F.folded(ar)
   dm_fr.neg2(F.UOp.vmin(F.Folded.ar(fx), F.mm.sweep(F.Folded.ar(fx), F.Folded.t(fx)), u))
 
 # AND THE `new_x.vmin<0` GUARD (divandmod.py:90), AND IT IS OVER THE **SUM**,
 # SO IT NEEDS THE SUM's NODE.
-
-# AND THE `new_x.vmin<0` GUARD (divandmod.py:90), AND IT IS OVER THE **SUM**,
-# SO IT NEEDS THE SUM's NODE.
 def dm_fr.nxneg(+ar: O.Arena, +nx: O.Found) -> Bool:
   +fx = F.folded(O.Found.ar(nx))
   dm_fr.neg2(F.UOp.vmin(F.Folded.ar(fx), F.mm.sweep(F.Folded.ar(fx), F.Folded.t(fx)), O.Found.i(nx)))
-
-# AND THE ARM, AND IT IS THE `y.vmin<0 OR x.vmin<0` GUARD, THE TERMS, THE
-# `quo`/`rem` SPLIT, THE `if not quo` GUARD, THE `new_x` SUM, THE
-# `new_x.vmin<0` GUARD, AND THE ANSWER.
 
 def dm_fr.arm4(neg: Bool, +ar: O.Arena, +d: U32, +acc: Fr, y: U32, +nx: O.Found) -> Maybe<&2, O.Found>:
   match neg:
@@ -842,12 +903,11 @@ def dm_fr.arm2(noquo: Bool, +ar: O.Arena, +d: U32, +acc: Fr, y: U32, x: U32) -> 
     case True{}: None{}
     case False{}: dm_fr.arm3(ar, d, acc, y, x)
 
-# AND THE `new_x` SUM, AND IT IS `sum(rem)+x.const_like(0)` (divandmod.py:89).
-
 def dm_fr.arm.go2(+ar: O.Arena, +d: U32, +x: U32, +y: U32) -> Maybe<&2, O.Found>:
   +yv = dm_fr.yval(ar, y)
   +isconst = O.eq_op(O.Arena.op(ar, y), O.OpsCONST{})
-  +acc = dm_fr.go(dm_fr_terms(ar, x), y, yv, isconst,
+  +terms = dm_fr_terms(ar, x)
+  +acc = dm_fr.go(terms, y, yv, isconst,
                   O.eq_op(O.Arena.op(ar, d), O.OpsDIV{}), Fr{ar, Nil{}, Nil{}})
   dm_fr.arm2(U32.is_zero(U32.from_nat(List.length(&2, U32, Fr.quo(acc)))), ar, d, acc, y, x)
 
@@ -872,10 +932,11 @@ def fold_divmod_general.go(+ar: O.Arena, +d: U32, zero: Bool) -> Maybe<&2, O.Fou
     case False{}:
       +g = dm_dg_gcd(ar, O.Arena.src0(ar, d), O.Arena.src(ar, d, 1))
       dm_first2.go(dm_point(ar, d), dm_first2.go(dm_multiple_of.arm(ar, d),
-                     dm_first2.go(dm_rnm(ar, d),
-                       dm_first2.go(dm_dg_arm.g(O.Found.ar(g), d, g),
-                                   dm_fr.arm(O.Found.ar(g), d, O.Arena.src0(O.Found.ar(g), d),
-                                             O.Arena.src(O.Found.ar(g), d, 1))))))
+                     dm_first2.go(dm_nd.arm(ar, d),
+                       dm_first2.go(dm_rnm(ar, d),
+                         dm_first2.go(dm_dg_arm.g(O.Found.ar(g), d, g),
+                                     dm_fr.arm(O.Found.ar(g), d, O.Arena.src0(O.Found.ar(g), d),
+                                               O.Arena.src(O.Found.ar(g), d, 1)))))))
 
 def fold_divmod_general(+ar: O.Arena, +d: U32) -> Maybe<&2, O.Found>:
   fold_divmod_general.go(ar, d, dm_zero(ar, d))
@@ -1207,9 +1268,17 @@ def trees() -> Gate:
 # TODO(p3) divandmod.py:17-19 `# split uops for the rest of the processing` --
 # TODO(p3) divandmod.py:13-15  symbol=fold_divmod_general  a FLOAT CONST -- `_min_max` returns PyConst and
 #  Constant Denominator Rules  -- divandmod.py:21-70. These rules strictly
-# TODO(p3) divandmod.py:23-25 `nested_div: (x%(k*c))//c -> (x//c)%k (requires k>0);
+# DONE(p3) divandmod.py:23-25 `nested_div: (x%(k*c))//c -> (x//c)%k (requires k>0);
 #   `x.src[1].divides(c)`. THE WALL THIS NAMED IS MEASURED FALSE (2026-11-06): `divides` IS
 #   MEASURED CASES -- `(x*4).divides(4)` IS `MUL(x, 1)`, `(x*4+8).divides(4)` IS
+#   PORTED (2026-11-25) AS `dm_nd.*`, AND IT NEEDS `divides` **ALONE**: `k` IS
+#   `x.src[1].divides(c)` AND IT IS A **CONST** QUOTIENT, SO `k.vmin > 0` IS A CONST's
+#   VALUE AND NOT A `vmin` FOLD.  **AND THE ARM IS **BEFORE** `remove_nested_mod`**
+#   (divandmod.py:23 vs :26) AND THE PORT's LADDER KEEPS THAT ORDER.  **AND `k = 1`
+#   STILL FIRES**, BECAUSE UPSTREAM's TEST IS `k.vmin > 0` AND `1 > 0` IS TRUE --
+#   MEASURED 2026-11-25: UPSTREAM ANSWERS `MOD(DIV(x,c8),c1)`.
+#   THE ROWS ARE `gates/divandmod-cases.rows`'s FIVE `nd_*` ROWS AND THE PLANT's
+#   CASE 10 PROVES THE POSITIVE-QUOTIENT GUARD IS LOAD-BEARING.
 # DONE(p3) divandmod.py:27-35 `remove_nested_mod in sum: (a%4 + b)%2 -> (a+b)%2` --
 # DONE(p3) divandmod.py:72-77  symbol=fold_divmod_general  `divide_by_gcd: x//y ->
 #   (x//gcd)//(y//gcd)` -- AND THE **MOD HALF** (`ret*gcd`) IS PORTED WITH IT,
@@ -1222,10 +1291,18 @@ def trees() -> Gate:
 # PORTED: divandmod.py:78-96  `factor_remainder: (d*x+y)//d -> x+y//d` -- AND
 #   THE ARM IS IN `tinybendygrad/uop/divandmod.bend` AS `dm_fr.*` AND THE
 #   DIFFERENTIAL ROWS ARE `gates/divandmod-cases.rows`'s `fr_*` ROWS.  MEASURED
-#   2026-11-25: THE **DIVISOR MUST BE A VARIABLE** AND NOT A CONST, BECAUSE A
-#   CONST DIVISOR PUTS THE ARM BEHIND `divide_by_gcd` (divandmod.py:72-76),
-#   WHOSE `gcd` IS AN `EXPAND` AND NOT A `CONST`, AND UPSTREAM THEN **RAISES**
-#   `AssertionError` -- MEASURED, EVERY CONST-DIVISOR SHAPE CRASHED UPSTREAM.
+#   2026-11-25: A **CONST** DIVISOR PUTS THE ARM BEHIND `divide_by_gcd`
+#   (divandmod.py:72-76) **WHEN THE GCD IS NOT A BARE `CONST`** -- AND THE GCD IS
+#   `uops[0].const_like(gcd)` (ops.py:1037), SO IT IS A BARE `CONST` WHEN
+#   `uops[0]`'s `_shape` IS `()` -- **A VARIABLE DERIVATION** -- **AND THEN THE ARM
+#   **IS** REACHED**.  MEASURED 2026-11-25: `(6a+b)//4` REACHES IT AND ANSWERS
+#   `ADD(DIV(ADD(ADD(ADD(c0,MUL(MUL(a,c1),c2)),b),c0),c4),ADD(c0,MUL(MUL(a,c1),c1)))`.
+#   **AND THE PORT's `quo`/`rem` LISTS HOLD **INDICES** AND AN INDEX IS ONLY
+#   MEANINGFUL IN **ITS OWN ARENA**, AND `UOp.divides` AND `UOp.alu` **GROW** THE
+#   ARENA -- SO THE TWO LISTS' TERMS WERE BUILT IN **TWO BRANCHES** OF ONE ARENA
+#   AND READ EACH OTHER's INDICES, AND A STALE ARENA READS THE ARENA's **BOTTOM
+#   NOOP NODE**.  THE FIX IS **ONE CHAIN**: EVERY NODE IS BUILT FROM THE PREVIOUS
+#   NODE's ARENA.  AND THE PLANT's CASE 12 PROVES IT IS LOAD-BEARING.
 #   AND UPSTREAM's OWN TEST (`test/null/test_uop_symbolic.py:584`) USES
 #   `d = Variable("d", 1, 10)`.
 #   AND THE PORT's `UOp.gcd` STILL COUNTS THE **UNPEELED** TERMS WHERE

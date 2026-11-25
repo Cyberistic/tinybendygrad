@@ -86,8 +86,9 @@ ROWS = (
     # `UOp.divide_exact` -- ops.py:1038-1047. THE `self IS v` ANSWER IS 1, A CONST THAT
     # DOES NOT DIVIDE 2 GIVES NONE, `x*y` DIVIDED BY `y` IS A MUL, AND `x*2`
     # DIVIDED BY `x` IS THE CONSTANT -- AND CPYTHON's OWN `UOp.divide_exact` IS THE
-    # ORACLE.
-    "de_same", "de_const_none", "de_mul", "de_const_out",
+    # ORACLE. AND `6x` DIVIDED BY A VARIABLE `y` IS **NONE**, WHICH IS THE
+    # DENOMINATOR's SIDE OF UPSTREAM's COUNTER (`Counter(num) - Counter(den)`).
+    "de_same", "de_const_none", "de_mul", "de_const_out", "de_den",
 )
 
 GATE = Gate(
@@ -99,6 +100,6 @@ GATE = Gate(
 )
 
 if __name__ == "__main__":
-    sys.exit(main(GATE, "ops-core-gate: 44 rows, 3 lanes -- CONST identity, the arg-type asymmetry, "
+    sys.exit(main(GATE, "ops-core-gate: 45 rows, 3 lanes -- CONST identity, the arg-type asymmetry, "
                         "pop_const's two conditions, ssimplify's three arms, valid's node shape, "
                         "the top-level arg lane and UOp.gcd all agree with CPython"))

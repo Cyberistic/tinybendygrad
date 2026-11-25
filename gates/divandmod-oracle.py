@@ -107,6 +107,23 @@ def build(op, k, c, n, d):
         return num.alu(Ops.MOD, const(d))
     if op == "DIVCONST":
         return const(k).alu(Ops.DIV, const(c))
+    if op in ("FRC", "FRCM"):
+        # AND THE `factor_remainder` ARM's CONSTANT BRANCH, AND IT IS
+        # `(k*a + b) op c` WITH `k` **NOT** DIVIDING `c` -- AND THE SECOND TERM
+        # IS A **PARAM** AND NOT A CONST, SO THE EARLIER ARMS DO NOT CATCH IT.
+        root_op = Ops.MOD if op == "FRCM" else Ops.DIV
+        a = UOp.variable("a", 0, 100)
+        b = UOp.variable("b", 0, 100)
+        mx = a.alu(Ops.MUL, const(k))
+        return mx.alu(Ops.ADD, b).alu(root_op, const(c))
+    if op == "ND":
+        # AND THE `nested_div` SHAPE, AND IT IS `(x % kc) // c` WITH `x` A PARAM
+        # AND `kc` AND `c` CONSTs -- AND `c` DIVIDES `kc` SO THE ARM FIRES
+        # (divandmod.py:23), AND THE ANSWER IS `(x // c) % (kc//c)`.
+        #
+        # AND `k` IS THE **INNER** DIVISOR's WHOLE VALUE AND `c` IS THE **OUTER**
+        # ONE, AND BOTH READERS TAKE THEM THE SAME WAY.
+        return mk_param("x").alu(Ops.MOD, const(k)).alu(Ops.DIV, const(c))
     if op in ("FRDIV", "FRMOD"):
         # AND THE `factor_remainder` SHAPE, AND IT IS `(d*a*k + b + ...) op
         # (c*d)` WITH **`d` A VARIABLE** -- AND THE VARIABLE IS THE WHOLE POINT,

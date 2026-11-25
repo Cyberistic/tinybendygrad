@@ -223,5 +223,8 @@ def rows() -> IO(Unit):
     row("de_const_none", O.t_de_const_none())
     row("de_mul", O.t_de_mul())
     row("de_const_out", O.t_de_const_out())
+    # AND THE DENOMINATOR's SIDE: `6x` DIVIDED BY A VARIABLE `y` IS **NONE**,
+    # BECAUSE UPSTREAM's COUNTER SUBTRACTS THE DIVISOR's FACTORS.
+    row("de_den", O.t_de_den())
 
 def main() -> IO(Unit): rows()

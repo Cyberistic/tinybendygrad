@@ -13,6 +13,10 @@ Closed categories keep one row and no prose. Open ones keep the head of their bl
 | category | bar | done | status |
 |---|---|---|---|
 | `recovery` | `[########.......]` | 11/15 | the plan is `.agents/slop/checklist.md`; Phases 0-2 and 4.1 done 2026-11-25 |
+| `wgsl-perf` | `[######....]` | 6/10 | THE WGSL TURN IS 6.9x FASTER (24,862 ms -> 3,590 ms): THE FOLD WAS |
+84% OF IT AND WAS A KAHN SORT OF AN ARENA WHOSE INDEX ORDER IS ALREADY A TOPOLOGICAL ORDER
+(0 VIOLATIONS IN 1,698,277 EDGES), AND THE TABLE's LOOKUP WAS 35.7% OF THE TURN. THE NEXT
+LEVER IS THE ARENA's O(n) ACCESSORS. |
 | `render-perf` | `[########]` | 6/9 | THE RENDER IS ~25% FASTER OVER THE THREE LANDED CHANGES, AND |
 | `decomp-census` | `[#####]` | 3/5 | 39 rows, 23 exact, 16 declared (11 PROMOTION · 2 WALL · |
 | `upstream-comments` | `[######....]` | 6/10 | **UPSTREAM'S **COMMENTS **PORTED**, **⇒⇒† AND **THE **AUDIT **SAYS |
@@ -184,6 +188,44 @@ Closed categories keep one row and no prose. Open ones keep the head of their bl
 ---
 
 ## Open categories, in full
+
+### wgsl-perf  `[######....]` 6/10
+
+wgsl-perf     [######....] 6/10        THE WGSL TURN IS 6.9x FASTER: 24,862 ms -> 3,590 ms, AND
+                                         THE WGSL IS BYTE-IDENTICAL (3,773 bytes, sha256
+                                         366d44bb...eea30) AT EVERY STEP.
+                                         THE **FOUR **CHANGES, **AND **EVERY **ONE **IS **MEASURED**:
+                                         **THE **FOLD **WAS **A **KAHN **SORT, **AND **THE **ARENA's
+                                         **INDEX **ORDER **IS **ALREADY **A **TOPOLOGICAL **ORDER**
+                                         (`.agents/slop/wgslperf/topo-check.py`: **0 **VIOLATIONS **IN
+                                         **1,698,277 **EDGES **OVER **1,815 **FOLDS**), **⇒⇒† AND **SO
+                                         **THE **FOLD **IS **ONE **FORWARD **PASS** -- **⇒⇒† AND **THE
+                                         **SORT **COST **495,015,580 **CONSUMER **VISITS**, **5,333,512
+                                         **ARENA **WALKS **AND **866,746 **TABLE **COPIES **A **TURN**.
+                                         THE **TABLE **IS **PREPENDED, **NOT **APPENDED** (**A **CONS **IS
+                                         **O(1)** **AND **`List.append` **IS **O(n)**), **⇒⇒† AND **AND **THE
+                                         **TABLE **IS **A **SPINE **OF **CHUNKS**, **⇒⇒† AND **AND **A
+                                         **LOOKUP **IS **~31 **CELLS **AND **NOT **~383**
+                                         (`.agents/slop/wgslperf/prof-read.py`: **THE **FLAT **LOOKUP **WAS
+                                         **35.7% **OF **THE **TURN**). **AND **THE **RANGE **TABLE's **PUT
+                                         **WAS **12.8%** (⇒⇒† AND **THE **PROFILE's **CALL **TREE **NAMES
+                                         **THE **CALLER**) **⇒⇒† AND **AND **IT **IS **A **CONS **NOW**.
+                                         THE **NUMBERS**: **THE **FOLD **20,946 **ms -> ~700 **ms**, **THE
+                                         **TURN **24,862 **ms -> 3,590 **ms**, **V8's **PROFILE **5,225
+                                         **SAMPLES -> 2,583**.
+                                         THE **NEXT **LEVERS, **AND **THEY **ARE **MEASURED** (⇒⇒† AND
+                                         **V8's **PROFILE**: **`.agents/slop/wgslperf/prof-read.py`**):
+                                         **THE **ARENA's **O(n) **ACCESSORS** -- **`O.Arena.at` **IS **20%
+                                         **OF **THE **TURN** **AND **THE **OP **INTERNING's **LINEAR
+                                         **SEARCH **IS **~23%** (⇒⇒† AND **AND **THE **FIX **FOR **BOTH
+                                         **IS **THE **ARENA's **REPRESENTATION** ✓ ⇒⇒† AND **43
+                                         **`Arena.nodes`/`Arena.node` **USES **ACROSS **16 **FILES** ✓);
+                                         **AND **`Ops.value`** **IS **A **CHAIN **OF **22 **STRING
+                                         **COMPARISONS** (⇒⇒† AND **AND **THE **OP **SHOULD **CARRY **ITS
+                                         **NUMBER**) ✓; **AND **THE **RANGE **TABLE's **LOOKUP **IS
+                                         **5.5%** (⇒⇒† AND **AND **THE **SAME **CHUNKED **SHAPE **AS **THE
+                                         **FOLD's **TABLE**) ✓; **AND **THE **GC **IS **3.1%** ✓.
+                                         THE RECORD: **`.agents/slop/PARITY.md` **§138.32-§138.37**.
 
 ### render-perf  `[########]` 6/9
 
@@ -909,27 +951,54 @@ upstream-suite   [###.........] 3/3   **THE UPSTREAM SUITE IS BEING PORTED ONE F
                                         **AND NO EXPECTED VALUE IS EVER TRANSCRIBED FROM
                                         UPSTREAM's TEST INTO A `.bend` LITERAL.** THE UPSTREAM
                                         EXPECTED VALUES ARE THE ORACLE's JOB; A ROW THAT
-- [x] **THE THIRD FILE: `tinybendygrad/uop/divandmod.bend`'s `factor_remainder`
-      ARM (`divandmod.py:78-91`).** THE WALL WAS NOT THE ONE NAMED: IT WAS NOT
-      `const_like` AND NOT `new_x.vmin` OVER A SUM -- **IT WAS THAT THE ARM
-      ONLY FIRES WITH A VARIABLE DIVISOR.** MEASURED 2026-11-25 ON CPYTHON AT
-      THE PIN: A **CONST** DIVISOR PUTS THE ARM BEHIND `divide_by_gcd`
-      (`divandmod.py:72-76`), WHOSE `gcd` IS `UOp.gcd(...).simplify()` AND, FOR
-      A PARAM-BEARING NUMERATOR, IS AN **`EXPAND`** AND NOT A `CONST` -- SO
-      UPSTREAM's GUARD `gcd.op is Ops.CONST and gcd.val==1` IS **FALSE**, THE
-      ARM FIRES, AND `unwrap(x.divide_exact(gcd))` **RAISES
-      `AssertionError`**. MEASURED: EVERY CONST-DIVISOR SHAPE CRASHED
-      UPSTREAM. AND UPSTREAM's OWN TEST (`test/null/test_uop_symbolic.py:584`)
-      USES `d = Variable("d", 1, 10)`.
+- [x] **THE THIRD FILE: `tinybendygrad/uop/divandmod.bend` -- FOUR ARMS AND A
+      `UOp.divide_exact` FIX.** AND TWO OF THE WALLS THE HEAD NAMED WERE NOT
+      WALLS AT ALL, AND ONE MEASUREMENT WAS **GENERALISED INTO A WALL** AND
+      WAS **WRONG**.
+      **`factor_remainder` (`divandmod.py:78-91`):** THE NAMED WALLS WERE
+      `const_like` (A TODO IN `ops.bend`) AND `new_x.vmin` OVER A SUM, AND
+      NEITHER IS ONE -- THE PORT HAS `F.UOp.vmin` OVER A `BTable`, AND
+      `const_like` IS NOT NEEDED BECAUSE A **VARIABLE**'s `_shape` IS `()` AND
+      SO `x.const_like(0)` IS A BARE `CONST 0` AND NOT AN `EXPAND`.
       **AND TWO SUMS, NOT ONE:** UPSTREAM's `factor_remainder` USES PYTHON's
       BUILTIN `sum` (`:89` AND `:91`), WHICH STARTS WITH THE INT `0`, WHILE
       `remove_nested_mod` USES `UOp.usum` (`:33`), WHICH STARTS WITH THE FIRST
       ELEMENT. THE PORT HAS BOTH.
-      **THE ROWS:** `gates/divandmod-cases.rows`'s FOUR `fr_*` ROWS, READ BY
-      BOTH THE DRIVER AND THE ORACLE. **THE GATE:** NINE ROWS, NINE AGREE.
-      **THE PLANT:** CASES 6, 7 AND 8 -- THE `+sum(quo)`, THE SUM's LEADING
-      `+0` AND THE `x.const_like(0)` -- ALL RED, SO THE ARM IS LOAD-BEARING.
-      **AND THE GATE's ROW COUNT IS NOW READ FROM THE CASE FILE** AND IS NOT A
+      **AND THE ARM'S CONSTANT BRANCH (`:83-85`) IS REACHABLE, AND A CONST
+      DIVISOR IS NOT AN UNREACHABLE ONE.** THE FIRST DRAFT MEASURED "EVERY
+      CONST-DIVISOR SHAPE CRASHES UPSTREAM" AND GENERALISED IT INTO A WALL;
+      **THE MEASUREMENT WAS OF THE WRONG SHAPES.** `divide_by_gcd`'s GUARD IS
+      `gcd.op is Ops.CONST and gcd.val==1` AND THE GCD IS
+      `uops[0].const_like(gcd)` (`ops.py:1037`), SO IT IS A **BARE `CONST`**
+      WHEN `uops[0]`'s `_shape` IS `()` -- **A VARIABLE DERIVATION** -- AND THEN
+      THE ARM **IS** REACHED. MEASURED 2026-11-25: `(6a+b)//4` ANSWERS
+      `ADD(DIV(ADD(ADD(ADD(c0,MUL(MUL(a,c1),c2)),b),c0),c4),ADD(c0,MUL(MUL(a,c1),c1)))`.
+      **AND THE PORT's ANSWER WAS A DEEP `ADD(c0, ADD(c0, ...))` NEST INSTEAD, AND
+      THE CAUSE WAS NOT THE ARITHMETIC:** THE `quo`/`rem` LISTS HOLD **INDICES**,
+      AN INDEX IS ONLY MEANINGFUL IN **ITS OWN ARENA**, AND `UOp.divides` AND
+      `UOp.alu` **GROW** THE ARENA -- SO THE TWO TERMS WERE BUILT IN **TWO
+      BRANCHES** OF ONE ARENA AND READ EACH OTHER's INDICES, AND A STALE ARENA
+      READS THE ARENA's **BOTTOM NOOP NODE**. THE FIX IS **ONE CHAIN**: EVERY
+      NODE IS BUILT FROM THE PREVIOUS NODE's ARENA.
+      **`nested_div` (`divandmod.py:23-25`):** PORTED, AND IT NEEDS `divides`
+      **ALONE** -- `k` IS `x.src[1].divides(c)` AND IT IS A **CONST** QUOTIENT,
+      SO `k.vmin > 0` IS A CONST's VALUE AND NOT A `vmin` FOLD. AND `k = 1`
+      STILL FIRES, BECAUSE `1 > 0` IS TRUE.
+      **AND `UOp.divide_exact` HAD A REAL DEFECT:** UPSTREAM's `new_count` IS
+      `Counter(num) - Counter(den)` (`ops.py:1044-1045`) AND ITS TEST IS
+      `all(v>=0 ...)` (`:1046`), SO A FACTOR IN THE DIVISOR AND NOT IN THE
+      NUMERATOR HAS A **NEGATIVE** COUNT. THE PORT CHECKED ONLY THE OTHER HALF
+      AND ANSWERED `divide_exact(6x, y)` WITH A QUOTIENT WHERE UPSTREAM ANSWERS
+      `None`.
+      **THE ROWS:** `gates/divandmod-cases.rows`'s FOUR `fr_*` ROWS, FIVE `nd_*`
+      ROWS AND TWO `frc_*` ROWS, READ BY BOTH THE DRIVER AND THE ORACLE, AND
+      `gates/ops-core.bend`'s `de_den` ROW. **THE GATE:** SIXTEEN ROWS, SIXTEEN
+      AGREE; `gates/ops-core-gate.py`: FORTY-FIVE ROWS, THREE LANES.
+      **THE PLANT:** TWELVE CASES, ALL RED -- THE `+sum(quo)`, THE SUM's LEADING
+      `+0`, THE `x.const_like(0)`, THE CONSTANT BRANCH's TEST, THE
+      POSITIVE-QUOTIENT GUARD, THE CONSTANT BRANCH's MULTIPLICATION AND **THE
+      ARENA THREADING** -- SO EVERY PART IS LOAD-BEARING.
+      **AND THE GATE's ROW COUNT IS READ FROM THE CASE FILE** AND IS NOT A
       HAND-KEPT NUMBER, BECAUSE A SECOND COPY OF A LIST A GENERATOR OWNS IS
       WHAT THE AGENT RULES CALL OUT BY NAME.
 

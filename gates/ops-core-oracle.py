@@ -197,6 +197,20 @@ def _de_const_out() -> bool:
     return g is not None and g.op is Ops.CONST and len(g.src) == 0 and g.arg == 2
 
 
+def _de_den() -> bool:
+    """**`6x` DIVIDED BY A **VARIABLE** `y` IS **NONE**.
+
+    **AND THIS IS THE ROW THAT CATCHES A `divide_exact` THAT DOES NOT SUBTRACT THE DIVISOR's
+    FACTORS**: upstream's `new_count` is `Counter(num) - Counter(den)`, so the factor `y` has
+    count `-1` and upstream's `all(v>=0 for v in new_count.values())` is FALSE. MEASURED
+    2026-11-25: without that subtraction the port answered a quotient for `divide_exact(6x, y)`.
+    """
+    x = UOp.variable("x", 0, 4, dtype=dtypes.weakint)
+    y = UOp.variable("y", 0, 4, dtype=dtypes.weakint)
+    mx6 = UOp(Ops.MUL, (x, UOp.const(6, dtypes.weakint)), dtypes.weakint)
+    return mx6.divide_exact(y) is None
+
+
 def _gcd_const() -> bool:
     """THE GCD OF TWO UNRELATED VARIABLES IS **1** -- A CONST WITH NO SRCS.
 
@@ -388,7 +402,8 @@ def main() -> None:
     # ORACLE, so the port's answer and this one are two independent computations of the same
     # property.
     rows.extend((("de_same", _de_same()), ("de_const_none", _de_const_none()),
-                 ("de_mul", _de_mul()), ("de_const_out", _de_const_out())))
+                 ("de_mul", _de_mul()), ("de_const_out", _de_const_out()),
+                 ("de_den", _de_den())))
 
 
 

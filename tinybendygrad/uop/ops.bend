@@ -4370,6 +4370,22 @@ def UOp.divide_exact.fold.go(+c: List<&2, Ctr>, +den: List<&2, Ctr>, +st: Ds) ->
     case Nil{}: st
     case h <> t: UOp.divide_exact.fold.go(t, den, UOp.divide_exact.fold.add(h, den, st))
 
+# AND THE **OTHER HALF** OF UPSTREAM's TEST, AND IT IS THE DENOMINATOR's SIDE:
+# EVERY FACTOR OF THE DIVISOR MUST APPEAR IN THE NUMERATOR AT LEAST AS OFTEN,
+# BECAUSE `Counter(num) - Counter(den)` GIVES A **NEGATIVE** COUNT FOR A
+# FACTOR THAT IS IN THE DIVISOR AND NOT IN THE NUMERATOR AND UPSTREAM's TEST
+# IS `all(v>=0 ...)` (ops.py:1046).
+def UOp.divide_exact.den.ok(+h: Ctr, +num: List<&2, Ctr>) -> Bool:
+  Bool.not(U32.is_gt(Ctr.n(h), ctr_find(num, Ctr.k(h))))
+
+def UOp.divide_exact.den.go(+c: List<&2, Ctr>, +num: List<&2, Ctr>, ok: Bool) -> Bool:
+  match c:
+    case Nil{}: ok
+    case h <> t: UOp.divide_exact.den.go(t, num, Bool.and(ok, UOp.divide_exact.den.ok(h, num)))
+
+def UOp.divide_exact.den.all(+num: List<&2, Ctr>, +den: List<&2, Ctr>) -> Bool:
+  UOp.divide_exact.den.go(den, num, True{})
+
 def Dq.ok(+d: Dq) -> Bool:
   match d:
     case Dq{ok, f}: ok
@@ -4441,10 +4457,23 @@ def UOp.divide_exact.mul4(+ar: Arena, +self: U32, +v: U32, fac: U32, div_fac: U3
   UOp.divide_exact.mul5(ar, self, v, fac, div_fac, start,
                         UOp.divide_exact.fold.go(num, den, Ds{True{}, Nil{}}))
 
+# AND THE DENOMINATOR's SIDE OF THE TEST, AND IT IS **THE WHOLE** OF UPSTREAM's
+# `all(v>=0 for v in new_count.values())` TOGETHER WITH `ge1`: `ge1` SAYS THE
+# DIVISOR DOES NOT HAVE MORE OF A NUMERATOR FACTOR THAN THE NUMERATOR HAS, AND
+# `den.all` SAYS THE NUMERATOR HAS AT LEAST AS MANY OF A DIVISOR FACTOR AS THE
+# DIVISOR HAS.  MEASURED 2026-11-25: WITHOUT THE SECOND HALF THE PORT
+# ANSWERED `divide_exact(6x, 4)` AS A QUOTIENT AND UPSTREAM ANSWERS `None`.
+def UOp.divide_exact.mul4b(+ar: Arena, +self: U32, +v: U32, fac: U32, div_fac: U32, start: Found,
+                           num: List<&2, Ctr>, den: List<&2, Ctr>, ok: Bool) -> Dq:
+  match ok:
+    case True{}: UOp.divide_exact.mul4(ar, self, v, fac, div_fac, start, num, den)
+    case False{}: Dq.no(ar)
+
 def UOp.divide_exact.mul3(+ar: Arena, +self: U32, +v: U32, +fac: U32, +div_fac: U32, +start: Found) -> Dq:
-  UOp.divide_exact.mul4(ar, self, v, fac, div_fac, start,
-                        ctr_of(UOp.split_uop(Arena.budget(ar), ar, fac, OpsMUL{})),
-                        ctr_of(UOp.split_uop(Arena.budget(ar), ar, div_fac, OpsMUL{})))
+  +num = ctr_of(UOp.split_uop(Arena.budget(ar), ar, fac, OpsMUL{}))
+  +den = ctr_of(UOp.split_uop(Arena.budget(ar), ar, div_fac, OpsMUL{}))
+  UOp.divide_exact.mul4b(ar, self, v, fac, div_fac, start, num, den,
+                         UOp.divide_exact.den.all(num, den))
 
 def UOp.divide_exact.mul2(+ar: Arena, +self: U32, +v: U32, fac: U32, div_fac: U32, mod0: Bool,
                           start: Found) -> Dq:
@@ -5014,6 +5043,26 @@ def t_de_mul() -> Bool:
 #   `UPat.custom_function(fn, kwargs)` -- ops.py:1509 upstream, still NOT PORTED. A
 #   `UOp.param_like(slot, name=None)` -- ops.py:1241 upstream. `name` was added so a
 #     COMPILER (`tinygrad/uop/upat.py`). `UPat` is PORTED (see ops.py:1447, with
+# AND THE **DENOMINATOR's SIDE** OF UPSTREAM's TEST, AND IT IS THE ROW THAT
+# CATCHES A `divide_exact` THAT DOES NOT **SUBTRACT** THE DIVISOR's FACTORS:
+# UPSTREAM's `new_count` IS `Counter(num) - Counter(den)` (ops.py:1044-1045), SO
+# A FACTOR THAT IS IN THE DIVISOR AND NOT IN THE NUMERATOR HAS A **NEGATIVE**
+# COUNT AND UPSTREAM's `all(v>=0 for v in new_count.values())` (ops.py:1046) IS
+# FALSE.  MEASURED 2026-11-25: WITHOUT THE SUBTRACTION THE PORT ANSWERED
+# `divide_exact(6x, y)` WITH A QUOTIENT AND UPSTREAM ANSWERS `None`.
+def t_de_den() -> Bool:
+  +ar0 = Arena.empty()
+  +fx = UOp.variable(ar0, "x", H.i64_of_i32(0), H.i64_of_i32(4), 1, S.weakint())
+  +ar1 = Found.ar(fx)
+  +fy = UOp.variable(ar1, "y", H.i64_of_i32(0), H.i64_of_i32(4), 1, S.weakint())
+  +ar2 = Found.ar(fy)
+  +c6 = UOp.const(ar2, CInt{H.i64_of_i32(6)})
+  +ar3 = Found.ar(c6)
+  +mx6 = UOp.alu(ar3, OpsMUL{}, [Found.i(fx), Found.i(c6)])
+  +ar4 = Found.ar(mx6)
+  +d = UOp.divide_exact(ar4, Found.i(mx6), Found.i(fy))
+  Bool.not(Dq.ok(d))
+
 def t_de_const_out() -> Bool:
   +ar0 = Arena.empty()
   +fx = UOp.variable(ar0, "x", H.i64_of_i32(0), H.i64_of_i32(4), 1, S.weakint())

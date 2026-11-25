@@ -192,6 +192,28 @@ def gp.fr.terms.go(n: Nat, +i: U32, +k: U32, +ar: O.Arena, +s: O.Found) -> O.Fou
 def gp.fr.terms(+ar: O.Arena, +s: O.Found, n: Nat, +k: U32) -> O.Found:
   gp.fr.terms.go(n, 0, k, ar, s)
 
+# AND THE `factor_remainder` ARM's CONSTANT BRANCH, AND IT IS
+# `(k*a + b) op c` WITH `k` **NOT** DIVIDING `c` -- AND THE SECOND TERM IS A
+# **PARAM** AND NOT A CONST, SO THE EARLIER ARMS DO NOT CATCH IT.
+def gp.frc(+ar: O.Arena, k: U32, c: U32, ismod: Bool) -> O.Found:
+  +a = gp.var(ar, "a", 0, 100)
+  +b = gp.var(O.Found.ar(a), "b", 0, 100)
+  +kc = gp.const(O.Found.ar(b), k)
+  +mx = gp.alu(O.Found.ar(kc), O.OpsMUL{}, O.Found.i(a), O.Found.i(kc))
+  +s = gp.alu(O.Found.ar(mx), O.OpsADD{}, O.Found.i(mx), O.Found.i(b))
+  +dc = gp.const(O.Found.ar(s), c)
+  gp.modroot(O.Found.ar(dc), O.Found.i(s), O.Found.i(dc), ismod)
+
+# AND THE `nested_div` SHAPE, AND IT IS `(x % kc) // c` WITH `x` A PARAM AND
+# `kc` AND `c` CONSTs -- AND `c` DIVIDES `kc` SO THE ARM FIRES
+# (divandmod.py:23), AND THE ANSWER IS `(x // c) % (kc//c)`.
+def gp.nd(+ar: O.Arena, kc: U32, c: U32, ismod: Bool) -> O.Found:
+  +x = gp.param(ar, "x")
+  +k = gp.const(O.Found.ar(x), kc)
+  +m = gp.alu(O.Found.ar(k), O.OpsMOD{}, O.Found.i(x), O.Found.i(k))
+  +d = gp.const(O.Found.ar(m), c)
+  gp.modroot(O.Found.ar(d), O.Found.i(m), O.Found.i(d), ismod)
+
 # AND THE `factor_remainder` SHAPE, AND IT IS `(d*a*k + b + ...) op (c*d)` WITH
 # **`d` A VARIABLE** -- AND THE VARIABLE IS THE WHOLE POINT, BECAUSE A CONST
 # DIVISOR PUTS THE ARM BEHIND `divide_by_gcd`, WHOSE `gcd` IS AN `EXPAND` AND
@@ -244,6 +266,9 @@ def gp.root(+ar: O.Arena, op: String, k: U32, c: U32, n: Nat, d: U32) -> O.Found
     case "GCDDIV": gp.gcd(ar, k, U32.from_nat(n), False{})
     case "FRMOD": gp.fr(ar, k, c, n, d, True{})
     case "FRDIV": gp.fr(ar, k, c, n, d, False{})
+    case "ND": gp.nd(ar, k, c, False{})
+    case "FRC": gp.frc(ar, k, c, False{})
+    case "FRCM": gp.frc(ar, k, c, True{})
     case "DIV": gp.mod(ar, k, c, n, d, False{})
     case _: gp.mod(ar, k, c, n, d, True{})
 

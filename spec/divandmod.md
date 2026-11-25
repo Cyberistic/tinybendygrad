@@ -209,7 +209,18 @@ a fixture where the quotient is on src1 AND the CONST is also on src1.
 - `divandmod.py:13-15` a FLOAT CONST divisor (`_min_max` returns PyConst).
 - `divandmod.py:17-19` `pop_const()` and `split_uop(Ops.ADD)` — expressible, but
   P3 for SCOPE, not impossibility; they land with line 23.
-- `divandmod.py:23-25` `nested_div` — needs `divides` → `gcd` → a `Counter` fold.
+- `divandmod.py:23-25` `nested_div` — **DONE (2026-11-25), AND THE WALL WAS NOT
+  THE ONE NAMED.** The named wall was "`divides` → `gcd` → a `Counter` fold", and
+  `divides` (`ops.bend:4182`) and `gcd` (`ops.bend:4542`) ARE in the tree — but
+  the arm needs `divides` **alone**: `k` is `x.src[1].divides(c)`, the INNER mod's
+  divisor divided by the OUTER one, and it is a **CONST** quotient, so `k.vmin > 0`
+  is a CONST's value and not a `vmin` fold.
+  **AND THE ARM IS BEFORE `remove_nested_mod`** (`divandmod.py:23` vs `:26`) and
+  the port's ladder keeps that order.
+  **AND `k = 1` STILL FIRES**, because upstream's test is `k.vmin > 0` and
+  `1 > 0` is true — measured 2026-11-25: upstream answers `MOD(DIV(x,c8),c1)`.
+  The rows are `gates/divandmod-cases.rows`'s five `nd_*` rows, and the plant's
+  case 10 proves the positive-quotient guard is load-bearing.
 - `divandmod.py:28-35` `remove_nested_mod` — **DONE (2026-11-24), AND THE `divides`
   WALL WAS MEASURED FALSE.** `UOp.divides` (`ops.bend:4182`) HAS BEEN IN THE TREE
   SINCE 2026-11-06 AND IT ANSWERS UPSTREAM's SHAPE: A `Dv` WHOSE `ok` SAYS
@@ -245,6 +256,28 @@ a fixture where the quotient is on src1 AND the CONST is also on src1.
   with the first element. The port has both. The rows are
   `gates/divandmod-cases.rows`'s `fr_*` rows, and the plant's cases 6-8 prove
   the arm load-bearing.
+  **AND THE ARM HAS A CONSTANT BRANCH (`divandmod.py:83-85`) AND IT IS
+  REACHABLE, AND A CONST DIVISOR IS NOT THE SAME AS AN UNREACHABLE ONE.**
+  `divide_by_gcd`'s guard is `gcd.op is Ops.CONST and gcd.val==1`, and the GCD is
+  `uops[0].const_like(gcd)` (`ops.py:1037`) — so it is a **bare `CONST`** when
+  `uops[0]`'s `_shape` is `()`, which is a **variable** derivation, and then the
+  arm **is** reached. Measured 2026-11-25: `(6a+b)//4` answers
+  `ADD(DIV(ADD(ADD(ADD(c0,MUL(MUL(a,c1),c2)),b),c0),c4),ADD(c0,MUL(MUL(a,c1),c1)))`.
+  **AND THE PORT's ANSWER WAS A DEEP `ADD(c0, ADD(c0, ...))` NEST INSTEAD, AND
+  THE CAUSE WAS NOT THE ARITHMETIC:** the `quo`/`rem` lists hold **indices**, an
+  index is only meaningful in **its own arena**, and `UOp.divides` and `UOp.alu`
+  **grow** the arena — so the `quo` term and the `rem` term were built in **two
+  branches** of one arena and read each other's indices, and a stale arena reads
+  the arena's **bottom NOOP node**. The fix is **one chain**: every node is built
+  from the previous node's arena. The plant's case 12 proves it is load-bearing.
+  **AND `UOp.divide_exact` HAD A REAL DEFECT AND IT IS FIXED.** Upstream's
+  `new_count` is `Counter(num) - Counter(den)` (`ops.py:1044-1045`) and its test is
+  `all(v>=0 for v in new_count.values())` (`ops.py:1046`), so a factor that is in
+  the divisor and not in the numerator has a **negative** count and the answer is
+  `None`. The port's MUL arm checked only the **other** half, so it answered
+  `divide_exact(6x, y)` with a quotient where upstream answers `None`. The row is
+  `gates/ops-core.bend`'s `de_den`, and it is load-bearing — measured: without
+  the fix the gate disagrees on exactly that row.
 - `divandmod.py:72-77` `divide_by_gcd` — **DONE (2026-11-24), AND BOTH HALVES**:
   upstream's arm is ONE arm with TWO answer shapes (`ret*gcd` for a MOD and
   `ret` for a DIV, `divandmod.py:76`), and `simplify` was not needed — the
