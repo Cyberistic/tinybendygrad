@@ -1601,8 +1601,7 @@ def gslot(+g: Grads, k: U32) -> Maybe<&2, GSlot>:
   gslot.go(Grads.vs_of(g), Grads.ks_of(g), k, 0)
 
 # THE IN-PLACE UPDATE. Two-scrutinee `match` with one pattern per scrutinee; `0n` is
-# the element itself and `1n+p` is "keep the head, p to go" (notes, position 1260, and
-# `Kahn.dec.go` is the same countdown with the same polarity).
+# the element itself and `1n+p` is "keep the head, p to go" (notes, position 1260).
 def gput.at.go(vs: List<&2, U32>, at: Nat, +v: U32) -> List<&2, U32>:
   match vs at:
     case _ <> t 0n: v <> t

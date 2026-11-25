@@ -849,11 +849,14 @@ def wk_norm(m: Maybe<&2, O.Found>, u: U32) -> Maybe<&2, O.Found>:
 # `which`: 0 = `pm_commit_weak`, 1 = `pm_uncast_const`, 2 = `pm_cast_const`.
 #
 # THE **FOLD **IS **A **PARAMETER **AND **NOT **COMPUTED **HERE** (⇒⇒† AND **AND **THAT **IS **THE
-# **MEASURED **FIX**): **THE **FOLD **IS **A **WHOLE-ARENA **TOPOLOGICAL **SORT** (⇒⇒† AND **AND
-# **`UOp.fold` **IS **`Kahn.run`**), **⇒⇒† AND **AND **IT **IS **7.57 ms **A **CALL** (⇒⇒† AND **AND
-# **MEASURED**), **⇒⇒† AND **AND **THE **FIXPOINT **CALLED **IT **1,811 **TIMES **A **TURN** (⇒⇒† AND **AND
-# **MEASURED**), **⇒⇒† AND **AND **THAT **WAS **13,703 ms **OF **THE **23.7 s** (⇒⇒† AND **AND **HALF
-# **THE **WHOLE**) -- **⇒⇒† AND **AND **THE **FOLD **CHANGES **ONLY **WHEN **A **RULE **FIRES** (⇒⇒† AND
+# **MEASURED **FIX**): **THE **FOLD **IS **A **WHOLE-ARENA **WALK **IN **INDEX **ORDER, **AND **THE
+# **INDEX **ORDER **IS **A **TOPOLOGICAL **ORDER** (⇒⇒† AND **AND **`UOp.fold` **IS **`Kahn.walk`**),
+# **⇒⇒† AND **AND **IT **IS **0.44 ms **A **CALL** (⇒⇒† AND **AND **MEASURED** (⇒⇒† AND **AND **IT
+# **WAS **7.57 ms **A **CALL** — **⇒⇒† AND **AND **THE **FOLD **WAS **A **KAHN **SORT **OF **AN **ARENA
+# **WHOSE **INDEX **ORDER **IS **ALREADY **A **TOPOLOGICAL **ORDER**)), **⇒⇒† AND **AND **THE **FIXPOINT
+# **CALLED **IT **1,838 **TIMES **A **TURN** (⇒⇒† AND **AND **MEASURED**), **⇒⇒† AND **AND **THAT **IS
+# **~18% **OF **THE **TURN** (⇒⇒† AND **AND **IT **WAS **13,703 ms **OF **THE **23.7 s**, **⇒⇒† AND **AND
+# **HALF **THE **WHOLE**) -- **⇒⇒† AND **AND **THE **FOLD **CHANGES **ONLY **WHEN **A **RULE **FIRES** (⇒⇒† AND
 # **AND **A **RULE **MINTS **INTO **THE **ARENA**), **⇒⇒† AND **AND **SO **THE **CALLER **BUILDS **IT **ONCE
 # **AND **REBUILDS **IT **ONLY **AFTER **A **FIRING** (⇒⇒† AND **AND **`wk_fix.go` **CARRIES **IT**)**
 def wk_once(+ts: O.PMEntrys, which: U32, +fx: F.Folded, +u: U32) -> Maybe<&2, O.Found>:

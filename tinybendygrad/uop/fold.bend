@@ -3294,9 +3294,17 @@ def RTable.es(t: RTable) -> List<&2, Rng>:
     case RTable{es}: es
 
 # **⇒⇒† AND **THE **SAME **PREPEND** (⇒⇒† AND **AND **THE **SAME **REASON**)
+# THE RANGE TABLE IS PREPENDED, NOT APPENDED: `List.append` COPIES THE WHOLE LIST, AND THE
+# TABLE IS PUT ONCE PER NODE OF THE ARENA (MEASURED: `RTable.put` IS 12.8% OF THE TURN's
+# EXCLUSIVE TIME, V8's OWN CPU PROFILE, `.agents/slop/wgslperf/prof-callers.py`).
+#
+# AND THE ORDER DOES NOT MATTER: THE ONLY READERS ARE `RTable.get` (A SCAN FOR A MATCHING
+# INDEX, AND THE INDICES ARE UNIQUE) AND `RTable.len` (A COUNT). AND THE PREPEND IS ALSO THE
+# FASTER SCAN: THE RANGE MAP IS BUILT IN ARENA ORDER, SO THE MOST RECENT ENTRY IS FIRST AND A
+# LOOKUP FOR A RECENT NODE STOPS SOON.
 def RTable.put(t: RTable, r: Rng) -> RTable:
   match t:
-    case RTable{es}: RTable{List.append(&2, Rng, es, [r])}
+    case RTable{es}: RTable{r <> es}
 
 def RTable.get.step(i: U32, +r: Rng, acc: Rng) -> Rng:
   Bool.pick(Rng, U32.is_eq(i, Rng.i(r)), r, acc)
