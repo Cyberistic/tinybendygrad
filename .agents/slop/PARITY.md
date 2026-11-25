@@ -8987,3 +8987,79 @@ ms**, **⇒⇒† AND **AND **the **`append` **0.041 ms**.
 **AND **THE **SIXTY-ARM **MATCH **IS **THE **REMAINING **COST**), **⇒⇒† AND **AND **`List.append`
 **IS **THE **ARENA's **FLAT **LIST** (⇒⇒† AND **O(n) **TO **APPEND**), **⇒⇒† AND **AND **THE
 **FOLD's **TABLE **IS **~9%**, **⇒⇒† AND **AND **THE **GC **IS **~4%** ✓.
+
+### 138.44 **THE **NODE **CARRIES **THE **OP's **NUMBER, **AND **THE **COMPARISON **IS **O(1)
+
+**⇒⇒† AND **`Ops.value` **IS **A **SIXTY-ARM **MATCH**, **⇒⇒† AND **SO **A **CALL **COSTS **THE
+**POSITION **OF **ITS **ARM** -- **AND **THE **INTERNING **ASKED **FOR **IT **21,325,576 **TIMES **A
+**TURN** (⇒⇒† AND **MEASURED **IN **THE **COMPILED **FORM**, **`.agents/slop/wgslperf/
+count-intern.py`**: **THE **MEAN **POSITION **WAS **37.8 **OF **~60**, **⇒⇒† AND **AND **THE **TOP
+**TWELVE **ARMS **WERE **~79% **OF **THE **CALLS**) ✓.
+
+**⇒⇒† AND **THE **NODE **NOW **CARRIES **THE **OP's **NUMBER**, **SO **THE **COMPARISON **IS **A
+**FIELD **READ** ✓ **⇒⇒† AND **THE **NUMBER **IS **COMPUTED **ONCE, **AT **THE **NODE's
+**CONSTRUCTION** ✓ **⇒⇒† AND **AND **THE **OP's **VARIANTS **ARE **UNTOUCHED** (⇒⇒† AND **THE **OP
+**TYPE **HAS **4,833 **PATTERN **SITES **ACROSS **65 **FILES**, **⇒⇒† AND **AND **THE **NODE **HAS
+**23**) ✓ **⇒⇒† AND **AND **THE **VALUES **DO **NOT **MOVE** (⇒⇒† AND **EACH **OP **KEEPS **ITS
+**OWN **NUMBER**, **⇒⇒† AND **AND **THE **NUMBERS **ARE **THE **DECLARATION **ORDER**, **⇒⇒† AND
+**AND **THE **PORT **DEPENDS **ON **THAT** -- **⇒⇒† AND **`schedule/rangeify.bend` **SORTS **OPS **BY
+**IT, **AND **CPython **AGREES**) ✓.
+
+**⇒⇒† AND **MEASURED**, **THE **WGSL **TURN** **1,275 **ms → 1,162 **ms **OF **WALL **AND
+**1,801 **ms → 1,711 **ms **OF **CPU** ✓ **AND **THE **WGSL **IS **BYTE-IDENTICAL** ✓.
+
+### 138.45 **TWO **EAGER **ALLOCATIONS **ARE **GONE, **AND **THE **TURN **IS **6.6% **FASTER
+
+**⇒⇒† AND **`Arena.node` **WAS **THE **DEFAULT **OF **A **`Maybe.default`**, **AND **`Maybe.default`
+**EVALUATES **ITS **DEFAULT **EAGERLY** -- **⇒⇒† AND **SO **EVERY **LOOKUP **BUILT **A **NODE **IT
+**DID **NOT **USE**, **⇒⇒† AND **AND **THE **ARENA's **LOOKUP **IS **THE **HOTTEST **PATH **IN **THE
+**PORT** (⇒⇒† AND **3,577,720 **LOOKUPS **A **TURN**) ✓ **⇒⇒† AND **THE **DEFAULT **IS **NOW
+**BUILT **IN **THE **MISS **ARM** ✓.
+
+**⇒⇒† AND **`Topo.cache_add` **APPENDED **TO **THE **TOPOSORT's **CACHE**, **⇒⇒† AND **AND
+**`List.append` **COPIES **THE **WHOLE **LIST**, **⇒⇒† AND **SO **THE **CACHE **WAS **O(n) **PER
+**NODE** ✓ **⇒⇒† AND **THE **CACHE **IS **NOW **CONCED**, **⇒⇒† AND **AND **THE **ORDER **IS
+**RESTORED **ONCE, **AT **THE **END**, **WHERE **THE **TOPOSORT's **OUTPUT **IS **THE **VISIT
+**ORDER** (⇒⇒† AND **AND **THE **ORDER **IS **THE **ONLY **THING **THE **CACHE's **ORDER **IS
+**FOR**) ✓ **⇒⇒† AND **MEASURED**: **`Topo.cache_add` **WAS **2.6% **OF **THE **TURN's **EXCLUSIVE
+**TIME** ✓.
+
+**⇒⇒† AND **MEASURED**, **THE **WGSL **TURN** **1,218 **ms → 1,112 **ms **OF **WALL **AND
+**1,733 **ms → 1,669 **ms **OF **CPU** ✓ **AND **THE **WGSL **IS **BYTE-IDENTICAL** ✓.
+
+### 138.46 **THE **TURN, **AND **WHAT **IS **LEFT
+
+**⇒⇒† AND **THE **PROFILE **AT **1,042 **SAMPLES**, **AND **THE **REMAINING **TERMS **ARE **THE
+**ONES **THAT **ARE **NEAR **THEIR **OPTIMUM**: **THE **FOLD's **TABLE **LOOKUP **IS **~10%** (⇒⇒† AND
+**THE **CHUNK **SIZE **IS **AT **THE **sqrt(N) **OPTIMUM**: **THE **SPINE **WALK **IS **i/32 **AND
+**THE **CHUNK **WALK **IS **i%32**), **⇒⇒† AND **AND **`List.append` **IS **9.4%** (⇒⇒† AND **THE
+**ARENA's **FLAT **LIST **IS **3.0% **OF **IT** **AND **THE **FOLD's **PER-NODE **LISTS **ARE **~4%**),
+**⇒⇒† AND **AND **THE **GC **IS **5.7%** (⇒⇒† AND **THE **COPIES **AND **THE **ALLOCATIONS**),
+**⇒⇒† AND **AND **THE **ARENA's **CHUNKED **LOOKUP **IS **8.1%** (⇒⇒† AND **AND **THE **SCAN **IS
+**3.6%** ✓.
+
+**⇒⇒† AND **AND **THE **ARENA's **FLAT **LIST **IS **THE **ONE **TERM **THAT **IS **NOT **NEAR **ITS
+**OPTIMUM** (⇒⇒† AND **IT **IS **O(n) **TO **APPEND**), **⇒⇒† AND **AND **REMOVING **IT **NEEDS
+**A **SCAN **OVER **CHUNKS**, **⇒⇒† AND **AND **A **SCAN **OVER **CHUNKS **IS **TWO **DEFS **THAT
+**CALL **EACH **OTHER**, **⇒⇒† AND **AND **BEND **HAS **NO **FORWARD **REFERENCES**, **⇒⇒† AND **SO
+**THE **FLAT **LIST **STAYS** ✓.
+
+### 138.47 **THE **TURN, **3,454 **ms → 1,088 **ms, **AND **THE **CORPUS **IS **GREEN **ON **THIS
+**TREE**
+
+| | **before** | **after** |
+|---|---|---|
+| **the **whole **turn** | **3,454 **ms **OF **WALL** | **1,088 **ms **OF **WALL** |
+| **the **same **in **CPU **TIME** | **4,003 **ms** | **1,649 **ms** |
+| **the **whole **arc, **from **24,862 **ms** | **~23x** | |
+| **the **WGSL** | **3,773 **bytes** | **THE **SAME **BYTES** (sha256 **366d44bb...eea30**) |
+
+**⇒⇒† AND **THE **BASE **IS **`5483dc2ef`** (THE **COMMIT **BEFORE **THE **FIRST **OF **THE **SEVEN**),
+**AND **BOTH **TREES **ARE **BUILT **NOW **AND **ALTERNATED** ✓.
+
+**⇒⇒† AND **AND **THE **CORPUS **IS **GREEN **ON **THIS **TREE**: **`checks/differ.py run`** **38 **OF
+**38 **GRAPHS **ANSWERED, **38 **AGREE, **NONE **DISAGREE, **38 **BYTE-IDENTICAL, **expect-moved=0**,
+**⇒⇒† AND **AND **`checks/differ.py repro`** **340 **OF **340 **FILES **IDENTICAL **ACROSS **TWO
+**CLEAN **RUNS**, **⇒⇒† AND **AND **`gates/corpuswitness-gate.py`** **READS **`claim state=OK
+**verdict=REPRODUCIBLE`** **WITH **THE **EXTRA **`witness.clean:OK`** (⇒⇒† AND **AND **THE **TREE **IT
+**NAMES **IS **A **COMMIT **AND **NOT **A **WORKING **COPY**) ✓.

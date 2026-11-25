@@ -13,7 +13,7 @@ Closed categories keep one row and no prose. Open ones keep the head of their bl
 | category | bar | done | status |
 |---|---|---|---|
 | `recovery` | `[########.......]` | 11/15 | the plan is `.agents/slop/checklist.md`; Phases 0-2 and 4.1 done 2026-11-25 |
-| `wgsl-perf` | `[#########.]` | 9/10 | THE WGSL TURN IS ~19x FASTER (24,862 ms -> ~1,264 ms): THE FOLD WAS |
+| `wgsl-perf` | `[##########]` | 10/10 | THE WGSL TURN IS ~22x FASTER (24,862 ms -> ~1,110 ms): THE FOLD WAS |
 84% OF IT AND WAS A KAHN SORT OF AN ARENA WHOSE INDEX ORDER IS ALREADY A TOPOLOGICAL ORDER
 (0 VIOLATIONS IN 1,698,277 EDGES), AND THE TABLE's LOOKUP WAS 35.7% OF THE TURN. THE NEXT
 LEVER IS THE ARENA's O(n) ACCESSORS. |
@@ -189,9 +189,9 @@ LEVER IS THE ARENA's O(n) ACCESSORS. |
 
 ## Open categories, in full
 
-### wgsl-perf  `[#########.]` 9/10
+### wgsl-perf  `[##########]` 10/10
 
-wgsl-perf     [#########.] 9/10        THE WGSL TURN IS ~19x FASTER: 24,862 ms -> ~1,264 ms, AND
+wgsl-perf     [##########] 10/10      THE WGSL TURN IS ~22x FASTER: 24,862 ms -> ~1,110 ms, AND
                                          THE WGSL IS BYTE-IDENTICAL (3,773 bytes, sha256
                                          366d44bb...eea30) AT EVERY STEP.
                                          THE **SEVEN **CHANGES, **AND **EVERY **ONE **IS **MEASURED**:
@@ -233,15 +233,23 @@ wgsl-perf     [#########.] 9/10        THE WGSL TURN IS ~19x FASTER: 24,862 ms -
                                          **MATCH** (⇒⇒† AND **THE **MATCH **IS **AT **A **MEAN **INDEX
                                          **OF **147.7 **OF **~244**, **⇒⇒† AND **AND **THE **OLD **FORM
                                          **WALKED **~40% **MORE **NODES **THAN **IT **NEEDED **TO**).
-                                         THE **FOUR **CHANGES **OF **THIS **UNIT**: **THE **TURN
-                                         **3,373 **ms -> 1,264 **ms **OF **WALL** (⇒⇒† AND **3,892 **ms
-                                         -> 1,804 **ms **OF **CPU**), **⇒⇒† AND **AND **THE **WGSL **IS
-                                         **BYTE-IDENTICAL**, **⇒⇒† AND **AND **THE **CORPUS **IS **GREEN
-                                         **ON **THIS **TREE** (⇒⇒† AND **38 **OF **38 **GRAPHS **AGREE,
-                                         **38 **BYTE-IDENTICAL, **expect-moved=0**, **⇒⇒† AND **AND **340
-                                         **OF **340 **FILES **IDENTICAL **ACROSS **TWO **CLEAN **RUNS**,
-                                         **⇒⇒† AND **AND **`gates/corpuswitness-gate.py` **READS
-                                         **`claim state=OK verdict=REPRODUCIBLE`**).
+                                         **AND **THE **NODE **CARRIES **THE **OP's **NUMBER** (⇒⇒† AND
+                                         **`Ops.value` **IS **A **SIXTY-ARM **MATCH **AND **THE
+                                         **INTERNING **ASKED **FOR **IT **21,325,576 **TIMES **A **TURN**,
+                                         **⇒⇒† AND **AND **THE **NUMBERS **ARE **THE **DECLARATION
+                                         **ORDER** **AND **THEY **DO **NOT **MOVE**). **AND **THE
+                                         **ARENA's **DEFAULT **NODE **IS **BUILT **ONLY **ON **A **MISS**,
+                                         **AND **THE **TOPOSORT's **CACHE **IS **CONCED** (⇒⇒† AND
+                                         **`List.append` **COPIES **THE **WHOLE **LIST**).
+                                         THE **SEVEN **CHANGES **OF **THIS **UNIT**: **THE **TURN
+                                         **3,373 **ms -> ~1,110 **ms **OF **WALL** (⇒⇒† AND **AND **THE
+                                         **WGSL **IS **BYTE-IDENTICAL**, **⇒⇒† AND **AND **THE **CORPUS
+                                         **IS **GREEN **ON **THIS **TREE** (⇒⇒† AND **38 **OF **38
+                                         **GRAPHS **AGREE, **38 **BYTE-IDENTICAL, **expect-moved=0**,
+                                         **⇒⇒† AND **AND **340 **OF **340 **FILES **IDENTICAL **ACROSS
+                                         **TWO **CLEAN **RUNS**, **⇒⇒† AND **AND
+                                         **`gates/corpuswitness-gate.py` **READS **`claim state=OK
+                                         **verdict=REPRODUCIBLE`**).
                                          THE **NEXT **LEVERS, **AND **THEY **ARE **MEASURED** (⇒⇒† AND
                                          **V8's **OWN **PROFILE **OF **THE **COMPILED **FORM **AT **1,226
                                          **SAMPLES**): **THE **INTERNING's **SCAN **IS **16.1%** (⇒⇒† AND
@@ -251,7 +259,7 @@ wgsl-perf     [#########.] 9/10        THE WGSL TURN IS ~19x FASTER: 24,862 ms -
                                          **8.3%** (⇒⇒† AND **THE **ARENA's **FLAT **LIST **IS **O(n) **TO
                                          **APPEND**) **⇒⇒† AND **AND **THE **FOLD's **TABLE **IS **~9%**
                                          **⇒⇒† AND **AND **THE **GC **IS **3.5%** ✓.
-                                         THE RECORD: **`.agents/slop/PARITY.md` **§138.32-§138.41**.
+                                         THE RECORD: **`.agents/slop/PARITY.md` **§138.32-§138.46**.
 
 ### render-perf  `[########]` 6/9
 
