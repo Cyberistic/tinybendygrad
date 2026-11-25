@@ -6,7 +6,8 @@
 and gave `variable`/`range_var` an EMPTY STACK (`ops.py:1003`).
 
 An `Arena` is an IMMUTABLE value, so the size node must be interned and its arena
-carried into the node's own interning. Two spellings exist today and only one is safe:
+carried into the node's own interning. Two spellings exist today and only one is
+safe:
 
     UOp.new(ar, OpsKIND{}, O.param_src(ar, SIZE), arg, tag)   UNSAFE -- self-loop
     UOp.new.param(ar, OpsKIND{}, SIZE, arg, tag)              SAFE
@@ -18,19 +19,25 @@ the numbers. This converts both the `Nil{}` sites (size recovered from the APara
 helper's own argument list) and the `param_src` sites (size read out of the call).
 
 Arguments are found by BALANCED scanning, not by a regular expression: `S.uint64()`
-and `Some{"slots"}` are both arguments and a `[^()]*` pattern declines to match a call
-it cannot see the end of. A site it cannot parse is a REFUSAL, never a silent skip.
+and `Some{"slots"}` are both arguments, and a `[^()]*` pattern declines to match a
+call it cannot see the end of. A site it cannot parse is a REFUSAL, never a silent
+skip, and a refusal ABORTS the whole run -- a partial migration is a build break,
+not a partial result.
 
-usage: .venv/bin/python thread_src.py FILE... [--apply]
+usage: .venv/bin/python thread_src.py FILE... [--apply] [--verbose]
        without --apply it prints the PLAN and rewrites nothing.
 """
 from __future__ import annotations
-import argparse, pathlib, re, sys
+
+import argparse
+import pathlib
+import re
+import sys
 
 PAIRS = {"(": ")", "[": "]", "{": "}"}
 #: helper -> (index of the `size` argument, expected argument count). A `None` index means
-#: the helper carries no size and its node gets the empty STACK. Every entry here was read
-#: out of that helper's OWN signature (`def <helper>(...)`); a helper that is not listed is
+#: the helper carries no size and its node gets the empty STACK. Every entry was read out
+#: of that helper's OWN signature (`def <helper>(...)`); a helper that is not listed is
 #: REFUSED, because inventing its size index is how a migration goes quietly wrong.
 SIZE_ARG = {"alloc": (1, 2), "allocbuf": (1, 3), "paramf": (1, 3), "paramd": (2, 5),
             "allocd": (2, 3), "var": (None, 1), "mn_pbuf": (1, 3)}
@@ -42,7 +49,9 @@ PARAMSRC = re.compile(r"^\s*(O\.)?param_src\(\s*(.+?)\s*,\s*(.+?)\s*\)$", re.S)
 def split_top(body: str) -> list[str]:
   """top-level comma split; `<`/`>` nest because `Maybe<&2, U32>` holds one, and a
   string literal is opaque."""
-  out, cur, stack = [], [], []
+  out: list[str] = []
+  cur: list[str] = []
+  stack: list[str] = []
   i = 0
   while i < len(body):
     ch = body[i]
@@ -50,13 +59,20 @@ def split_top(body: str) -> list[str]:
       j = i + 1
       while j < len(body) and body[j] != '"':
         j += 2 if body[j] == "\\" else 1
-      cur.append(body[i:j + 1]); i = j + 1; continue
-    if ch in PAIRS: stack.append(PAIRS[ch])
-    elif ch in ")]}>" and stack and ch == stack[-1]: stack.pop()
-    elif ch == "<": stack.append(">")
-    elif ch == ">" and stack and stack[-1] == ">": stack.pop()
+      cur.append(body[i:j + 1])
+      i = j + 1
+      continue
+    if ch in PAIRS:
+      stack.append(PAIRS[ch])
+    elif ch in ")]}>" and stack and ch == stack[-1]:
+      stack.pop()
+    elif ch == "<":
+      stack.append(">")
+    elif ch == ">" and stack and stack[-1] == ">":
+      stack.pop()
     if ch == "," and not stack:
-      out.append("".join(cur)); cur = []
+      out.append("".join(cur))
+      cur = []
     else:
       cur.append(ch)
     i += 1
@@ -75,21 +91,22 @@ def calls(s: str, path: pathlib.Path, pat: str = r"\bUOp\.new\("):
         i += 1
         while i < len(s) and s[i] != '"':
           i += 2 if s[i] == "\\" else 1
-      elif ch in PAIRS: depth += 1
-      elif ch in ")]}": depth -= 1
+      elif ch in PAIRS:
+        depth += 1
+      elif ch in ")]}":
+        depth -= 1
       i += 1
     if depth:
-      sys.exit(f"{path}: UNBALANCED UOp.new( at line {s[:m.start()].count(chr(10)) + 1} -- REFUSED")
+      ln = s[:m.start()].count("\n") + 1
+      sys.exit(f"{path}: UNBALANCED UOp.new( at line {ln} -- REFUSED")
     yield m.start(), i - 1, split_top(s[start:i - 1])
 
 
 class Refusal(Exception):
-  """A site this tool will not rewrite. NEVER a guess and never a silent skip: the
-  migration is a build-or-nothing change (bend enforces exact arity and reports one
-  error at a time), so a site left half-migrated is a red tree, not a partial result."""
+  """A site this tool will not rewrite. NEVER a guess and never a silent skip."""
 
 
-def size_of(path: pathlib.Path, s: str, ln: int, src: str, arg: str) -> str:
+def size_of(src: str, arg: str) -> str:
   """the size expression for a node whose src is not yet the size node."""
   ps = PARAMSRC.match(src)
   if ps:
@@ -102,24 +119,33 @@ def size_of(path: pathlib.Path, s: str, ln: int, src: str, arg: str) -> str:
   helper, hargs = am.group(2), split_top(am.group(3))
   if helper not in SIZE_ARG:
     raise Refusal(f"unknown helper {helper!r} -- the size is not recoverable from the "
-                  f"arg list, and it is NOT a param_src site, so guessing would invent it")
+                  "arg list and it is NOT a param_src site, so guessing would invent it")
   idx, want = SIZE_ARG[helper]
   if len(hargs) != want:
     raise Refusal(f"{helper} has {len(hargs)} args, expected {want}")
-  return "None{}" if idx is None else "Some{" + hargs[idx].strip() + "}"
+  if idx is None:
+    return "None{}"
+  return "Some{" + hargs[idx].strip() + "}"
 
 
 def plan_for(path: pathlib.Path, s: str):
-  plan, skipped, refused = [], [], []
+  """(rewritable, untouched, refused) -- three lists, because the middle one is not the
+  third: a `UOp.new` that is not a BUFFER/ALLOC/PARAM node is CORRECT here and must be
+  left alone, while a refusal must stop the run."""
+  plan: list[tuple[int, str, str]] = []
+  skipped: list[tuple[int, str]] = []
+  refused: list[tuple[int, str, str]] = []
   for start, end, args in calls(s, path):
     ln = s[:start].count("\n") + 1
     if len(args) != 5 or not KIND.match(args[1]):
-      skipped.append((ln, " ".join(a.strip() for a in args)[:88])); continue
+      skipped.append((ln, " ".join(a.strip() for a in args)[:88]))
+      continue
     arena, op, src, arg, tag = (a.strip() for a in args)
     try:
-      size = size_of(path, s, ln, src, arg)
+      size = size_of(src, arg)
     except Refusal as e:
-      refused.append((ln, str(e), arg.strip()[:80])); continue
+      refused.append((ln, str(e), arg.strip()[:80]))
+      continue
     new = f"UOp.new.param({arena}, {op}, {size}, {arg}, {tag})"
     plan.append((ln, s[start:end + 1], new))
   return plan, skipped, refused
@@ -131,16 +157,19 @@ def main() -> None:
   ap.add_argument("--apply", action="store_true")
   ap.add_argument("--verbose", action="store_true", help="print every rewritten site")
   a = ap.parse_args()
-  total = refused_total = 0
-  plans = {}
+  plans: dict[str, list] = {}
+  total = 0
+  refused_total = 0
   for f in a.files:
     p = pathlib.Path(f)
     s = p.read_text()
-    plan, skipped, refused = plan_for(p, s)
+    plan, _skipped, refused = plan_for(p, s)
     plans[f] = plan
     for ln, old, new in plan:
-      if a.verbose: print(f"{p}:{ln}\n  - {old}\n  + {new}")
-    total += len(plan); refused_total += len(refused)
+      if a.verbose:
+        print(f"{p}:{ln}\n  - {old}\n  + {new}")
+    total += len(plan)
+    refused_total += len(refused)
     print(f"{p}: {len(plan)} sites -> UOp.new.param")
     for ln, why, arg in refused:
       print(f"  REFUSED {p}:{ln} {why}")
@@ -153,10 +182,13 @@ def main() -> None:
     for f, plan in plans.items():
       p = pathlib.Path(f)
       s = p.read_text()
-      out, last = [], 0
-      for ln, old, new in plan:
+      out: list[str] = []
+      last = 0
+      for _ln, old, new in plan:
         i = s.index(old, last)
-        out.append(s[last:i]); out.append(new); last = i + len(old)
+        out.append(s[last:i])
+        out.append(new)
+        last = i + len(old)
       out.append(s[last:])
       p.write_text("".join(out))
     print("APPLIED")

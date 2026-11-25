@@ -13,7 +13,7 @@ import subprocess
 import sys
 import time
 
-import tinygrad.runtime.ops_bend as ob
+import ops_bend as ob
 
 HERE = pathlib.Path(__file__).resolve().parent
 _orig = subprocess.run

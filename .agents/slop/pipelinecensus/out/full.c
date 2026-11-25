@@ -11,6 +11,8 @@ void test(float* restrict data0_20, float* restrict data1_12, float* restrict da
       int cast3 = ((int)(1));
       int cast4 = ((int)(2));
       *(data0_20+((cast0+(5*cast1))%20)) = (((data1_12+((cast2+alu0)%12))*(data2_15+((cast0+(5*cast2)+alu1)%15)))+((data1_12+((cast3+alu0)%12))*(data2_15+((cast0+(5*cast3)+alu1)%15)))+((data1_12+((cast4+alu0)%12))*(data2_15+((cast0+(5*cast4)+alu1)%15))));
+      for (int Lidx2 = 0; Lidx2 < 3; Lidx2++) {
+      }
     }
   }
 }

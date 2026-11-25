@@ -88,7 +88,7 @@ def main():
     "uop_weak_wk_fix_fold", "wk_fix_fold", "wk_fix_go", "uop_weak_wk_cast_body", "uop_weak_wk_remint_cast",
     "uop_weak_wk_commit_dispatch_go", "uop_weak_wk_cast_consts",
     "uop_weak_wk_norm", "uop_weak_wk_has", "uop_weak_wk_last",
-    "uop_ops_Arena_next",
+    "uop_ops_Arena_next", "lt_rule", "lt_step", "lt_claimed", "dc_l_scan",
     # **⇒⇒† AND **THE **TABLE's **TWO **COSTS** (⇒⇒† AND **AND **THE **PUT **COPIES **THE **LIST **AND
     # **THE **GET **SCANS **IT**)**
     "uop_fold_Table_put", "uop_fold_Kahn_get_go", "uop_fold_Kahn_get_step",

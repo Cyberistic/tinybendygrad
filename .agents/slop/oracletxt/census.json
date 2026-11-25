@@ -14,6 +14,10 @@
     "rows-bd.txt"
    ],
    [
+    ".agents/slop/orcdecide/retired/othercopies.py",
+    "rows-bd.txt"
+   ],
+   [
     ".agents/slop/txtexec/rename.py",
     ".agents/slop/txtexec/rows-bd.txt"
    ],
@@ -35,11 +39,11 @@
    ],
    [
     "checks/sb-gate.sh",
-    ".agents/slop/schedule-bodies/rows-bd.txt"
+    "checks/rows-bd.txt"
    ],
    [
-    "checks/sb-gate.sh",
-    "checks/rows-bd.txt"
+    "checks/txt-owners.py",
+    "rows-bd.txt"
    ]
   ]
  }

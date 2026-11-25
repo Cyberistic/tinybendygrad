@@ -11,5 +11,5 @@ OLD = pathlib.Path.home() / "Library/Caches/tinygrad" / "bend-executor-970cbc1d5
 
 
 def pytest_configure(config):
-    import tinygrad.runtime.ops_bend as ob
+    import ops_bend as ob
     ob.executor = lambda: OLD

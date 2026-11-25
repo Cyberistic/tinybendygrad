@@ -43,6 +43,37 @@ def chain() -> String:
                  " | relu.s0=", opd(a, s0(a, T.Tensor.u(rl))),
                  " | relu.s00=", opd(a, s00(a, T.Tensor.u(rl)))])
 
+def prog() -> RZ.RZProg:
+  +h1 = RZ.rz_input(O.Arena.empty(), 0, 196, [1, 1, 14, 14])
+  +x = RZ.rz_input(T.Tensor.ar(h1), 1, 784, [1, 1, 28, 28])
+  +w1 = RZ.rz_input(T.Tensor.ar(x), 2, 4, [1, 1, 2, 2])
+  +c1 = T.tn_mul(MX.mxw_reshape.go(x, [1, 1, 14, 2, 14, 2]), MX.mxw_reshape.go(w1, [1, 1, 1, 2, 1, 2]))
+  +f1 = T.tn_rop(T.Tensor.ar(c1), T.Tensor.u(c1), O.OpsADD{}, [3, 5])
+  +a1 = RZ.rz_after(h1, T.tn_new(O.Found.ar(f1), O.Found.i(f1)))
+  +h2 = RZ.rz_input(O.Found.ar(a1), 3, 196, [1, 1, 14, 14])
+  +v1 = MX.mxw_reshape(T.tn_new(T.Tensor.ar(h2), O.Found.i(a1)), [1, 1, 14, 14])
+  +a2 = RZ.rz_after(h2, T.tn_relu(v1))
+  +snk = O.UOp.sink(O.Found.ar(a2), [O.Found.i(a1), O.Found.i(a2)])
+  RZ.RZProg{O.Found.ar(snk), O.Found.i(snk)}
+
+def whr.go(+a: O.Arena, +tb: F.Table, +ns: List<&2, U32>, +acc: List<&2, String>) -> List<&2, String>:
+  match ns:
+    case Nil{}: acc
+    case n <> t:
+      whr.go(a, tb, t, Bool.pick(List<&2, String>,
+        Bool.or(O.eq_op(O.Arena.op(a, n), O.OpsWHERE{}), O.eq_op(O.Arena.op(a, n), O.OpsAFTER{})),
+        List.append(&2, String, acc,
+          [String.concat([RF.eng_op_name(O.Arena.op(a, n)), " ", opd(a, n),
+                          " s0=", opd(a, s0(a, n)), " s00=", opd(a, s00(a, n))])]),
+        acc))
+
+def rebuilt() -> String:
+  +q = RZ.rz_rebuild(prog(), False{}, False{})
+  +a = RZ.RZProg.ar(q)
+  +tb = F.Folded.t(F.folded(a))
+  String.join(whr.go(a, tb, O.UOp.toposort(O.Arena.budget(a), a, RZ.RZProg.sink(q)), Nil{}), " | ")
+
 def main() -> IO(Unit):
   do IO<Unit>:
-    IO.print(String.concat(["inl=", chain()]))
+    _ : Unit <- IO.print(String.concat(["inl=", chain()]))
+    IO.print(String.concat(["reb=", rebuilt()]))

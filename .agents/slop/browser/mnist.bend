@@ -75,8 +75,24 @@ def fci_row() -> String:
                  " v=", RR.rr_node_str(ar, v), "[", RR.rr_rngm_row(ar, sk, v), "]",
                  " v.src0=", RR.rr_node_str(ar, m), "[", RR.rr_rngm_row(ar, sk, m), "]"])
 
+# THE FC's reduce, PRE-APPLY: num_axes, nsrc, dims, entry.
+def frd_row.go(+ar: O.Arena, +ns: List<&2, U32>, +acc: U32) -> U32:
+  match ns:
+    case Nil{}: acc
+    case x <> t: frd_row.go(ar, t, Bool.pick(U32, O.eq_op(O.Arena.op(ar, x), O.OpsREDUCE{}), x, acc))
+
+def frd_row() -> String:
+  +q = mn_built()
+  +ar = RZ.RZProg.ar(q)
+  +sk = RZ.RZProg.sink(q)
+  +rd = frd_row.go(ar, O.UOp.toposort(O.Arena.budget(ar), ar, sk), 0)
+  String.concat(["red=", RR.rr_node_str(ar, rd), " num=", U32.show(RR.rr_ap_red_num(ar, rd)),
+                 " nsrc=", U32.show(O.Arena.nsrc(ar, rd)),
+                 " [", RR.rr_rngm_row(ar, sk, rd), "]"])
+
 def main() -> IO(Unit):
   do IO<Unit>:
+    _ : Unit <- IO.print(String.concat(["frd_row=", frd_row()]))
     _ : Unit <- IO.print(String.concat(["fci_row=", fci_row()]))
     _ : Unit <- IO.print(String.concat(["mn_ku=", mn_ku()]))
     IO.print(String.concat(["mn_c=", mn_src()]))

@@ -60,4 +60,3 @@ ms_b0_line_in=4 efbeadde
 ms_free_noop=4 efbeadde
 
 
-bend 2.0.36 is available: run bend update

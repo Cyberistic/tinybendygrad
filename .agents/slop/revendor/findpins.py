@@ -42,8 +42,13 @@ def main():
     print(f"         {(o or 'ABSENT-OLD')[:12]} -> {(n or 'GONE')[:12]}   {len(sites)} site(s)")
     for p, _ in sites:
       print(f"           {p}")
+  # NAME THE SITES EVEN WHEN NOTHING MOVED. A census that prints a count and no
+  # locations under MOVED alone is "a census that records a count without the names",
+  # which is the defect AGENTS.md names and which this file was written to avoid.
   for path, o, n, sites in still:
     print(f"  SAME   {path}  {(o or '')[:12]}   {len(sites)} site(s)")
+    for sp, sha in sites:
+      print(f"           {sp}:{sha[:16]}")
   print(f"\n  -> {len(moved)} path(s) MOVE; {len(still)} stay.")
   print(f"  -> {sum(len(v[3]) for v in moved)} PIN SITE(S) MUST MOVE IN THE SAME COMMIT.")
 

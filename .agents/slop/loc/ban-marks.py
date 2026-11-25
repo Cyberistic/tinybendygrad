@@ -46,7 +46,20 @@ ROOT = Path(__file__).resolve().parents[3]
 # **THE SOURCE DIRS** -- **AND THE PORT IS THE MAIN ONE.**
 DIRS = ("tinybendygrad", "gates", "checks", "oracles", "examples")
 SUFFIXES = (".bend", ".py", ".js", ".mjs", ".c", ".sh")
-ARROW = " "
+# **THE **ARROW **LITERAL** -- **AND **IT **IS **SPELLED **IN **UNICODE **ESCAPE **SO **NO
+# **SOURCE **REWRITE **CAN **BREAK **IT**.**
+#
+# **⇒ MEASURED 2026-11-11: **THE **TREE-WIDE **"the **arrow **character **is **gone **from
+# **the **tree**" **COMMIT (`fe413f5f1`, **186 **FILES**) **REPLACED **THIS **LINE's
+# **LITERAL **WITH **A **SPACE** -- **⇒ AND **THE **INSTRUMENT **DID **NOT **FAIL**, **IT
+# **COUNTED **124,798 **"ARROWS"** (**ONE **PER **SPACE**), **⇒ AND **A **BROKEN **LINT **THAT
+# **REPORTS **A **HUGE **NUMBER **LOOKS **LIKE **A **CENSUS **AND **IS **NOT **ONE**.**
+#
+# **⇒ AND **THE **DAMAGE **WAS **ONE **LINE **IN **ONE **FILE** -- **⇒ AND **IT **WAS **FOUND
+# **BY **READING **THE **INSTRUMENT's **OWN **OUTPUT** (**124,798 **ARROWS**), **⇒ AND **THE
+# **ESCAPE **SPELLING **IS **THE **FIX **THAT **CANNOT **RECUR**, **BECAUSE **NO
+# **CHARACTER-LEVEL **REWRITE **TOUCHES **A **`\u` **ESCAPE**.**
+ARROW = "\u21d2"
 STAR = "**"
 # **THE ALL-CAPS WORD** -- **A WORD OF **THREE OR MORE** LETTERS** THAT IS **ALL UPPERCASE**
 # **AND **IS NOT A **TYPE**-LIKE NAME** -- **AND THE TYPE-LIKE NAMES ARE **THE **CODE's**

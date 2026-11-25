@@ -405,7 +405,12 @@ def bend():
       parts.append(f'r({q(nm + "." + k)}, ushow(Llvm.{rd}({ctor})), {q(j(getattr(cls, k)))})')
     parts.append(f'r({q(nm + ".global_prod_max")}, pmax({ctor}), {q(mx(getattr(cls, "global_prod_max", None)))})')
     parts.append(f'r({q(nm + ".shared_max")}, U32.show(Llvm.smax({ctor})), {q(str(cls.shared_max))})')
-    cfo = "cfo_base()" if nm != "amd" else "cfo_amd()"
+    # `LLVMRenderer.code_for_op` is the ONLY definition of that table, and both
+    # subclasses INHERIT it -- `CPULLVMRenderer` and `AMDLLVMRenderer` define
+    # none -- so all three rows read ONE def.  The port had two (`cfo_base` and
+    # `cfo_amd`) because the OLD upstream put the intrinsics in the AMD
+    # override; upstream moved them into the base, so the distinction is gone.
+    cfo = "cfo()"
     cs = ",".join(sorted(o.name for o in cls.code_for_op))
     parts.append(f'r({q(nm + ".code_for_op")}, opnames({cfo}), {q(cs)})')
     parts.append(f'r({q(nm + ".code_for_op.len")}, U32.show(oplen({cfo})), {q(str(len(cls.code_for_op)))})')
@@ -431,20 +436,25 @@ def bend():
     def __init__(self, target): self.target = target
 
   parts.append(f'r_sdb({q(j(sorted(d.name for d in Base().supported_dtypes())))})')
-  # CPULLVM reads THREE things: `arch.startswith(("x86","arm"))` (a Bool the port
+  # CPULLVM reads TWO things: `arch.startswith(("x86","arm"))` (a Bool the port
   # takes as a parameter, since Bend has no string prefix test that is also a
-  # Python `startswith`), `llvmir.OSX` (a Bool), and `d not in dtypes.fp8s`.
+  # Python `startswith`), and `d not in dtypes.fp8s`.  The `llvmir.OSX` Bool
+  # upstream used to read is GONE -- `llvmir.py` does not import `OSX` at this
+  # revision -- so the `osx` axis below is INERT: the two rows of each pair
+  # answer alike.  The NAME still carries the axis, because the LANE's grid
+  # has it and the grid is the denominator.
   for arch, x86 in (("LLVM", False), ("x86_64", True), ("arm", True), ("riscv64", False)):
     for osx in (True, False):
       L.OSX = osx
       got = j(sorted(d.name for d in CPU(Target(interface="", device="CPU", arch=arch)).supported_dtypes()))
-      parts.append(f'r_sdcpu({q(f"{arch} osx {osx}")}, {"True{}" if x86 else "False{}"}, {"True{}" if osx else "False{}"}, {q(got)})')
+      parts.append(f'r_sdcpu({q(f"{arch} osx {osx}")}, {"True{}" if x86 else "False{}"}, {q(got)})')
   L.OSX = True
-  # AMD reads ONE thing: membership in `amd_fp8s(arch)`, whose only non-empty
-  # answer on this tree is gfx942's FNUZ pair.
+  # AMD reads ONE thing: membership in `amd_fp8s(arch)`, and that table has TWO
+  # non-empty answers on this tree -- gfx942's FNUZ PAIR and gfx1200/gfx1201's
+  # OCP PAIR -- so the port takes the ARCH and looks the set up itself.
   for arch in ("gfx1100", "gfx942", "gfx1200", "gfx1201"):
     got = j(sorted(d.name for d in AMD(Target(interface="", device="HIP", arch=arch)).supported_dtypes()))
-    parts.append(f'r_sdamd({q(arch)}, {"True{}" if arch == "gfx942" else "False{}"}, {q(got)})')
+    parts.append(f'r_sdamd({q(arch)}, {q(got)})')
   out += "def r_sds() -> String:\n  String.concat([" + ", ".join(parts) + "])\n\n"
   # ---- naming
   parts = []

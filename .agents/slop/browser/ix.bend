@@ -8,6 +8,7 @@ import ./../../../tinybendygrad/schedule/rangify.bend as RR
 import ./../../../tinybendygrad/schedule/realize.bend as RZ
 import ./fchainl.bend as CH
 import ./../../../tinybendygrad/schedule/rangeify.bend as RF
+import ./../../../tinybendygrad/helpers.bend as H
 
 def ops.go(+a: O.Arena, +ss: List<&2, U32>, +acc: List<&2, String>) -> List<&2, String>:
   match ss:
@@ -16,6 +17,36 @@ def ops.go(+a: O.Arena, +ss: List<&2, U32>, +acc: List<&2, String>) -> List<&2, 
 
 # THE EXPRESSION CHAIN: INDEX -> src1 (the index expr) -> its src0 -> its src0. The conv's inner must be a
 # multi-term ALU; a bare CONST names the collapse.
+def cv.c(c: O.Const) -> String:
+  match c:
+    case O.CInt{i}: U32.show(H.lo32(i))
+    case _: "?"
+
+def cv.arg(arg: O.Arg) -> String:
+  match arg:
+    case O.APy{c}: cv.c(c)
+    case _: "?"
+
+def cv.p(isconst: Bool, +a: O.Arena, +n: U32) -> String:
+  match isconst:
+    case True{}: cv.arg(O.Arena.arg(a, n))
+    case False{}: RF.eng_op_name(O.Arena.op(a, n))
+
+def cv(+a: O.Arena, +n: U32) -> String:
+  cv.p(O.eq_op(O.Arena.op(a, n), O.OpsCONST{}), a, n)
+
+def asrc.go(+a: O.Arena, +ss: List<&2, U32>, +acc: List<&2, String>) -> List<&2, String>:
+  match ss:
+    case Nil{}: acc
+    case x <> t: asrc.go(a, t, List.append(&2, String, acc, [cv(a, x)]))
+
+def addsrc(+a: O.Arena, +tm: U32) -> String:
+  addsrc2(a, d(a, tm))
+
+def addsrc2(+a: O.Arena, +add: U32) -> String:
+  String.concat([U32.show(O.Arena.nsrc(a, add)), ":",
+                 String.join(asrc.go(a, O.Arena.srcs(a, add), Nil{}), ",")])
+
 def s1of(+a: O.Arena, +n: U32) -> U32:
   Maybe.default(&2, U32, List.get(&2, U32, O.Arena.srcs(a, n), 1n), 0)
 
@@ -39,7 +70,8 @@ def row.go(+a: O.Arena, +ns: List<&2, U32>, +acc: List<&2, String>) -> List<&2, 
         List.append(&2, String, acc,
           [String.concat([U32.show(n), ":", U32.show(O.Arena.nsrc(a, n)), ":",
                           String.join(ops.go(a, O.Arena.srcs(a, n), Nil{}), ","),
-                          " :: ", chain(a, s1of(a, n))])]),
+                          " :: ", chain(a, s1of(a, n)),
+                          " | add=", addsrc(a, s1of(a, n))])]),
         acc))
 
 def row() -> String:
