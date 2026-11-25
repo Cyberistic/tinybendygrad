@@ -52,6 +52,26 @@ Baseline measured 2026-11-25 (re-run the commands to move it):
       *Pass:* `grep -c 'graphs-agree' AGENTS.md` → `0`. Done 2026-11-25: 987 → 374 lines, all
       40 rules kept, original verbatim at `.agents/slop/agend/AGENTS-20261125-987line.md`.
 
+- [x] **1.4 The certificate is ESTABLISHED — the first one that is current.**
+      `.venv/bin/python checks/differ.py repro`, then `gates/corpuswitness-gate.py`: all five
+      readings OK — `verdict.current`, `witness.fresh` (+88.7 ms), `freshness.source`,
+      `witness.substrate` (3 of 3), `claim=REPRODUCIBLE`. 340 of 340 artifacts byte-identical
+      across two clean runs.
+      **The first attempt REFUSED ITSELF**, which is the mechanism worth recording:
+      `substrate-start=c164c8b3 but substrate-end=c66c5a82 — THE SUBSTRATE MOVED WHILE THE RUN
+      WAS IN FLIGHT`, so it discarded the mixture and retried. A run that had silently averaged
+      two trees would have emitted a clean-looking artifact set describing neither.
+
+- [ ] **1.5 The certificate covers the WORKING TREE, not HEAD — measured, not suspected.**
+      `claim=ESTABLISHED` held while `tinybendygrad/uop/ops.bend` carried 33 uncommitted
+      insertions from another unit, and the digest is *correct*: the certificate hashed
+      `8ed2524b…` while HEAD's bytes are `c8bb0345…`. So `substrate-head=3e9df2d9f` names a
+      commit whose `ops.bend` is not what was hashed — the head row and the digest describe
+      different things, and a reader assumes they do not.
+      *Fix, not done because it is the certificate instrument and not a table:* a
+      `witness.clean` conjunct that reads `git status --porcelain -- <substrate paths>` and reds
+      the claim while any of them is modified, so `ESTABLISHED` means "this commit".
+
 ## Phase 2 — the one red row
 
 - [x] **2.1 Re-run the corpus.** 38/38 agree, 0 disagree, 0 refused, byte-identical 38,
