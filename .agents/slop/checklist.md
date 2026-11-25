@@ -38,12 +38,14 @@ Baseline measured 2026-11-25 (re-run the commands to move it):
 
 ## Phase 1 — wire the truth (30 min, cheapest win in the tree)
 
-- [ ] **1.1 Track a pre-commit hook.** `gates/hooks/pre-commit` runs the 2.2 s witness gate
-      and refuses **only** commits touching a file that carries a verdict (`AGENTS.md`,
-      `.agents/TODO.md`, `README.md`) when `claim=NOT-ESTABLISHED`. Code commits pass.
-      *Pass:* a `AGENTS.md` commit while stale exits non-zero and prints the four red rows.
-      *Why selective:* you may move the tree, you may not claim a green tree.
-- [ ] **1.2 `git config core.hooksPath gates/hooks`.** Record it in `.agents/TOOLS.md`.
+- [x] **1.1 Track a pre-commit hook.** `gates/hooks/pre-commit` runs the 2.2 s witness gate
+      when a staged line carries the certificate's vocabulary (`graphs-agree=`,
+      `byte-identical=`, `claim=ESTABLISHED`, …). It gates the **claim**, not the file — a
+      checkbox edit passes, a figure does not.
+      *Pass:* verified both ways 2026-11-25 — board commit rc=0, recorded figure rc=1 with the
+      four red readings printed. *Why selective:* you may move the tree, you may not claim a
+      green tree.
+- [x] **1.2 `git config core.hooksPath gates/hooks`.** Record it in `.agents/TOOLS.md`.
       *Pass:* `git config --get core.hooksPath` answers.
 - [ ] **1.3 Strip every run verdict from `AGENTS.md`.** Replace each quoted run with the
       command and the token it must print.
