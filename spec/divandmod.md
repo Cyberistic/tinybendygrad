@@ -228,14 +228,18 @@ a fixture where the quotient is on src1 AND the CONST is also on src1.
   `divides` AND `usum`, AND THE PORT HAD THE FIRST TWO** — AND `usum` IS NOW IN
   `ops.bend` (`mixin/elementwise.py:40`), BECAUSE THE IMPORT DIRECTION FORBIDS
   `uop/` REACHING `schedule/`.
-- `divandmod.py:37-48` `fold_divmod_congruence` — the worst one: a cartesian
+- `divandmod.py:42-49` `fold_divmod_congruence` — the worst one: a cartesian
   product over per-term sign choices, then interval arithmetic over a symbolic
   SUM. Bend has no cartesian product and no `min` over three with a key.
-- `divandmod.py:50-55` `gcd_with_remainder` — `math.gcd` over a variadic is
-  expressible; `divides`, `simplify` and `new_x.vmin >= 0` are not.
-- `divandmod.py:57-70` `nest_by_factor` — a set comprehension, then a RECURSIVE
+- `divandmod.py:51-65` `nest_by_factor` — a set comprehension, then a RECURSIVE
   call to `fold_divmod_general` (mutual recursion, refused outright), then
   `backward_slice` twice. The largest single omission in the file.
+
+**AND THERE ARE TWO ARMS HERE AND NOT THREE.** Upstream's `divandmod.py` has
+`fold_divmod_congruence` (`:42-49`) and `nest_by_factor` (`:51-65`) and **no**
+`gcd_with_remainder`: the arm was removed upstream in `7711bbac7` ("merge to
+fold_divmod_general", PR #13359) and this list still named it. **A work queue
+that names work that is not there is a queue that counts wrong.**
 - `divandmod.py:78-91` `factor_remainder` — **DONE (2026-11-25), AND THE WALL
   WAS NOT THE ONE NAMED.** The named wall was `const_like` (a TODO in
   `ops.bend`) and `new_x.vmin` over a sum; the port has `F.UOp.vmin` over a

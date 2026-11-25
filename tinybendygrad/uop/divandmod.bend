@@ -369,14 +369,30 @@ def dm_nd.arm(+ar: O.Arena, +d: U32) -> Maybe<&2, O.Found>:
 
 # `remove_nested_mod in sum` -- divandmod.py:27-35.  `(a%4 + b)%2 -> (a+b)%2`.
 #
-# AND IT IS THE CLEANEST OF THE FOUR UNPORTED ARMS, AND THE REASON IS MEASURED:
+# AND IT IS THE CLEANEST OF THE UNPORTED ARMS, AND THE REASON IS MEASURED:
 # `fold_divmod_congruence` NEEDS THE CARTESIAN PRODUCT OF `itertools.product`
-# OVER THE REMAINDER CHOICES, `gcd_with_remainder` NEEDS `UOp.gcd` AND
-# `UOp.divide_exact` (WHICH NEEDS A MULTISET OVER `split_uop(MUL)` FACTORS, AND
-# THE PORT HAS NO MULTISET AND NO `Map`), AND `nest_by_factor` RECURSES
+# OVER THE REMAINDER CHOICES, AND `nest_by_factor` RECURSES
 # (`fold_divmod_general(x//div)`) AND BEND REFUSES MUTUAL RECURSION.  THIS ONE
 # NEEDS `split_uop`, `divides` AND `usum`, AND THE PORT HAS THE FIRST TWO AND
 # `usum` IS NOW IN `ops.bend`.
+#
+# AND THE THIRD WALL THIS PARAGRAPH ONCE NAMED IS **GONE**, AND IT IS GONE
+# BECAUSE IT WAS **FALSE**: `UOp.divide_exact` NEEDS A MULTISET OVER
+# `split_uop(MUL)` FACTORS AND THE PORT "HAS NO MULTISET" ✗ -- **AND THE PORT
+# HAS ONE** ✓ (`Ctr` + `ctr_of` + `ctr_inter`, `ops.bend:3947-4016` ✓) AND
+# `UOp.divide_exact` NOW **SUBTRACTS THE DIVISOR's FACTORS** ✓
+# (`UOp.divide_exact.den.all`, `ops.bend:4386` ✓) BECAUSE UPSTREAM's
+# `new_count` IS `Counter(num) - Counter(den)` ✓ (`ops.py:1044-1045` ✓) AND ITS
+# TEST IS `all(v>=0 ...)` ✓ (`ops.py:1046` ✓).  MEASURED 2026-11-25: WITHOUT
+# THAT HALF THE PORT ANSWERED `divide_exact(6x, y)` WITH A QUOTIENT WHERE
+# UPSTREAM ANSWERS `None` ✓.
+#
+# AND THERE ARE **TWO** UNPORTED ARMS AND NOT THREE: UPSTREAM's `divandmod.py`
+# HAS `fold_divmod_congruence` (`:42-49` ✓) AND `nest_by_factor` (`:51-65` ✓)
+# AND **NO** `gcd_with_remainder` ✓ -- THE PORT's MARKER NAMED IT AND THE ARM
+# WAS REMOVED UPSTREAM IN `7711bbac7` ("merge to fold_divmod_general",
+# upstream PR #13359 ✓) ✓✓.  **A WORK QUEUE THAT NAMES WORK THAT IS NOT THERE
+# IS A QUEUE THAT COUNTS WRONG** ✓.
 #
 # AND THE ARM IS FOUR FACTS, AND EACH IS A SEPARATE DEF SO A READER CAN SEE
 # WHICH ONE IS FALSE:
@@ -975,7 +991,7 @@ def dm_0.put(+ar: O.Arena, +self: U32) -> Maybe<&2, O.Found>:
 def dm_0(fx: F.Folded, self: U32) -> Maybe<&2, O.Found>:
   dm_0.put(F.Folded.ar(fx), self)
 
-#  1. Fast Inline Rules , rule 1 -- divandmod.py:103-105.
+#  1. Fast Inline Rules , rule 1 -- divandmod.py:98-100.
 def dm_1.fd(ar: O.Arena, x: U32, d: U32, cm: U32, cq: U32) -> O.Found:
   +cmc = O.UOp.const(ar, O.CInt{H.i64_of_i32(cm)})
   +s = O.UOp.alu(O.Found.ar(cmc), O.OpsADD{}, [x, O.Found.i(cmc)])
@@ -1043,7 +1059,7 @@ def dm_1.put(+fx: F.Folded, +self: U32) -> Maybe<&2, O.Found>:
 def dm_1(fx: F.Folded, self: U32) -> Maybe<&2, O.Found>:
   dm_1.put(fx, self)
 
-#  2. Slow Rules  -- divandmod.py:108, the one entry. The weakint conjunct is
+#  2. Slow Rules  -- divandmod.py:103, the one entry. The weakint conjunct is
 def dm_2.armed(fx: F.Folded, self: U32, weak: Bool) -> Maybe<&2, O.Found>:
   match weak:
     case True{}: fold_divmod_general(F.Folded.ar(fx), self)
@@ -1104,7 +1120,7 @@ def dm_scan(+todo: List<&2, O.PMEntry>, +fx: F.Folded, +self: U32, acc: Hit) -> 
 def div_and_mod_symbolic(+fx: F.Folded, self: U32) -> Hit:
   dm_scan(O.PMEntrys.es(dm_table()), fx, self, miss(F.Folded.ar(fx)))
 
-#   nrules=3       divandmod.py:98-109 is three entries. A COUNT.
+#   nrules=3       divandmod.py:93-104 is three entries. A COUNT.
 #   rej0=2 rej1=2 rej2=0   the `early_reject` sets, MEASURED against Python:
 #   nroots=26      how many roots the fixture arena holds. THE COUNT ROW: a
 #   zero_r04=1     divandmod.py:11 on a `CONST(0)` divisor. Python RAISES.
@@ -1265,7 +1281,7 @@ def trees() -> Gate:
 # TODO(p3) divandmod.py:13  symbol=fold_divmod_general  the RANGE HALF of `x//y` being a point -- PORTED for
 #   CONST/CONST only, where `_min_max` (ops.py:1127) is four identical `a//b` and
 #   MEASURED FALSE (2026-11-06): THE PORT HAS `F.UOp.vmin`/`F.UOp.vmax`
-# TODO(p3) divandmod.py:17-19 `# split uops for the rest of the processing` --
+# TODO(p3) divandmod.py:15-17  symbol=fold_divmod_general  `# split uops for the rest of the processing` --
 # TODO(p3) divandmod.py:13-15  symbol=fold_divmod_general  a FLOAT CONST -- `_min_max` returns PyConst and
 #  Constant Denominator Rules  -- divandmod.py:21-70. These rules strictly
 # DONE(p3) divandmod.py:23-25 `nested_div: (x%(k*c))//c -> (x//c)%k (requires k>0);
@@ -1284,9 +1300,8 @@ def trees() -> Gate:
 #   (x//gcd)//(y//gcd)` -- AND THE **MOD HALF** (`ret*gcd`) IS PORTED WITH IT,
 #   AND THE DIFFERENTIAL GATE'S ROWS ARE `gates/divandmod-cases.rows`'s
 #   `gcdmod_fires` AND `gcddiv_fires`.
-# TODO(p3) divandmod.py:37  symbol=fold_divmod_general  `Shared decomposition for folding rules` and :41-48
-# TODO(p3) divandmod.py:50-55  symbol=fold_divmod_general  `gcd_with_remainder: factor out common gcd from
-# TODO(p3) divandmod.py:57-70 `nest_by_factor: x//c -> (x//f)//(c//f),
+# TODO(p3) divandmod.py:38-49  symbol=fold_divmod_general  `Shared decomposition for folding rules` and :42-49
+# TODO(p3) divandmod.py:51-65 `nest_by_factor: x//c -> (x//f)//(c//f),
 #  Variable Denominator / Fallback Rules  -- divandmod.py:72-96. These rules
 # PORTED: divandmod.py:78-96  `factor_remainder: (d*x+y)//d -> x+y//d` -- AND
 #   THE ARM IS IN `tinybendygrad/uop/divandmod.bend` AS `dm_fr.*` AND THE
