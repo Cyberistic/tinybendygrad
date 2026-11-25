@@ -91,8 +91,12 @@ Baseline measured 2026-11-25 (re-run the commands to move it):
       *Pass:* gate reports `sym_table 131/131 · rm_table 2/2 · valid_table 2/2`, 0 hazards,
       1 documented 6-row permutation, and 77 rows that drop a fast path (counted, not failed —
       `rej` is a filter, so narrower costs time and not an answer).
-      *Still to do:* `uop/fold.bend` — it has no `PMEntry` at all, so its table has a different
-      shape and the same treatment is a separate job.
+      *Still to do:* `uop/fold.bend` — measured, and it is a different job. It has no `PMEntry`:
+      it is a **topological property fold** (`dtype` and `shape` answered together as one
+      `DtShape`, one arm per op, ~127 rows), so its upstream counterpart is `dtype_from_uop`
+      (`ops.py:123-190`) and `_shape`, not a `PatternMatcher`. A derivation there means
+      projecting upstream's per-op dtype/shape rules, which is not this gate's projection and
+      not a 30-minute change. It is also the one file another unit had open all session.
 
       **4.1b `codegen/decomp/dtype.bend` — a different answer, and the difference is the finding.**
       Its rule table is **not** projectable: `l2i_pair` (`dtype.py:89`) wraps a rule as
