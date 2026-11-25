@@ -13,7 +13,7 @@ Closed categories keep one row and no prose. Open ones keep the head of their bl
 | category | bar | done | status |
 |---|---|---|---|
 | `recovery` | `[########.......]` | 11/15 | the plan is `.agents/slop/checklist.md`; Phases 0-2 and 4.1 done 2026-11-25 |
-| `wgsl-perf` | `[######....]` | 6/10 | THE WGSL TURN IS 6.9x FASTER (24,862 ms -> 3,590 ms): THE FOLD WAS |
+| `wgsl-perf` | `[#######...]` | 7/10 | THE WGSL TURN IS 7.9x FASTER (24,862 ms -> ~3,150 ms): THE FOLD WAS |
 84% OF IT AND WAS A KAHN SORT OF AN ARENA WHOSE INDEX ORDER IS ALREADY A TOPOLOGICAL ORDER
 (0 VIOLATIONS IN 1,698,277 EDGES), AND THE TABLE's LOOKUP WAS 35.7% OF THE TURN. THE NEXT
 LEVER IS THE ARENA's O(n) ACCESSORS. |
@@ -189,12 +189,12 @@ LEVER IS THE ARENA's O(n) ACCESSORS. |
 
 ## Open categories, in full
 
-### wgsl-perf  `[######....]` 6/10
+### wgsl-perf  `[#######...]` 7/10
 
-wgsl-perf     [######....] 6/10        THE WGSL TURN IS 6.9x FASTER: 24,862 ms -> 3,590 ms, AND
+wgsl-perf     [#######...] 7/10      THE WGSL TURN IS 7.9x FASTER: 24,862 ms -> ~3,150 ms, AND
                                          THE WGSL IS BYTE-IDENTICAL (3,773 bytes, sha256
                                          366d44bb...eea30) AT EVERY STEP.
-                                         THE **FOUR **CHANGES, **AND **EVERY **ONE **IS **MEASURED**:
+                                         THE **FIVE **CHANGES, **AND **EVERY **ONE **IS **MEASURED**:
                                          **THE **FOLD **WAS **A **KAHN **SORT, **AND **THE **ARENA's
                                          **INDEX **ORDER **IS **ALREADY **A **TOPOLOGICAL **ORDER**
                                          (`.agents/slop/wgslperf/topo-check.py`: **0 **VIOLATIONS **IN
@@ -210,22 +210,31 @@ wgsl-perf     [######....] 6/10        THE WGSL TURN IS 6.9x FASTER: 24,862 ms -
                                          **35.7% **OF **THE **TURN**). **AND **THE **RANGE **TABLE's **PUT
                                          **WAS **12.8%** (⇒⇒† AND **THE **PROFILE's **CALL **TREE **NAMES
                                          **THE **CALLER**) **⇒⇒† AND **AND **IT **IS **A **CONS **NOW**.
+                                         **AND **THE **OP **INTERNING's **COMPARISON **IS **HALVED**:
+                                         **THE **WANTED **NODE's **OP **VALUE **IS **HOISTED **OUT **OF
+                                         **THE **SCAN** (⇒⇒† AND **`Ops.value` **IS **A **SIXTY-ARM
+                                         **MATCH**, **⇒⇒† AND **41,973,508 **CALLS **AND **1,684,550,390
+                                         **TAG **COMPARISONS **A **TURN**), **⇒⇒† AND **AND **THE **SRCS,
+                                         **THE **ARG **AND **THE **TAG **ARE **COMPARED **ONLY **WHEN
+                                         **THE **OP **MATCHES** (⇒⇒† AND **`Bool.and` **EVALUATES **BOTH
+                                         **OF **ITS **ARGUMENTS**): **21,325,576 **CALLS **AND
+                                         **801,275,119 **TAG **COMPARISONS**, **⇒⇒† AND **AND **`eq_arg`
+                                         **20,735,255 -> 1,136,865**. **THE **TURN **3,725 **ms ->
+                                         **2,946 **ms** (**.agents/slop/wgslperf/bench-ab.py**: **HEAD
+                                         **AND **THE **TREE **ALTERNATE**, **SO **A **DRIFT **IN **THE
+                                         **SHARED **MACHINE **HITS **BOTH**).
                                          THE **NUMBERS**: **THE **FOLD **20,946 **ms -> ~700 **ms**, **THE
-                                         **TURN **24,862 **ms -> 3,590 **ms**, **V8's **PROFILE **5,225
+                                         **TURN **24,862 **ms -> ~3,150 **ms**, **V8's **PROFILE **5,225
                                          **SAMPLES -> 2,583**.
                                          THE **NEXT **LEVERS, **AND **THEY **ARE **MEASURED** (⇒⇒† AND
                                          **V8's **PROFILE**: **`.agents/slop/wgslperf/prof-read.py`**):
-                                         **THE **ARENA's **O(n) **ACCESSORS** -- **`O.Arena.at` **IS **20%
-                                         **OF **THE **TURN** **AND **THE **OP **INTERNING's **LINEAR
-                                         **SEARCH **IS **~23%** (⇒⇒† AND **AND **THE **FIX **FOR **BOTH
-                                         **IS **THE **ARENA's **REPRESENTATION** ✓ ⇒⇒† AND **43
-                                         **`Arena.nodes`/`Arena.node` **USES **ACROSS **16 **FILES** ✓);
-                                         **AND **`Ops.value`** **IS **A **CHAIN **OF **22 **STRING
-                                         **COMPARISONS** (⇒⇒† AND **AND **THE **OP **SHOULD **CARRY **ITS
-                                         **NUMBER**) ✓; **AND **THE **RANGE **TABLE's **LOOKUP **IS
-                                         **5.5%** (⇒⇒† AND **AND **THE **SAME **CHUNKED **SHAPE **AS **THE
-                                         **FOLD's **TABLE**) ✓; **AND **THE **GC **IS **3.1%** ✓.
-                                         THE RECORD: **`.agents/slop/PARITY.md` **§138.32-§138.37**.
+                                         **THE **ARENA's **O(n) **ACCESSORS** -- **`O.Arena.at` **IS **~24%
+                                         **OF **THE **TURN** (⇒⇒† AND **492,349,364 **CELLS **WALKED **A
+                                         **TURN**) **AND **THE **RANGE **TABLE's **LOOKUP **IS **~10%**
+                                         (⇒⇒† AND **757,574 **SCANS**) **⇒⇒† AND **AND **BOTH **ARE **THE
+                                         **SAME **SHAPE **AS **THE **FOLD's **TABLE**, **⇒⇒† AND **WHICH **IS
+                                         **A **SPINE **OF **CHUNKS** ✓; **AND **THE **GC **IS **~3%** ✓.
+                                         THE RECORD: **`.agents/slop/PARITY.md` **§138.32-§138.38**.
 
 ### render-perf  `[########]` 6/9
 

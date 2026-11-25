@@ -11,14 +11,14 @@ import Base
 # **⇒⇒† AND **AND **THE **DRIVER **IS **BYTE-IDENTICAL **TO **THE **ORIGINAL** (⇒⇒† AND **AND **THE
 # **OUTPUT **MUST **BE **THE **SAME **WGSL**, **⇒⇒† AND **AND **THAT **IS **WHAT **THE **PROFILE **CHECKS
 # **BY **THE **BYTES**)**
-import ./../../../tinybendygrad/renderer/wgsl.bend as V
-import ./../../../tinybendygrad/renderer/wgsl_walk.bend as W
-import ./../../../tinybendygrad/renderer/cstyle.bend as C
-import ./../../../tinybendygrad/schedule/__init__.bend as SCH
-import ./../../../tinybendygrad/runtime/device.bend as DEV
-import ./../../../tinybendygrad/uop/ops.bend as O
-import ../browser/ku2r.bend as K2
-import ../browser/fchainl.bend as FC
+import ./baseline-tree/renderer/wgsl.bend as V
+import ./baseline-tree/renderer/wgsl_walk.bend as W
+import ./baseline-tree/renderer/cstyle.bend as C
+import ./baseline-tree/schedule/__init__.bend as SCH
+import ./baseline-tree/runtime/device.bend as DEV
+import ./baseline-tree/uop/ops.bend as O
+import ./baseline-browser/ku2r.bend as K2
+import ./baseline-browser/fchainl.bend as FC
 
 def scan1() -> V.Scan: V.Scan{[1], False{}}
 

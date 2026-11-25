@@ -3,4 +3,5 @@
 # **FILES **BESIDE **THIS **ONE**
 *.mjs
 baseline-tree/
+baseline-browser/
 baseline/

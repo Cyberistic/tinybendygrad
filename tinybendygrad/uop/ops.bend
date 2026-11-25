@@ -1542,6 +1542,24 @@ def eq_node(x: Node, y: Node) -> Bool:
       Bool.and(U32.is_eq(Ops.value(op), Ops.value(o2)),
         Bool.and(eq_u32(src, s2), Bool.and(eq_arg(arg, a2), eq_tag(tag, t2))))
 
+# THE SAME EQUALITY, WITH THE WANTED NODE's OP VALUE ALREADY IN HAND: THE OP IS FIXED FOR
+# THE WHOLE INTERNING SCAN, AND `Ops.value` IS A SIXTY-ARM MATCH. MEASURED, IT IS CALLED
+# 41,973,508 TIMES A TURN AND ITS ARMS ARE 1,684,550,390 TAG COMPARISONS
+# (`.agents/slop/wgslperf/count-intern.py` COUNTS THE COMPILED FORM).
+#
+# AND THE SRCS, THE ARG AND THE TAG ARE COMPARED ONLY WHEN THE OP MATCHES: `Bool.and`
+# EVALUATES BOTH OF ITS ARGUMENTS, SO THE OLD FORM PAID FOR THEM ON EVERY NODE.
+def eq_node.ov.go(same_op: Bool, same_sh: Bool, x: Node, y: Node) -> Bool:
+  match same_op:
+    case True{}:
+      match same_sh:
+        case True{}:
+          match x y:
+            case Node{_, src, arg, tag} Node{_, s2, a2, t2}:
+              Bool.and(eq_u32(src, s2), Bool.and(eq_arg(arg, a2), eq_tag(tag, t2)))
+        case False{}: False{}
+    case False{}: False{}
+
 # UOpMetaClass.__call__ -- ops.py:193 symbol=UOpMetaClass.__call__. THE CONSTRUCTOR.
 # THE KEY MUST SEPARATE DTYPES. ops.py:193 -- a CONST's dtype comes from the
 type UpAlt is Data:
@@ -1632,8 +1650,16 @@ def intern.find.pick(hit: Bool, k: U32, +nxt: Maybe<&2, U32>) -> Maybe<&2, U32>:
     case True{}: Some{k}
     case False{}: nxt
 
+# THE SCAN IS THE WHOLE ARENA, AND THE COMPARISON IS THE COST. MEASURED, IT IS 20,818,516
+# NODE COMPARISONS A TURN OVER 85,340 SCANS OF AN ARENA OF ~244 NODES.
+#
+# AND THE WANTED NODE's OP VALUE IS HOISTED OUT OF THE SCAN: THE OP DOES NOT CHANGE, AND
+# `Ops.value` IS A SIXTY-ARM MATCH (THE COUNT IS IN `eq_node.ov.go`'s COMMENT).
+def intern.find.same(ov: U32, +nd: Node, +want: Node, same_sh: Bool) -> Bool:
+  eq_node.ov.go(U32.is_eq(Ops.value(Node.op(nd)), ov), same_sh, nd, want)
+
 # (ops.py:201); both colliding args are tuples, so `type(arg)` does not split
-def intern.find(ns: List<&2, Node>, ss: List<&2, U32>, +k: U32, +want: Node, +depth: U32) -> Maybe<&2, U32>:
+def intern.find.go(ns: List<&2, Node>, ss: List<&2, U32>, +k: U32, +want: Node, +depth: U32, +ov: U32) -> Maybe<&2, U32>:
   match ns ss:
     case Nil{} Nil{}:
       None{}
@@ -1641,9 +1667,12 @@ def intern.find(ns: List<&2, Node>, ss: List<&2, U32>, +k: U32, +want: Node, +de
       None{}
     case _ <> _ Nil{}:
       None{}
-    case nd <> t sh <> st:
-      nxt = intern.find(t, st, U32.add(k, 1), want, depth)
-      intern.find.pick(Bool.and(eq_node(nd, want), U32.is_eq(sh, depth)), k, nxt)
+    case +nd <> t sh <> st:
+      nxt = intern.find.go(t, st, U32.add(k, 1), want, depth, ov)
+      intern.find.pick(intern.find.same(ov, nd, want, U32.is_eq(sh, depth)), k, nxt)
+
+def intern.find(ns: List<&2, Node>, ss: List<&2, U32>, +k: U32, +want: Node, +depth: U32) -> Maybe<&2, U32>:
+  intern.find.go(ns, ss, k, want, depth, Ops.value(Node.op(want)))
 
 
 def intern.put.shp(+ar: Arena, +want: Node, depth: U32) -> Arena:
