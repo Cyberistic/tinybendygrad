@@ -9,7 +9,7 @@ CASE GOES THROUGH THE **SAME LANE** THE GATE USES -- THE PORT's `.bend` DRIVER
 AND THE CPython ORACLE -- SO A PLANT THAT SAID "RED" ON A COPY THE GATE NEVER
 RUNS WOULD PROVE NOTHING.
 
-FOUR CASES:
+EIGHT CASES:
 
   1. THE UN-MUTATED COPY IS GREEN -- the control.
   2. BREAKING THE ARM's `divides` GUARD REDDENS THE PORT's LANE -- the arm
@@ -19,6 +19,11 @@ FOUR CASES:
      becomes `0`-or-negative, so `c > 0` fails and the arm does not fire.
   4. BREAKING THE `usum` ASSOCIATION REDDENS THE LANE -- the sum's TREE
      changes and the ORACLE's tree is the upstream one, so they disagree.
+  5. BREAKING THE `divide_by_gcd` ARM's MOD HALF REDDENS THE LANE -- the MOD's
+     `ret*gcd` becomes `ret`.
+  6. BREAKING THE `factor_remainder` ARM's `+sum(quo)` REDDENS THE LANE.
+  7. BREAKING THE `factor_remainder` ARM's SUM's LEADING `+0` REDDENS IT.
+  8. BREAKING THE `factor_remainder` ARM's `x.const_like(0)` REDDENS IT.
 
 AND THE PLANT'S CLAIM IS ABOUT THE **DIFFERENTIAL** AND NOT ABOUT THE PORT's
 ANSWER: A PLANT THAT BROKE THE PORT's ARM AND ONLY CHECKED THAT THE PORT's
@@ -183,8 +188,82 @@ def main() -> int:
             if not ok:
                 bad.append("dropping the MOD half's multiplication did not redden the lanes")
 
-    print(f"--plant: {'OK' if not bad else 'FAILED: ' + '; '.join(bad)}")
-    return FAIL if bad else PASS
+        # 6 -- THE `factor_remainder` ARM's `+sum(quo)`: THE QUOTIENT'S SUM IS
+        # DROPPED, SO THE PORT's ANSWER IS `new_x//y` AND THE LANES DISAGREE.
+        #
+        # AND MEASURED 2026-11-25: THE FIRST DRAFT OF THE ARM DROPPED IT AND
+        # THE PORT ANSWERED `DIV(ADD(ADD(c0,b),c0),d)` WHERE UPSTREAM ANSWERS
+        # `ADD(DIV(ADD(ADD(c0,b),c0),d),ADD(c0,MUL(c1,a)))`.  **SO THE ROW IS
+        # LOAD-BEARING AND NOT A VARIANT.**
+        case6 = fresh(Path(td) / "case6")
+        f6 = case6 / "tinybendygrad" / "uop" / "divandmod.bend"
+        text6 = f6.read_text()
+        old6 = """      +q = dm_fr.sum(O.Found.ar(nx), quo)
+      +dv = O.UOp.alu(O.Found.ar(q), O.OpsDIV{}, [O.Found.i(nx), y])
+      Some{O.UOp.alu(O.Found.ar(dv), O.OpsADD{}, [O.Found.i(dv), O.Found.i(q)])}"""
+        new6 = """      +dv = O.UOp.alu(O.Found.ar(nx), O.OpsDIV{}, [O.Found.i(nx), y])
+      Some{dv}"""
+        if old6 not in text6:
+            bad.append("the `factor_remainder` answer's `+sum(quo)` moved")
+            print("  6 fr sum(quo)      COULD NOT MUTATE")
+        else:
+            f6.write_text(text6.replace(old6, new6, 1))
+            ok = not agrees(case6)
+            print(f"  6 fr sum(quo)      {'RED' if ok else 'NOT RED'}  the quotient's sum is dropped")
+            if not ok:
+                bad.append("dropping the `factor_remainder` answer's `+sum(quo)` did not redden the lanes")
+
+        # 7 -- THE `factor_remainder` ARM's SUM **STARTS WITH THE INT `0`**:
+        # PYTHON's `sum` DOES AND `UOp.usum` DOES NOT, AND THE PORT's
+        # `dm_fr.sum` STARTS WITH A `CONST 0` NODE SO THE FIRST TERM IS
+        # `ADD(c0, r0)`.
+        #
+        # AND MEASURED 2026-11-25: A FIRST DRAFT FOLDED FROM THE FIRST
+        # ELEMENT AND THE PORT ANSWERED `ADD(c0,MUL(c1,a))` WHERE UPSTREAM
+        # ANSWERS `ADD(c0,MUL(c1,a))` -- **AND THE ROWS THAT DIFFER ARE THE
+        # ONES WITH MORE THAN ONE TERM**, SO THE PLANT MUTATES THE `+0`.
+        case7 = fresh(Path(td) / "case7")
+        f7 = case7 / "tinybendygrad" / "uop" / "divandmod.bend"
+        text7 = f7.read_text()
+        old7 = """def dm_fr.sum.first(+l: List<&2, U32>, +z: O.Found) -> O.Found:
+  match l:
+    case Nil{}: z
+    case h <> t: dm_fr.sum.go(t, O.UOp.alu(O.Found.ar(z), O.OpsADD{}, [O.Found.i(z), h]))"""
+        new7 = """def dm_fr.sum.first(+l: List<&2, U32>, +z: O.Found) -> O.Found:
+  match l:
+    case Nil{}: z
+    case h <> t: dm_fr.sum.go(t, h)"""
+        if old7 not in text7:
+            bad.append("the `factor_remainder` sum's leading `+0` moved")
+            print("  7 fr sum's +0      COULD NOT MUTATE")
+        else:
+            f7.write_text(text7.replace(old7, new7, 1))
+            ok = not agrees(case7)
+            print(f"  7 fr sum's +0      {'RED' if ok else 'NOT RED'}  the sum drops the leading zero")
+            if not ok:
+                bad.append("dropping the `factor_remainder` sum's leading zero did not redden the lanes")
+
+        # 8 -- THE `factor_remainder` ARM's `x.const_like(0)`: THE `+0` IS DROPPED
+        # FROM `new_x`, SO THE PORT's `new_x` IS `sum(rem)` AND THE LANES
+        # DISAGREE.
+        case8 = fresh(Path(td) / "case8")
+        f8 = case8 / "tinybendygrad" / "uop" / "divandmod.bend"
+        text8 = f8.read_text()
+        old8 = """  +z = dm_fr.zero(O.Found.ar(s))
+  +nx = O.UOp.alu(O.Found.ar(z), O.OpsADD{}, [O.Found.i(s), O.Found.i(z)])"""
+        new8 = """  +nx = s"""
+        if old8 not in text8:
+            bad.append("the `factor_remainder` arm's `const_like(0)` moved")
+            print("  8 fr const_like    COULD NOT MUTATE")
+        else:
+            f8.write_text(text8.replace(old8, new8, 1))
+            ok = not agrees(case8)
+            print(f"  8 fr const_like    {'RED' if ok else 'NOT RED'}  the `+0` is dropped from new_x")
+            if not ok:
+                bad.append("dropping the `factor_remainder` arm's `const_like(0)` did not redden the lanes")
+
+        print(f"--plant: {'OK' if not bad else 'FAILED: ' + '; '.join(bad)}")
+        return FAIL if bad else PASS
 
 
 if __name__ == "__main__":

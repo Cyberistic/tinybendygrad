@@ -52,7 +52,7 @@ Closed categories keep one row and no prose. Open ones keep the head of their bl
 | `exec-wa` | `[##]` | 2/5 | **W-A -- THE AFFINE EXPRESSION: **ONE MISSING RULE**, NOT A MISSING MODULE.** |
 | `cite-class` | `[#########]` | 4/5 | **FOURTEEN UPSTREAM CITATIONS IN `uop/ops.bend` WERE WRONG BY TWO |
 | `cite-slice` | `[######...]` | 3/5 | **THE 603 ARE THE CLASS, AND THE SLICE THAT IS NOT `runtime/**` |
-| `upstream-suite` | `[##........]` | 2/3 | **THE UPSTREAM SUITE IS BEING PORTED ONE FILE AT A TIME, |
+| `upstream-suite` | `[###.........]` | 3/3 | **THE UPSTREAM SUITE IS BEING PORTED ONE FILE AT A TIME, |
 | ``load-census` | `[####.....]` | 4/7 | ` — the ledger, the guard, the retrospective, and the starvation |
 | `claimaudit` | `[####......]` | 1/3 | AN ADVERSARIAL RE-AUDIT OF THE ORCHESTRATOR'S OWN COMMITS, and it found |
 | `onespelling` | `[##........]` | 1/3 | THE CLASS AS AN INSTRUMENT, WITH A CONTROL THAT EARNED ITS KEEP. |
@@ -893,10 +893,10 @@ cite-slice        [######...] 3/5    **THE 603 ARE THE CLASS, AND THE SLICE THAT
 
 *…13 more lines in the archive.*
 
-### upstream-suite  `[##........]` 2/3
+### upstream-suite  `[###.........]` 3/3
 
-upstream-suite   [##........] 2/3     **THE UPSTREAM SUITE IS BEING PORTED ONE FILE AT A TIME,
-                                        AND TWO FILES ARE DONE.**
+upstream-suite   [###.........] 3/3   **THE UPSTREAM SUITE IS BEING PORTED ONE FILE AT A TIME,
+                                        AND THREE FILES ARE DONE.**
                                         **THE ARCHITECTURE, AND IT IS THE TREE's OWN:**
                                         UPSTREAM's `.py` TESTS CANNOT RUN AGAINST THE PORT
                                         (`import tinygrad` RESOLVES TO THE VENDORED UPSTREAM
@@ -909,6 +909,30 @@ upstream-suite   [##........] 2/3     **THE UPSTREAM SUITE IS BEING PORTED ONE F
                                         **AND NO EXPECTED VALUE IS EVER TRANSCRIBED FROM
                                         UPSTREAM's TEST INTO A `.bend` LITERAL.** THE UPSTREAM
                                         EXPECTED VALUES ARE THE ORACLE's JOB; A ROW THAT
+- [x] **THE THIRD FILE: `tinybendygrad/uop/divandmod.bend`'s `factor_remainder`
+      ARM (`divandmod.py:78-91`).** THE WALL WAS NOT THE ONE NAMED: IT WAS NOT
+      `const_like` AND NOT `new_x.vmin` OVER A SUM -- **IT WAS THAT THE ARM
+      ONLY FIRES WITH A VARIABLE DIVISOR.** MEASURED 2026-11-25 ON CPYTHON AT
+      THE PIN: A **CONST** DIVISOR PUTS THE ARM BEHIND `divide_by_gcd`
+      (`divandmod.py:72-76`), WHOSE `gcd` IS `UOp.gcd(...).simplify()` AND, FOR
+      A PARAM-BEARING NUMERATOR, IS AN **`EXPAND`** AND NOT A `CONST` -- SO
+      UPSTREAM's GUARD `gcd.op is Ops.CONST and gcd.val==1` IS **FALSE**, THE
+      ARM FIRES, AND `unwrap(x.divide_exact(gcd))` **RAISES
+      `AssertionError`**. MEASURED: EVERY CONST-DIVISOR SHAPE CRASHED
+      UPSTREAM. AND UPSTREAM's OWN TEST (`test/null/test_uop_symbolic.py:584`)
+      USES `d = Variable("d", 1, 10)`.
+      **AND TWO SUMS, NOT ONE:** UPSTREAM's `factor_remainder` USES PYTHON's
+      BUILTIN `sum` (`:89` AND `:91`), WHICH STARTS WITH THE INT `0`, WHILE
+      `remove_nested_mod` USES `UOp.usum` (`:33`), WHICH STARTS WITH THE FIRST
+      ELEMENT. THE PORT HAS BOTH.
+      **THE ROWS:** `gates/divandmod-cases.rows`'s FOUR `fr_*` ROWS, READ BY
+      BOTH THE DRIVER AND THE ORACLE. **THE GATE:** NINE ROWS, NINE AGREE.
+      **THE PLANT:** CASES 6, 7 AND 8 -- THE `+sum(quo)`, THE SUM's LEADING
+      `+0` AND THE `x.const_like(0)` -- ALL RED, SO THE ARM IS LOAD-BEARING.
+      **AND THE GATE's ROW COUNT IS NOW READ FROM THE CASE FILE** AND IS NOT A
+      HAND-KEPT NUMBER, BECAUSE A SECOND COPY OF A LIST A GENERATOR OWNS IS
+      WHAT THE AGENT RULES CALL OUT BY NAME.
+
 
 *…4701 more lines in the archive.*
 

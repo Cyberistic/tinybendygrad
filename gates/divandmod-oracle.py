@@ -107,6 +107,32 @@ def build(op, k, c, n, d):
         return num.alu(Ops.MOD, const(d))
     if op == "DIVCONST":
         return const(k).alu(Ops.DIV, const(c))
+    if op in ("FRDIV", "FRMOD"):
+        # AND THE `factor_remainder` SHAPE, AND IT IS `(d*a*k + b + ...) op
+        # (c*d)` WITH **`d` A VARIABLE** -- AND THE VARIABLE IS THE WHOLE POINT,
+        # BECAUSE A CONST DIVISOR PUTS THE ARM BEHIND `divide_by_gcd`
+        # (divandmod.py:72-76), WHOSE `gcd` IS AN `EXPAND` AND NOT A `CONST`,
+        # AND UPSTREAM THEN **RAISES** `AssertionError`.  MEASURED 2026-11-25:
+        # EVERY CONST-DIVISOR SHAPE RAISED.
+        #
+        # AND THE VARIABLES ARE UPSTREAM's `UOp.variable` (ops.py:973-975) -- A
+        # PARAM WITH **NO SRCS**, SO ITS `_shape` IS `()` AND
+        # `x.const_like(0)` IS A **BARE `CONST 0`** AND NOT AN `EXPAND`.
+        #
+        # AND THE SHAPE IS UPSTREAM's OWN TEST's SHAPE
+        # (test/null/test_uop_symbolic.py:584-590) AND NOT A NEW ONE.
+        root_op = Ops.MOD if op == "FRMOD" else Ops.DIV
+        a = UOp.variable("a", 0, 10)
+        d = UOp.variable("d", 1, 10)
+        b = UOp.variable("b", 0, 10)
+        ad = a.alu(Ops.MUL, d)
+        if k != 1:
+            ad = ad.alu(Ops.MUL, const(k))
+        num = ad.alu(Ops.ADD, b)
+        for i in range(n):
+            num = num.alu(Ops.ADD, const(k + i))
+        den = d.alu(Ops.MUL, const(c)) if c != 1 else d
+        return num.alu(root_op, den)
     if op in ("GCDMOD", "GCDDIV"):
         # AND THE `divide_by_gcd` SHAPE, AND IT IS `(c0 + 2x) % (2x)` -- A
         # NUMERATOR WHOSE CONSTANT TERM MAKES IT **NOT EXACTLY DIVISIBLE**, AND A

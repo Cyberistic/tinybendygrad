@@ -225,9 +225,26 @@ a fixture where the quotient is on src1 AND the CONST is also on src1.
 - `divandmod.py:57-70` `nest_by_factor` — a set comprehension, then a RECURSIVE
   call to `fold_divmod_general` (mutual recursion, refused outright), then
   `backward_slice` twice. The largest single omission in the file.
-- `divandmod.py:83-96` `factor_remainder` — `const_like` (a TODO in
-  `ops.bend`) and `new_x.vmin` over a sum. **AND `usum` IS NO LONGER A
-  BLOCKER**: it is in `ops.bend` now.
+- `divandmod.py:78-91` `factor_remainder` — **DONE (2026-11-25), AND THE WALL
+  WAS NOT THE ONE NAMED.** The named wall was `const_like` (a TODO in
+  `ops.bend`) and `new_x.vmin` over a sum; the port has `F.UOp.vmin` over a
+  `BTable`, and `const_like` turned out not to be needed — **because the arm
+  only fires with a VARIABLE divisor**, and a variable's `_shape` is `()`, so
+  `x.const_like(0)` is a bare `CONST 0` and not an `EXPAND`.
+  **AND THE VARIABLE IS NOT COSMETIC.** MEASURED 2026-11-25 on CPython at the
+  pin: a CONST divisor puts the arm behind `divide_by_gcd`
+  (`divandmod.py:72-76`), whose `gcd` is `UOp.gcd(...).simplify()` and, for a
+  PARAM-bearing numerator, is an **`EXPAND`** and not a `CONST` — so upstream's
+  guard `gcd.op is Ops.CONST and gcd.val==1` is **false**, the arm fires, and
+  `unwrap(x.divide_exact(gcd))` **raises `AssertionError`**. Every
+  CONST-divisor shape I built crashed upstream. Upstream's own test
+  (`test/null/test_uop_symbolic.py:584`) uses `d = Variable("d", 1, 10)`.
+  **AND TWO SUMS, NOT ONE**: upstream's `factor_remainder` uses PYTHON's
+  builtin `sum` (`divandmod.py:89` and `:91`), which starts with the int `0`,
+  while `remove_nested_mod` uses `UOp.usum` (`divandmod.py:33`), which starts
+  with the first element. The port has both. The rows are
+  `gates/divandmod-cases.rows`'s `fr_*` rows, and the plant's cases 6-8 prove
+  the arm load-bearing.
 - `divandmod.py:72-77` `divide_by_gcd` — **DONE (2026-11-24), AND BOTH HALVES**:
   upstream's arm is ONE arm with TWO answer shapes (`ret*gcd` for a MOD and
   `ret` for a DIV, `divandmod.py:76`), and `simplify` was not needed — the

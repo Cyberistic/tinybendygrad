@@ -82,3 +82,45 @@ gcddiv_fires|GCDDIV|2|2|0|0
 # GCD IS A DIFFERENT SHAPE FROM UPSTREAM's ON THAT INPUT, AND THE ARM'S
 # `divide_exact` THEN REFUSES IT.  **A ROW THAT COMPARES THE TWO WOULD BE A ROW
 # THAT CAN NEVER PASS**, SO IT IS NOT HERE.
+#
+# --- `factor_remainder` (divandmod.py:78-91).  `(d*a + b) // d -> a + b//d`.
+#
+# AND THE **DIVISOR IS A VARIABLE** AND THAT IS NOT COSMETIC, IT IS THE WHOLE
+# POINT.  MEASURED 2026-11-25 ON CPYTHON AT THE PIN:
+#
+#   * A **CONST** DIVISOR PUTS THE ARM BEHIND `divide_by_gcd`
+#     (divandmod.py:72-76), WHOSE `gcd` IS `UOp.gcd(...).simplify()` AND FOR A
+#     PARAM-BEARING NUMERATOR THAT IS AN **`EXPAND`** AND NOT A `CONST` -- SO
+#     UPSTREAM's GUARD `gcd.op is Ops.CONST and gcd.val==1` IS **FALSE**, THE
+#     ARM FIRES, AND `unwrap(x.divide_exact(gcd))` **RAISES
+#     `AssertionError`**.  MEASURED: EVERY CONST-DIVISOR SHAPE I BUILT
+#     CRASHED UPSTREAM (`DIV(2x+y,2)`, `DIV(3x+y,3)`, `DIV(6x+3,6)`,
+#     `MOD(2x+y,2)`).
+#   * A **VARIABLE** DIVISOR CONTRIBUTES NOTHING TO THE GCD, SO THE GCD IS
+#     **1**, AND A VARIABLE's `_shape` IS `()` (`UOp.variable` IS
+#     `UOp(Ops.PARAM, src=(UOp(Ops.STACK),), ...)`, ops.py:973-975), SO
+#     `x.const_like(0)` IS A **BARE `CONST 0`** AND NOT AN `EXPAND`.
+#
+# AND UPSTREAM's OWN TEST SAYS SO: `test/null/test_uop_symbolic.py:584`
+# `test_symbolic_factor_remainder_div` TESTS `(d*a+b)//d` WITH
+# `d = Variable("d", 1, 10)` -- **A VARIABLE AND NOT A CONST.**
+#
+# AND THE SHAPE'S FOUR NUMBERS, AND THEY ARE THE CASE FILE's `k`, `c`, `n` AND
+# `d` FIELDS:
+#
+#   `k`   THE MULTIPLIER ON `a` -- THE NUMERATOR IS `d*a*k`.
+#   `c`   THE MULTIPLIER ON THE DIVISOR -- THE DIVISOR IS `c*d`.
+#   `n`   HOW MANY EXTRA CONST TERMS THE NUMERATOR HAS.
+#   `d`   THE VALUE OF THE FIRST EXTRA CONST TERM.
+#
+# AND EVERY PARAM HERE IS A **VARIABLE** AND NOT A SIZED PARAM, AND THE
+# DIFFERENCE IS THE SHAPE AND NOT COSMETIC: A SIZED PARAM HAS A `_shape` OF
+# `(4,)` AND SO `x.const_like(0)` IS AN `EXPAND` AND NOT A BARE `CONST`.
+fr_base|FRDIV|1|1|0|0
+# AND THE MOD HALF, AND IT IS `new_x%y` (divandmod.py:91) AND NOT
+# `new_x//y+sum(quo)` -- **A SECOND ANSWER SHAPE AND NOT A VARIANT.**
+fr_mod|FRMOD|1|1|0|0
+# AND UPSTREAM's OWN TEST's SECOND SHAPE, `(d*a*20+b)//(5*d)`.
+fr_k20|FRDIV|20|5|0|0
+# AND A NUMERATOR WITH THREE TERMS, AND THE EXTRA CONST TERMS GO TO `rem`.
+fr_three|FRDIV|1|1|2|0

@@ -163,12 +163,87 @@ def gp.gcd(+ar: O.Arena, k: U32, n: U32, ismod: Bool) -> O.Found:
   gp.modroot(O.Found.ar(s), O.Found.i(s), O.Found.i(mx), ismod)
 
 
+# AND THE `factor_remainder` SHAPE, AND IT IS `(k*x + y) op d` -- A NUMERATOR
+# WHOSE FIRST TERM IS A **MULTIPLE** OF `x` AND WHOSE SECOND TERM IS A **PARAM**
+# AND NOT A CONST, SO THE CONSTANT BRANCH OF THE ARM (`(c:=u.const_factor())%
+# y.val!=c`) DOES NOT FIRE FOR IT.
+#
+# AND THE MULTIPLIER IS `k` AND THE DIVISOR IS `d`.
+# AND THE VARIABLE, AND IT IS `UOp.variable(name, lo, hi)` (ops.py:973-975) --
+# A PARAM WITH **NO SRCS** (SO ITS `_shape` IS `()`), A `vmin_vmax` RANGE, AND
+# THE **ALU** ADDRSPACE.  AND THE SHAPE IS THE POINT: `x.const_like(0)` IS A
+# **BARE `CONST 0`** FOR A VARIABLE AND AN `EXPAND` FOR A SIZED PARAM.
+def gp.var(+ar: O.Arena, nm: String, lo: U32, hi: U32) -> O.Found:
+  F.g_mv_var(ar, H.i64_of_i32(lo), H.i64_of_i32(hi), nm)
+
+# AND THE `factor_remainder` SHAPE, AND IT IS `(d*a + b) op d` WITH **`d` A
+# VARIABLE** -- AND THE VARIABLE IS THE WHOLE POINT, BECAUSE A CONST DIVISOR
+# PUTS THE ARM BEHIND `divide_by_gcd`, WHOSE `gcd` IS AN `EXPAND` AND NOT A
+# `CONST`, AND UPSTREAM THEN **RAISES** (divandmod.py:72-76).
+# AND THE EXTRA CONST TERMS, AND THEY ARE `c(k+i)` FOR `i` IN `0..n`.
+def gp.fr.terms.go(n: Nat, +i: U32, +k: U32, +ar: O.Arena, +s: O.Found) -> O.Found:
+  match n:
+    case 0n: s
+    case 1n++p:
+      +t = gp.const(O.Found.ar(s), U32.add(k, i))
+      +n2 = gp.alu(O.Found.ar(t), O.OpsADD{}, O.Found.i(s), O.Found.i(t))
+      gp.fr.terms.go(p, U32.add(i, 1), k, O.Found.ar(n2), n2)
+
+def gp.fr.terms(+ar: O.Arena, +s: O.Found, n: Nat, +k: U32) -> O.Found:
+  gp.fr.terms.go(n, 0, k, ar, s)
+
+# AND THE `factor_remainder` SHAPE, AND IT IS `(d*a*k + b + ...) op (c*d)` WITH
+# **`d` A VARIABLE** -- AND THE VARIABLE IS THE WHOLE POINT, BECAUSE A CONST
+# DIVISOR PUTS THE ARM BEHIND `divide_by_gcd`, WHOSE `gcd` IS AN `EXPAND` AND
+# NOT A `CONST`, AND UPSTREAM THEN **RAISES** (divandmod.py:72-76).
+#
+# AND THE SHAPE IS UPSTREAM's OWN TEST's SHAPE (test/null/test_uop_symbolic.py
+# :584-590) AND NOT A NEW ONE.
+# AND THE MULTIPLIER, AND IT IS `x*k` AND THE `k=1` CASE IS THE NODE ITSELF --
+# AND UPSTREAM's OWN `x*1` IS **NOT** FOLDED AWAY IN THE ANSWER, SO THE PORT
+# MUST NOT FOLD IT EITHER.  MEASURED: UPSTREAM ANSWERS `(d*a+b)//d` WITH
+# `ADD(c0,MUL(c1,a))` -- **THE `1` IS THERE**.
+# AND THE `k=1` CASE IS THE NODE ITSELF **RE-HOMED INTO THE GIVEN ARENA**,
+# BECAUSE AN INDEX IS VALID IN A DESCENDANT AND NOT IN AN ANCESTOR, AND THE
+# CALLER READS IT IN THE ARENA IT PASSED.  MEASURED 2026-11-25: WITHOUT THE
+# RE-HOMING THE PORT ANSWERED `nofold`.
+def gp.fr.mul.go(one: Bool, +ar: O.Arena, +x: O.Found, +y: O.Found) -> O.Found:
+  match one:
+    case True{}: O.Found{ar, O.Found.i(x)}
+    case False{}: gp.alu(ar, O.OpsMUL{}, O.Found.i(x), O.Found.i(y))
+
+def gp.fr.mul(+ar: O.Arena, +x: O.Found, k: U32, +y: O.Found) -> O.Found:
+  gp.fr.mul.go(U32.is_eq(k, 1), ar, x, y)
+
+# AND THE `factor_remainder` SHAPE, AND IT IS `(d*a*k + b + ...) op (c*d)` WITH
+# **`d` A VARIABLE** -- AND THE VARIABLE IS THE WHOLE POINT, BECAUSE A CONST
+# DIVISOR PUTS THE ARM BEHIND `divide_by_gcd`, WHOSE `gcd` IS AN `EXPAND` AND
+# NOT A `CONST`, AND UPSTREAM THEN **RAISES** (divandmod.py:72-76).
+#
+# AND THE SHAPE IS UPSTREAM's OWN TEST's SHAPE (test/null/test_uop_symbolic.py
+# :584-590) AND NOT A NEW ONE.
+def gp.fr(+ar: O.Arena, +k: U32, +c: U32, n: Nat, d: U32, ismod: Bool) -> O.Found:
+  +kc = gp.const(ar, k)
+  +a = gp.var(O.Found.ar(kc), "a", 0, 10)
+  +dv = gp.var(O.Found.ar(a), "d", 1, 10)
+  +b = gp.var(O.Found.ar(dv), "b", 0, 10)
+  +ad = gp.alu(O.Found.ar(b), O.OpsMUL{}, O.Found.i(a), O.Found.i(dv))
+  +ak = gp.fr.mul(O.Found.ar(ad), ad, k, kc)
+  +s = gp.alu(O.Found.ar(ak), O.OpsADD{}, O.Found.i(ak), O.Found.i(b))
+  +s2 = gp.fr.terms(O.Found.ar(s), s, n, k)
+  +cc = gp.const(O.Found.ar(s2), c)
+  +den = gp.fr.mul(O.Found.ar(cc), dv, c, cc)
+  gp.modroot(O.Found.ar(den), O.Found.i(s2), O.Found.i(den), ismod)
+
+
 def gp.root(+ar: O.Arena, op: String, k: U32, c: U32, n: Nat, d: U32) -> O.Found:
   match op:
     case "MODCONST": gp.modconst(ar, k, c, n, d)
     case "DIVCONST": gp.divconst(ar, k, c)
     case "GCDMOD": gp.gcd(ar, k, U32.from_nat(n), True{})
     case "GCDDIV": gp.gcd(ar, k, U32.from_nat(n), False{})
+    case "FRMOD": gp.fr(ar, k, c, n, d, True{})
+    case "FRDIV": gp.fr(ar, k, c, n, d, False{})
     case "DIV": gp.mod(ar, k, c, n, d, False{})
     case _: gp.mod(ar, k, c, n, d, True{})
 
