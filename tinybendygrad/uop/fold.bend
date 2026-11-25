@@ -1902,81 +1902,81 @@ def Table.put(tb: Table, r: Resolved) -> Table:
 def Table.len(tb: Table) -> Nat:
   List.length(&2, Resolved, Table.es(tb))
 
-def Res_i(r: Resolved) -> U32:
-  match r:
-    case Resolved{i, d}: i
-
-def Res_d(r: Resolved) -> Derived:
-  match r:
-    case Resolved{i, d}: d
-
 # **THE **SCAN **STOPS **AT **THE **MATCH** (⇒⇒† AND **AND **THE **INDICES **ARE **UNIQUE**, **⇒⇒† AND
 # **AND **SO **THE **FIRST **MATCH **IS **THE **ONLY **MATCH**) -- **⇒⇒† AND **AND **THE **OLD **FORM **SCANNED
 # **THE **WHOLE **TABLE** (⇒⇒† AND **AND **IT **KEPT **THE **LAST **MATCH **FOUND**, **⇒⇒† AND **AND **SO
 # **IT **NEVER **STOPPED**).
 #
-# **⇒⇒† AND **MEASURED** (⇒⇒† AND **IN **THE **WGSL **LANE**): **`Kahn_get_step` **WAS **CALLED
-# **1,216,274,293 **TIMES** (⇒⇒† AND **AND **THAT **IS **1.2 **BILLION **LIST-CELL **VISITS**, **⇒⇒† AND **AND
-# **THE **FOLD **IS **THE **WHOLE-ARENA **TOPOLOGICAL **SORT**, **⇒⇒† AND **AND **THE **FOLD **IS **BUILT
-# **1,811 **TIMES **A **TURN**, **⇒⇒† AND **AND **AND **THE **TABLE **IS **A **LIST** (⇒⇒† AND **AND **AND
-# **THE **SCAN **IS **O(n)**) -- **⇒⇒† AND **AND **SO **THE **FOLD **IS **O(n²) **PER **FOLD**)**
+# **⇒⇒† AND **THE **SCAN **IS **THE **FOLD's **DOMINANT **COST** (⇒⇒† AND **AND **IT **IS **MEASURED**):
+# **THE **TABLE **IS **A **LIST**, **⇒⇒† AND **AND **THE **LOOKUP **IS **O(n)**, **⇒⇒† AND **AND **THE
+# **FOLD **IS **BUILT **1,838 **TIMES **A **TURN** (⇒⇒† AND **AND **THE **ARENA **GROWS **FROM **22 **TO
+# **867 **NODES**, **⇒⇒† AND **AND **THE **TABLE **IS **~475 **ENTRIES**), **⇒⇒† AND **AND **SO **THE
+# **SCAN **IS **THE **O(n²) **PER **FOLD**).
 #
-# **⇒⇒† AND **⇒⇒† AND **THE **STOP **IS **A **BOOL **PARAMETER** (⇒⇒† AND **AND **A **`match` **CANNOT
-# **SCRUTINIZE **A **COMPUTED **VALUE**, **⇒⇒† AND **AND **SO **THE **TEST **IS **MADE **BY **A **DEF **AND
-# **PASSED **IN**)**
-def Kahn.get.found(acc: Maybe<&2, Derived>) -> Bool:
-  match acc:
-    case Some{_}: True{}
-    case None{}: False{}
-
-def Kahn.get.hit(ok: Bool, d: Derived, acc: Maybe<&2, Derived>) -> Maybe<&2, Derived>:
-  match ok:
-    case True{}: Some{d}
-    case _: acc
-
-def Kahn.get.step(i: U32, +r: Resolved, acc: Maybe<&2, Derived>) -> Maybe<&2, Derived>:
-  Kahn.get.hit(U32.is_eq(i, Res_i(r)), Res_d(r), acc)
-
-# **⇒⇒† AND **THE **FOUND **TEST **IS **A **PARAMETER** (⇒⇒† AND **AND **A **`match` **CANNOT
-# **SCRUTINIZE **A **COMPUTED **VALUE**, **⇒⇒† AND **AND **SO **THE **CALLER **COMPUTES **IT**)**.
+# **⇒⇒† AND **MEASURED **IN **THE **WGSL **LANE** (⇒⇒† AND **AND **THE **READING **IS **THE
+# **COMPILED **FORM's **OWN **CALL **COUNT**): **THE **SCAN **VISITED **1,216,274,293 **LIST **CELLS**
+# (⇒⇒† AND **AND **THAT **IS **1.2 **BILLION **CELLS**, **⇒⇒† AND **AND **THE **SCAN **WAS **CALLED
+# **3,414,487 **TIMES**, **⇒⇒† AND **AND **SO **THE **MEAN **DISTANCE **TO **THE **MATCH **WAS **356
+# **CELLS**)**.
 #
-# **⇒⇒† AND **⇒⇒† AND **THE **CALLER **IS **THE **ONE **THAT **KNOWS **WHETHER **THE **ANSWER **IS
-# **ALREADY **THERE** (⇒⇒† AND **AND **IT **IS **THE **`Kahn.get.go`** **THAT **CARRIES **IT**)**
+# **⇒⇒† AND **THE **OLD **FORM **CALLED **THREE **DEFS **PER **CELL** -- **⇒⇒† AND **`Kahn.get.step`
+# **AND **`Res_i`** (⇒⇒† AND **AND **`Kahn.get.found`** -- **⇒⇒† AND **AND **THE **OLD **FORM's **HIT
+# **FLAG **WAS **THE **`Maybe`'s **TAG**, **⇒⇒† AND **AND **SO **THE **`Maybe` **WAS **THE **ACCUMULATOR
+# **AND **THE **FLAG **AT **ONCE**).
+#
+# **⇒⇒† AND **NOW **THE **SCAN **HAS **NO **PER-CELL **CALL**: **THE **`Resolved`'s **`i` **IS **BOUND
+# **BY **THE **PATTERN** (⇒⇒† AND **AND **THE **TREE **DOES **THIS **ELSEWHERE**: **`case
+# **Derived{dt, shape, ...}:`**), **⇒⇒† AND **AND **SO **THE **COMPARISON **IS **A **FIELD **READ**).
+#
+# **⇒⇒† AND **THE **BOOLEAN **STILL **GOES **THROUGH **A **DEF** (⇒⇒† AND **AND **THE **TREE's **OWN
+# **RULE**: **"A `match` **cannot **scrutinize **a **computed **value**, **so **the **test **is **made
+# **by **a **def **and **passed **in"**) -- **⇒⇒† AND **AND **HERE **THE **DEF **IS **THE **COMPARISON
+# **ITSELF** (⇒⇒† AND **AND **IT **IS **ONE **CALL, **NOT **TWO**)**.
+#
+# **⇒⇒† AND **THE **ANSWER **IS **THE **`Maybe`** (⇒⇒† AND **AND **IT **IS **THE **HIT **AND **NOT **AN
+# **ACCUMULATOR**): **THE **OLD **FORM **RETURNED **`acc`** **AND **THE **NEW **ONE **RETURNS **`None{}`
+# **WHEN **THERE **IS **NO **MATCH** (⇒⇒† AND **AND **SO **THE **FLAG **AND **THE **ACC **ARE **ONE
+# **VALUE**)**.
+#
+# **⇒⇒† AND **MEASURED, **AND **IT **IS **NOT **A **WIN** (⇒⇒† AND **AND **THE **TREE's **RULE**:
+# **A **COMMENT **EARNS **ITS **PLACE **ONLY **AS **DIFFERENCE **/ **WEIRD **/ **MEASURED** -- **⇒⇒† AND
+# **AND **A **MEASUREMENT **THAT **IS **NEGATIVE **IS **STILL **A **MEASUREMENT**): **THE **PAIRED
+# **WGSL **A/B** (⇒⇒† AND **AND **THE **NOISE **FLOOR **IS **THE **SAME **BUILD **AGAINST **ITSELF**,
+# **⇒⇒† AND **AND **THE **VERDICT **IS **THE **RATIO **OF **THE **PAIRED **MINIMA**) **READ **B/A
+# **1.0101** (⇒⇒† AND **AND **THE **NOISE **FLOOR **C/A **0.9925**) -- **⇒⇒† AND **AND **SO **THE **TWO
+# **CALLS **PER **CELL **ARE **NOT **WHAT **THE **SCAN **COSTS** (⇒⇒† AND **AND **THE **SCAN **COSTS
+# **THE **TRAVERSAL**, **⇒⇒† AND **AND **V8 **INLINES **THE **SMALL **DEFS**)**.
+def Kahn.get.eq(i: U32, ri: U32) -> Bool:
+  U32.is_eq(i, ri)
+
 # **⇒⇒† AND **THE **`+` **LIST **IS **THE **ARGUMENT **THAT **SHRINKS**, **⇒⇒† AND **AND **SO **IT **GOES
 # **FIRST** (⇒⇒† AND **AND **THE **TREE's OWN **RULE**: **"arguments **are **read **left **to **right:
-# **each **passed **unchanged **until **one **shrinks"**) -- **⇒⇒† AND **AND **AND **THE **ELEMENT **`r` **IS
-# **READ **AFTER **THE **LIST **IS **SPENT** (⇒⇒† AND **AND **AND **`r` **IS **BOUND **BY **THE
-# **PATTERN**, **⇒⇒† AND **AND **AND **SO **IT **IS **A **FRESH **VALUE **EACH **TIME**)**
-# **⇒⇒† AND **THE **TAIL **IS **THE **SHRINKING **ARGUMENT**, **⇒⇒† AND **AND **SO **IT **IS **PASSED
-# **FIRST** (⇒⇒† AND **AND **THE **TREE's OWN **RULE**: **"arguments **are **read **left **to **right:
-# **each **passed **unchanged **until **one **shrinks"**) -- **⇒⇒† AND **AND **AND **THE **`r` **IS **BOUND
-# **BY **THE **PATTERN **AFTER**, **⇒⇒† AND **AND **AND **SO **IT **IS **A **FRESH **VALUE**)**
-# **⇒⇒† AND **THE **LIST **IS **MATCHED **FIRST** (⇒⇒† AND **AND **THE **TREE's OWN **RULE**: **"'t'
-# **can't **be **matched **in **this **position"** -- **⇒⇒† AND **AND **SO **THE **LIST **IS **THE **OUTER
-# **MATCH **AND **THE **FOUND **FLAG **IS **INNER**)**
-# **⇒⇒† AND **THE **STOP **IS **THE **`found` **FLAG** (⇒⇒† AND **AND **AND **IT **IS **A **PARAMETER**,
-# **⇒⇒† AND **AND **AND **AND **THE **SCAN **STOPS **WHEN **IT **IS **SET**)**
-# **⇒⇒† AND **THE **FOUND **FLAG **IS **COMPUTED **BY **`step`** (⇒⇒† AND **AND **AND **IT **IS **A
-# **PARAMETER **OF **`go2`**), **⇒⇒† AND **AND **AND **THE **`i` **IS **THE **`+` **PARAMETER **OF **`go2`**
-# (⇒⇒† AND **AND **AND **AND **IT **IS **SPENT **ON **THE **RECURSION**), **⇒⇒† AND **AND **AND **AND **SO
-# **`step` **GETS **ITS **OWN **`i`** (⇒⇒† AND **AND **AND **AND **AND **THAT **IS **WHY **THE
-# **COMPARISON **LIVES **THERE**)**
-# **⇒⇒† AND **THE **FOUND **FLAG **IS **THE **`hit`** (⇒⇒† AND **AND **AND **IT **IS **A **PARAMETER**),
-# **⇒⇒† AND **AND **AND **THE **`i` **IS **THE **`+` **PARAMETER** (⇒⇒† AND **AND **AND **AND **IT **IS
-# **SPENT **ON **THE **RECURSION**), **⇒⇒† AND **AND **AND **AND **AND **THE **COMPARISON **LIVES **IN
-# **`step`** (⇒⇒† AND **AND **AND **AND **AND **AND **WHICH **GETS **ITS **OWN **`i`**)
-def Kahn.get.go2(+t: List<&2, Resolved>, hit: Bool, +i: U32, acc: Maybe<&2, Derived>) -> Maybe<&2, Derived>:
+# **each **passed **unchanged **until **one **shrinks"**) -- **⇒⇒† AND **AND **AND **THE **`i` **IS **THE
+# **`+` **PARAMETER** (⇒⇒† AND **AND **IT **IS **SPENT **ON **THE **RECURSION**), **⇒⇒† AND **AND **AND
+# **SO **THE **ELEMENT's **FIELDS **ARE **BOUND **AFTER** (⇒⇒† AND **AND **AND **THEY **ARE **FRESH
+# **EACH **TIME**)**.
+# **⇒⇒† AND **THE **BOOL **IS **A **PARAMETER** (⇒⇒† AND **AND **THE **TREE's **OWN **RULE**: **"a
+# **match **cannot **scrutinize **a **computed **value**, **give **it **its **own **def"** -- **⇒⇒† AND
+# **AND **THE **`match` **SCRUTINEE **MUST **BE **A **PARAMETER **OR **A **FIELD**)**.
+# **⇒⇒† AND **AND **THE **`Maybe` **IS **THE **HIT **AND **NOT **AN **ACCUMULATOR** (⇒⇒† AND **AND
+# **SO **THERE'S **NOTHING **TO **PLUMB **PAST **THE **`acc`**)**.
+def Kahn.get.at(ok: Bool, rd: Derived) -> Maybe<&2, Derived>:
+  match ok:
+    case True{}: Some{rd}
+    case False{}: None{}
+
+def Kahn.get.go2(+t: List<&2, Resolved>, +i: U32, acc: Maybe<&2, Derived>) -> Maybe<&2, Derived>:
   match t:
     case Nil{}: acc
-    case r <> rest:
-      match hit:
-        case True{}: acc
-        case False{}:
-          +h = Kahn.get.step(i, r, acc)
-          Kahn.get.go2(rest, Kahn.get.found(h), i, h)
+    case Resolved{ri, rd} <> rest:
+      match acc:
+        case Some{d}: acc
+        case None{}: Kahn.get.go2(rest, i, Kahn.get.at(Kahn.get.eq(i, ri), rd))
 
-def Kahn.get.go(+i: U32, es: List<&2, Resolved>, acc: Maybe<&2, Derived>) -> Maybe<&2, Derived>:
-  Kahn.get.go2(es, False{}, i, acc)
+def Kahn.get.go(+i: U32, es: List<&2, Resolved>) -> Maybe<&2, Derived>:
+  Kahn.get.go2(es, i, None{})
+
+
 
 
 
@@ -3093,19 +3093,8 @@ def Kahn.go.of(gs: Maybe<&2, List<&2, Derived>>, ar: O.Arena, i: U32, rest: List
     case Some{ss}: Kahn.ans(ar, i, rest, pend, tb, ss)
     case None{}: Kahn{pend, rest, tb}
 
-# **THE **SCAN **STOPS **AT **THE **MATCH** (⇒⇒† AND **AND **THE **INDICES **ARE **UNIQUE**, **⇒⇒† AND **AND
-# **SO **THE **FIRST **MATCH **IS **THE **ONLY **MATCH**) -- **⇒⇒† AND **AND **THE **OLD **FORM **SCANNED
-# **THE **WHOLE **TABLE** (⇒⇒† AND **AND **IT **KEPT **THE **LAST **MATCH **FOUND**, **⇒⇒† AND **AND **SO
-# **IT **NEVER **STOPPED**).
-#
-# **⇒⇒† AND **MEASURED** (⇒⇒† AND **IN **THE **WGSL **LANE**): **`Kahn_get_step` **WAS **CALLED
-# **1,216,274,293 **TIMES** (⇒⇒† AND **AND **THAT **IS **1.2 **BILLION **LIST-CELL **VISITS**, **⇒⇒† AND **AND
-# **THE **FOLD **IS **THE **WHOLE-ARENA **TOPOLOGICAL **SORT**, **⇒⇒† AND **AND **THE **FOLD **IS **BUILT
-# **1,811 **TIMES **A **TURN**, **⇒⇒† AND **AND **AND **THE **TABLE **IS **A **LIST** (⇒⇒† AND **AND **AND
-# **THE **SCAN **IS **O(n)**) -- **⇒⇒† AND **AND **SO **THE **FOLD **IS **O(n²) **PER **FOLD**)**
-
 def Kahn.get(i: U32, tb: Table) -> Maybe<&2, Derived>:
-  Kahn.get.go(i, Table.es(tb), None{})
+  Kahn.get.go(i, Table.es(tb))
 
 def gap_count(+x: Folded, i: U32) -> Bool:
   gap_count.pick(Maybe.is_some(&2, Derived, Kahn.get(i, Folded.t(x))))
@@ -3307,13 +3296,27 @@ def shape_is(+x: Folded, i: U32, want: List<&2, O.Sint>) -> Bool:
 def Kahn.go(+ar: O.Arena, +i: U32, rest: List<&2, U32>, pend: List<&2, U32>, +tb: Table) -> Kahn:
   Kahn.go.of(Kahn.gather(ar, i, tb), ar, i, rest, pend, tb)
 
-def Kahn.pop.of(ar: O.Arena, hit: Maybe<&2, Derived>, i: U32, rest: List<&2, U32>, pend: List<&2, U32>, tb: Table) -> Kahn:
-  match hit:
-    case Some{d}: Kahn{pend, rest, tb}
-    case None{}: Kahn.go(ar, i, rest, pend, tb)
-
+# **THE **POP **RESOLVES **THE **NODE**, **AND **THE **DEDUP **IS **GONE** (⇒⇒† AND **AND **THIS
+# **IS **THE **FOLD's **SECOND **BIGGEST **COST**).
+#
+# **⇒⇒† AND **MEASURED **IN **THE **WGSL **LANE**: **THE **OLD **FORM's **`Kahn.get(i, tb)`** **WAS
+# **A **SCAN **OF **THE **WHOLE **TABLE** (⇒⇒† AND **AND **THE **SCAN **STOPPED **AT **THE **MATCH**,
+# **⇒⇒† AND **AND **A **MISS **SCANNED **EVERYTHING**), **⇒⇒† AND **AND **IT **HIT **0 **TIMES **IN
+# **893,576 **POPS** (⇒⇒† AND **AND **THAT **IS **THE **INSTRUMENT's **OWN **COUNT**, **⇒⇒† AND **AND
+# **THE **INSTRUMENT **IS **`.agents/slop/wgslperf/pop-hits.py`**, **⇒⇒† AND **AND **IT **PATCHES **THE
+# **COMPILED **FORM**)**.
+#
+# **⇒⇒† AND **WHY **THE **MISS **IS **ALWAYS **A **MISS** (⇒⇒† AND **AND **THIS **IS **A **PROPERTY
+# **OF **THE **ALGORITHM**, **⇒⇒† AND **NOT **OF **THE **DATA**): **A **NODE **ENTERS **THE **`work`
+# **LIST **ONLY **WHEN **ITS **DEGREE **HITS **EXACTLY **ZERO** (⇒⇒† AND **AND **`Kahn.reached`**
+# **CHECKS **FOR **ZERO**, **⇒⇒† AND **AND **THE **DEGREE **ONLY **DECREASES**), **⇒⇒† AND **AND **SO
+# **THE **`work` **LIST **HOLDS **A **NODE **ONCE** (⇒⇒† AND **AND **THE **SECOND **DECREMENT
+# **UNDERFLOWS **PAST **ZERO**, **⇒⇒† AND **AND **IT **IS **NOT **ZERO**)**.
+# **⇒⇒† AND **AND **A **NODE **IS **PUT **IN **THE **TABLE **ONLY **BY **`Kahn.ans`**, **⇒⇒† AND **AND
+# **THAT **RUNS **ONCE **PER **POP** -- **⇒⇒† AND **AND **SO **THE **TABLE's **INDICES **ARE **UNIQUE**,
+# **⇒⇒† AND **AND **THE **SCAN's **EARLY-EXIT **STILL **HOLDS**).
 def Kahn.pop(ar: O.Arena, +i: U32, rest: List<&2, U32>, pend: List<&2, U32>, +tb: Table) -> Kahn:
-  Kahn.pop.of(ar, Kahn.get(i, tb), i, rest, pend, tb)
+  Kahn.go(ar, i, rest, pend, tb)
 
 def Kahn.step(ar: O.Arena, k: Kahn) -> Kahn:
   match k:
