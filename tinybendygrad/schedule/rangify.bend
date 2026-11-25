@@ -94,6 +94,7 @@ import ./../uop/ops.bend as O
 import ./../LAWS/spec.bend as S
 
 import ./../uop/fold.bend as F
+import ./../mixin/movement.bend as MX
 
 import ./indexing.bend as IX
 
@@ -640,6 +641,12 @@ def rr_marg.of2(m: Maybe<&2, List<&2, U32>>) -> List<&2, U32>:
 # shape is `src[1]` and `arg` is None -- and `.marg` READS `src[1].as_shape` for RESHAPE,
 # EXPAND and PERMUTE (ops.py:772/815). MEASURED: `rr_marg` read only `ATuple`, so every
 # movement op on this program answered an EMPTY marg and `_apply_reshape` was refused.
+#
+# AND THE STACK ARM READ THE STACK'S **DIMS** -- THE CONSTS' SIZES, WHICH ARE ZEROS -- so
+# every movement op's marg was ZEROS: the SHRINK arm never shifted anything, `dd`'s
+# consumers agreed (so the realize never fired), and the `PAD` stayed in the kernel graph
+# for the fold to refuse. THE READER IS THE MIXIN'S (`mxm_as_shape`, `mixin/movement.bend`)
+# -- `schedule/realize.bend` imports that mixin too, so there is one copy of it.
 def rr_dim_of(+ar: O.Arena, +n: U32) -> U32:
   Maybe.default(&2, U32, O.ParamArg.size.const(O.Arena.arg(ar, n)), 0)
 
@@ -650,7 +657,7 @@ def rr_stack_dims.go(+ar: O.Arena, +ss: List<&2, U32>, +acc: List<&2, U32>) -> L
 
 def rr_marg.op(op: O.Op, +ar: O.Arena, +n: U32) -> List<&2, U32>:
   match op:
-    case O.OpsSTACK{}: rr_stack_dims.go(ar, O.Arena.srcs(ar, n), Nil{})
+    case O.OpsSTACK{}: MX.mxm_as_shape(ar, n)
     case _: [rr_dim_of(ar, n)]
 
 def rr_marg.src(+ar: O.Arena, +x: U32) -> List<&2, U32>:
@@ -687,6 +694,11 @@ def rr_shr.zs.go(+offs: List<&2, U32>, +acc: List<&2, Bool>) -> List<&2, Bool>:
 
 def rr_shr.zs(+offs: List<&2, U32>) -> List<&2, Bool>: rr_shr.zs.go(offs, Nil{})
 
+# TODO(shader-pad-lane): THIS ARM LOOKS THE RANGE TABLE UP WITH A NODE ID. `ps` IS THE
+# NODE'S OUTPUT RANGES -- NODE IDS -- WHILE `ix_tbl_at` READS THE TABLE BY POSITION, so
+# EVERY AXIS READS THE WRONG ENTRY (or none) and the SHRINK NEVER SHIFTS. UPSTREAM'S ARM
+# (`indexing.py:166`) TAKES THE RANGE NODE ITSELF: `a if off == 0 else a+off`. THE FIX IS
+# TO READ THE RANGE BY ITS ID (`IX.ix_rg_n`) AND NOT THROUGH THE TABLE.
 def rr_shr.go(+ps: List<&2, U32>, +offs: List<&2, U32>, +zs: List<&2, Bool>, +ar: O.Arena,
               +tbl: List<&2, IX.IxRange>, +acc: List<&2, IX.IxRange>) -> (O.Arena & List<&2, IX.IxRange>):
   match ps:
@@ -702,7 +714,7 @@ def rr_shr.go(+ps: List<&2, U32>, +offs: List<&2, U32>, +zs: List<&2, Bool>, +ar
                 case True{} : rr_shr.go(pt, ot, zt, ar, tbl,
                                         List.append(&2, IX.IxRange, acc, [IX.ix_tbl_at(tbl, pos)]))
                 case False{}:
-                  +f = IX.ix_rg_node(O.AXIS_WEAK{}, ar, IX.ix_tbl_at(tbl, pos))
+                  +f = IX.ix_rg_node(O.AXIS_WEAK{}, ar, IX.ix_rg_n(pos))
                   +c = O.UOp.cconst(O.Found.ar(f), O.CInt{H.i64_of_i32(o)}, S.int32())
                   +d = O.UOp.alu(O.Found.ar(c), O.OpsADD{}, [O.Found.i(f), O.Found.i(c)])
                   rr_shr.go(pt, ot, zt, O.Found.ar(d), tbl,
