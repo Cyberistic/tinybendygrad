@@ -5174,9 +5174,15 @@ are NOT free: `grep -c smoothstep tinygrad/` is 0 and there is no `Ops.MIN`.
       ranges that END at x (`indexing.py:14` ✓) -- while the port's second element holds
       the node's OUTPUT ranges ✓, and the port's realize branch sets the realized node's
       INPUT ranges to `Nil{}` ✓ where upstream sets them to the node's NEW ranges
-      (`rngs = out_rngs`, `indexing.py:283` ✓). **THAT PAIR IS THE NEXT READING**: it
-      decides what the `STAGE` holds (upstream's `closed_ranges`, `indexing.py:82` ✓) and
-      what the consumers compare. **WHAT UPSTREAM DOES WITH THE OLD RANGES IS**:
+      (`rngs = out_rngs`, `indexing.py:283` ✓). **AND THE PORT'S `rr_ap_closed` READS THAT
+      SECOND ELEMENT** (`rangify.bend:1033-1036` ✓) -- so **THE PORT'S `STAGE` HOLDS THE
+      OUTPUT RANGES WHERE UPSTREAM'S HOLDS THE CLOSED ONES** (`indexing.py:82` ✓), measured
+      in the kernel graph (`STAGE:none:MAX,RANGE,RANGE` ✓). **AND THE PORT'S MODEL CANNOT
+      EXPRESS UPSTREAM'S CLOSED-RANGES LIST AT ALL**: its ending is a per-POSITION Bool
+      (`rr_ends_of`, `rangify.bend:429` ✓) where upstream's is a per-NODE list of RANGES
+      (`ending_ranges[x]`, `indexing.py:207` ✓) -- so this is a MODEL change, the same scale
+      as the range model itself. **THAT IS THE NEXT READING**, and it is why the realize is
+      not a patch. **WHAT UPSTREAM DOES WITH THE OLD RANGES IS**:
       upstream ENDS the realized node's old ranges (`ending_ranges[x] = []`,
       `indexing.py:226-228` ✓) and KEEPS the consumers' ranges where they agree ✓ — the
       port's `rr_merge` mints a new range for every axis ✓ (its documented fallback ✓) and

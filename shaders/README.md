@@ -168,6 +168,17 @@ sets them to the node's new ranges (`rngs = out_rngs`, `indexing.py:283`). That 
 what the `STAGE` holds (upstream's `closed_ranges`, `indexing.py:82`) and what the consumers
 compare — **it is the next reading**.
 
+**And the pair's second element is where it bites.** Upstream's `range_map[x]` is
+`(input ranges, **closed** ranges)` — the ranges that *end* at x (`indexing.py:14`) — and
+the `STAGE` holds the closed ones (`indexing.py:82`). The port's `rr_ap_closed` reads the
+pair's second element (`rangify.bend:1033-1036`), which holds the node's **output** ranges,
+so **the port's `STAGE` holds the output ranges where upstream's holds the closed ones**
+(measured in the kernel graph: `STAGE:none:MAX,RANGE,RANGE`). And the port's model cannot
+express upstream's closed-ranges list at all: its ending is a per-*position* Bool
+(`rr_ends_of`) where upstream's is a per-*node* list of ranges (`ending_ranges[x]`,
+`indexing.py:207`) — so this is a **model** change, the same scale as the range model
+itself, and it is why the realize is not a patch.
+
 *(An earlier revision of this file called the port's gated toposort shallow — 7 of 138
 nodes — and that was WRONG: it was the flat-(256,) graph. With the (16,16) buffers the same
 traversal answers 64 — the whole reachable set — and the tensor graph's 56 of 56.)*
