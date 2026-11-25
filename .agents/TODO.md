@@ -66,7 +66,7 @@ Closed categories keep one row and no prose. Open ones keep the head of their bl
 | `spec-pattern-vs-body` | `[##]` | 2/3 | **A **RULE **WHOSE **MATCH **TEST **IS **IN **THE **BODY **INSTEAD **OF |
 | `ledger-pop` | `[#######.]` | 7/8 | **THE **FIVE **UNOWNED **ROWS **THE **GATE **REPORTED **WERE |
 
-| `shader-pad-lane` | `[#######....]` | 7/11 | the plan is `.agents/slop/shader-pad-lane/PLAN.md`; THE PAD WALL IS MEASURED AND THE MILESTONE'S PREREQUISITES ARE LANDED |
+| `shader-pad-lane` | `[#########...]` | 9/11 | the plan is `.agents/slop/shader-pad-lane/PLAN.md`; THE PAD ARM AND THE ZERO-FILL ARE LANDED AND THE SCHEDULE BUILDS A KERNEL |
 
 ## Closed
 
@@ -1124,14 +1124,23 @@ ledger-pop       [#######.] 7/8  **THE **FIVE **UNOWNED **ROWS **THE **GATE **RE
                                          **LEDGER **RETIRES **THE **FIVE **ROWS.**
 ```
 
-### shader-pad-lane  `[#######....]` 7/11
+### shader-pad-lane  `[#########...]` 9/11
 
-shader-pad-lane  [#######....] 7/11  **THE SHADER'S KERNEL COLLAPSED TO `*(buf0+Lidx0) = 1`
-                                         BECAUSE THE RANGIFY APPLY KEEPS `PAD` AS A WALL AND
-                                         THE FOLD REFUSES ITS MARG. THE ROOT CAUSE IS
-                                         MEASURED, THE PORT NOW REFUSES AN UNSPLIT GRAPH
-                                         INSTEAD OF RENDERING A WRONG KERNEL, AND THE
-                                         MILESTONE'S PREREQUISITES ARE LANDED.** THE PLAN IS
+shader-pad-lane  [#########...] 9/11  **THE SCHEDULE NOW BUILDS THE SHADER'S KERNEL AND THE
+                                         RUNNER EMITS ITS C.** THE ROOT CAUSE WAS MEASURED
+                                         (THE RANGIFY APPLY KEPT `PAD` AS A WALL) AND THE
+                                         PREREQUISITES WERE LANDED; UPSTREAM's PAD ARM
+                                         (`indexing.py:169-173`) AND UPSTREAM's ZERO-FILL
+                                         (`indexing.py:98-103`) ARE LANDED TOO, SO THE
+                                         SCHEDULE BUILDS A KERNEL (`kernels=1`), THE GRAPH IS
+                                         `SINK -> AFTER -> (INDEX, CALL)` WITH THREE
+                                         BUFFERS, AND THE C IS
+                                         `circle(data0_256, data1_256, data2_256)` WITH THE
+                                         DISTANCE FIELD's `__builtin_sqrtf` IN IT. FOUR
+                                         DEFECTS ARE LEFT AND EACH IS NAMED IN
+                                         `shaders/README.md`: THE UNLOWERED `MAX`, THE GATE
+                                         THAT DOES NOT RIDE, THE `weakint` DTYPE, AND THE
+                                         FOUR RANGES WHERE UPSTREAM HAS TWO. THE PLAN IS
                                          `.agents/slop/shader-pad-lane/PLAN.md` AND THE FULL
                                          HISTORY IS THE ARCHIVE'S `THE MILESTONE` ITEM.
 
