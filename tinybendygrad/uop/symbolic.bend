@@ -4705,7 +4705,7 @@ def sym_table() -> O.PMEntrys:
   O.PMEntrys{[
     O.PMEntry{0, [O.OpsSTACK{}],                   OP_INVALID(),                    },   # 89
     O.PMEntry{1, OP_UNARY(),                       OP_INVALID(),                    },   # 90
-    O.PMEntry{2, OP_UNARY(),                       OP_INVALID(),                    },   # 91
+    O.PMEntry{2, OP_UNARY(),                       [O.OpsWHERE{}],                  },   # 91
     O.PMEntry{3, OP_BINARY(),                     [O.OpsWHERE{}],                  },   # 94
     O.PMEntry{4, OP_BINARY(),                     [O.OpsWHERE{}],                  },   # 95
     O.PMEntry{5, OP_BINARY_NC(),                   OP_INVALID(),                    },   # 96
@@ -4715,8 +4715,8 @@ def sym_table() -> O.PMEntrys:
     O.PMEntry{9, [O.OpsWHERE{}],                   Nil{},                           },   # 102
     O.PMEntry{10, [O.OpsWHERE{}], Nil{}, },   # 104
     O.PMEntry{11, [O.OpsWHERE{}], [O.OpsWHERE{}], },   # 106
-    O.PMEntry{12, [O.OpsSTORE{}],                   OP_INVALID(),                    },   # 108
-    O.PMEntry{13, [O.OpsLOAD{}],                    OP_INVALID(),                    },   # 110
+    O.PMEntry{12, [O.OpsSTORE{}],                   Nil{},                           },   # 108
+    O.PMEntry{13, [O.OpsLOAD{}],                    Nil{},                           },   # 110
     O.PMEntry{14, OP_SELF(),                        Nil{},                           },   # 126
     O.PMEntry{15, OP_SHIFTS(),                      Nil{},                           },   # 127
     O.PMEntry{16, [O.OpsMUL{}],                     Nil{},                           },   # 128
