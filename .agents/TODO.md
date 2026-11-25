@@ -13,7 +13,7 @@ Closed categories keep one row and no prose. Open ones keep the head of their bl
 | category | bar | done | status |
 |---|---|---|---|
 | `recovery` | `[########.......]` | 11/15 | the plan is `.agents/slop/checklist.md`; Phases 0-2 and 4.1 done 2026-11-25 |
-| `wgsl-perf` | `[########..]` | 8/10 | THE WGSL TURN IS ~16x FASTER (24,862 ms -> ~1,560 ms): THE FOLD WAS |
+| `wgsl-perf` | `[#########.]` | 9/10 | THE WGSL TURN IS ~19x FASTER (24,862 ms -> ~1,264 ms): THE FOLD WAS |
 84% OF IT AND WAS A KAHN SORT OF AN ARENA WHOSE INDEX ORDER IS ALREADY A TOPOLOGICAL ORDER
 (0 VIOLATIONS IN 1,698,277 EDGES), AND THE TABLE's LOOKUP WAS 35.7% OF THE TURN. THE NEXT
 LEVER IS THE ARENA's O(n) ACCESSORS. |
@@ -189,9 +189,9 @@ LEVER IS THE ARENA's O(n) ACCESSORS. |
 
 ## Open categories, in full
 
-### wgsl-perf  `[########..]` 8/10
+### wgsl-perf  `[#########.]` 9/10
 
-wgsl-perf     [########..] 8/10        THE WGSL TURN IS ~16x FASTER: 24,862 ms -> ~1,560 ms, AND
+wgsl-perf     [#########.] 9/10        THE WGSL TURN IS ~19x FASTER: 24,862 ms -> ~1,264 ms, AND
                                          THE WGSL IS BYTE-IDENTICAL (3,773 bytes, sha256
                                          366d44bb...eea30) AT EVERY STEP.
                                          THE **SEVEN **CHANGES, **AND **EVERY **ONE **IS **MEASURED**:
@@ -229,10 +229,19 @@ wgsl-perf     [########..] 8/10        THE WGSL TURN IS ~16x FASTER: 24,862 ms -
                                          **⇒⇒† AND **17,554 **NODES, **ALL **ZERO**, **⇒⇒† AND **AND **A
                                          **PARALLEL **`shp` **LIST **IS **A **SECOND **SOURCE **OF
                                          **TRUTH**).
-                                         THE **THREE **CHANGES **OF **THIS **UNIT**: **THE **TURN
-                                         **3,429 **ms -> 1,562 **ms **OF **WALL** (⇒⇒† AND **3,967 **ms
-                                         -> 2,128 **ms **OF **CPU**), **⇒⇒† AND **AND **THE **WGSL **IS
-                                         **BYTE-IDENTICAL**.
+                                         **AND **THE **INTERNING's **SCAN **STOPS **AT **THE
+                                         **MATCH** (⇒⇒† AND **THE **MATCH **IS **AT **A **MEAN **INDEX
+                                         **OF **147.7 **OF **~244**, **⇒⇒† AND **AND **THE **OLD **FORM
+                                         **WALKED **~40% **MORE **NODES **THAN **IT **NEEDED **TO**).
+                                         THE **FOUR **CHANGES **OF **THIS **UNIT**: **THE **TURN
+                                         **3,373 **ms -> 1,264 **ms **OF **WALL** (⇒⇒† AND **3,892 **ms
+                                         -> 1,804 **ms **OF **CPU**), **⇒⇒† AND **AND **THE **WGSL **IS
+                                         **BYTE-IDENTICAL**, **⇒⇒† AND **AND **THE **CORPUS **IS **GREEN
+                                         **ON **THIS **TREE** (⇒⇒† AND **38 **OF **38 **GRAPHS **AGREE,
+                                         **38 **BYTE-IDENTICAL, **expect-moved=0**, **⇒⇒† AND **AND **340
+                                         **OF **340 **FILES **IDENTICAL **ACROSS **TWO **CLEAN **RUNS**,
+                                         **⇒⇒† AND **AND **`gates/corpuswitness-gate.py` **READS
+                                         **`claim state=OK verdict=REPRODUCIBLE`**).
                                          THE **NEXT **LEVERS, **AND **THEY **ARE **MEASURED** (⇒⇒† AND
                                          **V8's **OWN **PROFILE **OF **THE **COMPILED **FORM **AT **1,226
                                          **SAMPLES**): **THE **INTERNING's **SCAN **IS **16.1%** (⇒⇒† AND

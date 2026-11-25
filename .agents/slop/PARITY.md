@@ -8937,3 +8937,53 @@ ms**, **⇒⇒† AND **AND **the **`append` **0.041 ms**.
 **THEY **MOVE **THE **SUBSTRATE**, **⇒⇒† AND **AND **`gates/corpuswitness-gate.py` **READS
 **`claim state=FAIL verdict=NOT-ESTABLISHED` **UNTIL **THE **CORPUS **RUNS **AGAIN **ON **THE
 **SETTLED **TREE** ✓.
+
+### 138.42 **THE **INTERNING's **SCAN **STOPS **AT **THE **MATCH, **AND **THE **TURN **IS **17.5%
+**FASTER
+
+**⇒⇒† AND **V8's **OWN **CPU **PROFILE **OF **THE **COMPILED **FORM **NAMES **THE **COST**:
+**`intern.find.go` **IS **16.1% **OF **THE **TURN's **EXCLUSIVE **TIME**, **AND **IT **IS **THE
+**WALK **OF **THE **WHOLE **ARENA** -- **THE **OLD **FORM **SCANNED **EVERY **NODE **AND **THEN
+**CHOSE **THE **HEAD**, **⇒⇒† AND **SO **IT **COULD **NOT **STOP** ✓.
+
+**⇒⇒† AND **THE **MATCH **IS **NOT **AT **THE **END** (⇒⇒† AND **THE **HISTOGRAM **OF **THE
+**MATCH's **INDEX**, **COUNTED **IN **THE **COMPILED **FORM**, **PUTS **THE **MEAN **AT **147.7
+**OF **~244**, **⇒⇒† AND **AND **79% **OF **THE **SCANS **FIND **A **MATCH **AT **ALL**), **⇒⇒† AND
+**SO **THE **SCAN **WALKED **~40% **MORE **NODES **THAN **IT **NEEDED **TO** ✓.
+
+**⇒⇒† AND **THE **SCAN **NOW **STOPS **AT **THE **MATCH**, **AND **THE **MATCH **IS **THE **HEAD's
+**VERDICT**, **WHICH **THE **CALLER **COMPUTES** (⇒⇒† AND **A `match` **CANNOT **SCRUTINIZE **A
+**COMPUTED **VALUE**, **⇒⇒† AND **SO **THE **VERDICT **IS **A **PARAMETER **AND **THE **CALLER
+**COMPARES **THE **NEXT **NODE**), **⇒⇒† AND **AND **THE **ORDER **OF **THE **`match`es **IS **THE
+**TREE's **OWN **RULE** (⇒⇒† AND **THE **LIST **FIRST**, **⇒⇒† AND **THEN **THE **LIST's **TAIL**,
+**⇒⇒† AND **THEN **THE **VERDICT** -- **⇒⇒† AND **A `match` **ON **A **LATER **BINDER **CANNOT
+**FOLLOW **A `match` **ON **AN **EARLIER **ONE**) ✓.
+
+**⇒⇒† AND **MEASURED**, **THE **WGSL **TURN** **1,586 **ms → 1,309 **ms **OF **WALL **AND
+**2,137 **ms → 1,853 **ms **OF **CPU** ✓ **AND **THE **WGSL **IS **BYTE-IDENTICAL** ✓.
+
+### 138.43 **THE **TURN, **3,373 **ms → 1,264 **ms, **AND **THE **CORPUS **IS **GREEN **ON **THIS
+**TREE**
+
+| | **before** | **after** |
+|---|---|---|
+| **the **whole **turn** | **3,373 **ms **OF **WALL** | **1,264 **ms **OF **WALL** |
+| **the **same **in **CPU **TIME** | **3,892 **ms** | **1,804 **ms** |
+| **the **whole **arc, **from **24,862 **ms** | **~19x** | |
+| **the **WGSL** | **3,773 **bytes** | **THE **SAME **BYTES** |
+
+**⇒⇒† AND **THE **BASE **IS **THE **COMMIT **BEFORE **THE **FIRST **OF **THE **FOUR**
+(**`5483dc2ef`**), **AND **BOTH **TREES **ARE **BUILT **NOW **AND **ALTERNATED** ✓.
+
+**⇒⇒† AND **AND **THE **CORPUS **IS **GREEN **ON **THIS **TREE**: **`checks/differ.py run`**
+**38 **OF **38 **GRAPHS **ANSWERED, **38 **AGREE, **NONE **DISAGREE, **38 **BYTE-IDENTICAL,
+**expect-moved=0, **THE **PLANTS **8 **OF **8, **THE **CONFLATIONS **4 **OF **4, **THE **CONTROLS
+**5 **OF **5**, **⇒⇒† AND **AND **`checks/differ.py repro`** **340 **OF **340 **FILES **IDENTICAL
+**ACROSS **TWO **CLEAN **RUNS**, **⇒⇒† AND **AND **`gates/corpuswitness-gate.py`** **READS
+**`claim state=OK verdict=REPRODUCIBLE`** (⇒⇒† AND **THE **SUBSTRATE **IS **THIS **TREE's**) ✓.
+
+**⇒⇒† AND **THE **REMAINING **HOT **SPOTS**, **AND **THEY **ARE **MEASURED** (⇒⇒† AND **V8's
+**OWN **PROFILE **OF **THE **COMPILED **FORM**): **`Ops.value` **IS **THE **OP **COMPARISON** (⇒⇒†
+**AND **THE **SIXTY-ARM **MATCH **IS **THE **REMAINING **COST**), **⇒⇒† AND **AND **`List.append`
+**IS **THE **ARENA's **FLAT **LIST** (⇒⇒† AND **O(n) **TO **APPEND**), **⇒⇒† AND **AND **THE
+**FOLD's **TABLE **IS **~9%**, **⇒⇒† AND **AND **THE **GC **IS **~4%** ✓.
