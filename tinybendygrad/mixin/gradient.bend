@@ -760,7 +760,10 @@ def gedge.rop.hasrd(+rd: List<&2, U32>, +ar: O.Arena, +v: U32, +axis: List<&2, U
       gedge.tail(O.eq_u32(axis, rd), O.Found.ar(rn), rn, vs, axis)
 
 # `broadcast_axes` (uop/ops.py:93-96), CONCRETE: `resolve(s == 1, default=False)` is plain
-# equality on the dims. The axes come out ascending -- `range(nleft)` then the expanded ones --
+# equality on the dims.
+# TODO(p3) uop/ops.py:93  broadcast_axes -- a SYMBOLIC dim needs `symbolic.py`'s `resolve`,
+#   which is the p3 lane's (the `reduce_gradient` TODO above names the same dependency). Every
+#   fixture here is concrete, so the gap is named rather than exercised. The axes come out ascending -- `range(nleft)` then the expanded ones --
 # which is already `_rop`'s `sorted(axis)` order, so no re-sort happens.
 def gbaxes.drop(+vs: List<&2, U32>, +n: U32) -> Maybe<&2, List<&2, U32>>:
   match vs:
