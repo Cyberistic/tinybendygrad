@@ -5169,7 +5169,14 @@ are NOT free: `grep -c smoothstep tinygrad/` is 0 and there is no `Ops.MIN`.
       UPSTREAM-SHAPED**: `IxRngs{inp, outp}` is the (INPUT ranges, OUTPUT ranges) pair
       (`indexing.bend:250-252` ✓), upstream compares `range_map[c][0]` -- the INPUT ranges
       (`indexing.py:222` ✓) -- and the port's `rr_one_rngs` reads `IxRngs.inp` ✓, so the
-      comparison is not the divergence. **WHAT UPSTREAM DOES WITH THE OLD RANGES IS**:
+      comparison itself is not the divergence. **BUT THE PAIR'S SECOND ELEMENT IS NOT
+      UPSTREAM'S**: upstream's `range_map[x]` is `(input ranges, CLOSED ranges)` -- the
+      ranges that END at x (`indexing.py:14` ✓) -- while the port's second element holds
+      the node's OUTPUT ranges ✓, and the port's realize branch sets the realized node's
+      INPUT ranges to `Nil{}` ✓ where upstream sets them to the node's NEW ranges
+      (`rngs = out_rngs`, `indexing.py:283` ✓). **THAT PAIR IS THE NEXT READING**: it
+      decides what the `STAGE` holds (upstream's `closed_ranges`, `indexing.py:82` ✓) and
+      what the consumers compare. **WHAT UPSTREAM DOES WITH THE OLD RANGES IS**:
       upstream ENDS the realized node's old ranges (`ending_ranges[x] = []`,
       `indexing.py:226-228` ✓) and KEEPS the consumers' ranges where they agree ✓ — the
       port's `rr_merge` mints a new range for every axis ✓ (its documented fallback ✓) and

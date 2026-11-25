@@ -157,6 +157,17 @@ where they agree, while the port's `rr_merge` mints a new range for *every* axis
 nothing. **That is the next thing to read** — the realize's *ending*, not its decision —
 and the realize is not landed.
 
+**And the pair underneath it.** The port's comparison is upstream-shaped
+(`IxRngs{inp, outp}` is the (input ranges, output ranges) pair — `indexing.bend:250-252` —
+and upstream compares `range_map[c][0]`, the input ranges, `indexing.py:222`; the port's
+`rr_one_rngs` reads `IxRngs.inp` ✓). But **the pair's second element is not upstream's**:
+upstream's `range_map[x]` is `(input ranges, **closed** ranges)` — the ranges that *end* at
+x (`indexing.py:14`) — while the port's second element holds the node's *output* ranges, and
+the port's realize branch sets the realized node's *input* ranges to `Nil{}` where upstream
+sets them to the node's new ranges (`rngs = out_rngs`, `indexing.py:283`). That pair decides
+what the `STAGE` holds (upstream's `closed_ranges`, `indexing.py:82`) and what the consumers
+compare — **it is the next reading**.
+
 *(An earlier revision of this file called the port's gated toposort shallow — 7 of 138
 nodes — and that was WRONG: it was the flat-(256,) graph. With the (16,16) buffers the same
 traversal answers 64 — the whole reachable set — and the tensor graph's 56 of 56.)*
