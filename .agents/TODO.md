@@ -5161,12 +5161,19 @@ are NOT free: `grep -c smoothstep tinygrad/` is 0 and there is no `Ops.MIN`.
       `rr_ap_stage_src` (`rangify.bend:1370`) builds `STAGE(s, closed_ranges)` and indexes it
       by the CONSUMER's input ranges (`indexing.py:80-91` ✓) — so the cycle is NOT a
       mis-substitution. **WHERE TO LOOK NEXT**: the REALIZE DECISION (which node gets
-      realized — `rr_cons_disagree` compares the consumers' whole range LISTS, so it fires on
-      a consumer that merely DIFFERS, while upstream compares PER AXIS and realizes only
-      the axes that differ) and the RANGES it mints (upstream gives the realized node NEW
-      ranges and keeps the old ones for its own computation; the port's `rr_merge` mints new
-      ranges for EVERY axis — its documented fallback). **IT IS NOT LANDED** for that reason
-      and because the change moves the substrate.
+      realized — the kernel graph carries TWO `STAGE`s, so the decision fires on two nodes)
+      and the RANGES it mints (upstream gives the realized node NEW ranges and keeps the old
+      ones for its own computation; the port's `rr_merge` mints new ranges for EVERY axis —
+      its documented fallback). **MEASURED, AND NOT A CYCLE IN THE DEP GRAPH**: the schedule's
+      own `cycles()` (`schedule/__init__.bend:1311`) answers **0** on the realized graph, and
+      the toposort answers the same 39 with a fuel of 100000 as with the budget's 574 — so it
+      is neither a dep-graph cycle nor a fuel cutoff: **the rewrite makes the fw term
+      UNREACHABLE from the sink** (the 39 reachable nodes contain no `AFTER`, no `END` and no
+      fw-term node), and that is what leaves the schedule with nothing to build. **THE PORT'S
+      PER-AXIS REALIZE DECISION (upstream compares the consumers' ranges per axis and realizes
+      only the differing axes) CHANGES NOTHING HERE** — measured, both axes differ — so the
+      decision's granularity is not the cause either. **IT IS NOT LANDED** for that reason and
+      because the change moves the substrate.
 - [ ] **THE PORT'S GATED TOPOSORT WAS NOT BROKEN — IT WAS THE FLAT GRAPH (2026-11-25).** An
       earlier reading said `SCH.sc_topo_of` answers 7 nodes for the shader's 138-node kernel
       graph. **THAT WAS THE FLAT-(256,) GRAPH**: with the runner's buffers reshaped to (16,16)

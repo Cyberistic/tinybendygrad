@@ -145,8 +145,13 @@ substitution is upstream-shaped (`rr_ap_stage_src` builds `STAGE(s, closed_range
 indexes it by the *consumer's* input ranges, `indexing.py:80-91`), so the cycle is in the
 **realize decision** or the **ranges it mints** — upstream compares the consumers' ranges
 *per axis* and realizes only the axes that differ, while the port's `rr_merge` mints a new
-range for *every* axis (its documented fallback). **That is the next thing to read**, and the
-realize is not landed.
+range for *every* axis (its documented fallback). Two more measurements narrow it: the
+schedule's own `cycles()` answers **0** on the realized graph (so it is not a dep-graph
+cycle), and the toposort answers the same 39 with a fuel of 100000 as with the budget's 574
+(so it is not a fuel cutoff) — **the rewrite makes the fw term unreachable from the sink**,
+and that is what leaves the schedule with nothing to build. Making the port's realize
+decision per-axis changes nothing here (both axes differ), so the granularity is not the
+cause either. **That is the next thing to read**, and the realize is not landed.
 
 *(An earlier revision of this file called the port's gated toposort shallow — 7 of 138
 nodes — and that was WRONG: it was the flat-(256,) graph. With the (16,16) buffers the same
