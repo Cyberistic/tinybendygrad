@@ -338,6 +338,34 @@ comes from DISAGREE ✗✗ -- and one of the two readings is the probe's own ✗
 `tcensus` row is new ✗ and unverified ✗). Either way it is the toposort or the def, and
 both are in `rr_realize`/`rr_realize_one` ✓.
 
+**THE ROOT CAUSE, MEASURED IN THE ARENA.** The probe reads the arena itself -- every
+node's op, by id, not by toposort -- and the toposort's size:
+
+    tsz=1
+    arops=Ops.NOOP,Ops.CONST,Ops.BUFFER,Ops.CONST,Ops.STACK,Ops.RESHAPE,Ops.MUL,Ops.BUFFER,
+           Ops.RESHAPE,Ops.MUL,Ops.ADD,Ops.SQRT,...,Ops.PAD,...,Ops.SHRINK,...,Ops.PAD,...,Ops.SHRINK,...
+
+**THE RUNNER's SINK's SUBTREE IS ONE NODE** (`tsz=1`) **AND THE WHOLE FORMULA IS IN THE
+ARENA BUT NOT UNDER THAT SINK** (the census ✓ -- the `PAD`s, the `SHRINK`s, the `SQRT`,
+the `MAX` ✓, all of it ✓).
+
+**=> THE PORT's RANGE-MAP STAGE AND THE ENGINE LOOK AT DIFFERENT GRAPHS.** The range-map
+stage works on the sink's subtree (`rr_range_map` walks `rr_rev(topo)` -- one node ✗),
+and the ENGINE works on the FOLD, which is arena-wide (`F.folded(ar)` -- 64 nodes ✓).
+That is why the kernel graph has 64 nodes and a `STORE` ✓ while the range map is empty ✓,
+the realize map is empty ✓ (no `STORE` in a one-node toposort ✗), the table never grows
+✓, and the PAD arm, the SHRINK arm, the zero-fill and the gate are all inert ✓.
+
+**=> AND UPSTREAM's `sink_of()`-SHAPED GRAPH HAS THE STORE, SO THE REALIZE MAP IS NOT
+EMPTY THERE.** Upstream's realize map holds every `STORE` (`indexing.py:36-37`) and the
+runner's graph here has **no `STORE` at all** (the census ✗) -- so the port's realize
+map is empty for a reason upstream does not have.
+
+**SO THE NEXT READING MOVES OUT OF THE RANGIFY AND INTO THE RUNNER's GRAPH: WHAT DOES
+`sink_of()` RETURN, AND WHY IS THE FORMULA NOT UNDER IT?** The port's kernel graph has
+always been the fold's arena-wide graph, so upstream's range-map stage has never run on
+it.
+
 **SO THE NEXT READING IS ONE LINE: WHY DOES `rr_realize_one` ANSWER NOTHING FOR A
 `STORE`?** `rr_is_store` is `O.eq_op(O.Arena.op(ar, u), O.OpsSTORE{})` and
 `rr_store_entries` is `rr_store_real` -- the same shape as upstream's rule. Either the
