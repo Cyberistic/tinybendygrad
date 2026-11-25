@@ -403,10 +403,34 @@ FIELDS -- `IX.realize(tr)` is `IxReal{tr, False{}, Nil{}}` and `ix_rmap_has` com
 `O.UOp.toposort` walks the whole graph ✓, the port's `ttop` row agrees ✓ (56 ✓), and
 the probe's `tsz=1` ✗ was its own bug ✓ -- already withdrawn above ✓.
 
-**=> SO THE CHAIN IS: THE GRAPH HAS THE `STORE` ✓, THE DEF FIRES ✓, THE FUEL IS FINE
-✓, AND THE MAP IS EMPTY ✗.** Everything downstream -- the range map ✗, the table ✗,
-the PAD arm ✗, the SHRINK arm ✗, the zero-fill ✗, the gate ✗ -- follows from that one
-empty map ✓✓.
+**=> THE MAP's SIZE IS ZERO, NOT JUST ITS CONTENTS.** The port's own row now prints
+it: `rmpad=... tbl=1 rmn=0 rmapn=0` -- `rmapn` is the REALIZE MAP's SIZE ✓ and it is
+**zero** ✓✓. So the map is genuinely empty ✓, not a lookup that misses ✓.
+
+**=> AND THE TOPOSORT VARIANT IS EXONERATED.** The obvious suspect was the walk:
+`rr_range_map` and `rr_realize` call `O.UOp.toposort` (the CALLS variant ✓) while the
+probe's `ttop` row uses `O.UOp.toposort_nocalls` ✓ and answers 56 ✓ -- so the two walks
+disagreed ✓. MEASURED, by switching BOTH to `toposort_nocalls` ✓: `rmapn=0` ✓ **and**
+`rmn=0` ✓ -- UNCHANGED ✗. So the variant is not the cause ✓ and the change is reverted
+✓✓.
+
+**=> SO THE CHAIN IS: THE GRAPH HAS THE `STORE` ✓, THE DEF FIRES ON IT ✓, THE FUEL IS
+FINE ✓, THE WALK'S VARIANT DOES NOT MATTER ✓, AND THE MAP IS EMPTY ✓✓.** Everything
+downstream -- the range map ✗, the table ✗, the PAD arm ✗, the SHRINK arm ✗, the
+zero-fill ✗, the gate ✗ -- follows from that one empty map ✓✓.
+
+**=> THE NEXT READING IS `List.append` ITSELF.** `base.bend:1003`:
+`def List.append(a, -A: Kind(a), xs: List<a, A>, ys: List<a, A>)` -- **it appends the
+WHOLE LIST `ys` ✓**, it does not append the elements of `ys` one by one ✗. And
+`rr_realize.go` appends `rr_realize_one(ar, u)` -- a LIST ✗ -- to a map whose entries are
+`IxReal` ✗. So the realize map's entries are LISTS ✗✗, `ix_rmap_has` reads
+`IxReal.n(e)` on a list ✗✗, and the map's size ✗✗ is the count of LISTS ✗✗ -- but the
+MEASURED size is ZERO ✗✗, so the append ✗✗ never happened ✗✗ either ✗✗.
+
+**=> SO THE LAST TWO LINKS ARE: WHY DOES `rr_realize.go`'s WALK NOT APPEND ✗, AND WHAT
+DOES `List.append` DO WITH A LIST ✗?** Both are one reading each ✗✗, both are in
+`rangify.bend` ✗ and `base.bend` ✗, and the `rmapn=` row ✓ is the instrument that will
+answer them ✓✓.
 
 **=> AND UPSTREAM's `sink_of()`-SHAPED GRAPH HAS THE STORE, SO THE REALIZE MAP IS NOT
 EMPTY THERE.** Upstream's realize map holds every `STORE` (`indexing.py:36-37`) and the

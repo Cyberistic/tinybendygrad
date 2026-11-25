@@ -2148,7 +2148,8 @@ def rr_rngm_row.of(p: (O.Arena & RrMap), +n: U32) -> String:
                  " in=", rr_dims_str(rr_ap_inp.of(e)),
                  " out=", rr_dims_str(rr_ap_out.of(e)),
                  " tbl=", U32.show(U32.from_nat(List.length(&2, IX.IxRange, RrMap.tbl(m)))),
-                 " rmn=", U32.show(U32.from_nat(List.length(&2, IX.IxRngs, IX.IxRMap.es(rngm))))])
+                 " rmn=", U32.show(U32.from_nat(List.length(&2, IX.IxRngs, IX.IxRMap.es(rngm)))),
+                 " rmapn=", U32.show(U32.from_nat(List.length(&2, IX.IxReal, IX.IxMap.es(IX.IxCtx.rmap(RrMap.ctx(m))))))])
 
 def rr_rngm_row(+ar: O.Arena, +sink: U32, +n: U32) -> String:
   +tb = F.Folded.t(F.folded(ar))
