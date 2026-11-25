@@ -242,7 +242,12 @@ upstream-comments [######....] 6/10      **UPSTREAM'S **COMMENTS **PORTED**, **â
 
 ### backward-walk  `[#########]` 1/3
 
-backward-walk   [#########] 1/3      `compute_gradient` + `_deepwalk` LANDED in
+backward-walk   [#########] 2/3      THE SHAPED-EDGE REDUCE LANDED (`670e480fa`): `g1` went
+                                        `RESHAPE[MUL/6,STACK/1]` -> `RESHAPE[RESHAPE/6,STACK/1]`,
+                                        `sh_g1`/`sh_w1n` `:0:` -> `:4:1x1x2x2`; CPython measured
+                                        (`gw=(1,1,1,2,1,2)`) and the oracle is FD-checked
+                                        (`tstep-oracle.py`, rel 1.2e-5). Remaining: the metadata
+                                        pass. `compute_gradient` + `_deepwalk` LANDED in
                                         `mixin/gradient.bend`. **15/15 rows AGREE with
                                         CPython**, headline `walk_row=MUL/2 ADD/2 ADD/2 |
                                         grads_n=6` == `oracle_dag_walk` +

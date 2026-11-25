@@ -80,7 +80,8 @@ Upstream's control flow, piece by piece:
 | `if k in grads and grads[k].op is not NOOP: grads[k] = grads[k]+v else: grads[k]=v` | `cg_sum.*` / `gadd` / `gput.at` |
 
 The two that are not a `def`-per-line: `_deepwalk` returns a `Data` pair (`Deep`) because
-Bend has no tuple, and the shaped-edge reduce and the metadata pass are **named omissions**.
+Bend has no tuple, and the metadata pass is a **named omission**. The shaped-edge reduce is
+**LANDED** (`gshape`/`gbaxes`/`gedge`/`cg_edge`, commit `670e480fa`).
 
 ---
 
@@ -88,7 +89,7 @@ Bend has no tuple, and the shaped-edge reduce and the metadata pass are **named 
 
 | what | where | why |
 |---|---|---|
-| shaped-edge reduce | `tinygrad/mixin/gradient.py:132-133`, ported note at `tinybendygrad/mixin/gradient.bend`'s `TODO(p3) mixin/gradient.py:132` | needs `broadcast_axes` (`ops.py:89`, reads `resolve` on a `Sint`) and `sum_acc_dtype` (`dtype.py:220`, reads `Config`). **And it is a place CPython ITSELF raises** — the oracle's second fixture dies there with `RuntimeError: cannot broadcast … into ()`, so there is no CPython answer to gate against. |
+| shaped-edge reduce | `tinygrad/mixin/gradient.py:132-133` | **LANDED** (`gshape`/`gbaxes`/`gedge`/`cg_edge`, commit `670e480fa`) with a CONCRETE `broadcast_axes` (`gbaxes` on `rr_dims`); the `.cast`s mint nothing in the f32 fixtures. **THE "CPYTHON RAISES" CLAIM IS NARROWER THAN IT READ**: it raises on `oracle-cg.py`'s SCALAR-seed fixture (`cannot broadcast (4,) into ()`) where the grad outranks a scalar source; on the TRAINING fixture CPython REDUCES (`gw=(1,1,1,2,1,2)`, MEASURED 2026-11-25), and the port answers the raise case with its named divergence (write the edge UNREDUCED). The `resolve`-symbolic dims remain a p3 gap, unexercised by every fixture here.
 | backward metadata | `tinygrad/mixin/gradient.py:140-144` | reads `all_metadata`, a module-level dict in `ops.py`. No effect on `grads`, so no row can see it. **Named omission.** |
 | `call_gradient` | `tinygrad/mixin/gradient.py:20-50` | five subsystems (`CallArg.grad_fxn`, `renumber_invalid_outputs`, `view_as`/`shard_shape`/`sharding`, two `substitute(walk=True)`). A CALL in the walk reaches gradient.py:127's refusal instead. |
 | `GSkip` → `raise` | `tinygrad/mixin/gradient.py:127` | Bend cannot raise, so a node no rule claims **STOPS** the walk. Named divergence. |
