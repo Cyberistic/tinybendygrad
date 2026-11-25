@@ -304,6 +304,31 @@ r in self.src[1:] if r.op is Ops.RANGE)`) and the port's fold says `thru0` -- th
 src's shape (`tinybendygrad/uop/fold.bend:1756`). It is not the blocker (the `END` is
 not the seed; the `STORE` is) but it is a divergence and it is on the list.
 
+**AND THE SEED'S ABSENCE IS MEASURED TOO: THE REALIZE MAP IS EMPTY.** The port has the
+instrument (`rr_rmap_row`: "which nodes the apply's realize map holds") and the probe
+now runs it on the runner's own graph:
+
+    rmap=
+
+**NOTHING.** Upstream's realize map holds every `STORE` (`indexing.py:36-37`:
+`realize(tr)` for `UPat(Ops.STORE)`), and the realized node is where upstream seeds the
+propagation (`indexing.py:222-225`). The port's `rr_realize_one` has the same three
+rules (a `STORE`, an `MSTACK`, a custom `CALL`) -- and it answers NOTHING for every
+node, so `rr_p1.real` never fires, so no range is ever minted, so the propagation has no
+seed, so the range map is empty (`rmn=0`), so the table never grows (`tbl=1`), so the
+PAD arm, the SHRINK arm, the zero-fill and the gate are all inert.
+
+The seed's dims, measured too, are not the problem either: the three `BUFFER`s of the
+kernel graph have fold dims `256` (`seedbuf= 54=256 2=256 7=256`) -- FLAT, not `(16,16)`
+-- so even a working realize map would mint ONE range of 256, and upstream's kernel has
+TWO. The `STORE` itself has no fold dims at all (`seedstore= 204=`).
+
+**SO THE NEXT READING IS ONE LINE: WHY DOES `rr_realize_one` ANSWER NOTHING FOR A
+`STORE`?** `rr_is_store` is `O.eq_op(O.Arena.op(ar, u), O.OpsSTORE{})` and
+`rr_store_entries` is `rr_store_real` -- the same shape as upstream's rule. Either the
+toposort the map is built from does not contain the `STORE`, or the map's entries are
+dropped on the way into the context (`ix_ctx_realize`).
+
 **SO THE ORDER OF THE REMAINING WORK IS REVERSED FROM WHAT THE PLAN SAID.** The gate
 cannot ride before the fold gives the range map a seed: the fold's refusal is upstream of
 the gate, the PAD arm and the zero-fill. The plan's `THE GATE DOES NOT RIDE` is a
