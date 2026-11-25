@@ -12,7 +12,7 @@ Closed categories keep one row and no prose. Open ones keep the head of their bl
 
 | category | bar | done | status |
 |---|---|---|---|
-| `recovery` | `[#####..........]` | 5/15 | the plan is `.agents/slop/checklist.md`; Phase 0 (tree certifiable) done 2026-11-25 |
+| `recovery` | `[#####..........]` | 7/15 | the plan is `.agents/slop/checklist.md`; Phase 0 (tree certifiable) done 2026-11-25 |
 | `render-perf` | `[########]` | 6/9 | THE RENDER IS ~25% FASTER OVER THE THREE LANDED CHANGES, AND |
 | `decomp-census` | `[#####]` | 3/5 | 39 rows, 23 exact, 16 declared (11 PROMOTION · 2 WALL · |
 | `upstream-comments` | `[######....]` | 6/10 | **UPSTREAM'S **COMMENTS **PORTED**, **⇒⇒† AND **THE **AUDIT **SAYS |

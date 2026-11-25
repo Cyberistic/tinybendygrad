@@ -1,0 +1,26 @@
+#!/bin/sh
+# Refuse a commit that RECORDS A CERTIFICATE NUMBER while the certificate is not established.
+#
+# You may move the tree and edit the board; you may not assert a green run without one.
+# The population is the certificate's own vocabulary, so this is a claim gate, not a file gate.
+# Measured 2026-11-25: the witness gate is 2.2 s and was red while AGENTS.md carried a
+# "38 agreeing graphs" line; nothing ran it.  This file therefore quotes no certificate token.
+set -eu
+
+CLAIM='graphs-agree=[0-9]|graphs-disagree=[0-9]|byte-identical=[0-9]|repro-identical=[0-9]|claim=ESTABLISHED|CORPUS CERTIFICATE IS .*GREEN'
+# This file DEFINES the vocabulary, so it is excluded: a rule is not a record of a run.
+added=$(git diff --cached -U0 -- . ':(exclude)gates/hooks/pre-commit' | grep -E '^\+' | grep -vE '^\+\+\+' | grep -E "$CLAIM" || true)
+[ -z "$added" ] && exit 0
+
+py=.venv/bin/python
+[ -x "$py" ] || py=python3
+out=$("$py" gates/corpuswitness-gate.py 2>&1) || true
+
+if printf '%s\n' "$out" | grep -q '^claim[[:space:]].*state=FAIL'; then
+  printf '%s\n' "$out" \
+    | grep -E '^(verdict\.current|witness\.fresh|witness\.substrate|claim)[[:space:]]' >&2 || true
+  printf '\npre-commit: this commit records a certificate number, and the certificate is NOT established.\n' >&2
+  printf '  `checks/differ.py run` then `repro` -- or drop the number from the message.\n' >&2
+  exit 1
+fi
+exit 0
