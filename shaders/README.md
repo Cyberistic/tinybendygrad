@@ -106,7 +106,8 @@ had no such check: it unwrapped the END to its STORE, dropped the store's value,
 rendered `*(buf0+Lidx0) = 1`. The port now answers an **empty schedule** for that graph
 (`sched_unbacked`), because a schedule missing a kernel is a schedule missing an output.
 MEASURED, before and after, same tree: `kernels=1` + `*(buf0+Lidx0) = 1` → `kernels=0` +
-`refused=unbacked-end`, and no C is compiled at all.
+`refused=END src[0] should be KERNEL, not Ops.STORE` -- upstream's own assertion
+text (`schedule/__init__.py:46`) -- and no C is compiled at all.
 
 **And the gate that should have caught it had two defects, one masking the other.** The
 schedule gate's `bend=` field still pointed at the **library** after `d404c64d9` moved the

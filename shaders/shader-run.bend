@@ -196,6 +196,16 @@ def sink_of() -> O.Found:
 #      kernels and creates none, so a graph with no kernels answers `kernels=0`;
 #   3. the PER-BODY linearize -- `linearize` takes ONE kernel, and the scheduler returns
 #      the bodies, so handing it the `LINEAR` renders `UNHANDLED(Ops.LINEAR)`.
+# THE REFUSAL, WITH UPSTREAM'S OWN WORDS. Upstream's `create_schedule` says
+# `assert k.src[0].op is Ops.CALL, f"END src[0] should be KERNEL, not {k.src[0].op}"`
+# (`schedule/__init__.py:46`). THE PORT CANNOT ASSERT, SO IT ANSWERS AN EMPTY SCHEDULE
+# (`sched_unbacked`) -- AND THE RUNNER, WHICH OWNS NO SCHEDULE OF ITS OWN, NAMES WHAT
+# UPSTREAM WOULD HAVE ASSERTED: the END's src0 and its op.
+def refused_of(+kg: O.Found) -> String:
+  +ar = O.Found.ar(kg)
+  +end = O.Arena.src(ar, O.Arena.src0(ar, O.Found.i(kg)), 1)
+  String.concat(["END src[0] should be KERNEL, not ", O.Ops.name(O.Arena.op(ar, O.Arena.src0(ar, end)))])
+
 def build() -> Kern:
   +st = sink_of()
   +sk = O.UOp.sink(O.Found.ar(st), [O.Found.i(st)])
@@ -206,7 +216,7 @@ def build() -> Kern:
   +bt = F.mm.sweep(ar, F.Folded.t(fx))
   +rt = F.rng_sweep(ar, F.Folded.t(fx))
   +kus = cus_go(ar, fx, bt, rt, SCH.lin_kernels(lin), Nil{})
-  +ref = Bool.pick(String, SCH.sched_unbacked(O.Found.ar(kg), O.Found.i(kg)), "unbacked-end", "")
+  +ref = Bool.pick(String, SCH.sched_unbacked(O.Found.ar(kg), O.Found.i(kg)), refused_of(kg), "")
   kern_at(C._render(C.dev_clang(), kus), kus, "circle", ref)
 
 def buf_at(+ns: List<&2, String>, i: Nat) -> String:

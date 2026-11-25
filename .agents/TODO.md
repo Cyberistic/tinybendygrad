@@ -5106,7 +5106,7 @@ are NOT free: `grep -c smoothstep tinygrad/` is 0 and there is no `Ops.MIN`.
       the chain that is absent rather than unwired.**
 - [ ] **THE SHADER COMPILES TO A WRONG KERNEL, AND THE ROOT CAUSE IS NOW MEASURED (2026-11-24).**
       `shader-run.bend` takes the graph through `rr_kernel_graph` — rangeify stage 1 IS ported —
-      and the schedule now REFUSES: `kernels=0`, `refused=unbacked-end`. The chain, all in
+      and the schedule now REFUSES: `kernels=0`, `refused=END src[0] should be KERNEL, not Ops.STORE`. The chain, all in
       `shaders/README.md`: the rangify apply consumes `SHRINK` (`rangify.bend:680`) but keeps
       `PAD` as a wall (`rr_ap_wall_hit`, `rangify.bend:1474`); the surviving PAD's 2-D marg over
       the flattened kernel graph is refused by the fold, the END loses its fold row,
@@ -5131,7 +5131,8 @@ are NOT free: `grep -c smoothstep tinygrad/` is 0 and there is no `Ops.MIN`.
       (`*(buf0+Lidx0) = 1`). The port now answers an EMPTY schedule for that graph
       (`sched_unbacked` in `schedule/__init__.bend`), because a schedule missing a kernel is a
       schedule missing an output. MEASURED before/after on one tree: `kernels=1` +
-      `*(buf0+Lidx0) = 1` -> `kernels=0` + `refused=unbacked-end`, no C compiled. The 135
+      `*(buf0+Lidx0) = 1` -> `kernels=0` + `refused=END src[0] should be KERNEL, not Ops.STORE`,
+      no C compiled. The 135
       schedule-gate rows DO NOT MOVE — so the change is inert for every fixture, WHICH IS ITS
       GAP: no fixture exercises it, and a row that cannot go red is worse than no row.
       **THE CORPUS IS UNAFFECTED AND MUST STILL BE RE-TAKEN.** No corpus graph has an unbacked
