@@ -289,7 +289,7 @@ def skgo.go(+ar: O.Arena, +ss: List<&2, U32>, +acc: List<&2, String>) -> String:
     case Nil{}: String.join(acc, ",")
     case h <> t:
       skgo.go(ar, t, List.append(&2, String, acc,
-        [U32.show(Bool.pick(U32, RF.sk_open(ar, store_of(ar, h)), 1, 0))]))
+        [U32.show(Bool.pick(U32, RF.sk_open(ar, O.Arena.src(ar, h, 1)), 1, 0))]))
 
 def afts.go(+ar: O.Arena, +ss: List<&2, U32>, +acc: List<&2, String>) -> String:
   match ss:
