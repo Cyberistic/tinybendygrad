@@ -1870,12 +1870,31 @@ def derived(ar: O.Arena, i: U32, nd: O.Node, ss: List<&2, Derived>) -> Maybe<&2,
 type Resolved is Data:
   Resolved{i: U32, d: Derived}
 
+# THE TABLE IS A SPINE OF CHUNKS, NOT A FLAT LIST.
+#
+# MEASURED (V8's OWN CPU PROFILE OF THE COMPILED FORM, `.agents/slop/wgslperf/prof-read.py`): A
+# LOOKUP IN THE FLAT TABLE (`Kahn.get.go2`) IS 35.7% OF THE TURN's EXCLUSIVE TIME -- 2,520,919
+# LOOKUPS A TURN, AND EACH ONE SCANNED A LIST OF ~478 ENTRIES. THE CHUNKED TABLE WALKS THE
+# SPINE (THE INDEX DIVIDED BY 32 CHUNKS) AND THEN ONE CHUNK (32 ENTRIES), SO A LOOKUP IS ~31
+# CELLS AND NOT ~383.
+#
+# THE CHUNKS ARE BY THE NODE INDEX: THE ENTRY FOR INDEX `i` IS IN CHUNK `i / 32`, AND THAT
+# CHUNK HOLDS THE INDICES IN `[32k, 32k+32)`. THE FOLD WALKS THE ARENA IN INDEX ORDER, SO THE
+# ENTRIES COME OUT IN ASCENDING INDEX ORDER AND THE CHUNKS FILL IN ORDER.
 type Table is Data:
-  Table{es: List<&2, Resolved>}
+  Table{cs: List<&2, List<&2, Resolved>>, cur: List<&2, Resolved>, ci: U32}
 
-def Table.es(tb: Table) -> List<&2, Resolved>:
+def Table.cs(tb: Table) -> List<&2, List<&2, Resolved>>:
   match tb:
-    case Table{es}: es
+    case Table{cs, cur, ci}: cs
+
+def Table.cur(tb: Table) -> List<&2, Resolved>:
+  match tb:
+    case Table{cs, cur, ci}: cur
+
+def Table.ci(tb: Table) -> U32:
+  match tb:
+    case Table{cs, cur, ci}: ci
 
 # **THE **TABLE **IS **PREPENDED**, **NOT **APPENDED** (⇒⇒† AND **AND **`List.append(es, [r])` **COPIES **THE
 # **WHOLE **LIST**, **⇒⇒† AND **AND **SO **BUILDING **A **TABLE **OF **n **ENTRIES **IS **O(n²) **IN
@@ -1888,12 +1907,25 @@ def Table.es(tb: Table) -> List<&2, Resolved>:
 # **MATCHING **INDEX**), **⇒⇒† AND **AND **AND **THE **INDICES **ARE **UNIQUE**), **⇒⇒† AND **AND **AND **SO
 # **THE **FIRST **MATCH **IS **THE **ONLY **MATCH** (⇒⇒† AND **AND **AND **WHICH **IS **WHY **THE **SCAN **CAN
 # **STOP **AT **IT**)**
-def Table.put(tb: Table, r: Resolved) -> Table:
+def Table.put(i: U32, tb: Table, r: Resolved) -> Table:
   match tb:
-    case Table{es}: Table{r <> es}
+    case Table{cs, cur, ci}: Table{cs, r <> cur, ci}
 
-def Table.len(tb: Table) -> Nat:
-  List.length(&2, Resolved, Table.es(tb))
+# THE CHUNK ENDS WITH THE NODE WHOSE INDEX IS `32k + 31`.
+def Kahn.chunk_end(i: U32) -> Bool:
+  U32.is_zero(U32.and(U32.add(i, 1), 31))
+
+# THE FULL CHUNK GOES ON THE SPINE AND THE NEXT ONE STARTS EMPTY.
+def Kahn.roll.of(end: Bool, +tb: Table) -> Table:
+  match end:
+    case True{}: Table{List.append(&2, List<&2, Resolved>, Table.cs(tb), [Table.cur(tb)]), Nil{}, U32.add(Table.ci(tb), 1)}
+    case False{}: tb
+
+def Kahn.roll(tb: Table, i: U32) -> Table:
+  Kahn.roll.of(Kahn.chunk_end(i), tb)
+
+def Table.len(+tb: Table) -> Nat:
+  Nat.add(List.length(&2, List<&2, Resolved>, Table.cs(tb)), List.length(&2, Resolved, Table.cur(tb)))
 
 # **THE **SCAN **STOPS **AT **THE **MATCH** (⇒⇒† AND **AND **THE **INDICES **ARE **UNIQUE**, **⇒⇒† AND
 # **AND **SO **THE **FIRST **MATCH **IS **THE **ONLY **MATCH**) -- **⇒⇒† AND **AND **THE **OLD **FORM **SCANNED
@@ -1958,16 +1990,36 @@ def Kahn.get.at(ok: Bool, rd: Derived) -> Maybe<&2, Derived>:
     case True{}: Some{rd}
     case False{}: None{}
 
-def Kahn.get.go2(+t: List<&2, Resolved>, +i: U32, acc: Maybe<&2, Derived>) -> Maybe<&2, Derived>:
-  match t:
+def Kahn.get.chunk.go(+i: U32, es: List<&2, Resolved>, acc: Maybe<&2, Derived>) -> Maybe<&2, Derived>:
+  match es:
     case Nil{}: acc
     case Resolved{ri, rd} <> rest:
       match acc:
         case Some{d}: acc
-        case None{}: Kahn.get.go2(rest, i, Kahn.get.at(Kahn.get.eq(i, ri), rd))
+        case None{}: Kahn.get.chunk.go(i, rest, Kahn.get.at(Kahn.get.eq(i, ri), rd))
 
-def Kahn.get.go(+i: U32, es: List<&2, Resolved>) -> Maybe<&2, Derived>:
-  Kahn.get.go2(es, i, None{})
+def Kahn.get.chunk(i: U32, es: List<&2, Resolved>) -> Maybe<&2, Derived>:
+  Kahn.get.chunk.go(i, es, None{})
+
+# THE SPINE WALK: THE CHUNK OF INDEX `i` IS THE `i / 32`th ONE. THE LIST AND THE COUNT ARE
+# MATCHED TOGETHER, WHICH IS THE TREE's OWN PATTERN (`Kahn.dec.go`'s `match ps k`) AND IS WHY
+# THE COUNT IS A MATCH AND NOT A COMPARISON: A `match` CANNOT SCRUTINIZE A COMPUTED VALUE.
+def Kahn.get.spine.go(cs: List<&2, List<&2, Resolved>>, +i: U32, k: Nat) -> List<&2, Resolved>:
+  match cs k:
+    case Nil{} _: Nil{}
+    case c <> t 0n: c
+    case _ <> t 1n+p: Kahn.get.spine.go(t, i, p)
+
+def Kahn.get.spine(+i: U32, cs: List<&2, List<&2, Resolved>>) -> List<&2, Resolved>:
+  Kahn.get.spine.go(cs, i, U32.to_nat(U32.shrn(i, 5n)))
+
+def Kahn.get.of(hit: Bool, +i: U32, +tb: Table) -> Maybe<&2, Derived>:
+  match hit:
+    case True{}: Kahn.get.chunk(i, Table.cur(tb))
+    case False{}: Kahn.get.chunk(i, Kahn.get.spine(i, Table.cs(tb)))
+
+def Kahn.get(+i: U32, +tb: Table) -> Maybe<&2, Derived>:
+  Kahn.get.of(U32.is_eq(U32.shrn(i, 5n), Table.ci(tb)), i, tb)
 
 
 
@@ -2971,9 +3023,6 @@ def dt_row(nm: String, lo: Bnd, hi: Bnd) -> IO(Unit):
 
 def row(nm: String, b: Bool) -> IO(Unit):
   IO.print(String.concat([nm, "=", Bool.show(b)]))
-def Kahn.get(i: U32, tb: Table) -> Maybe<&2, Derived>:
-  Kahn.get.go(i, Table.es(tb))
-
 def gap_count(+x: Folded, i: U32) -> Bool:
   gap_count.pick(Maybe.is_some(&2, Derived, Kahn.get(i, Folded.t(x))))
 
@@ -3180,9 +3229,9 @@ def shape_is(+x: Folded, i: U32, want: List<&2, O.Sint>) -> Bool:
 # WALKED THE WHOLE ARENA FOR THE POPPED NODE's CONSUMERS (495,015,580 VISITS), EVERY RESOLUTION
 # WALKED THE ARENA FOR THE NODE ITSELF (`O.Arena.at` IS A LINEAR LIST WALK, 5,333,512 WALKS),
 # AND EVERY PUT COPIED THE WHOLE TABLE (`List.append` COPIES, 866,746 COPIES).
-def Kahn.ans.of(d: Maybe<&2, Derived>, i: U32, +tb: Table) -> Table:
+def Kahn.ans.of(d: Maybe<&2, Derived>, +i: U32, +tb: Table) -> Table:
   match d:
-    case Some{x}: Table.put(tb, Resolved{i, x})
+    case Some{x}: Table.put(i, tb, Resolved{i, x})
     case None{}: tb
 
 def Kahn.ans(+ar: O.Arena, nd: O.Node, +i: U32, +tb: Table, ss: List<&2, Derived>) -> Table:
@@ -3199,10 +3248,10 @@ def Kahn.step(+ar: O.Arena, +nd: O.Node, i: U32, +tb: Table) -> Table:
 def Kahn.walk(+ar: O.Arena, ns: List<&2, O.Node>, +i: U32, +tb: Table) -> Table:
   match ns:
     case Nil{}: tb
-    case nd <> t: Kahn.walk(ar, t, U32.add(i, 1), Kahn.step(ar, nd, i, tb))
+    case nd <> t: Kahn.walk(ar, t, U32.add(i, 1), Kahn.roll(Kahn.step(ar, nd, i, tb), i))
 
 def UOp.fold(+ar: O.Arena) -> Table:
-  Kahn.walk(ar, O.Arena.nodes(ar), 0, Table{Nil{}})
+  Kahn.walk(ar, O.Arena.nodes(ar), 0, Table{Nil{}, Nil{}, 0})
 # THE RANGES FOLD -- ops.py:483 `UOp._ranges` and ops.py:497 `UOp.ranges`. This is
 
 def folded(+ar: O.Arena) -> Folded:
