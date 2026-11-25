@@ -25,8 +25,10 @@ Baseline measured 2026-11-25 (re-run the commands to move it):
       Moved to `.agents/slop/quarantine/`, not deleted.
 - [x] **0.2 Commit the 33 real content changes.** Two path-scoped commits (substrate+shaders+
       checks, then `.agents/`). `git commit --only -m … -- <paths>`.
-- [x] **0.3 Clear the phantom "23,476 modified".** `git diff --name-only | wc -l` is the
-      truth; `git status` was stat-only noise. `git update-index --refresh`.
+- [x] **0.3 There was no phantom index (corrected).** My first reading called `git status`'s
+      23,476 lines "modified tracked files". They were **untracked**: `git status | cut -c1-2`
+      counted 23,446 `??` and 0 modifications. No `--refresh` was needed; the claim was wrong,
+      and it is recorded here rather than quietly dropped.
 - [x] **0.4 Stop scratch polluting `git status`.** 32,877 untracked, non-ignored files, all
       `.agents/slop/` scratch. Excluded locally via `.git/info/exclude`.
       *Pass:* `git ls-files --others --exclude-standard | wc -l` ≈ 0.
