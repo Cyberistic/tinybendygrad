@@ -5146,7 +5146,33 @@ are NOT free: `grep -c smoothstep tinygrad/` is 0 and there is no `Ops.MIN`.
       so a run now would record a digest of THEIR tree. The runner's `refused=` row IS the
       instrument that can go red on this change (it goes back to `kernels=1` when the pad lane
       lands), and nothing gates it yet — that is the row to gate next.
-- [ ] **THE REALIZE THE MERGE FORGOT — MEASURED, AND NOT LANDED, AND IT MAKES A CYCLE (2026-11-25).**
+- [ ] **THE MILESTONE, IN THREE UPSTREAM PIECES AND ONE LINE (2026-11-25).** The shader's PAD wall
+      is the blocker, and the pieces are now named with their port sites. **(1) ONE LINE —
+      UPSTREAM'S `rngs = out_rngs` (`indexing.py:283` ✓): A NODE'S INPUT RANGES ARE ITS
+      OUTPUT RANGES.** The port's `inp` is `Nil{}` for every node (`rr_p1.one`,
+      `rr_p1.real`, `rr_p1.many` ✓) and `rr_one_rngs` — the thing the realize decision
+      compares ✓ — reads `IxRngs.inp` ✓, so **the comparison is over empty lists** ✓ and
+      upstream's range-map-time realize (`indexing.py:267` ✓) can never fire. MEASURED: with
+      the fix applied and NOTHING ELSE, every row is IDENTICAL to pure HEAD
+      (`rngs=4 sk_open=False unb=T unbq=T cyc=0 topon=64 kernels=0` ✓) — it is neutral on its
+      own ✓, which is exactly what a prerequisite should look like ✓. **(2) UPSTREAM'S PAD
+      ARM** (`indexing.py:169-173` ✓ — `(r-off).valid(gate)` = `gate.where(r-off, Invalid)`,
+      `ops.py:636` ✓): the port's `rr_mvx` answers the identity for PAD ✓ and
+      `rr_ap_wall_hit` (`rangify.bend:1474` ✓) keeps the node ✓ — and the PAD's presence in
+      the kernel graph is what the fold refuses ✓, which is what leaves `sk_open=False` ✓.
+      The port has `OpsWHERE` ✓ and `CInvalid` ✓ already ✓, and upstream's valid rides on the
+      index NODE ✓, so the range model needs no new field for THAT ✓. **(3) THE PAD'S
+      ZERO-FILL** (`convert_pad_to_where_to_keep_behavior_local`, `indexing.py:98-103` ✓ —
+      `valid.where(value, 0)` ✓) and the realize that makes the neighbour read a BUFFERED
+      read (`indexing.py:267` ✓ + the STAGE-read substitution ✓, `indexing.py:80-91` ✓).
+      **AND ONE MORE MEASUREMENT THAT NARROWS (2)**: the port's WHOLE-LIST realize decision
+      (the first draft ✓) fires on FIVE nodes ✓ and **DISCONNECTS THE FW TERM** ✓ (the
+      reachable set falls 64 -> 39 ✓ and the END leaves it ✓) — the per-axis decision does
+      not ✓ — so the port's realize must be upstream's, per axis ✓, and it must land AFTER
+      the pad arm ✓ (which is what removes the PAD from the kernel graph ✓). **NONE OF THIS
+      IS LANDABLE YET**: every piece moves `tinybendygrad/`, and the corpus is red on the
+      `grad` row for another session's bisect ✓.
+- [ ] **THE REALIZE THE MERGE FORGOT — MEASURED, AND NOT LANDED (2026-11-25).**
       Upstream's merge ends with `if len(_realize_axis): rctx.realize_map[x] = _realize_axis`
       (`indexing.py:267`); the port's `rr_merge` (`rangify.bend:583`) minted the new RANGE and
       recorded NOTHING, so a node read at two different ranges was never realized — and a
