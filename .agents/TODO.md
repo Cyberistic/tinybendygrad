@@ -5161,7 +5161,10 @@ are NOT free: `grep -c smoothstep tinygrad/` is 0 and there is no `Ops.MIN`.
       `rr_ap_wall_hit` (`rangify.bend:1474` ✓) keeps the node ✓ — and the PAD's presence in
       the kernel graph is what the fold refuses ✓, which is what leaves `sk_open=False` ✓.
       The port has `OpsWHERE` ✓ and `CInvalid` ✓ already ✓, and upstream's valid rides on the
-      index NODE ✓, so the range model needs no new field for THAT ✓. **(3) THE PAD'S
+      index NODE ✓ (`gate.where(r-off, Invalid)`, `ops.py:636` ✓) — so the carrier is the
+      node ✓, and what is missing is a READER (`get_valid`, `ops.py:640` ✓) and the table
+      entry that points at it ✓ (`IxRange{kind, idx, ext}` ✓ holds a node id ✓, so the WHERE
+      can be the entry ✓ -- the `ix_rg_node` dispatch on `kind` ✓ is what has to learn it ✓). **(3) THE PAD'S
       ZERO-FILL** (`convert_pad_to_where_to_keep_behavior_local`, `indexing.py:98-103` ✓ —
       `valid.where(value, 0)` ✓) and the realize that makes the neighbour read a BUFFERED
       read (`indexing.py:267` ✓ + the STAGE-read substitution ✓, `indexing.py:80-91` ✓).
