@@ -145,19 +145,17 @@ substitution is upstream-shaped (`rr_ap_stage_src` builds `STAGE(s, closed_range
 indexes it by the *consumer's* input ranges, `indexing.py:80-91`), so the failure is in the
 **realize decision** or the **ranges it mints**: the kernel graph comes out carrying
 **five `STAGE`s** (`STAGE:none:MAX`, `STAGE:none:ADD` ×3, and `INDEX:none:STAGE,INDEX,RANGE`
-— an INDEX with three srcs), so the decision fires on five nodes where upstream would fire
-on one or two, and each firing mints new ranges for every axis and stages the value — a nest
-of STAGEs, and the fw term falls out of the graph. So the question is *why so many nodes'
-consumers disagree at all*: upstream compares the consumers' ranges *per axis* and realizes
-only the differing axes, and where the consumers **agree** upstream keeps their range and
-refines it with the merged `.valid` — the W3 half (`ops.py:636`) the port cannot do. Two
-more measurements narrow it: the schedule's own `cycles()` answers **0** on the realized
-graph (so it is not a dep-graph cycle), and the toposort answers the same 39 with a fuel of
-100000 as with the budget's 574 (so it is not a fuel cutoff) — **the rewrite makes the fw
-term unreachable from the sink**, and that is what leaves the schedule with nothing to build.
-Making the port's realize decision per-axis changes nothing here (both axes differ), so the
-granularity is not the cause either. **That is the next thing to read**, and the realize is
-not landed.
+— an INDEX with three srcs) — and without the realize the graph carries **zero**
+`STAGE`s — so the decision fires on five nodes where upstream would fire on one or two,
+and each firing mints new ranges for every axis and stages the value: a nest of STAGEs, and
+the fw term falls out of the graph. The comparison itself is **upstream-shaped**
+(`IxRngs{inp, outp}` is the (input ranges, output ranges) pair — `indexing.bend:250-252` —
+and upstream compares `range_map[c][0]`, the input ranges, `indexing.py:222`), so what is
+missing is what upstream does with the *old* ranges: upstream **ends** the realized node's
+old ranges (`ending_ranges[x] = []`, `indexing.py:226-228`) and keeps the consumers' ranges
+where they agree, while the port's `rr_merge` mints a new range for *every* axis and ends
+nothing. **That is the next thing to read** — the realize's *ending*, not its decision —
+and the realize is not landed.
 
 *(An earlier revision of this file called the port's gated toposort shallow — 7 of 138
 nodes — and that was WRONG: it was the flat-(256,) graph. With the (16,16) buffers the same

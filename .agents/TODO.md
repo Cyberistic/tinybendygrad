@@ -5165,11 +5165,15 @@ are NOT free: `grep -c smoothstep tinygrad/` is 0 and there is no `Ops.MIN`.
       `STAGE:none:ADD` ×3, and `INDEX:none:STAGE,INDEX,RANGE` — an INDEX with three srcs),
       so the decision fires on FIVE nodes where upstream would fire on one or two, and each
       firing mints new ranges for every axis and stages the value: the graph becomes a nest
-      of STAGEs and the fw term falls out of it. **SO THE QUESTION IS WHY SO MANY NODES'
-      CONSUMERS DISAGREE AT ALL** — upstream compares the consumers' ranges per axis and
-      realizes only the differing axes (`indexing.py:245-267`), and where the consumers AGREE
-      upstream keeps their range and refines it with the merged `.valid` (the W3 half,
-      `ops.py:636`), which is the piece the port cannot do.
+      of STAGEs and the fw term falls out of it. **AND THE PORT'S COMPARISON IS
+      UPSTREAM-SHAPED**: `IxRngs{inp, outp}` is the (INPUT ranges, OUTPUT ranges) pair
+      (`indexing.bend:250-252` ✓), upstream compares `range_map[c][0]` -- the INPUT ranges
+      (`indexing.py:222` ✓) -- and the port's `rr_one_rngs` reads `IxRngs.inp` ✓, so the
+      comparison is not the divergence. **WHAT UPSTREAM DOES WITH THE OLD RANGES IS**:
+      upstream ENDS the realized node's old ranges (`ending_ranges[x] = []`,
+      `indexing.py:226-228` ✓) and KEEPS the consumers' ranges where they agree ✓ — the
+      port's `rr_merge` mints a new range for every axis ✓ (its documented fallback ✓) and
+      ends nothing ✓. **THAT IS THE NEXT READING: the realize's ENDING, not its decision.**
       and the RANGES it mints (upstream gives the realized node NEW ranges and keeps the old
       ones for its own computation; the port's `rr_merge` mints new ranges for EVERY axis —
       its documented fallback). **MEASURED, AND NOT A CYCLE IN THE DEP GRAPH**: the schedule's
