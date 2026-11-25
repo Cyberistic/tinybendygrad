@@ -363,12 +363,35 @@ for a sink whose subtree is the whole graph ✗ -- so the port's toposort GATES 
 **=> THE NEXT READING IS IN THE PORT's TOPOSORT, NOT IN THE RUNNER's GRAPH: WHAT GATES
 THE `AFTER`?** (`O.UOp.toposort` -> `Topo.push` -> the worker.)
 
-**=> THE PORT's RANGE-MAP STAGE AND THE ENGINE LOOK AT DIFFERENT GRAPHS.** The range-map
-stage works on the sink's subtree (`rr_range_map` walks `rr_rev(topo)` -- one node ✗),
-and the ENGINE works on the FOLD, which is arena-wide (`F.folded(ar)` -- 64 nodes ✓).
-That is why the kernel graph has 64 nodes and a `STORE` ✓ while the range map is empty ✓,
-the realize map is empty ✓ (no `STORE` in a one-node toposort ✗), the table never grows
-✓, and the PAD arm, the SHRINK arm, the zero-fill and the gate are all inert ✓.
+**=> THE RANGE MAP AND THE REALIZE MAP ARE BOTH EMPTY, WITH A 56-NODE TOPOSORT.**
+THAT IS THE PART THAT STANDS. The port's own rows say it: `rmn=0` (the range map's size,
+read from the context ✗ -- not from a toposort ✗) and `rmap=` (the realize map's
+contents ✗). The probe's own `ttop` row says the tensor graph's toposort is **56** ✓,
+and the port's `Topo.srcs_of` walks **ALL** the srcs when `calls=True` ✓ (the default ✓
+-- `Topo.empty()` is `calls=True` ✓) -- so the port's toposort is NOT gated ✗.
+
+**=> WITHDRAWN: THE "ONE NODE" READING.** This file said the range-map stage walks a
+one-node subtree ✗✗. That came from the probe's `tsz=1` row ✗, and the port's own
+`ttop=56` row ✗ -- THE SAME GRAPH, THE SAME WALK -- SAYS 56 ✗✗. The two cannot both be
+right ✗, and the port's `Topo.srcs_of` ✗ says the walk takes all the srcs ✗. So the
+`tsz` row ✗ (and `tcensus` ✗ and `sreal` ✗, which use the same call ✗) are the probe's
+own bug ✗ -- they were added in one edit ✗ and never agreed with `ttop` ✗ -- and the
+claim that the range-map stage sees one node ✗ is **withdrawn** ✗✗. The two empty maps
+stand ✓✓; the cause is still open ✗.
+
+**=> SO THE CAUSE IS NOT THE TOPOSORT.** With 56 nodes in the fold's walk ✓ and every
+node taking a branch that yields no ranges ✓, the seed is still missing ✗ -- and the
+seed is a REALIZED node ✓ (`indexing.py:222-225`) ✓, so the REALIZE MAP is where the
+cause is ✓✓. And the realize map's emptiness ✗ means `rr_realize_one` ✗ answered
+nothing for every node ✗ -- **including the `STORE`** ✗.
+
+**=> THE NEXT MEASUREMENT IS ONE QUESTION: DOES THE TENSOR GRAPH CONTAIN A `STORE` AT
+ALL?** The arena's census ✗ (the probe's `arops` row ✗) was truncated ✗ and the
+`STORE` is not in its first 420 characters ✗. Upstream's graph HAS one ✓ (upstream's
+assign IS a `STORE` ✗ -- `ops.py:587` ✗) and upstream's realize map holds every `STORE`
+✓ (`indexing.py:36-37` ✗) -- so if the port's tensor graph has no `STORE` ✗, the port's
+realize map is empty for a reason upstream does not have ✗✗, and the fix is in the
+runner's graph construction ✗✗ -- the tensor graph's assign ✗.
 
 **=> AND UPSTREAM's `sink_of()`-SHAPED GRAPH HAS THE STORE, SO THE REALIZE MAP IS NOT
 EMPTY THERE.** Upstream's realize map holds every `STORE` (`indexing.py:36-37`) and the
