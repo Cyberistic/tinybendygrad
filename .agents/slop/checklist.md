@@ -79,11 +79,17 @@ Baseline measured 2026-11-25 (re-run the commands to move it):
 
 ## Phase 4 — generate the tables (1 week, ~14k lines)
 
-- [ ] **4.1** `uop/symbolic.bend` 6,129 · `uop/fold.bend` 4,790 ·
-      `codegen/decomp/dtype.bend` 2,934 are rule tables. Emit them from upstream's own
-      pattern lists, the way `gates/ptx_render_census-gen.py` emits its driver.
-      *Why:* removes the class `gral` found — a hand-copied rule with one swapped operand,
-      invisible to node counts.
+- [x] **4.1 `uop/symbolic.bend` — the table is now a projection, not a transcription.**
+      `gates/symbolic-table-gate.py` derives `(ops, rej)` per row from `sym.patterns` and
+      compares. It found **three rows whose `rej` was wrong**, and the bodies are what proved
+      it: `tag 2` demanded `CONST` while `sym_84.pat` reads a WHERE at src 0, so the rule could
+      never fire; `tag 12/13` demanded `CONST` while upstream tests `INDEX.or_casted()`, which
+      a disjunction cannot put in `early_reject`. Fixed in `bd4be1206`.
+      *Pass:* gate reports `sym_table 131/131 · rm_table 2/2 · valid_table 2/2`, 0 hazards,
+      1 documented 6-row permutation, and 77 rows that drop a fast path (counted, not failed —
+      `rej` is a filter, so narrower costs time and not an answer).
+      *Still to do:* `uop/fold.bend` and `codegen/decomp/dtype.bend` are the same class and are
+      not covered yet — `fold.bend` has no `PMEntry` at all, so its table has a different shape.
 
 ## Phase 5 — make upstream's tests the population (2 weeks)
 
