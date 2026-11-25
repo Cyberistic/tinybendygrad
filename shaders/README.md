@@ -138,12 +138,15 @@ realized has no buffer, so its second read has nothing to read from. Implemented
 worktree, it produces upstream's shape — the kernel graph now carries
 `STAGE:none:MAX,RANGE,RANGE` and `INDEX:none:STAGE,RANGE,RANGE` — **and it makes a cycle**:
 the kernel graph's reachable set falls from 64 nodes to 39 (`topon=39`), the END falls
-outside it, and the ranges change (`rngs=2` where the unrealized graph had 1). The shape
-of the cycle: the realized node is the STAGE's source *and* its own consumers read the
-STAGE, so the value's subtree reaches its own read — upstream substitutes the STAGE-read
-into the realized node's **consumers** (`create_bufferize_and_index_srcs`,
-`indexing.py:80-91`), so the port's rewrite is substituting it into the realized node's
-**own srcs**. **That is the next thing to read**, and the realize is not landed.
+outside it, and the ranges change (`rngs=2` where the unrealized graph had 1). The 39 nodes
+contain both `STAGE`s and **none** of the fw term's nodes (the MAX, the PADs and the RECIP
+are absent), so the cycle runs through the realized value's own subtree. The port's
+substitution is upstream-shaped (`rr_ap_stage_src` builds `STAGE(s, closed_ranges)` and
+indexes it by the *consumer's* input ranges, `indexing.py:80-91`), so the cycle is in the
+**realize decision** or the **ranges it mints** — upstream compares the consumers' ranges
+*per axis* and realizes only the axes that differ, while the port's `rr_merge` mints a new
+range for *every* axis (its documented fallback). **That is the next thing to read**, and the
+realize is not landed.
 
 *(An earlier revision of this file called the port's gated toposort shallow — 7 of 138
 nodes — and that was WRONG: it was the flat-(256,) graph. With the (16,16) buffers the same

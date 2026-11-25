@@ -5155,12 +5155,18 @@ are NOT free: `grep -c smoothstep tinygrad/` is 0 and there is no `Ops.MIN`.
       graph carries `STAGE:none:MAX,RANGE,RANGE` and `INDEX:none:STAGE,RANGE,RANGE` — **AND
       IT MAKES A CYCLE**: the reachable set of the kernel graph FALLS from 64 nodes to 39
       (`topon=39`), the END falls outside it, and the ranges change (`rngs=2` where the
-      unrealized graph had 1). **THE CYCLE'S SHAPE**: the realized node is the STAGE's
-      source AND its own consumers read the STAGE, so the value's subtree reaches its own
-      read. Upstream substitutes the STAGE-read into the realized node's **CONSUMERS**
-      (`create_bufferize_and_index_srcs`, `indexing.py:80-91`), so the port's rewrite is
-      substituting it into the realized node's **OWN SRCS** — that is the thing to read next.
-      **IT IS NOT LANDED** for that reason and because the change moves the substrate.
+      unrealized graph had 1). **THE 39 NODES CONTAIN BOTH `STAGE`s AND NONE OF THE FW TERM'S
+      NODES** (the MAX, the PADs and the RECIP are all absent), so the cycle runs through the
+      realized value's own subtree. **THE PORT'S SUBSTITUTION IS UPSTREAM-SHAPED** —
+      `rr_ap_stage_src` (`rangify.bend:1370`) builds `STAGE(s, closed_ranges)` and indexes it
+      by the CONSUMER's input ranges (`indexing.py:80-91` ✓) — so the cycle is NOT a
+      mis-substitution. **WHERE TO LOOK NEXT**: the REALIZE DECISION (which node gets
+      realized — `rr_cons_disagree` compares the consumers' whole range LISTS, so it fires on
+      a consumer that merely DIFFERS, while upstream compares PER AXIS and realizes only
+      the axes that differ) and the RANGES it mints (upstream gives the realized node NEW
+      ranges and keeps the old ones for its own computation; the port's `rr_merge` mints new
+      ranges for EVERY axis — its documented fallback). **IT IS NOT LANDED** for that reason
+      and because the change moves the substrate.
 - [ ] **THE PORT'S GATED TOPOSORT WAS NOT BROKEN — IT WAS THE FLAT GRAPH (2026-11-25).** An
       earlier reading said `SCH.sc_topo_of` answers 7 nodes for the shader's 138-node kernel
       graph. **THAT WAS THE FLAT-(256,) GRAPH**: with the runner's buffers reshaped to (16,16)
