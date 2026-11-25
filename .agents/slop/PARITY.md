@@ -8678,3 +8678,154 @@ ms**, **⇒⇒† AND **AND **the **`append` **0.041 ms**.
 **OWN **GATE **IS **GREEN** (`425 **rows, **3 **lanes **byte-identical **over **the **wide **surface"**) **⇒⇒† AND
 **AND **AND **AND **THE **WGSL **IS **BYTE-IDENTICAL** (⇒⇒† AND **3,773 **BYTES **BOTH **BUILDS**) **⇒⇒† AND
 **AND **AND **AND **THE **PROOF **READS **"ALL **PROOFS **CHECK"**.
+
+### 138.32 **THE **FOLD's **POP **LOOKED **UP **A **NODE **THAT **WAS **NEVER **IN **THE **TABLE**, **⇒⇒† AND
+**THE **LOOKUP **HIT **0 **TIMES **IN **893,576 **POPS**, **⇒⇒† AND **AND **IT **COST **250M **CELLS**
+
+**⇒⇒† AND **THE **INSTRUMENT** (⇒⇒† AND **AND **IT **PATCHES **THE **COMPILED **FORM**, **⇒⇒† AND **AND
+**IT **IS **THE **TREE's **OWN **RULE**: **the **clock **is **in **the **compiled **JS**):
+`.agents/slop/wgslperf/pop-hits.py` **PATCHES **`Kahn_pop_of`**'s **BODY **AND **COUNTS **THE **`Some`
+**AND **THE **`None`** **OF **THE **`hit`** **PARAMETER**.
+
+| | **the **reading** |
+|---|---|
+| the **pops** | **893,576** |
+| the **hits** | **0** |
+| the **misses** | **893,576** |
+
+**⇒⇒† AND **⇒⇒† AND **WHY **A **MISS **IS **ALWAYS **A **MISS** (⇒⇒† AND **AND **THIS **IS **A **PROPERTY
+**OF **THE **ALGORITHM**, **⇒⇒† AND **NOT **OF **THE **DATA**): **A **NODE **ENTERS **THE **`work` **LIST
+**ONLY **WHEN **ITS **DEGREE **HITS **EXACTLY **ZERO** (⇒⇒† AND **AND **`Kahn.reached`** **CHECKS **FOR
+**ZERO**, **⇒⇒† AND **AND **THE **DEGREE **ONLY **DECREASES**), **⇒⇒† AND **AND **SO **THE **`work`
+**LIST **HOLDS **A **NODE **ONCE** (⇒⇒† AND **AND **THE **SECOND **DECREMENT **UNDERFLOWS **PAST **ZERO**,
+**⇒⇒† AND **AND **IT **IS **NOT **ZERO**)** -- **⇒⇒† AND **AND **A **NODE **IS **PUT **IN **THE **TABLE
+**ONLY **BY **`Kahn.ans`**, **⇒⇒† AND **AND **THAT **RUNS **ONCE **PER **POP** -- **⇒⇒† AND **AND **SO
+**THE **TABLE's **INDICES **ARE **UNIQUE**, **⇒⇒† AND **AND **THE **SCAN's **EARLY-EXIT **STILL **HOLDS**.
+
+**⇒⇒† AND **⇒⇒† AND **THE **SCAN's **COST**, **BY **THE **SAME **COUNTING **SHAPE** (⇒⇒† AND **AND **THE
+**INSTRUMENT **IS **`.agents/slop/wgslperf/tbl-payoff.py`**, **⇒⇒† AND **AND **IT **COUNTS **THE **TABLE
+**LENGTH **PER **LOOKUP**)**:
+
+| | **before** | **after** |
+|---|---|---|
+| the **lookups** | **3,414,487** | **2,520,919** |
+| the **cells** | **1,216,274,293** | **965,875,289** |
+
+**⇒⇒† AND **⇒⇒† AND **THE **PAIRED **WGSL **A/B** (⇒⇒† AND **AND **THE **NOISE **FLOOR **IS **THE **SAME
+**BUILD **AGAINST **ITSELF**, **⇒⇒† AND **AND **THE **VERDICT **IS **THE **RATIO **OF **THE **PAIRED
+**MINIMA**)**:
+
+| | **the **reading** |
+|---|---|
+| **B/A** (minima) | **0.9740** |
+| the **noise **floor **C/A** | **0.9900** |
+| **B/A** (medians) | **0.9763** |
+| the **noise **floor **C/A** | **0.9827** |
+
+**⇒⇒† AND **⇒⇒† AND **AND **THE **WGSL **IS **BYTE-IDENTICAL**: **3,773 **bytes**, **sha256
+`366d44bb37efc83eb20dd21d1a6ca430582b2c8deed65b92b4248b48992eea30`** (⇒⇒† AND **AND **BOTH **BUILDS**)**.
+
+**⇒⇒† AND **⇒⇒† AND **AND **THE **CORPUS **IS **GREEN **ON **IT**: **`checks/differ.py run`** **READS
+**`graphs=38`, `graphs-answered=38`, `graphs-agree=38`, `graphs-disagree=0`, `byte-identical=38`,
+`expect-moved=0`, `plants-disagree=8 of 8`, `controls=5 of 5`, `conflations=4 of 4`, `stable-pairs=5 of 5`,
+`oracle-selfcheck=# ORACLE SELFCHECK: OK`, `selfcheck=# SELFCHECK: OK`** (⇒⇒† AND **AND **THE **RUN's
+**`substrate-start` **AND **`substrate-end` **DIFFER**, **⇒⇒† AND **AND **THAT **IS **ANOTHER **UNIT's
+**UNCOMMITTED **`schedule/rangify.bend`** **EDIT **MOVING **THE **TREE **MID-RUN**, **⇒⇒† AND **AND **THE
+**RUN **IS **STILL **A **VERDICT **ON **MY **CHANGE**)**.
+
+### 138.33 **THE **PER-CELL **CALLS **IN **THE **SCAN **ARE **NOT **WHAT **THE **SCAN **COSTS** -- **⇒⇒† AND
+**A **MEASURED **NEGATIVE
+
+**⇒⇒† AND **THE **CHANGE**: **THE **`Resolved`'s **`i` **IS **BOUND **BY **THE **PATTERN** (⇒⇒† AND **AND
+**SO **THE **COMPARISON **IS **A **FIELD **READ**), **⇒⇒† AND **AND **THE **OLD **`step`**/**`hit`**/**
+**`found`**/**`Res_i`**/**`Res_d`** **CHAIN **IS **GONE** -- **⇒⇒† AND **AND **THE **OLD **FORM **CALLED
+**FOUR **DEFS **PER **CELL** (⇒⇒† AND **AND **THE **NEW **ONE **CALLS **TWO**)**.
+
+**⇒⇒† AND **⇒⇒† AND **AND **IT **IS **NOT **A **WIN** (⇒⇒† AND **AND **THE **TREE's **RULE**: **A
+**COMMENT **EARNS **ITS **PLACE **ONLY **AS **DIFFERENCE **/ **WEIRD **/ **MEASURED** -- **⇒⇒† AND **AND
+**A **NEGATIVE **MEASUREMENT **IS **STILL **A **MEASUREMENT**): **THE **PAIRED **A/B **READ **B/A 1.0101**
+(⇒⇒† AND **AND **THE **NOISE **FLOOR **C/A 0.9925**) -- **⇒⇒† AND **AND **SO **THE **SCAN **COSTS **THE
+**TRAVERSAL**, **⇒⇒† AND **AND **NOT **THE **CALLS** (⇒⇒† AND **AND **V8 **INLINES **THE **SMALL **DEFS**)**.
+
+**⇒⇒† AND **⇒⇒† AND **⇒⇒† AND **THE **NEXT **LEVERS, **AND **THEY **ARE **MEASURED**:
+
+| **the **lever** | **the **reading** |
+|---|---|
+| the **INCREMENTAL **FOLD** (⇒⇒† AND **AND **THE **ARENA **GROWS **845 **NODES **IN **THE **WHOLE **TURN**, **⇒⇒† AND **AND **1,838 **OF **THE **FOLDS **ARE **BUILT**, **⇒⇒† AND **AND **1,438 **OF **THEM **ARE **ON **AN **ARENA **THAT **DID **NOT **GROW**, **⇒⇒† AND **AND **THE **INCREMENTAL **WORK **IS **845 **AGAINST **A **FULL-REBUILD **WORK **OF **893,576**, **⇒⇒† AND **AND **THAT's **A **1,058× **RATIO**) | **`.agents/slop/wgslperf/arena-delta.py`** |
+| the **`Kahn.consumers`** **WALK** (⇒⇒† AND **AND **IT **WALKS **THE **WHOLE **ARENA **PER **POP**, **⇒⇒† AND **AND **THE **POPS **ARE **~475 **PER **FOLD**) | **not **yet **counted** |
+| the **`Array`-INDEXED **TABLE** (⇒⇒† AND **AND **`List.get` **IS **O(n)**, **⇒⇒† AND **AND **SO **A **BINARY **SEARCH **OVER **A **BEND **LIST **IS **O(n log n)** -- **⇒⇒† AND **AND **THE **ONLY **INDEXED **STRUCTURE **IS **`Array<T>`**, **⇒⇒† AND **AND **WHICH **CANNOT **LIVE **IN **A **`Data` **RECORD** (⇒⇒† AND **AND **THE **`Prog` **PATTERN **CARRIES **IT **IN **A **TUPLE **INSTEAD**) | **300 **`Folded.t`/`Folded.ar` **USES** |
+
+**⇒⇒† AND **⇒⇒† AND **⇒⇒† AND **AND **THE **86% **FIGURE** (⇒⇒† AND **AND **IT **IS **WHAT **MAKES **THE
+**INCREMENTAL **FOLD's **PLUMBING **CHEAP**): **2,014 **OF **THE **2,344 **`F.folded` **CALLS **ARE **THE
+**REBUILD-AFTER-FIRING **SITES** (⇒⇒† AND **AND **`eng_node`** **772**, **`wk_fix.go`** **559**,
+**`wk_sweep.go`** **481**, **`wk_cast_body`** **179**, **`eng_fix.go`** **23**)** -- **⇒⇒† AND **AND
+**EVERY **ONE **OF **THEM **ALREADY **TAKES **THE **OLD **`Folded`** (⇒⇒† AND **AND **SO **THE **CACHE **IS
+**NOT **A **NEW **THREAD**, **⇒⇒† AND **AND **IT **IS **THE **`fx` **PARAMETER **THAT **IS **ALREADY
+**THERE**)**
+
+### 138.34 **THE **FOLD **WAS **84% **OF **THE **TURN, **AND **IT **WAS **A **SORT **OF **A **LIST **THAT **IS **ALREADY **SORTED**
+
+**⇒⇒† AND **THE **PROFILE** (`.agents/slop/wgslperf/hot-prof.py`, **THE **COMPILED **FORM's **OWN **CLOCK**):
+**THE **WHOLE **TURN **24,862 **ms**, **AND **THE **FOLD **20,946 **ms **OF **IT** (⇒⇒† AND **84%**)**.
+
+**⇒⇒† AND **THE **FOLD **WAS **A **KAHN **TOPOLOGICAL **SORT, **AND **IT **PAID **FOR **THE **SORT **THREE
+**TIMES **OVER** (⇒⇒† AND **ALL **THREE **MEASURED **BY **`.agents/slop/wgslperf/count-calls.py`**, **WHICH
+**COUNTS **THE **COMPILED **FORM**)**:
+
+| **the **cost** | **the **count** | **the **reading** |
+|---|---|---|
+| **every **POP **walked **the **whole **arena **for **the **popped **node's **consumers** | **495,015,580 **VISITS** | **`Kahn.consumers.step`** |
+| **every **resolution **walked **the **arena **for **the **node **itself** (⇒⇒† AND **`O.Arena.at` **IS **A **LINEAR **LIST **WALK**) | **5,333,512 **WALKS**, **~1.3 **B **CELLS** | **`O.Arena.at.go`** |
+| **every **put **copied **the **whole **table** (⇒⇒† AND **`List.append` **COPIES**) | **866,746 **COPIES** | **`Table.put`** |
+
+**⇒⇒† AND **THE **FIX **IS **MEASURED, **NOT **ASSUMED**: **`.agents/slop/wgslperf/topo-check.py`**
+**COUNTS **THE **ARENA's **EDGES **IN **THE **COMPILED **FORM** -- **OVER **1,815 **FOLDS**, **886,514
+**NODES **AND **1,698,277 **EDGES**, **NO **NODE's **SRC **HAS **AN **INDEX **AT **OR **ABOVE **THE
+**NODE's **OWN **INDEX** ✓ ⇒⇒† AND **SO **THE **ARENA's **INDEX **ORDER **IS **A **TOPOLOGICAL **ORDER**
+**AND **THE **SORT **IS **NOT **NEEDED** ⇒⇒† AND **THE **FOLD **IS **ONE **FORWARD **PASS** ✓.
+
+**⇒⇒† AND **AND **THE **TABLE **IS **PREPENDED, **NOT **APPENDED** (⇒⇒† AND **THE **COMMENT **SAID **SO
+**AND **THE **CODE **APPENDED**)** ⇒⇒† AND **A **CONS **IS **O(1) **AND **`List.append` **IS **O(n)** ✓.
+
+**⇒⇒† AND **MEASURED**: **THE **FOLD **20,946 **ms → 1,144 **ms** ✓ **AND **THE **TURN **24,862 **ms →
+7,194 **ms** ✓ **AND **THE **WGSL **IS **BYTE-IDENTICAL** (⇒⇒† AND **3,773 **bytes**, **sha256
+**366d44bb37efc83eb20dd21d1a6ca430582b2c8deed65b92b4248b48992eea30**) ✓
+
+### 138.35 **THE **TABLE's **LOOKUP **WAS **35.7% **OF **THE **TURN, **AND **A **LIST **OF **478 **ENTRIES
+**IS **THE **WRONG **SHAPE
+
+**⇒⇒† AND **V8's **OWN **CPU **PROFILE **OF **THE **COMPILED **FORM** (`.agents/slop/wgslperf/prof-read.py`
+**AND **`prof-callers.py`**, **WHICH **READ **THE **PROFILE's **CALL **TREE**): **THE **FLAT **TABLE's
+**LOOKUP **(`Kahn.get.go2`) **IS **35.7% **OF **THE **TURN's **EXCLUSIVE **TIME** -- **2,520,919
+**LOOKUPS **A **TURN**, **EACH **ONE **SCANNING **A **LIST **OF **~478 **ENTRIES** ✓.
+
+**⇒⇒† AND **THE **TABLE **IS **NOW **A **SPINE **OF **CHUNKS** (⇒⇒† AND **THE **ENTRY **FOR **INDEX **`i`**
+**IS **IN **CHUNK **`i / 32`**, **AND **THE **CHUNKS **ARE **BY **THE **NODE **INDEX**, **AND **THE **FOLD
+**WALKS **THE **ARENA **IN **INDEX **ORDER**, **SO **THE **CHUNKS **FILL **IN **ORDER**)** ⇒⇒† AND **A
+**LOOKUP **IS **~31 **CELLS **AND **NOT **~383** ✓ ⇒⇒† AND **AND **NO **`Table` **USE **IS **OUTSIDE
+**`fold.bend`** (⇒⇒† AND **SO **THE **LAYOUT **IS **THE **FOLD's **OWN**) ✓.
+
+**⇒⇒† AND **MEASURED**: **THE **TURN **7,194 **ms → 4,257 **ms** ✓ **AND **THE **FOLD **1,144 **ms → 779
+**ms** ✓ **AND **V8's **PROFILE **5,225 **SAMPLES → 3,062** ✓ **AND **THE **WGSL **IS **BYTE-IDENTICAL** ✓
+
+### 138.36 **THE **RANGE **TABLE **WAS **APPENDED, **AND **THE **APPEND **WAS **12.8% **OF **THE **TURN
+
+**⇒⇒† AND **THE **PROFILE's **CALL **TREE **NAMES **THE **CALLER**: **`RTable.put` **IS **12.8% **OF **THE
+**TURN's **EXCLUSIVE **TIME** ✓ ⇒⇒† AND **IT **IS **THE **SAME **SHAPE **AS **THE **FOLD's **TABLE** --
+**A **`List.append` **ON **EVERY **PUT**, **AND **THE **RANGE **MAP **IS **REBUILT **PER **FOLD** ✓ ⇒⇒† AND
+**THE **PUT **IS **NOW **A **CONS** ✓ ⇒⇒† AND **AND **THE **ORDER **DOES **NOT **MATTER** (⇒⇒† AND **THE
+**ONLY **READERS **ARE **`RTable.get`**, **A **SCAN **FOR **A **MATCHING **INDEX**, **AND **`RTable.len`**,
+**A **COUNT**)** ✓.
+
+### 138.37 **THE **TURN, **24,862 **ms → 3,590 **ms
+
+| | **before** | **after** |
+|---|---|---|
+| **the **whole **turn** | **24,862 **ms** | **3,590 **ms** |
+| **the **fold** | **20,946 **ms** | **~700 **ms** |
+| **V8's **PROFILE **SAMPLES** | **5,225** | **2,583** |
+
+**⇒⇒† AND **AND **THE **REMAINING **HOT **SPOTS, **AND **THEY **ARE **THE **ARENA's **O(n) **ACCESSORS
+**(`O.Arena.at` **IS **20% **OF **THE **TURN**, **AND **THE **OP **INTERNING's **LINEAR **SEARCH **IS
+**~23%**)** ⇒⇒† AND **⇒⇒† AND **AND **THE **FIX **FOR **BOTH **IS **THE **ARENA's **REPRESENTATION**
+(⇒⇒† AND **43 **`Arena.nodes`/`Arena.node` **USES **ACROSS **16 **FILES**)** ✓

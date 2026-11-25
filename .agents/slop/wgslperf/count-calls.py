@@ -62,12 +62,14 @@ def find_fn(src: str, name: str):
 
 
 def main():
+  # **⇒⇒† AND **THE **BUILD **IS **ALWAYS **FRESH** (⇒⇒† AND **AND **THIS **IS **THE **INSTRUMENT's
+  # **OWN **LESSON**: **A **STALE **BUILD **MEASURED **THE **OLD **TREE** -- **⇒⇒† AND **AND **A
+  # **COUNT **OF **THE **OLD **BUILD **LOOKS **LIKE **A **NEGATIVE **RESULT**)**
   base = HERE / "wgslprof.mjs"
-  if not base.exists():
-    b = subprocess.run([str(BEND), str(HERE / "wgslprof.bend"), "-o", str(base)],
-                       capture_output=True, text=True)
-    if b.returncode != 0:
-      raise SystemExit(f"WARN: the driver did not build:\n{b.stderr[:1200]}")
+  b = subprocess.run([str(BEND), str(HERE / "wgslprof.bend"), "-o", str(base)],
+                     capture_output=True, text=True)
+  if b.returncode != 0:
+    raise SystemExit(f"WARN: the driver did not build:\n{b.stderr[:1200]}")
   src = base.read_text()
 
   # **⇒⇒† AND **THE **FUNCTIONS **TO **COUNT** (⇒⇒† AND **AND **THE **NAMES **ARE **READ **OUT **OF
@@ -93,6 +95,17 @@ def main():
     # **THE **GET **SCANS **IT**)**
     "uop_fold_Table_put", "uop_fold_Kahn_get_go", "uop_fold_Kahn_get_step",
     "uop_fold_Kahn_pop_of", "uop_fold_Kahn_go",
+    # **⇒⇒† AND **THE **FOLD's **TWO **QUADRATICS**: **THE **TABLE **SCAN** (⇒⇒† AND **THE **`get`
+    # **CELLS**) **AND **THE **CONSUMER **WALK** (⇒⇒† AND **THE **`consumers` **ARENA **VISITS**,
+    # **⇒⇒† AND **EACH **ONE **OF **WHICH **WALKS **THE **CONSUMER's **SRCS**)**
+    "uop_fold_UOp_fold_from", "uop_fold_Kahn_consumers_step",
+    "uop_fold_Kahn_src_count_go", "uop_fold_Kahn_gather_step",
+    "uop_fold_Kahn_inc_walk", "uop_fold_Kahn_inc_seed",
+    # **⇒⇒† AND **THE **ARENA's **ACCESSORS **ARE **O(n) **WALKS** -- **⇒⇒† AND **AND **THE
+    # **FOLD's **INNER **WORK **MAY **CALL **THEM** (⇒⇒† AND **`derived` **TAKES **THE **ARENA**)
+    "uop_ops_Arena_at_go", "uop_ops_Arena_node", "uop_ops_Arena_srcs", "uop_ops_Arena_src",
+    "uop_fold_derived", "uop_fold_dt_shape", "uop_fold_device_of", "uop_fold_ended_of",
+    "uop_fold_Kahn_gather_go", "uop_fold_srcs",
   ]
   out = src
   found = []
