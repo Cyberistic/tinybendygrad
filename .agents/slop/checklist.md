@@ -47,18 +47,27 @@ Baseline measured 2026-11-25 (re-run the commands to move it):
       green tree.
 - [x] **1.2 `git config core.hooksPath gates/hooks`.** Record it in `.agents/TOOLS.md`.
       *Pass:* `git config --get core.hooksPath` answers.
-- [ ] **1.3 Strip every run verdict from `AGENTS.md`.** Replace each quoted run with the
+- [x] **1.3 Strip every run verdict from `AGENTS.md`.** Replace each quoted run with the
       command and the token it must print.
-      *Pass:* `grep -c 'graphs-agree' AGENTS.md` → `0`.
+      *Pass:* `grep -c 'graphs-agree' AGENTS.md` → `0`. Done 2026-11-25: 987 → 374 lines, all
+      40 rules kept, original verbatim at `.agents/slop/agend/AGENTS-20261125-987line.md`.
 
 ## Phase 2 — the one red row
 
-- [ ] **2.1 Re-run the corpus.** `checks/differ.py run` (~271 s). The recorded run predates
-      two `mixin/gradient.bend` commits (03:10, 04:09 +0300 today).
-- [ ] **2.2 Fix or revert `grad`.** Measured delta: py 9 rows / bend 6; `BUFFER 2/0`,
-      `MUL 2/1`; the surviving `MUL` is `dtype=void` where CPython has `f32`. The port's
-      backward of a scalar product builds one `MUL` where CPython builds two.
-      *Pass:* `D1-verdicts.txt` empty, `expect-moved=0`.
+- [x] **2.1 Re-run the corpus.** Same single row, `grad`. **This run is a working-tree
+      measurement, not a certificate**: another unit had `uop/divandmod.bend`,
+      `uop/fold.bend` and `schedule/rangify.bend` dirty while it ran, so the substrate it
+      recorded is not a commit. Re-run when the tree is quiet.
+- [x] **2.2 Fix `grad`.** Root cause was not the walk: `gmul_bc` passed
+      `gs_solid(gbcast(...))` to `gmul` as an operand, and `gs_solid` is the **count of
+      non-holes**, not a node. On this fixture the count is `1`, which is arena node 1 — the
+      `STACK` a `BUFFER` keeps its shape in — so the port built `MUL(STACK, ctx)` where
+      CPython builds `MUL(BUFFER, ctx)`, and both directions interned onto one node.
+      Same lines also dropped the arena `gbcast` grew. Fixed in `99efae865`.
+      *Pass:* `--graph grad` → 9 rows, 9 shared cores, 0 field mismatches, 7/7 ops, `AGREE`;
+      `gates/gr_graph_census-gate.py` → 32 rows, no divergences.
+      *Blast radius:* `gmul_bc` is reached only by the autodiff rules, exercised only by the
+      `grad` and `gral` graphs — both verified.
 
 ## Phase 3 — retire gates that cannot go red (2 days)
 
