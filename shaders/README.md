@@ -403,55 +403,56 @@ FIELDS -- `IX.realize(tr)` is `IxReal{tr, False{}, Nil{}}` and `ix_rmap_has` com
 `O.UOp.toposort` walks the whole graph ✓, the port's `ttop` row agrees ✓ (56 ✓), and
 the probe's `tsz=1` ✗ was its own bug ✓ -- already withdrawn above ✓.
 
-**=> THE MAP's SIZE IS ZERO, NOT JUST ITS CONTENTS.** The port's own row now prints
-it: `rmpad=... tbl=1 rmn=0 rmapn=0` -- `rmapn` is the REALIZE MAP's SIZE ✓ and it is
-**zero** ✓✓. So the map is genuinely empty ✓, not a lookup that misses ✓.
+**=> AND NOW THE WHOLE BLOCK ABOVE IS WITHDRAWN, AND IT IS THE PROBE's OWN BUG: A
+**STALE ARENA**.** `O.UOp.sink` GROWS THE ARENA (`UOp.new` APPENDS ✓, `ops.bend:1893`),
+so `sk` IS THE **LAST** NODE OF THE **GROWN** arena and `O.Found.ar(st)` DOES **NOT**
+CONTAIN IT ✓. **AND A READ PAST THE END OF AN ARENA IS THE ARENA's **BOTTOM NOOP NODE**
+✓** (`ops.bend:745-751` -- `Arena.bottom()` IS `Node{OpsNOOP{}, Nil{}, ...}` ✓) -- so
+`O.Arena.op(st's arena, sk)` IS `Ops.NOOP` ✓ AND `Arena.srcs` OF IT IS **EMPTY** ✓, AND
+THE TOPOSORT OF IT IS **ONE NODE** ✓. **AND THAT IS EXACTLY THE SIGNATURE: `tcensus=Ops.NOOP`
+✓ AND `tsz=1` ✓.**
 
-**=> AND THE TOPOSORT VARIANT IS EXONERATED.** The obvious suspect was the walk:
-`rr_range_map` and `rr_realize` call `O.UOp.toposort` (the CALLS variant ✓) while the
-probe's `ttop` row uses `O.UOp.toposort_nocalls` ✓ and answers 56 ✓ -- so the two walks
-disagreed ✓. MEASURED, by switching BOTH to `toposort_nocalls` ✓: `rmapn=0` ✓ **and**
-`rmn=0` ✓ -- UNCHANGED ✗. So the variant is not the cause ✓ and the change is reverted
-✓✓.
+**=> MEASURED, THE SAME ROWS WITH **THE SINK's OWN ARENA** (`O.Found.ar(sk)` ✓, AND
+`firstpad` IN IT TOO ✓ -- A NODE INDEX BELONGS TO ITS ARENA ✓):**
 
-**=> SO THE CHAIN IS: THE GRAPH HAS THE `STORE` ✓, THE DEF FIRES ON IT ✓, THE FUEL IS
-FINE ✓, THE WALK'S VARIANT DOES NOT MATTER ✓, AND THE MAP IS EMPTY ✓✓.** Everything
-downstream -- the range map ✗, the table ✗, the PAD arm ✗, the SHRINK arm ✗, the
-zero-fill ✗, the gate ✗ -- follows from that one empty map ✓✓.
+    tsz=57                                  THE TOPOSORT OF THE SINK IS 57 NODES ✓
+    tcensus=Ops.CONST,Ops.BUFFER,...,Ops.STORE,Ops.AFTER,Ops.SINK   THE WHOLE GRAPH ✓
+    rmap=56:STORE:none:RESHAPE,ADD          THE REALIZE MAP HOLDS THE STORE ✓
+    rmpad=rm=False True in=60 out=58,59 tbl=79 rmn=44 rmapn=1
+                                             THE RANGE MAP HAS 44 ENTRIES ✓ AND THE
+                                             TABLE 79 ROWS ✓ AND THE REALIZE MAP 1 ✓
+    sreal=56:1                              THE STORE IS REALIZED ✓
+    end_op=Ops.CALL                         **THE SPLIT FIRES** ✓
+    kernels=1  k0_op=Ops.CALL               ONE KERNEL AND ITS ROOT IS A CALL ✓
 
-**=> THE NEXT READING IS `List.append` ITSELF.** `base.bend:1003`:
-`def List.append(a, -A: Kind(a), xs: List<a, A>, ys: List<a, A>)` -- **it appends the
-WHOLE LIST `ys` ✓**, it does not append the elements of `ys` one by one ✗. And
-`rr_realize.go` appends `rr_realize_one(ar, u)` -- a LIST ✗ -- to a map whose entries are
-`IxReal` ✗. So the realize map's entries are LISTS ✗✗, `ix_rmap_has` reads
-`IxReal.n(e)` on a list ✗✗, and the map's size ✗✗ is the count of LISTS ✗✗ -- but the
-MEASURED size is ZERO ✗✗, so the append ✗✗ never happened ✗✗ either ✗✗.
+**=> SO "THE MAP IS EMPTY" AND EVERYTHING DOWNSTREAM OF IT WERE THE PROBE's OWN ARENA
+✓✓.** The `List.append` reading ✓ is void (the append happened ✓), the
+`toposort_nocalls` experiment ✓ is void (the map was never empty ✓), and "the toposort
+does not contain the `STORE`" ✓ is void (it does ✓ -- `tsz=57` ✓).
 
-**=> SO THE LAST TWO LINKS ARE: WHY DOES `rr_realize.go`'s WALK NOT APPEND ✗, AND WHAT
-DOES `List.append` DO WITH A LIST ✗?** Both are one reading each ✗✗, both are in
-`rangify.bend` ✗ and `base.bend` ✗, and the `rmapn=` row ✓ is the instrument that will
-answer them ✓✓.
+**=> AND THE SPLIT DOES FIRE, AND THE KERNEL GRAPH HAS UPSTREAM's SHAPE:**
 
-**=> AND UPSTREAM's `sink_of()`-SHAPED GRAPH HAS THE STORE, SO THE REALIZE MAP IS NOT
-EMPTY THERE.** Upstream's realize map holds every `STORE` (`indexing.py:36-37`) and the
-runner's graph here has **no `STORE` at all** (the census ✗) -- so the port's realize
-map is empty for a reason upstream does not have.
+    kg=SINK:none:AFTER;AFTER:none:INDEX,CALL;...;END:none:STORE,RANGE,RANGE,RANGE,RANGE;...
 
-**SO THE NEXT READING MOVES OUT OF THE RANGIFY AND INTO THE RUNNER's GRAPH: WHAT DOES
-`sink_of()` RETURN, AND WHY IS THE FORMULA NOT UNDER IT?** The port's kernel graph has
-always been the fold's arena-wide graph, so upstream's range-map stage has never run on
-it.
+**=> THE END's FOUR `RANGE` SRCS AND ITS `STORE` ARE `split_store`'s OUTPUT SHAPE ✓
+(`rangeify.py:321-341` ✓) AND THE `PAD`s AND THE `SHRINK`s ARE **GONE** FROM THE KERNEL
+GRAPH ✓✓ -- THE CENSUS OF `kg=` IS `ADD:13 MUL:12 CONST:8 RANGE:6 INDEX:4 TRUNCMOD:3
+PARAM:3 MAX:3 BUFFER:3 SINK:2 CAST:2 WHERE:1 STORE:1 SQRT:1 RECIP:1 END:1 CALL:1 AND:1
+AFTER:1` ✓ **AND NOT ONE `PAD` AND NOT ONE `SHRINK`** ✓✓ -- SO "THE PAD ARM IS INERT" AND
+"THE PADS SURVIVE" ARE ALSO THE STALE ARENA ✓✓.**
 
-**SO THE NEXT READING IS ONE LINE: WHY DOES `rr_realize_one` ANSWER NOTHING FOR A
-`STORE`?** `rr_is_store` is `O.eq_op(O.Arena.op(ar, u), O.OpsSTORE{})` and
-`rr_store_entries` is `rr_store_real` -- the same shape as upstream's rule. Either the
-toposort the map is built from does not contain the `STORE`, or the map's entries are
-dropped on the way into the context (`ix_ctx_realize`).
+**=> AND THE PORT IS NOT AT FAULT ✓: EVERY PRODUCTION CALL SITE PASSES THE **MATCHED**
+PAIR ✓** -- `shaders/shader-run.bend:226` and `:300` ✓, `shaders/buf-schedules.bend:23` ✓,
+`shaders/sched-probe.bend:385` and `:406` ✓ -- ALL
+`rr_kernel_graph(O.Found.ar(sk), O.Found.i(sk))` ✓✓. **ONLY THE PROBE's FIVE ROWS READ
+`sk` IN `st`'s ARENA ✓, AND THEY ARE NOW FIXED ✓** (`sreal=` ✓ `tsz=` ✓ `tcensus=` ✓
+`rmap=` ✓ `rmpad=` ✓).
 
-**SO THE ORDER OF THE REMAINING WORK IS REVERSED FROM WHAT THE PLAN SAID.** The gate
-cannot ride before the fold gives the range map a seed: the fold's refusal is upstream of
-the gate, the PAD arm and the zero-fill. The plan's `THE GATE DOES NOT RIDE` is a
-symptom; the fold's missing row is the disease.
+**=> SO THE NEXT READING IS BACK WHERE THE CHECKLIST SAID IT WAS BEFORE THE PROBE BUG:
+THE KERNEL **BODY** IS NOT UPSTREAM's ✓** -- `INDEX=7 WHERE=4 CMPLT=2 SQRT=3` AGAINST
+THE PORT's `INDEX=4 WHERE=1 AND=1 SQRT=1` ✓, i.e. THE DISTANCE FIELD IS NOT MATERIALIZED
+✓ (upstream realizes it, `indexing.py:267` ✓), SO THE NEIGHBOUR READ IS A REGISTER READ
+AND NOT A BUFFERED ONE ✓✓.
 
 **AND THE GRAPH IS STILL ONE KERNEL WHERE UPSTREAM'S IS ONE KERNEL BUT NOT THE SAME
 ONE.** The oracle's body has `INDEX=7 WHERE=4 CMPLT=2 SQRT=3`; the port's has
