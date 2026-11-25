@@ -1473,19 +1473,19 @@ def rnd_pa(slot: U32, nm: Maybe<&2, String>) -> O.ParamArg:
   rnd_pa.put(O.ParamArg.of(slot, S.int32()), nm)
 
 def rnd_ar() -> O.Arena:
-  O.Arena{[
+  O.Arena.of([
     O.Arena.bottom(),
-    O.Node{O.OpsPARAM{}, Nil{}, O.AParam{rnd_pa(3, Some{"i"})}, O.TNone{}},
-    O.Node{O.OpsPARAM{}, Nil{}, O.AParam{rnd_pa(7, None{})}, O.TNone{}},
-    O.Node{O.OpsBUFFER{}, Nil{}, O.AParam{rnd_pa(1, Some{"buf"})}, O.TNone{}},
-    O.Node{O.OpsBUFFER{}, Nil{}, O.AParam{rnd_pa(2, None{})}, O.TNone{}},
-    O.Node{O.OpsALLOC{}, Nil{}, O.AParam{rnd_pa(4, Some{"out"})}, O.TNone{}},
-    O.Node{O.OpsALLOC{}, Nil{}, O.AParam{rnd_pa(5, None{})}, O.TNone{}},
-    O.Node{O.OpsCONST{}, Nil{}, O.APy{O.CInt{H.i64_of_i32(42)}}, O.TNone{}},
-    O.Node{O.OpsCONST{}, Nil{}, O.APy{O.CBool{True{}}}, O.TNone{}},
-    O.Node{O.OpsCONST{}, Nil{}, O.APy{O.CFloat{1.5}}, O.TNone{}},
-    O.Node{O.OpsSPECIAL{}, Nil{}, O.AStr{"gidx"}, O.TNone{}},
-], [0]}
+    O.Node{O.OpsPARAM{}, Nil{}, O.AParam{rnd_pa(3, Some{"i"})}, O.TNone{}, 0},
+    O.Node{O.OpsPARAM{}, Nil{}, O.AParam{rnd_pa(7, None{})}, O.TNone{}, 0},
+    O.Node{O.OpsBUFFER{}, Nil{}, O.AParam{rnd_pa(1, Some{"buf"})}, O.TNone{}, 0},
+    O.Node{O.OpsBUFFER{}, Nil{}, O.AParam{rnd_pa(2, None{})}, O.TNone{}, 0},
+    O.Node{O.OpsALLOC{}, Nil{}, O.AParam{rnd_pa(4, Some{"out"})}, O.TNone{}, 0},
+    O.Node{O.OpsALLOC{}, Nil{}, O.AParam{rnd_pa(5, None{})}, O.TNone{}, 0},
+    O.Node{O.OpsCONST{}, Nil{}, O.APy{O.CInt{H.i64_of_i32(42)}}, O.TNone{}, 0},
+    O.Node{O.OpsCONST{}, Nil{}, O.APy{O.CBool{True{}}}, O.TNone{}, 0},
+    O.Node{O.OpsCONST{}, Nil{}, O.APy{O.CFloat{1.5}}, O.TNone{}, 0},
+    O.Node{O.OpsSPECIAL{}, Nil{}, O.AStr{"gidx"}, O.TNone{}, 0},
+])
 
 def rnd_show(m: Maybe<&2, String>) -> String:
   match m:
@@ -1587,14 +1587,14 @@ def pu_pa(slot: U32) -> O.ParamArg:
     None{}, False{}, None{}, None{}, False{}, None{}}
 
 def pu_ar() -> O.Arena:
-  O.Arena{[
+  O.Arena.of([
     O.Arena.bottom(),
-    O.Node{O.OpsCONST{}, Nil{}, O.APy{O.CInt{H.i64_of_i32(4)}}, O.TNone{}},
-    O.Node{O.OpsRANGE{}, [1], O.ARange{[0], O.AXIS_LOOP{}}, O.TNone{}},
-    O.Node{O.OpsBUFFER{}, [1], O.AParam{pu_pa(1)}, O.TNone{}},
-    O.Node{O.OpsADD{}, [3, 1], O.ANone{}, O.TNone{}},
-    O.Node{O.OpsCONST{}, Nil{}, O.APy{O.CInt{H.i64_of_i32(4)}}, O.TNone{}},
-    O.Node{O.OpsCONST{}, Nil{}, O.APy{O.CInt{H.i64_of_i32(8)}}, O.TNone{}}], [0]}
+    O.Node{O.OpsCONST{}, Nil{}, O.APy{O.CInt{H.i64_of_i32(4)}}, O.TNone{}, 0},
+    O.Node{O.OpsRANGE{}, [1], O.ARange{[0], O.AXIS_LOOP{}}, O.TNone{}, 0},
+    O.Node{O.OpsBUFFER{}, [1], O.AParam{pu_pa(1)}, O.TNone{}, 0},
+    O.Node{O.OpsADD{}, [3, 1], O.ANone{}, O.TNone{}, 0},
+    O.Node{O.OpsCONST{}, Nil{}, O.APy{O.CInt{H.i64_of_i32(4)}}, O.TNone{}, 0},
+    O.Node{O.OpsCONST{}, Nil{}, O.APy{O.CInt{H.i64_of_i32(8)}}, O.TNone{}, 0}])
 # THE TABLE IS IN `.agents/slop/tables/uop-render-2982.md` -- `pu_range`   one BUFFER with a RANGE: the baseline, and the `--` src arm.
 def pu_row.go(+nm: String, +ar: O.Arena, xs: List<&2, String>, +acc: String) -> String:
   match xs:
@@ -1607,12 +1607,12 @@ def pu_row(+nm: String, +ar: O.Arena, +uops: List<&2, U32>) -> IO(Unit):
   pu_row.emit(pu_row.go(nm, ar, print_uops(ar, uops), ""))
 
 def pu_rr() -> O.Arena:
-  O.Arena{[
+  O.Arena.of([
     O.Arena.bottom(),
-    O.Node{O.OpsCONST{}, Nil{}, O.APy{O.CInt{H.i64_of_i32(4)}}, O.TNone{}},
-    O.Node{O.OpsRANGE{}, [1], O.ARange{[0], O.AXIS_LOOP{}}, O.TNone{}},
-    O.Node{O.OpsBUFFER{}, [1], O.AParam{pu_pa(1)}, O.TNone{}},
-    O.Node{O.OpsADD{}, [3, 2], O.ANone{}, O.TNone{}}], [0]}
+    O.Node{O.OpsCONST{}, Nil{}, O.APy{O.CInt{H.i64_of_i32(4)}}, O.TNone{}, 0},
+    O.Node{O.OpsRANGE{}, [1], O.ARange{[0], O.AXIS_LOOP{}}, O.TNone{}, 0},
+    O.Node{O.OpsBUFFER{}, [1], O.AParam{pu_pa(1)}, O.TNone{}, 0},
+    O.Node{O.OpsADD{}, [3, 2], O.ANone{}, O.TNone{}, 0}])
 
 def pu_rr_rows(+ar: O.Arena) -> IO(Unit):
   do IO<Unit>:

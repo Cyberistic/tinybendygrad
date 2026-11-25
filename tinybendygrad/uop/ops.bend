@@ -703,72 +703,119 @@ def CallInfo.of() -> CallInfo:
 # THE TABLE IS IN `.agents/slop/tables/uop-ops-1294.md` -- `CallInfo.__repr__` (ops.py:1401) is at the end of the equality block, because it
 
 type Node is Data:
-  Node{op: Op, src: List<&2, U32>, arg: Arg, tag: Tag}
+  Node{op: Op, src: List<&2, U32>, arg: Arg, tag: Tag, d: U32}
 
+# THE ARENA IS A SPINE OF CHUNKS BESIDE THE NODES, THE SAME SHAPE AS THE FOLD's OWN TABLE: THE
+# NODE OF INDEX `i` IS IN CHUNK `i / 32`, AND THE ARENA GROWS BY APPENDING, SO THE CHUNKS FILL
+# IN ORDER.
+#
+# MEASURED, WHY: THE FLAT LIST's WALK WAS 21.5% OF THE WGSL TURN (V8's OWN CPU PROFILE OF THE
+# COMPILED FORM) AND IT WALKED 492,349,364 LIST CELLS OVER 3,577,720 LOOKUPS, SO A LOOKUP
+# WALKED ~137 CELLS OF AN ARENA OF ~244 NODES. A CHUNKED LOOKUP WALKS ~8 CELLS OF THE SPINE
+# AND ~16 OF THE CHUNK.
+#
+# AND THE CHUNKS ARE BESIDE THE NODES AND NOT INSTEAD OF THEM, BECAUSE THE SCAN AND THE
+# WALKERS NEED ONE LIST: A SCAN OVER CHUNKS IS TWO DEFS THAT CALL EACH OTHER, AND BEND HAS NO
+# FORWARD REFERENCES, SO TWO DEFS THAT CALL EACH OTHER CANNOT BE WRITTEN.
+#
+# AND THE NODE'S DEPTH IS IN THE NODE, NOT IN A PARALLEL `shp` LIST: THE DEPTH IS ZERO FOR
+# EVERY NODE (MEASURED: 17,554 NODES, ALL ZERO), AND A PARALLEL ARRAY IS A SECOND SOURCE OF
+# TRUTH -- AND THE PORT's OWN FIXTURES DID NOT EVEN KEEP IT IN STEP (`Arena{[...15 NODES...],
+# [0]}` IS A SHAPE LIST OF ONE).
 type Arena is Data:
-  Arena{nodes: List<&2, Node>, shp: List<&2, U32>}
-
+  Arena{nodes: List<&2, Node>, cs: List<&2, List<&2, Node>>, n: U32}
 
 def Arena.nodes(x: Arena) -> List<&2, Node>:
   match x:
-    case Arena{nodes, shp}: nodes
+    case Arena{nodes, cs, n}: nodes
 
-def Arena.shp(x: Arena) -> List<&2, U32>:
+def Arena.cs(x: Arena) -> List<&2, List<&2, Node>>:
   match x:
-    case Arena{nodes, shp}: shp
+    case Arena{nodes, cs, n}: cs
 
-def Arena.depth.at(ss: List<&2, U32>, n: Nat) -> U32:
-  match ss n:
-    case Nil{} _: 0
-    case h <> t 0n: h
-    case _ <> t 1n+p: Arena.depth.at(t, p)
+def Arena.n(x: Arena) -> U32:
+  match x:
+    case Arena{nodes, cs, n}: n
 
-def Arena.depth(ar: Arena, i: U32) -> U32:
-  Arena.depth.at(Arena.shp(ar), U32.to_nat(i))
+def Node.d(x: Node) -> U32:
+  match x:
+    case Node{op, src, arg, tag, d}: d
 
 def Node.op(x: Node) -> Op:
   match x:
-    case Node{op, src, arg, tag}: op
+    case Node{op, src, arg, tag, _}: op
 
 def Node.src(x: Node) -> List<&2, U32>:
   match x:
-    case Node{op, src, arg, tag}: src
+    case Node{op, src, arg, tag, _}: src
 
 def Node.arg(x: Node) -> Arg:
   match x:
-    case Node{op, src, arg, tag}: arg
+    case Node{op, src, arg, tag, _}: arg
 
 def Node.tag(x: Node) -> Tag:
   match x:
-    case Node{op, src, arg, tag}: tag
+    case Node{op, src, arg, tag, _}: tag
 
 def Arena.bottom() -> Node:
-  Node{OpsNOOP{}, Nil{}, ABad{}, TNone{}}
+  Node{OpsNOOP{}, Nil{}, ABad{}, TNone{}, 0}
 
 def Arena.empty() -> Arena:
-  Arena{[Arena.bottom()], [0]}
+  Arena{[Arena.bottom()], [[Arena.bottom()]], 1}
+
+# AN ARENA FROM A LIST OF NODES: THE CHUNKS ARE BUILT FROM IT, AND A LIST OF NODES IS WHAT
+# THE PORT's OWN FIXTURES HAVE ALWAYS WRITTEN.
+def Arena.of.roll(+c: List<&2, Node>, +cs: List<&2, List<&2, Node>>) -> List<&2, List<&2, Node>>:
+  Bool.pick(List<&2, List<&2, Node>>, U32.is_eq(U32.from_nat(List.length(&2, Node, c)), 32),
+    List.append(&2, List<&2, Node>, cs, [c]), cs)
+
+def Arena.of.next(+c: List<&2, Node>, +n: Node) -> List<&2, Node>:
+  Bool.pick(List<&2, Node>, U32.is_eq(U32.from_nat(List.length(&2, Node, c)), 32),
+    [n], List.append(&2, Node, c, [n]))
+
+def Arena.of.go(ns: List<&2, Node>, +cs: List<&2, List<&2, Node>>, +c: List<&2, Node>) -> List<&2, List<&2, Node>>:
+  match ns:
+    case Nil{}:
+      List.append(&2, List<&2, Node>, cs, [c])
+    case +n <> t:
+      Arena.of.go(t, Arena.of.roll(c, cs), Arena.of.next(c, n))
+
+def Arena.of(+ns: List<&2, Node>) -> Arena:
+  Arena{ns, Arena.of.go(ns, Nil{}, Nil{}), U32.from_nat(List.length(&2, Node, ns))}
 
 # ops.py:842 says must never be reset, and the arena's length IS that counter.
 def Arena.next(ar: Arena) -> U32:
-  U32.from_nat(List.length(&2, Node, Arena.nodes(ar)))
+  Arena.n(ar)
 
 def UOp.is_none(u: U32) -> Bool:
   U32.is_zero(u)
 
-def Arena.at.go(ns: List<&2, Node>, n: Nat) -> Maybe<&1, Node>:
-  match ns n:
+# THE LOOKUP: THE CHUNK OF INDEX `i` IS THE `i / 32`th ONE. THE LIST AND THE COUNT ARE
+# MATCHED TOGETHER (THE TREE's OWN PATTERN, `Kahn.get.spine.go`).
+def Arena.at.chunk.go(cs: List<&2, Node>, k: Nat) -> Maybe<&1, Node>:
+  match cs k:
     case Nil{} _:
       None{}
-    case k <> t 0n:
-      Some{k}
-    case k <> t 1n+p:
-      Arena.at.go(t, p)
+    case c <> t 0n:
+      Some{c}
+    case _ <> t 1n+p:
+      Arena.at.chunk.go(t, p)
 
-def Arena.at(ar: Arena, i: U32) -> Maybe<&1, Node>:
-  Arena.at.go(Arena.nodes(ar), U32.to_nat(i))
+def Arena.at.spine.go(cs: List<&2, List<&2, Node>>, k: Nat) -> List<&2, Node>:
+  match cs k:
+    case Nil{} _: Nil{}
+    case c <> t 0n: c
+    case _ <> t 1n+p: Arena.at.spine.go(t, p)
+
+def Arena.at(ar: Arena, +i: U32) -> Maybe<&1, Node>:
+  Arena.at.chunk.go(Arena.at.spine.go(Arena.cs(ar), U32.to_nat(U32.shrn(i, 5n))),
+    U32.to_nat(U32.and(i, 31)))
 
 def Arena.node(ar: Arena, i: U32) -> Node:
   Maybe.default(&1, Node, Arena.at(ar, i), Arena.bottom())
+
+def Arena.depth(ar: Arena, i: U32) -> U32:
+  Node.d(Arena.node(ar, i))
 
 def Arena.op(ar: Arena, i: U32) -> Op:
   Node.op(Arena.node(ar, i))
@@ -819,7 +866,7 @@ def Arena.src_without_body.op(op: Op, src: List<&2, U32>) -> List<&2, U32>:
 
 def Arena.src_without_body.node(nd: Node) -> List<&2, U32>:
   match nd:
-    case Node{op, src, arg, tag}: Arena.src_without_body.op(op, src)
+    case Node{op, src, arg, tag, _}: Arena.src_without_body.op(op, src)
 
 def Arena.src_without_body(ar: Arena, i: U32) -> List<&2, U32>:
   Arena.src_without_body.node(Arena.node(ar, i))
@@ -1538,26 +1585,25 @@ def eq_tag(x: Tag, y: Tag) -> Bool:
 
 def eq_node(x: Node, y: Node) -> Bool:
   match x y:
-    case Node{op, src, arg, tag} Node{o2, s2, a2, t2}:
+    case Node{op, src, arg, tag, d} Node{o2, s2, a2, t2, d2}:
       Bool.and(U32.is_eq(Ops.value(op), Ops.value(o2)),
-        Bool.and(eq_u32(src, s2), Bool.and(eq_arg(arg, a2), eq_tag(tag, t2))))
+        Bool.and(eq_u32(src, s2),
+          Bool.and(eq_arg(arg, a2), Bool.and(eq_tag(tag, t2), U32.is_eq(d, d2)))))
 
 # THE SAME EQUALITY, WITH THE WANTED NODE's OP VALUE ALREADY IN HAND: THE OP IS FIXED FOR
 # THE WHOLE INTERNING SCAN, AND `Ops.value` IS A SIXTY-ARM MATCH. MEASURED, IT IS CALLED
 # 41,973,508 TIMES A TURN AND ITS ARMS ARE 1,684,550,390 TAG COMPARISONS
 # (`.agents/slop/wgslperf/count-intern.py` COUNTS THE COMPILED FORM).
 #
-# AND THE SRCS, THE ARG AND THE TAG ARE COMPARED ONLY WHEN THE OP MATCHES: `Bool.and`
-# EVALUATES BOTH OF ITS ARGUMENTS, SO THE OLD FORM PAID FOR THEM ON EVERY NODE.
-def eq_node.ov.go(same_op: Bool, same_sh: Bool, x: Node, y: Node) -> Bool:
+# AND THE SRCS, THE ARG, THE TAG AND THE DEPTH ARE COMPARED ONLY WHEN THE OP MATCHES:
+# `Bool.and` EVALUATES BOTH OF ITS ARGUMENTS, SO THE OLD FORM PAID FOR THEM ON EVERY NODE.
+def eq_node.ov.go(same_op: Bool, x: Node, y: Node) -> Bool:
   match same_op:
     case True{}:
-      match same_sh:
-        case True{}:
-          match x y:
-            case Node{_, src, arg, tag} Node{_, s2, a2, t2}:
-              Bool.and(eq_u32(src, s2), Bool.and(eq_arg(arg, a2), eq_tag(tag, t2)))
-        case False{}: False{}
+      match x y:
+        case Node{_, src, arg, tag, d} Node{_, s2, a2, t2, d2}:
+          Bool.and(eq_u32(src, s2),
+            Bool.and(eq_arg(arg, a2), Bool.and(eq_tag(tag, t2), U32.is_eq(d, d2))))
     case False{}: False{}
 
 # UOpMetaClass.__call__ -- ops.py:193 symbol=UOpMetaClass.__call__. THE CONSTRUCTOR.
@@ -1655,48 +1701,62 @@ def intern.find.pick(hit: Bool, k: U32, +nxt: Maybe<&2, U32>) -> Maybe<&2, U32>:
 #
 # AND THE WANTED NODE's OP VALUE IS HOISTED OUT OF THE SCAN: THE OP DOES NOT CHANGE, AND
 # `Ops.value` IS A SIXTY-ARM MATCH (THE COUNT IS IN `eq_node.ov.go`'s COMMENT).
-def intern.find.same(ov: U32, +nd: Node, +want: Node, same_sh: Bool) -> Bool:
-  eq_node.ov.go(U32.is_eq(Ops.value(Node.op(nd)), ov), same_sh, nd, want)
+def intern.find.same(ov: U32, +nd: Node, +want: Node) -> Bool:
+  eq_node.ov.go(U32.is_eq(Ops.value(Node.op(nd)), ov), nd, want)
 
 # (ops.py:201); both colliding args are tuples, so `type(arg)` does not split
-def intern.find.go(ns: List<&2, Node>, ss: List<&2, U32>, +k: U32, +want: Node, +depth: U32, +ov: U32) -> Maybe<&2, U32>:
-  match ns ss:
-    case Nil{} Nil{}:
+def intern.find.go(ns: List<&2, Node>, +k: U32, +want: Node, +ov: U32) -> Maybe<&2, U32>:
+  match ns:
+    case Nil{}:
       None{}
-    case Nil{} _ <> _:
-      None{}
-    case _ <> _ Nil{}:
-      None{}
-    case +nd <> t sh <> st:
-      nxt = intern.find.go(t, st, U32.add(k, 1), want, depth, ov)
-      intern.find.pick(intern.find.same(ov, nd, want, U32.is_eq(sh, depth)), k, nxt)
+    case +nd <> t:
+      nxt = intern.find.go(t, U32.add(k, 1), want, ov)
+      intern.find.pick(intern.find.same(ov, nd, want), k, nxt)
 
-def intern.find(ns: List<&2, Node>, ss: List<&2, U32>, +k: U32, +want: Node, +depth: U32) -> Maybe<&2, U32>:
-  intern.find.go(ns, ss, k, want, depth, Ops.value(Node.op(want)))
+def intern.find(ns: List<&2, Node>, +k: U32, +want: Node) -> Maybe<&2, U32>:
+  intern.find.go(ns, k, want, Ops.value(Node.op(want)))
 
 
-def intern.put.shp(+ar: Arena, +want: Node, depth: U32) -> Arena:
-  Arena{List.append(&2, Node, Arena.nodes(ar), [want]), List.append(&2, U32, Arena.shp(ar), [depth])}
+# THE NODE GOES ON THE END OF THE NODES AND ON THE END OF THE LAST CHUNK, AND A FULL CHUNK IS
+# LEFT ALONE AND A NEW ONE STARTS. THE SPINE IS REBUILT WITH THE LAST CHUNK REPLACED, WHICH
+# IS ONE CONS PER CHUNK.
+def Arena.put.go(+cs: List<&2, List<&2, Node>>, +node: Node) -> List<&2, List<&2, Node>>:
+  match cs:
+    case Nil{}:
+      List.append(&2, List<&2, Node>, cs, [[node]])
+    case c <> t:
+      match t:
+        case Nil{}:
+          Bool.pick(List<&2, List<&2, Node>>, U32.is_eq(U32.from_nat(List.length(&2, Node, c)), 32),
+            [c, [node]],
+            [List.append(&2, Node, c, [node])])
+        case _ <> _:
+          rest = Arena.put.go(t, node)
+          c <> rest
+
+def Arena.put(+ar: Arena, +node: Node) -> Arena:
+  Arena{List.append(&2, Node, Arena.nodes(ar), [node]), Arena.put.go(Arena.cs(ar), node),
+    U32.add(Arena.n(ar), 1)}
 
 def intern.put(+ar: Arena, +want: Node) -> Arena:
-  intern.put.shp(ar, want, 0)
+  Arena.put(ar, want)
 
 
 def intern.get(ar: Arena, hit: Maybe<&2, U32>) -> Maybe<&2, U32>:
   hit
 
 
-def UOp.make.intern.put(+ar: Arena, hit: Maybe<&2, U32>, +want: Node, depth: U32) -> Arena:
+def UOp.make.intern.put(+ar: Arena, hit: Maybe<&2, U32>, +want: Node) -> Arena:
   match hit:
     case Some{i}: ar
-    case None{}: intern.put.shp(ar, want, depth)
+    case None{}: Arena.put(ar, want)
 
 
-def UOp.make.intern(+ar: Arena, +want: Node, +depth: U32) -> Arena:
-  UOp.make.intern.put(ar, intern.find(Arena.nodes(ar), Arena.shp(ar), 0, want, depth), want, depth)
+def UOp.make.intern(+ar: Arena, +want: Node) -> Arena:
+  UOp.make.intern.put(ar, intern.find(Arena.nodes(ar), 0, want), want)
 
-def UOp.make.shp(+ar: Arena, +op: Op, +src: List<&2, U32>, +arg: Arg, +tag: Tag, depth: U32) -> Arena:
-  UOp.make.intern(ar, Node{op, src, arg, tag}, depth)
+def UOp.make.shp(+ar: Arena, +op: Op, +src: List<&2, U32>, +arg: Arg, +tag: Tag, +depth: U32) -> Arena:
+  UOp.make.intern(ar, Node{op, src, arg, tag, depth})
 
 def UOp.make(+ar: Arena, +op: Op, +src: List<&2, U32>, +arg: Arg, +tag: Tag) -> Arena:
   UOp.make.shp(ar, op, src, arg, tag, 0)
@@ -1709,11 +1769,11 @@ def UOp.of.intern.put(+ar: Arena, hit: Maybe<&2, U32>, +want: Node) -> U32:
 # `Metadata` is helpers.py:293's `(name, backward)` record, and ops.py is where
 # property at ops.py:775.
 
-def UOp.of.intern(+ar: Arena, +want: Node, depth: U32) -> U32:
-  UOp.of.intern.put(ar, intern.find(Arena.nodes(ar), Arena.shp(ar), 0, want, depth), want)
+def UOp.of.intern(+ar: Arena, +want: Node) -> U32:
+  UOp.of.intern.put(ar, intern.find(Arena.nodes(ar), 0, want), want)
 
-def UOp.of.shp(+ar: Arena, +op: Op, +src: List<&2, U32>, +arg: Arg, +tag: Tag, depth: U32) -> U32:
-  UOp.of.intern(ar, Node{op, src, arg, tag}, depth)
+def UOp.of.shp(+ar: Arena, +op: Op, +src: List<&2, U32>, +arg: Arg, +tag: Tag, +depth: U32) -> U32:
+  UOp.of.intern(ar, Node{op, src, arg, tag, depth})
 
 def UOp.of(+ar: Arena, +op: Op, +src: List<&2, U32>, +arg: Arg, +tag: Tag) -> U32:
   UOp.of.shp(ar, op, src, arg, tag, 0)
@@ -1902,7 +1962,7 @@ def Merge.go(nodes: List<&2, Node>, +ar: Arena, +map: List<&2, U32>) -> Merge:
     case Nil{}: Merge{ar, map}
     case h <> t:
       match h:
-        case Node{op, src, arg, tag}:
+        case Node{op, src, arg, tag, _}:
           +f = UOp.new(ar, op, Merge.remap(map, src), arg, tag)
           Merge.go(t, Found.ar(f), List.append(&2, U32, map, [Found.i(f)]))
 
@@ -1911,7 +1971,7 @@ def Arena.merge(+base: Arena, +other: Arena) -> Merge:
 
 def Merge.at(+x: Merge, i: U32) -> U32:
   Maybe.default(&2, U32, List.get(&2, U32, Merge.map(x), U32.to_nat(i)), 0)
-def UOp.new.shp.of(+ar: Arena, +made: Arena, +op: Op, +src: List<&2, U32>, +arg: Arg, +tag: Tag, depth: U32) -> Found:
+def UOp.new.shp.of(+ar: Arena, +made: Arena, +op: Op, +src: List<&2, U32>, +arg: Arg, +tag: Tag, +depth: U32) -> Found:
   Found{made, UOp.of.shp(made, op, src, arg, tag, depth)}
 
 def UOp.new.shp(+ar: Arena, +op: Op, +src: List<&2, U32>, +arg: Arg, +tag: Tag, +depth: U32) -> Found:
@@ -3512,9 +3572,9 @@ def t_cycle_terminates() -> Bool:
 def key_same(p: Node, q: Node) -> Bool: eq_node(p, q)
 
 def t_key_eq() -> Bool:
-  Bool.and(Bool.and(key_same(Node{OpsADD{}, [1, 2], ANone{}, TNone{}}, Node{OpsADD{}, [1, 2], ANone{}, TNone{}}),
-    Bool.not(key_same(Node{OpsADD{}, [1, 2], ANone{}, TNone{}}, Node{OpsADD{}, [1, 3], ANone{}, TNone{}}))),
-    Bool.not(key_same(Node{OpsADD{}, [1, 2], ANone{}, TNone{}}, Node{OpsADD{}, [1, 2], ANone{}, TStr{"t"}})))
+  Bool.and(Bool.and(key_same(Node{OpsADD{}, [1, 2], ANone{}, TNone{}, 0}, Node{OpsADD{}, [1, 2], ANone{}, TNone{}, 0}),
+    Bool.not(key_same(Node{OpsADD{}, [1, 2], ANone{}, TNone{}, 0}, Node{OpsADD{}, [1, 3], ANone{}, TNone{}, 0}))),
+    Bool.not(key_same(Node{OpsADD{}, [1, 2], ANone{}, TNone{}, 0}, Node{OpsADD{}, [1, 2], ANone{}, TStr{"t"}, 0})))
 
 # dtype.py:59-62 is the oracle and it is an IDENTITY: `DType` is
 def t_eq_dt() -> Bool:
@@ -3803,23 +3863,23 @@ def s5.d1(k: U32) -> S.Dev: S.D1{k}
 def s5.dn(n: U32) -> S.Dev: S.Dn{UOp.replicate(1, n)}
 
 def s5.ga.arena() -> Arena:
-  Arena{[
+  Arena.of([
     Arena.bottom(),
-    Node{OpsBUFFER{}, Nil{}, AParam{s5.pa(1)}, TNone{}},
-    Node{OpsALLOC{}, Nil{}, AParam{s5.pa(2)}, TNone{}},
-    Node{OpsPARAM{}, Nil{}, AParam{s5.pa(3)}, TNone{}},
-    Node{OpsSHRINK{}, [1], ATuple{Nil{}}, TNone{}},
-    Node{OpsBITCAST{}, [1], ADt{S.single()}, TNone{}},
-    Node{OpsBINARY{}, [1], ANone{}, TNone{}},
-    Node{OpsMSTACK{}, [1], ANone{}, TNone{}},
-    Node{OpsMSELECT{}, [1, 2], AInt{0}, TNone{}},
-    Node{OpsLINEAR{}, [1], ANone{}, TNone{}},
-    Node{OpsCONST{}, Nil{}, APy{CInt{H.i64_of_i32(3)}}, TNone{}},
-    Node{OpsRESHAPE{}, [1, 14], ATuple{[0]}, TNone{}},
-    Node{OpsAFTER{}, [1], ANone{}, TNone{}},
-    Node{OpsADD{}, [1, 1], ANone{}, TNone{}},
-    Node{OpsSTACK{}, [10, 10], ANone{}, TNone{}}
-  ], [0]}
+    Node{OpsBUFFER{}, Nil{}, AParam{s5.pa(1)}, TNone{}, 0},
+    Node{OpsALLOC{}, Nil{}, AParam{s5.pa(2)}, TNone{}, 0},
+    Node{OpsPARAM{}, Nil{}, AParam{s5.pa(3)}, TNone{}, 0},
+    Node{OpsSHRINK{}, [1], ATuple{Nil{}}, TNone{}, 0},
+    Node{OpsBITCAST{}, [1], ADt{S.single()}, TNone{}, 0},
+    Node{OpsBINARY{}, [1], ANone{}, TNone{}, 0},
+    Node{OpsMSTACK{}, [1], ANone{}, TNone{}, 0},
+    Node{OpsMSELECT{}, [1, 2], AInt{0}, TNone{}, 0},
+    Node{OpsLINEAR{}, [1], ANone{}, TNone{}, 0},
+    Node{OpsCONST{}, Nil{}, APy{CInt{H.i64_of_i32(3)}}, TNone{}, 0},
+    Node{OpsRESHAPE{}, [1, 14], ATuple{[0]}, TNone{}, 0},
+    Node{OpsAFTER{}, [1], ANone{}, TNone{}, 0},
+    Node{OpsADD{}, [1, 1], ANone{}, TNone{}, 0},
+    Node{OpsSTACK{}, [10, 10], ANone{}, TNone{}, 0}
+  ])
 
 type CLike is Data:
   CU{u: U32}
