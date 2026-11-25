@@ -46,6 +46,11 @@ def main():
       print(r.stderr[:1500])
       raise SystemExit("WARN: the driver did not run")
     ms, ln, w = r.stdout.split(" ", 2)
+    # **THE **DIGEST **IS **OVER **THE **WGSL **TEXT **AND **NOT **OVER **THE **LINE **THE
+    # **DRIVER **PRINTED**: **`console.log` **ADDS **A **NEWLINE** (⇒⇒† AND **AND **THE **RECORD's
+    # **SHA256 **IS **THE **TEXT **WITHOUT **IT**)**.
+    if w.endswith("\n"):
+      w = w[:-1]
     times.append(int(ms))
     digest = hashlib.sha256(w.encode()).hexdigest()
     print(f"  RUN {i + 1}: {ms} ms, {ln} bytes")

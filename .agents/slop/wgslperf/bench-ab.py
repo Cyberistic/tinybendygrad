@@ -40,6 +40,11 @@ def run_once(js: pathlib.Path):
     print(r.stderr[:1500])
     raise SystemExit("WARN: the driver did not run")
   ms, ln, w = r.stdout.split(" ", 2)
+  # **THE **DIGEST **IS **OVER **THE **WGSL **TEXT **AND **NOT **OVER **THE **LINE **THE **DRIVER
+  # **PRINTED**: **`console.log` **ADDS **A **NEWLINE** (⇒⇒† AND **AND **THE **RECORD's **SHA256
+  # **IS **THE **TEXT **WITHOUT **IT**)**.
+  if w.endswith("\n"):
+    w = w[:-1]
   cpu = int((after.ru_utime - before.ru_utime) * 1000 + (after.ru_stime - before.ru_stime) * 1000)
   return int(ms), cpu, ln, hashlib.sha256(w.encode()).hexdigest()
 
