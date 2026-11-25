@@ -1866,7 +1866,8 @@ def dd_ops.all() -> List<&2, O.Op>:
    O.OpsDIV{}, O.OpsMOD{}, O.OpsGETADDR{}, O.OpsIF{}, O.OpsINDEX{},
    O.OpsINS{}, O.OpsLINEAR{}, O.OpsLOAD{}, O.OpsLOG2{}, O.OpsMAX{}, O.OpsMSELECT{}, O.OpsMSTACK{}, O.OpsMUL{},
    O.OpsMULACC{}, O.OpsNEG{}, O.OpsNOOP{}, O.OpsOR{}, O.OpsPAD{}, O.OpsPARAM{}, O.OpsPERMUTE{}, O.OpsPOW{},
-   O.OpsPROGRAM{}, O.OpsPYLITERAL{}, O.OpsRANGE{}, O.OpsRECIP{}, O.OpsREDUCE{}, O.OpsRESHAPE{},
+   O.OpsPROGRAM{}, O.OpsPYLITERAL{}, O.OpsRANGE{}, O.OpsRECIP{}, O.OpsREDUCE{}, O.OpsREFPARAM{},
+   O.OpsRESHAPE{},
    O.OpsREWRITE_ERROR{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsSHRINK{}, O.OpsSIN{}, O.OpsSINK{}, O.OpsSOURCE{},
    O.OpsSPECIAL{}, O.OpsSQRT{}, O.OpsSTACK{}, O.OpsSTAGE{}, O.OpsSTORE{}, O.OpsSUB{}, O.OpsTHREEFRY{},
    O.OpsTRUNC{}, O.OpsUNSHARD{}, O.OpsWHERE{}, O.OpsWMMA{}, O.OpsXOR{}]
@@ -1892,7 +1893,7 @@ def pm_long_decomp() -> O.PMEntrys:
     # 150  GroupOp.All, any dtype
     O.PMEntry{0,  dd_ops.all(), Nil{}},
     # 151  GroupOp.Defines at a long dtype
-    O.PMEntry{1,  [O.OpsALLOC{}, O.OpsBUFFER{}, O.OpsPARAM{}], Nil{}},
+    O.PMEntry{1,  [O.OpsALLOC{}, O.OpsBINARY{}, O.OpsBUFFER{}, O.OpsPARAM{}, O.OpsREFPARAM{}], Nil{}},
     # 152  INDEX at a long dtype
     O.PMEntry{2,  [O.OpsINDEX{}], Nil{}},
     # 154  STORE of an index at a long dtype

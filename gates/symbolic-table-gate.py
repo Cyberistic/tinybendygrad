@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """symbolic-table-gate.py -- is `symbolic.bend`'s rule TABLE still CPython's rule table?
 
     .venv/bin/python gates/symbolic-table-gate.py
@@ -60,15 +59,14 @@ THE THREE ROWS THIS GATE FOUND, ALL NOW FIXED (2026-11-25). Each was a `rej` tha
          that test in `p_index_bad_or_cast`. Now `Nil{}`.
 """
 import pathlib
-import re
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from gatekit import DEAD, FAIL, PASS, REFUSED  # noqa: E402  (house vocabulary, never re-spelled)
+import pmtable  # noqa: E402  (the projection lives in one place, not once per table)
+from gatekit import DEAD, FAIL, PASS  # noqa: E402  (house vocabulary, never re-spelled)
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 PORT = ROOT / "tinybendygrad/uop/symbolic.bend"
-WINDOW = 12
 
 # (port table, oracle matcher, matcher whose rows the port routes elsewhere, does `rej` bind?)
 PAIRS = (("sym_table", "sym", "pm_simplify_valid", True),
@@ -76,93 +74,9 @@ PAIRS = (("sym_table", "sym", "pm_simplify_valid", True),
          ("valid_table", "pm_simplify_valid", None, False))
 
 
-def split_top(s: str) -> list[str]:
-    out, depth, cur = [], 0, ""
-    for ch in s:
-        depth += ch in "[{("
-        depth -= ch in "]})"
-        if ch == "," and depth == 0:
-            out.append(cur)
-            cur = ""
-        else:
-            cur += ch
-    return [p for p in (x.strip() for x in out) if p] + ([cur.strip()] if cur.strip() else [])
-
-
-def macros(text: str) -> dict[str, frozenset[str]]:
-    """`def OP_X() -> List<&2, O.Op>:` bodies, by name -- the file's own spelling, expanded."""
-    return {m.group(1): frozenset(re.findall(r"O\.Ops([A-Z0-9_]+)\{\}", m.group(2)))
-            for m in re.finditer(r"^def (OP_\w+)\(\) -> List<&2, O\.Op>:(.*?)(?=^\S)",
-                                 text, re.M | re.S)}
-
-
-def opnames(expr: str, mac: dict[str, frozenset[str]]) -> frozenset[str]:
-    """`Nil{}` | `OP_X()` | `O.OpsA{}` | `[O.OpsA{}, O.OpsB{}]` -> the set, never a list order."""
-    expr = expr.strip()
-    if expr == "Nil{}":
-        return frozenset()
-    m = re.fullmatch(r"(OP_\w+)\(\)", expr)
-    return mac.get(m.group(1), frozenset()) if m else frozenset(re.findall(r"O\.Ops([A-Z0-9_]+)\{\}", expr))
-
-
-def table(text: str, name: str) -> list[tuple[int, str, str]]:
-    """The `(tag, ops, rej)` triples of ONE `*_table()` def, in file order."""
-    body = re.search(rf"^def {name}\(\) -> O\.PMEntrys:\n(.*?)(?=^def |\Z)", text, re.M | re.S)
-    if body is None:
-        return []
-    out = []
-    for line in body.group(1).split("\n"):
-        if "O.PMEntry{" not in line:
-            continue
-        tail = re.sub(r"[\s,]+$", "", line.split("O.PMEntry{", 1)[1].split("#")[0])
-        parts = split_top(re.sub(r"[\]\}\)]+$", "", tail))
-        if len(parts) != 3:
-            raise SystemExit(f"symbolic-table-gate: REFUSED -- a PMEntry parsed into "
-                             f"{len(parts)} fields, not 3: {line.strip()!r}")
-        out.append((int(parts[0]), parts[1], parts[2]))
-    return out
-
-
-def compare(port, up, mac, rej_binds: bool) -> dict:
-    """Pair ONE port table against ONE oracle list, positionally, admitting a permuted block."""
-    def oset(p):
-        return frozenset(o.name for o in up[p].op)
-
-    rows, order, ops, hazard, narrow, paired = [], [], [], [], 0, 0
-    i = j = 0
-    while i < len(up) and j < len(port):
-        if opnames(port[j][1], mac) != oset(i):
-            for k in range(1, min(WINDOW, len(up) - i, len(port) - j)):
-                a = sorted(tuple(sorted(opnames(port[j + m][1], mac))) for m in range(k + 1))
-                b = sorted(tuple(sorted(oset(i + m))) for m in range(k + 1))
-                if a == b:
-                    order.append(f"pos={i}..{i + k} permuted; same {k + 1} op sets")
-                    paired += k + 1
-                    i, j = i + k + 1, j + k + 1
-                    break
-            else:
-                ops.append(f"tag={port[j][0]} pos={i} port={sorted(opnames(port[j][1], mac))} "
-                           f"up={sorted(oset(i))}")
-                i, j = i + 1, j + 1
-            continue
-        if rej_binds:
-            prej = opnames(port[j][2], mac)
-            urej = frozenset(o.name for o in up[i].early_reject)
-            if prej <= urej:
-                narrow += prej != urej
-            else:
-                hazard.append(f"tag={port[j][0]} pos={i} ops={sorted(oset(i))} "
-                              f"port={sorted(prej)} up={sorted(urej)}")
-        rows.append(i)
-        paired += 1
-        i, j = i + 1, j + 1
-    return {"rows": len(up), "port": len(port), "paired": paired, "narrow": narrow,
-            "order": order, "ops": ops, "hazard": hazard}
-
-
 def main() -> int:
     text = PORT.read_text()
-    mac = macros(text)
+    mac = pmtable.macros(text)
     if not mac:
         print("== DEAD: symbolic-table-gate: no `OP_*` macro parsed -- every row would read as "
               "an empty op set and agree with nothing")
@@ -172,18 +86,18 @@ def main() -> int:
 
     bad = 0
     for tname, mname, ename, rej_binds in PAIRS:
-        port = table(text, tname)
+        port = pmtable.table(text, tname)
         matcher = getattr(sym, mname, None)
         if not port or matcher is None or not matcher.patterns:
             print(f"== DEAD: symbolic-table-gate: `{tname}` parsed {len(port)} rows and "
                   f"`{mname}` declares {len(getattr(matcher, 'patterns', []))} -- one side is "
                   "empty, so nothing was compared")
             return DEAD
+        # `sym` sums matchers whose `UPat` objects are SHARED (`__add__` concatenates the
+        # lists and `__init__` rebuilds only the tuples), so the exclusion is by UPat identity.
         ex = {id(p) for p, _ in getattr(sym, ename).patterns} if ename else set()
         up = [p for p, _ in matcher.patterns if id(p) not in ex]
-        # `sym` sums matchers whose `UPat` objects are shared, so the exclusion is by UPat
-        # identity and not by tuple identity; `PatternMatcher.__init__` rebuilds the tuples.
-        r = compare(port, up, mac, rej_binds)
+        r = pmtable.pair(port, up, mac, rej_binds)
         print(f"{tname}: oracle={mname}{'\\' + ename if ename else ''} rows={r['rows']} "
               f"port={r['port']} paired={r['paired']} "
               f"narrow={r['narrow']} hazard={len(r['hazard'])} ops={len(r['ops'])} "
