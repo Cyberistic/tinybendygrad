@@ -257,7 +257,7 @@ def rr_call_is_custom(+ar: O.Arena, +u: U32) -> Bool:
 # THE NEXT MEASUREMENT IS THIS DEF, CALLED ON THE GRAPH's `STORE` DIRECTLY: DOES IT
 # ANSWER `[realize(store)]`, OR IS THE ENTRY LOST ON THE WAY INTO THE CONTEXT
 # (`ix_ctx_realize`, `ix_rmap_set`)?
-def rr_realize_one(+ar: O.Arena, +u: U32) -> List<&2, IX.IxReal]:
+def rr_realize_one(+ar: O.Arena, +u: U32) -> List<&2, IX.IxReal>:
   Bool.pick(List<&2, IX.IxReal>, rr_is_store(ar, u), rr_store_entries(ar, u),
     Bool.pick(List<&2, IX.IxReal>, rr_is_mstack(ar, u), rr_mstack_real(ar, u),
       Bool.pick(List<&2, IX.IxReal>,
