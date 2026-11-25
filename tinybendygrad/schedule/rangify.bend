@@ -1601,16 +1601,85 @@ def rr_ap_red_some(+ar: O.Arena, +tb: F.Table, +tbl: List<&2, IX.IxRange>, +ctx:
   +f = rr_ap_red_new(ar, tb, tbl, ctx, x)
   Some{f}
 
-# rules 2 and 3 -- `PAD` and `STACK` (`indexing.py:100-125`) -- are named walls.
-# `convert_pad_to_where_to_keep_behavior_local` NEEDS `UOp.const(True).uprod([...])`
-# AND `.where(...)`; `convert_stack_to_where` NEEDS `_stack_select`, => AND
-# the port has neither `where` nor `usum` nor `%` (`ops.bend` has no such
-# constructors).  - and the port does not pretend: it leaves the node
-# unchanged and counts it, => and the count is a row (`rr_wall`), - and
-# a wall that is counted is not a silent divergence.
+# RULE 3 -- `STACK` -> `WHERE` (`indexing.py:112-125`, `convert_stack_to_where`) -- IS
+# STILL A NAMED WALL: it NEEDS `_stack_select`, WHICH IS A `%` AND A `WHERE` LADDER THE
+# PORT DOES NOT HAVE.  - and the port does not pretend: it leaves the node unchanged and
+# counts it, => and the count is a row (`rr_wall`), - and a wall that is counted is not a
+# silent divergence.  (RULE 2, THE `PAD`, IS NOT A WALL ANY MORE -- SEE `rr_ap_pad_where`.)
 def rr_ap_wall_hit(+ar: O.Arena, +ctx: IX.IxCtx, +x: U32) -> Bool:
-  Bool.and(IX.ix_rngm_has(IX.IxCtx.rngm(ctx), x),
-    Bool.or(rr_ap_pad(ar, x), rr_ap_stack(ar, x)))
+  Bool.and(IX.ix_rngm_has(IX.IxCtx.rngm(ctx), x), rr_ap_stack(ar, x))
+
+# RULE 2 -- `PAD` -> `WHERE` (`indexing.py:98-103`, `convert_pad_to_where_to_keep_behavior_local`):
+#   valid: UOp = UOp.const(True).uprod([r.get_valid() for r in ctx.range_map[x][0]])
+#   return valid.where(bx.src[0], UOp.const(x.dtype.const(0)))
+# - and `bx.src[0]` IS THE PAD's SOURCE, BECAUSE `create_bufferize_and_index_srcs`
+# (`indexing.py:73-95`) LEAVES A SRC ALONE UNLESS IT IS A DEFINE, AN MSTACK, AN MSELECT,
+# AN AFTER OR A REALIZED NODE, => AND THE PAD's VALUE SRC IS NONE OF THOSE, => so the
+# rule IS `WHERE(valid, source, 0)`.
+# THE VALID IS THE AND OF THE INPUT RANGES' VALIDS (`ops.py:640`: `get_valid` IS
+# `src[0] IF THE NODE IS A `WHERE` WHOSE THIRD SRC IS INVALID, ELSE `const(True)`), AND
+# THE PORT's PAD ARM RIDES THE GATE ON THE RANGE NODE AS EXACTLY THAT `WHERE`.
+# THE CONST TRUE IS MADE ONCE AND PASSED IN, SO THE VALID FOLD NEVER GROWS THE ARENA
+# AND THE ANSWER IS A PLAIN NODE ID.
+def rr_ap_is_where(+ar: O.Arena, n: U32) -> Bool: O.eq_op(O.Arena.op(ar, n), O.OpsWHERE{})
+
+def rr_ap_valid.true(+ar: O.Arena) -> O.Found:
+  O.UOp.const(ar, O.CBool{True{}})
+
+# A `match` MAY NOT SCRUTINISE A COMPUTED VALUE AND MAY NOT SCRUTINISE A LOCAL BINDER,
+# SO EVERY TEST IS A PARAMETER OF A DEF OF ITS OWN (THE PORT's CONVENTION).
+def rr_ap_valid.pick(+ar: O.Arena, +n: U32, t: U32, iv: Bool) -> U32:
+  match iv:
+    case True{}: O.Arena.src(ar, n, 0)
+    case False{}: t
+
+def rr_ap_valid.where(+ar: O.Arena, +n: U32, t: U32) -> U32:
+  rr_ap_valid.pick(ar, n, t, O.UOp.is_invalid(ar, O.Arena.src(ar, n, 2)))
+
+def rr_ap_valid.pick2(+ar: O.Arena, +n: U32, t: U32, w: Bool) -> U32:
+  match w:
+    case True{}: rr_ap_valid.where(ar, n, t)
+    case False{}: t
+
+# `get_valid` -- ops.py:640 -- AND THE `WHERE` ARM IS GUARDED, BECAUSE A NODE WITH FEWER
+# THAN THREE SRCS HAS NO `src[2]` TO ASK.
+def rr_ap_valid.of(+ar: O.Arena, +n: U32, t: U32) -> U32:
+  rr_ap_valid.pick2(ar, n, t, rr_ap_is_where(ar, n))
+
+# `uprod` OVER THE VALID LIST (`indexing.py:101`): THE AND, WITH `const(True)` AS THE
+# IDENTITY -- so an EMPTY LIST ANSWERS TRUE AND A ONE-ELEMENT LIST ANSWERS ITS ELEMENT.
+# THE LIST COMES FIRST BECAUSE THE ARGUMENTS ARE READ LEFT TO RIGHT AND EACH IS PASSED
+# UNCHANGED UNTIL ONE SHRINKS (THE PORT's CONVENTION) -- AND THE ARENA GROWS.
+def rr_ap_valid.go(+ps: List<&2, U32>, +tbl: List<&2, IX.IxRange>, +acc: U32, +t: U32,
+                   +ar: O.Arena) -> (O.Arena & U32):
+  match ps:
+    case Nil{}: (ar, acc)
+    case p <> pt:
+      +f = IX.ix_rg_node(O.AXIS_WEAK{}, ar, IX.ix_tbl_at(tbl, p))
+      +v = rr_ap_valid.of(O.Found.ar(f), O.Found.i(f), t)
+      +c = O.UOp.alu(O.Found.ar(f), O.OpsAND{}, [acc, v])
+      rr_ap_valid.go(pt, tbl, O.Found.i(c), t, O.Found.ar(c))
+
+# THE RULE ITSELF. `x not in ctx.range_map` IS THE ONLY PRECONDITION UPSTREAM GIVES
+# (`indexing.py:99`), AND THE `INDEX` HALF OF IT (`indexing.py:100`) IS ABOUT `INDEX`
+# NODES, NOT `PAD`s.
+def rr_ap_pad_hit(+ar: O.Arena, +ctx: IX.IxCtx, +x: U32) -> Bool:
+  Bool.and(rr_ap_pad(ar, x), IX.ix_rngm_has(IX.IxCtx.rngm(ctx), x))
+
+def rr_ap_pad_where.go(+ps: List<&2, U32>, +tbl: List<&2, IX.IxRange>,
+                       p: (O.Arena & U32), +ar: O.Arena, +x: U32) -> O.Found:
+  (ar1, v) = p
+  +z = O.UOp.const(ar1, O.CFloat{0.0})
+  O.UOp.where(O.Found.ar(z), v, O.Arena.src(ar, x, 0), O.Found.i(z))
+
+def rr_ap_pad_where(+ar: O.Arena, +tbl: List<&2, IX.IxRange>, +ctx: IX.IxCtx, +x: U32) -> O.Found:
+  +ps = rr_ap_inp.of(IX.ix_rngm_get(IX.IxCtx.rngm(ctx), x))
+  +t = rr_ap_valid.true(ar)
+  rr_ap_pad_where.go(ps, tbl, rr_ap_valid.go(ps, tbl, O.Found.i(t), O.Found.i(t), O.Found.ar(t)), ar, x)
+
+def rr_ap_pad_some(+ar: O.Arena, +tbl: List<&2, IX.IxRange>, +ctx: IX.IxCtx, +x: U32) -> Maybe<&2, O.Found>:
+  +f = rr_ap_pad_where(ar, tbl, ctx, x)
+  Some{f}
 
 # RULE 5 -- `GroupOp.Movement` (`indexing.py:127-128`):
 # `if x in ctx.range_map or x.src[0].op is Ops.INDEX: return x.src[0]`.
@@ -1651,12 +1720,30 @@ def rr_ap_r45.of(+ar: O.Arena, +tb: F.Table, +tbl: List<&2, IX.IxRange>, +ctx: I
   Bool.pick(Maybe<&2, O.Found>, rr_ap_r4_skip(ar, x), None{},
     rr_ap_r45.go(ar, tb, tbl, ctx, x, rr_ap_r4(ar, tb, tbl, ctx, x)))
 
-# one pass of the matcher over one node: rule 1, then the walls, then 4 then 5.
+def rr_ap_once.wall(+ar: O.Arena, +tb: F.Table, +tbl: List<&2, IX.IxRange>, +ctx: IX.IxCtx,
+                    +x: U32) -> Maybe<&2, O.Found>:
+  Bool.pick(Maybe<&2, O.Found>, rr_ap_wall_hit(ar, ctx, x), None{},
+    rr_ap_r45.of(ar, tb, tbl, ctx, x))
+
+def rr_ap_once.pad2(+ar: O.Arena, +tb: F.Table, +tbl: List<&2, IX.IxRange>, +ctx: IX.IxCtx,
+                    +x: U32, hit: Bool) -> Maybe<&2, O.Found>:
+  match hit:
+    case True{}: rr_ap_pad_some(ar, tbl, ctx, x)
+    case False{}: rr_ap_once.wall(ar, tb, tbl, ctx, x)
+
+def rr_ap_once.pad(+ar: O.Arena, +tb: F.Table, +tbl: List<&2, IX.IxRange>, +ctx: IX.IxCtx,
+                   +x: U32) -> Maybe<&2, O.Found>:
+  rr_ap_once.pad2(ar, tb, tbl, ctx, x, rr_ap_pad_hit(ar, ctx, x))
+
+# one pass of the matcher over one node: rule 1, then rule 2 (the `PAD`), then the
+# wall (the `STACK`), then 4 then 5 -- UPSTREAM's ORDER (`indexing.py:132-140`).
+# THE `PAD` ARM IS A `match` AND NOT A `Bool.pick`, BECAUSE A `Bool.pick` EVALUATES BOTH
+# ARMS AND THIS ARM MINTS NODES (THE PORT's CONVENTION).
 def rr_ap_once.of(+ar: O.Arena, +tb: F.Table, +tbl: List<&2, IX.IxRange>, +ctx: IX.IxCtx,
                   +x: U32) -> Maybe<&2, O.Found>:
   Bool.pick(Maybe<&2, O.Found>, rr_ap_red_hit(ar, ctx, x), rr_ap_red_some(ar, tb, tbl, ctx, x),
-    Bool.pick(Maybe<&2, O.Found>, rr_ap_wall_hit(ar, ctx, x), None{},
-      rr_ap_r45.of(ar, tb, tbl, ctx, x)))
+    rr_ap_once.pad(ar, tb, tbl, ctx, x))
+
 
 def rr_ap_once(+ar: O.Arena, +tb: F.Table, +tbl: List<&2, IX.IxRange>, +ctx: IX.IxCtx,
                +x: U32) -> Maybe<&2, O.Found>:
