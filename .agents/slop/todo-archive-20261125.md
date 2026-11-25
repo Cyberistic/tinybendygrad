@@ -5184,6 +5184,16 @@ are NOT free: `grep -c smoothstep tinygrad/` is 0 and there is no `Ops.MIN`.
       of what an earlier revision of this file said ✓): upstream's PAD arm
       (`indexing.py:169-173` ✓) shifts the ranges ✓, the consumers disagree ✓, the realize
       fires on `dd` ✓, and only then is the neighbour read a buffered read ✓.
+      **THE PAD ARM'S DESIGN (2026-11-25, LANDED -- SEE `shaders/README.md`):** the port
+      HAS `UOp.valid` (`ops.bend:1905`) = upstream's
+      `cond.where(self, self.const_like(Invalid))` (`ops.py:636`) ✓, so the valid needs no
+      new op ✓; upstream has NO `CMPGE` either ✓, so the gate's `r >= off` is
+      `NOT (r < off)` ✓; Bend's match may not scrutinize a CALL ✓, so the test's own def
+      takes the value as a PARAMETER ✓; and upstream's PAD `arg` is `(off, s+off+after)` ✓
+      -- so `sz` IS THE MARG's SIZE (`sh+off+after`) AND `sh+off` IS THE INPUT's EXTENT
+      SHIFTED, AND **THEY ARE NOT THE SAME THING** ✓ (this note said they were; it was
+      wrong, and the gate's upper bound is `sh+off`) ✓.
+
 - [ ] **THE REALIZE THE MERGE FORGOT — MEASURED, AND NOT LANDED (2026-11-25).**
       Upstream's merge ends with `if len(_realize_axis): rctx.realize_map[x] = _realize_axis`
       (`indexing.py:267`); the port's `rr_merge` (`rangify.bend:583`) minted the new RANGE and

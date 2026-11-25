@@ -184,6 +184,73 @@ That is why the runner takes `mxw_buf` (BUFFERs) and why a graph built the `Tens
 way — which is what the graph gate correctly builds, because CPython builds it — cannot be
 scheduled at all.
 
+## What upstream's kernel looks like, and the PAD arm that answers it
+
+Upstream's own pipeline answers what the port's kernel graph has to BECOME, and the
+answer is a measurement, not an inference: `shaders/upstream-kernel-oracle.py` patches
+`create_schedule` -- the one place upstream turns a graph into kernels
+(`tinygrad/schedule/__init__.py:117`) -- realizes the shader's formula and dumps the
+kernel sink it is handed.
+
+    kg0_0_census=ADD=17 CMPLT=2 CONST=11 END=1 INDEX=7 MAX=4 MUL=15 PARAM=3 RANGE=2 RECIP=1 SINK=1 SQRT=3 STORE=1 WHERE=4
+    kg0_0_end_srcs=STORE RANGE RANGE
+
+**THREE FACTS, AND THE PORT HAS NONE OF THEM YET.** Upstream's SCHEDULED kernel carries
+**no `PAD` and no `SHRINK`**: the `PAD` became a `WHERE` (upstream's
+`convert_pad_to_where_to_keep_behavior_local`, `indexing.py:98-103` -- the value's own
+zero fill, gated by the range's valid) and the `SHRINK` became an `INDEX` at a shifted
+range. The distance field is **MATERIALIZED** (`STORE=1`): upstream realizes a node whose
+consumers read it at different ranges (`indexing.py:267`), so the neighbour read is a
+buffered read, not a register read. And the two `CMPLT`s and four `WHERE`s are the two
+pads' gates -- one non-trivial axis each -- which is exactly what upstream's PAD arm
+(`indexing.py:169-173`) mints.
+
+**THE PAD ARM, LANDED.** Upstream's arm is
+
+    rngs = tuple(r if (sz == sh and off == 0) else (r-off).valid(graph_rewrite((r >= off) & (r < (sh+off)),
+      symbolic+pm_simplify_valid, name="pad")) for r,sh,(off,sz) in zip(rngs, in_shape, arg))
+
+and every part of it is a trap:
+
+* `sz` IS THE MARG's SECOND ELEMENT (`tinygrad/uop/ops.py:771`: `marg` IS
+  `zip(src[1].as_shape, src[2].as_shape)`) and `sh` IS THE INPUT's DIM (`in_shape` IS
+  `x.src[0].shape`), so the IDENTITY TEST IS `sz == sh and off == 0`;
+* THE GATE's UPPER BOUND IS `sh+off` -- THE INPUT's EXTENT SHIFTED -- AND **NOT** `sz`,
+  WHICH IS `sh+off+after` (`tinygrad/mixin/movement.py:188`: the marg's size is
+  `s+x[0]+x[1]`). *(An earlier revision of this file said `sz` and `sh+off` were the same
+  thing. They are not, and the difference is the whole gate.)*
+* `r >= off` HAS NO `CMPGE` UPSTREAM EITHER, so it is `NOT (r < off)`
+  (`tinygrad/mixin/elementwise.py:326`: `__ge__` IS `(self < x).logical_not()`);
+* `.valid(gate)` IS `cond.where(self, self.const_like(Invalid))`
+  (`tinygrad/uop/ops.py:664`), AND THE PORT HAS IT AS `UOp.valid_of`
+  (`tinybendygrad/uop/ops.bend:1905`).
+
+The port's arm (`rr_pad`, `tinybendygrad/schedule/rangify.bend`) mints `(r-off)` and
+gates it with `(NOT (r < off)) AND (r < sh+off)`, and MEASURED on the shader's own graph
+the range it mints is now CONSUMED: the probe's `det2` row reads
+`#138:Ops.ADD[#135:Ops.RANGE:ok,#137:Ops.MUL:ok]` -- the `ADD` IS THE SHIFTED RANGE --
+where before the arm the PAD's range was minted and never read.
+
+**AND THE SHRINK ARM, WHICH WAS READING THE TABLE BY THE WRONG KEY.** Upstream's SHRINK
+arm is `tuple(a if off == 0 else a+off for a,(off,_) in zip(rngs, arg))` -- `a` IS THE
+RANGE NODE. In the port the range is a TABLE ENTRY (`IxRange{kind, idx, ext}`,
+`indexing.bend:209`), and the arm read it by `ix_rg_n(pos)` -- a table POSITION read as
+an ARENA INDEX. It reads `ix_tbl_at(tbl, pos)` now and materialises the range from it
+(`ix_rg_node`), which is upstream's `a`. The `off == 0` case keeps the entry as it is:
+MEASURED, minting a fresh entry moved the END and the index math onto different RANGE
+nodes, so `_ranges` saw two open ranges and `split_store` refused.
+
+**WHAT IS STILL MISSING, IN UPSTREAM'S ORDER.** The `PAD` is still a WALL in the port's
+apply stage (`rr_ap_wall_hit`, `rangify.bend:1586`): upstream's rule 2 replaces the `PAD`
+with `valid.where(bufferized_source, 0)`, the valid being the AND of the input ranges'
+valids (`indexing.py:98-103`) -- and the port's PAD arm now RIDES THAT VALID ON THE RANGE
+NODE, so the rule has what it needs. Upstream's rule 5
+(`remove_movement_op_after_rangeify`, `indexing.py:126-127`) drops the movement op for
+its source, and the port HAS it (`rr_ap_r5`). Then the materialize-the-distance-field
+decision (`indexing.py:267`) has to split the graph into two kernels. Until it does, the
+port's schedule refuses -- `refused=END src[0] should be KERNEL, not Ops.STORE` -- which
+is the honest answer for a graph that is one kernel too few.
+
 ## What this folder does not do
 
 * **It does not execute.** The port builds and renders graphs; it makes no device call
@@ -204,3 +271,4 @@ scheduled at all.
 | `shader-oracle.py` | the same formula in CPython tinygrad — graph lane and value lane |
 | `shader-gate.py` | the differ over both lanes, the five verdicts, and the plant |
 | `pad-arg-form.bend` | the `pad` argument-form measurement quoted above |
+| `upstream-kernel-oracle.py` | upstream's SCHEDULED kernel for this formula -- the census the port's kernel graph has to become |

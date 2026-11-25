@@ -694,11 +694,11 @@ def rr_shr.zs.go(+offs: List<&2, U32>, +acc: List<&2, Bool>) -> List<&2, Bool>:
 
 def rr_shr.zs(+offs: List<&2, U32>) -> List<&2, Bool>: rr_shr.zs.go(offs, Nil{})
 
-# TODO(shader-pad-lane): THIS ARM LOOKS THE RANGE TABLE UP WITH A NODE ID. `ps` IS THE
-# NODE'S OUTPUT RANGES -- NODE IDS -- WHILE `ix_tbl_at` READS THE TABLE BY POSITION, so
-# EVERY AXIS READS THE WRONG ENTRY (or none) and the SHRINK NEVER SHIFTS. UPSTREAM'S ARM
-# (`indexing.py:166`) TAKES THE RANGE NODE ITSELF: `a if off == 0 else a+off`. THE FIX IS
-# TO READ THE RANGE BY ITS ID (`IX.ix_rg_n`) AND NOT THROUGH THE TABLE.
+# THE SHRINK ARM (`indexing.py:166`): `tuple(a if off == 0 else a+off for a,(off,_) in
+# zip(rngs, arg))`. `a` IS THE RANGE NODE -- AND HERE IT IS THE TABLE ENTRY THE NODE
+# OWNS (`ix_tbl_at`), WHICH `ix_rg_node` MATERIALISES. THE `off == 0` CASE KEEPS THE
+# ENTRY AS IT IS (MEASURED: minting a fresh entry moved the END and the index math onto
+# different RANGE nodes, so `_ranges` saw two open ranges and `split_store` refused).
 def rr_shr.go(+ps: List<&2, U32>, +offs: List<&2, U32>, +zs: List<&2, Bool>, +ar: O.Arena,
               +tbl: List<&2, IX.IxRange>, +acc: List<&2, IX.IxRange>) -> (O.Arena & List<&2, IX.IxRange>):
   match ps:
@@ -714,7 +714,7 @@ def rr_shr.go(+ps: List<&2, U32>, +offs: List<&2, U32>, +zs: List<&2, Bool>, +ar
                 case True{} : rr_shr.go(pt, ot, zt, ar, tbl,
                                         List.append(&2, IX.IxRange, acc, [IX.ix_tbl_at(tbl, pos)]))
                 case False{}:
-                  +f = IX.ix_rg_node(O.AXIS_WEAK{}, ar, IX.ix_rg_n(pos))
+                  +f = IX.ix_rg_node(O.AXIS_WEAK{}, ar, IX.ix_tbl_at(tbl, pos))
                   +c = O.UOp.cconst(O.Found.ar(f), O.CInt{H.i64_of_i32(o)}, S.int32())
                   +d = O.UOp.alu(O.Found.ar(c), O.OpsADD{}, [O.Found.i(f), O.Found.i(c)])
                   rr_shr.go(pt, ot, zt, O.Found.ar(d), tbl,
@@ -724,6 +724,82 @@ def rr_shrink(+ar: O.Arena, +x: U32, +out: List<&2, U32>, +tbl: List<&2, IX.IxRa
   +offs = rr_marg(ar, x)
   rr_shr.go(out, offs, rr_shr.zs(offs), ar, tbl, Nil{})
 
+# UPSTREAM'S PAD ARM (`indexing.py:169-173`):
+#   rngs = tuple(r if (sz == sh and off == 0) else (r-off).valid(graph_rewrite((r >= off) & (r < (sh+off)),
+#     symbolic+pm_simplify_valid, name="pad")) for r,sh,(off,sz) in zip(rngs, in_shape, arg))
+# - and EVERY PART OF THAT IS MEASURED AGAINST THE ORACLE (`shaders/README.md`'s
+# UPSTREAM'S SCHEDULED GRAPH: `WHERE=4 CMPLT=2` -- two PADs, one non-trivial axis
+# each, one `CMPLT` and one `WHERE` per axis):
+#   * `sz` IS THE MARG's SECOND ELEMENT AND `sh` IS THE INPUT's DIM (`in_shape` IS
+#     `x.src[0].shape`), so the IDENTITY TEST IS `sz == sh and off == 0`;
+#   * THE GATE's UPPER BOUND IS `sh+off` -- THE INPUT's EXTENT SHIFTED -- AND NOT
+#     `sz` (WHICH IS `sh+off+after`);
+#   * `r >= off` HAS NO `CMPGE` UPSTREAM EITHER, SO IT IS `NOT (r < off)`
+#     (`elementwise.py:326`: `__ge__` IS `(self < x).logical_not()`);
+#   * `.valid(gate)` IS `cond.where(self, self.const_like(Invalid))` (`ops.py:664`),
+#     AND THE PORT HAS IT AS `UOp.valid_of` (`ops.bend:1905`);
+#   * AND THE IDENTITY CASE MUST KEEP THE *TABLE ENTRY* -- MEASURED, minting a
+#     fresh entry moved the END and the index math onto different RANGE nodes.
+def rr_pad.cst(+ar: O.Arena, v: U32) -> U32:
+  +c = O.UOp.cconst(ar, O.CInt{H.i64_of_i32(v)}, S.int32())
+  O.Found.i(c)
+
+def rr_pad.invalid(+ar: O.Arena) -> U32:
+  +c = O.UOp.const(ar, O.CInvalid{})
+  O.Found.i(c)
+
+# THE `r >= off` HALF: `NOT (r < off)`, AS UPSTREAM WRITES IT.
+def rr_pad.ge(+ar: O.Arena, +r: U32, +off: U32) -> O.Found:
+  +nlt = O.UOp.alu(ar, O.OpsCMPLT{}, [r, off])
+  +fb = O.UOp.const(O.Found.ar(nlt), O.CBool{False{}})
+  O.UOp.alu(O.Found.ar(fb), O.OpsCMPEQ{}, [O.Found.i(nlt), O.Found.i(fb)])
+
+# ONE AXIS OF THE PAD ARM. `keep` IS UPSTREAM's `(sz == sh and off == 0)`.
+def rr_pad.arm(keep: Bool, +ar: O.Arena, +pos: U32, +o: U32, +e: U32, +sh: U32,
+               +tbl: List<&2, IX.IxRange>, +acc: List<&2, IX.IxRange>) -> (O.Arena & List<&2, IX.IxRange>):
+  match keep:
+    case True{}: (ar, List.append(&2, IX.IxRange, acc, [IX.ix_tbl_at(tbl, pos)]))
+    case False{}:
+      +f = IX.ix_rg_node(O.AXIS_WEAK{}, ar, IX.ix_tbl_at(tbl, pos))
+      +c0 = rr_pad.cst(ar, o)
+      +hi = O.UOp.alu(ar, O.OpsADD{}, [rr_pad.cst(ar, sh), c0])
+      +lo = O.UOp.alu(O.Found.ar(hi), O.OpsSUB{}, [O.Found.i(f), c0])
+      +lt = O.UOp.alu(O.Found.ar(lo), O.OpsCMPLT{}, [O.Found.i(f), O.Found.i(hi)])
+      +ge = rr_pad.ge(O.Found.ar(lt), O.Found.i(f), c0)
+      +cnd = O.UOp.alu(O.Found.ar(ge), O.OpsAND{}, [O.Found.i(ge), O.Found.i(lt)])
+      +inv = rr_pad.invalid(O.Found.ar(cnd))
+      +v = O.UOp.valid_of(O.Found.ar(cnd), O.Found.i(lo), inv, O.Found.i(cnd))
+      (O.Found.ar(v), List.append(&2, IX.IxRange, acc, [IX.ix_rg_n(O.Found.i(v))]))
+
+# THE IDENTITY TEST, AS UPSTREAM WRITES IT: `sz == sh and off == 0`.
+def rr_pad.keep(off_zero: Bool, end: U32, sh: U32) -> Bool:
+  Bool.and(off_zero, U32.is_eq(end, sh))
+
+def rr_pad.go(+ps: List<&2, U32>, +offs: List<&2, U32>, +ends: List<&2, U32>,
+              +dims: List<&2, U32>, +ar: O.Arena, +tbl: List<&2, IX.IxRange>,
+              +acc: List<&2, IX.IxRange>) -> (O.Arena & List<&2, IX.IxRange>):
+  match ps:
+    case Nil{}: (ar, acc)
+    case pos <> pt:
+      match offs:
+        case Nil{}: (ar, acc)
+        case o <> ot:
+          match ends:
+            case Nil{}: (ar, acc)
+            case e <> et:
+              match dims:
+                case Nil{}: (ar, acc)
+                case sh <> sht:
+                  +k = rr_pad.keep(U32.is_zero(o), e, sh)
+                  rr_pad.arm(k, ar, pos, o, e, sh, tbl, acc)
+
+def rr_pad(+ar: O.Arena, +tb: F.Table, +x: U32, +out: List<&2, U32>,
+           +tbl: List<&2, IX.IxRange>) -> (O.Arena & List<&2, IX.IxRange>):
+  +offs = rr_marg(ar, x)
+  +ends = MX.mxm_as_shape(ar, O.Arena.src(ar, x, 2))
+  +dims = IX.rr_dims(ar, tb, O.Arena.src0(ar, x))
+  rr_pad.go(out, offs, ends, dims, ar, tbl, Nil{})
+
 # `apply_movement_op`'s FOUR arms, with the arena they grow and the ENTRIES they answer.
 def rr_mvx(op: O.Op, +ar: O.Arena, +tb: F.Table, +x: U32, +arg: List<&2, U32>, +out: List<&2, U32>, +tbl: List<&2, IX.IxRange>) -> (O.Arena & List<&2, IX.IxRange>):
   match op:
@@ -731,6 +807,7 @@ def rr_mvx(op: O.Op, +ar: O.Arena, +tb: F.Table, +x: U32, +arg: List<&2, U32>, +
     case O.OpsEXPAND{} : (ar, IX.rr_ents.go(IX.ix_mv_expand(arg, out), tbl, Nil{}))
     case O.OpsRESHAPE{}: IX.rr_reshape(ar, IX.rr_dims(ar, tb, O.Arena.src0(ar, x)), arg, out, tbl)
     case O.OpsSHRINK{} : rr_shrink(ar, x, out, tbl)
+    case O.OpsPAD{}    : rr_pad(ar, tb, x, out, tbl)
     case _: (ar, IX.rr_ents.go(out, tbl, Nil{}))
 
 # append each entry to the table, answering its POSITION. The table is the map, so the
