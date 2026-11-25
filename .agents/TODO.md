@@ -5145,41 +5145,34 @@ are NOT free: `grep -c smoothstep tinygrad/` is 0 and there is no `Ops.MIN`.
       so a run now would record a digest of THEIR tree. The runner's `refused=` row IS the
       instrument that can go red on this change (it goes back to `kernels=1` when the pad lane
       lands), and nothing gates it yet — that is the row to gate next.
-- [ ] **THE REALIZE THE MERGE FORGOT — MEASURED, AND NOT LANDED (2026-11-24).** Upstream's
-      merge ends with `if len(_realize_axis): rctx.realize_map[x] = _realize_axis`
-      (`indexing.py:267`); the port's `rr_merge` (`rangify.bend:583`) minted the new RANGE
-      and recorded NOTHING, so a node read at two different ranges was never realized — and
-      a node that is never realized has no buffer, so its second read has nothing to read
+- [ ] **THE REALIZE THE MERGE FORGOT — MEASURED, AND NOT LANDED, AND IT MAKES A CYCLE (2026-11-25).**
+      Upstream's merge ends with `if len(_realize_axis): rctx.realize_map[x] = _realize_axis`
+      (`indexing.py:267`); the port's `rr_merge` (`rangify.bend:583`) minted the new RANGE and
+      recorded NOTHING, so a node read at two different ranges was never realized — and a
+      node that is never realized has no buffer, so its second read has nothing to read
       from. The shader's `dd` is exactly that node (read at `r` by the formula, at `r+1` by
-      the neighbour). Implemented in the worktree it produces upstream's shape: the kernel
-      graph carries `STAGE:none:MAX,RANGE,RANGE` and `INDEX:none:STAGE,RANGE,RANGE`. **IT IS
-      NOT LANDED BECAUSE IT EXPOSES A SECOND DEFECT**: the port's gated toposort answers
-      **7 OF THE GRAPH'S 138 NODES** with a budget of 371 (`topon=7`, `arena_n=138`,
-      `budget=371`), so the schedule's view of the graph is shallow and the realize pushes
-      the END outside it — `sc_unbacked` on the END is `T` while the whole-graph walk
-      answers `F`, and the refusal stops firing. **THE TOPOSORT'S FUEL HAS TO COVER THE
-      RE-PUSH** (each kept node is popped twice: once to be kept and pushed back, once to be
-      cached) and until it does a bigger graph silently loses nodes.
-- [ ] **THE PORT'S GATED TOPOSORT STOPS WHERE A WORKLIST DOES NOT — FOUR CAUSES RULED OUT
-      (2026-11-24).** `SCH.sc_topo_of` answers **7 nodes** for the shader's 138-node kernel
-      graph, and `O.UOp.toposort_nocalls` answers 7 for the same arena — while the probe's
-      worklist walk (`dfs`, over `O.Arena.srcs`) covers the graph. **RULED OUT, WITH
-      MEASUREMENTS**: (1) the FUEL — `sc_topo_of(100000n, ...)` answers 7 as well, so the
-      budget is not what stops it (`topon=7`, `toponX=7`, `budget=371`, `arena_n=138`); (2)
-      the SRCS — `nsink=1`, `nafter=2`, `nsb_after=2`, so the sink, the AFTER and
-      `Arena.src_without_body` all answer their srcs; (3) the GATE — upstream's
-      `gate_kernel_sink` (`ops.py:1880-1883`) IS `sc_gate` line for line; (4) the visited
-      test's arguments — `List.contains(U32, U32.is_eq, cache, n)` is the shape the port
-      uses everywhere else. **WHAT IS LEFT**: the frame discipline of `Topo.step`
-      (`ops.bend:2223-2243`) and its copy `sc_topo` (`schedule/__init__.bend:498-540`) — the
-      node is cached on its SECOND visit, so a node shared by several parents is
-      re-processed per arrival, and each re-processing re-pushes its whole subtree.
-      **THE CONSTRAINT ON THE FIX**: upstream's result is a POST-order (a node is cached
-      after its subtree, `ops.py:292`), and the schedule's linearization ORDER depends on
-      it — so marking nodes visited on their FIRST visit (the worklist's discipline) would
-      change the result's ORDER, and the visited set cannot be the result list without a
-      second list in the `Topo` record. **THIS IS THE FIRST THING TO FIX**: it gates the
-      realize (below), the schedule's refusal, and every bigger graph.
+      the neighbour). Implemented in the worktree it produces upstream's shape — the kernel
+      graph carries `STAGE:none:MAX,RANGE,RANGE` and `INDEX:none:STAGE,RANGE,RANGE` — **AND
+      IT MAKES A CYCLE**: the reachable set of the kernel graph FALLS from 64 nodes to 39
+      (`topon=39`), the END falls outside it, and the ranges change (`rngs=2` where the
+      unrealized graph had 1). **THE CYCLE'S SHAPE**: the realized node is the STAGE's
+      source AND its own consumers read the STAGE, so the value's subtree reaches its own
+      read. Upstream substitutes the STAGE-read into the realized node's **CONSUMERS**
+      (`create_bufferize_and_index_srcs`, `indexing.py:80-91`), so the port's rewrite is
+      substituting it into the realized node's **OWN SRCS** — that is the thing to read next.
+      **IT IS NOT LANDED** for that reason and because the change moves the substrate.
+- [ ] **THE PORT'S GATED TOPOSORT WAS NOT BROKEN — IT WAS THE FLAT GRAPH (2026-11-25).** An
+      earlier reading said `SCH.sc_topo_of` answers 7 nodes for the shader's 138-node kernel
+      graph. **THAT WAS THE FLAT-(256,) GRAPH**: with the runner's buffers reshaped to (16,16)
+      the same traversal answers **64** (`topon=64`) — the whole reachable set — and the
+      runner's tensor graph answers 56 of 56 (`ttop=56`). The toposort is CORRECT, and the
+      "shallow toposort" claim in an earlier revision of this file was wrong. **WHAT IS
+      STILL TRUE AND STILL WORTH THE ATTENTION**: the *realize* (above) drops the reachable
+      set to 39 (`topon=39`) and puts the END outside it, so a graph that reaches itself
+      silently loses nodes — and the port's fuel (`next + edges`) turns that into a PARTIAL
+      list, which the notes call out ("a wrong fuel is a wrong node count that looks like a
+      plausible number"). The instrument for it is the toposort's own length against the
+      graph's reachable set.
 - [ ] **`gates/schedsched-gate.py` HAD TWO DEFECTS AND ONE MASKED THE OTHER (2026-11-24).**
       (1) The `bend=` field still pointed at the LIBRARY after `d404c64d9` moved the 135 gate
       rows into the driver `gates/schedule-init-gate.bend`, so the port lane ran a file with no

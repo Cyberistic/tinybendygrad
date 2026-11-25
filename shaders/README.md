@@ -128,7 +128,7 @@ with the (16,16) ones. The runner reshapes all three buffers now (`shaders/` is 
 the substrate, so this does not stale the corpus). The kernel graph's PAD wall is a
 separate matter — above.
 
-## The realize the merge forgot, and what it exposed
+## The realize the merge forgot, and what it exposes
 
 Upstream's merge ends with `if len(_realize_axis): rctx.realize_map[x] = _realize_axis`
 (`indexing.py:267`), and the port's `rr_merge` **minted the new RANGE and recorded
@@ -136,13 +136,18 @@ nothing** — so a node read at two different ranges (the shader's `dd`, read at
 formula and at `r+1` by the neighbour) was never realized, and a node that is never
 realized has no buffer, so its second read has nothing to read from. Implemented in the
 worktree, it produces upstream's shape — the kernel graph now carries
-`STAGE:none:MAX,RANGE,RANGE` and `INDEX:none:STAGE,RANGE,RANGE` — **and it exposes a
-second defect**: the port's gated toposort answers **7 of the graph's 138 nodes** with a
-budget of 371 (`topon=7`, `arena_n=138`, `budget=371`), so the schedule's view of the graph
-is shallow, and the realize pushes the END outside it — `sc_unbacked` on the END is `T` and
-the whole-graph walk answers `F`. **That is why the realize is not landed**: the toposort's
-fuel has to cover the re-push (each kept node is popped twice, once to be cached), and
-until it does, a bigger graph silently loses nodes.
+`STAGE:none:MAX,RANGE,RANGE` and `INDEX:none:STAGE,RANGE,RANGE` — **and it makes a cycle**:
+the kernel graph's reachable set falls from 64 nodes to 39 (`topon=39`), the END falls
+outside it, and the ranges change (`rngs=2` where the unrealized graph had 1). The shape
+of the cycle: the realized node is the STAGE's source *and* its own consumers read the
+STAGE, so the value's subtree reaches its own read — upstream substitutes the STAGE-read
+into the realized node's **consumers** (`create_bufferize_and_index_srcs`,
+`indexing.py:80-91`), so the port's rewrite is substituting it into the realized node's
+**own srcs**. **That is the next thing to read**, and the realize is not landed.
+
+*(An earlier revision of this file called the port's gated toposort shallow — 7 of 138
+nodes — and that was WRONG: it was the flat-(256,) graph. With the (16,16) buffers the same
+traversal answers 64 — the whole reachable set — and the tensor graph's 56 of 56.)*
 
 **And a genuinely missing port.** An `ALLOC` has no realize-time rebind: `UOp.new_buffer` is
 `TODO(p3)` in `ops.bend`, and upstream's `linear_with_vars` swaps `ALLOC` → `BUFFER` there.
