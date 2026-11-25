@@ -5161,7 +5161,15 @@ are NOT free: `grep -c smoothstep tinygrad/` is 0 and there is no `Ops.MIN`.
       `rr_ap_stage_src` (`rangify.bend:1370`) builds `STAGE(s, closed_ranges)` and indexes it
       by the CONSUMER's input ranges (`indexing.py:80-91` ✓) — so the cycle is NOT a
       mis-substitution. **WHERE TO LOOK NEXT**: the REALIZE DECISION (which node gets
-      realized — the kernel graph carries TWO `STAGE`s, so the decision fires on two nodes)
+      realized — **THE KERNEL GRAPH CARRIES FIVE `STAGE`s** (`STAGE:none:MAX`,
+      `STAGE:none:ADD` ×3, and `INDEX:none:STAGE,INDEX,RANGE` — an INDEX with three srcs),
+      so the decision fires on FIVE nodes where upstream would fire on one or two, and each
+      firing mints new ranges for every axis and stages the value: the graph becomes a nest
+      of STAGEs and the fw term falls out of it. **SO THE QUESTION IS WHY SO MANY NODES'
+      CONSUMERS DISAGREE AT ALL** — upstream compares the consumers' ranges per axis and
+      realizes only the differing axes (`indexing.py:245-267`), and where the consumers AGREE
+      upstream keeps their range and refines it with the merged `.valid` (the W3 half,
+      `ops.py:636`), which is the piece the port cannot do.
       and the RANGES it mints (upstream gives the realized node NEW ranges and keeps the old
       ones for its own computation; the port's `rr_merge` mints new ranges for EVERY axis —
       its documented fallback). **MEASURED, AND NOT A CYCLE IN THE DEP GRAPH**: the schedule's
