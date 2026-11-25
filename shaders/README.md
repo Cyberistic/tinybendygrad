@@ -385,13 +385,28 @@ seed is a REALIZED node ✓ (`indexing.py:222-225`) ✓, so the REALIZE MAP is w
 cause is ✓✓. And the realize map's emptiness ✗ means `rr_realize_one` ✗ answered
 nothing for every node ✗ -- **including the `STORE`** ✗.
 
-**=> THE NEXT MEASUREMENT IS ONE QUESTION: DOES THE TENSOR GRAPH CONTAIN A `STORE` AT
-ALL?** The arena's census ✗ (the probe's `arops` row ✗) was truncated ✗ and the
-`STORE` is not in its first 420 characters ✗. Upstream's graph HAS one ✓ (upstream's
-assign IS a `STORE` ✗ -- `ops.py:587` ✗) and upstream's realize map holds every `STORE`
-✓ (`indexing.py:36-37` ✗) -- so if the port's tensor graph has no `STORE` ✗, the port's
-realize map is empty for a reason upstream does not have ✗✗, and the fix is in the
-runner's graph construction ✗✗ -- the tensor graph's assign ✗.
+**=> MEASURED, THE THREE THINGS THAT HAD BEEN OPEN, AND THEY CLOSE:**
+
+    astore= 56:Ops.STORE          THE TENSOR GRAPH HAS A `STORE` ✓
+    areal= 56:1                   `rr_realize_one` ON IT ANSWERS ONE ENTRY ✓
+    abudget= budget=149 next=58   THE FUEL IS NOT LIMITING ✗
+
+So the graph has the `STORE` ✓, the def fires on it ✓, and the walk has fuel to
+spare ✗ -- and the realize map is STILL EMPTY ✗✗. **=> THE LOSS IS BETWEEN THE DEF AND
+THE MAP.** The three suspects, all in `indexing.bend`: the map's entry layout (`IxReal`'s
+FIELDS -- `IX.realize(tr)` is `IxReal{tr, False{}, Nil{}}` and `ix_rmap_has` compares
+`IxReal.n(e)` against the node ✓), `ix_rmap_set` ✓, and `ix_rmap_has` ✓.
+
+**=> AND ONE MORE THING THIS MEASUREMENT KILLED: THE TOPOSORT IS NOT GATED.**
+`Arena.srcs` is `Node.src` -- ALL the srcs ✓ (`ops.bend:782-783`) ✓ -- and
+`Arena.src_without_body` only drops a `CALL`'s body ✓ (`ops.bend:815-825`) ✓. So
+`O.UOp.toposort` walks the whole graph ✓, the port's `ttop` row agrees ✓ (56 ✓), and
+the probe's `tsz=1` ✗ was its own bug ✓ -- already withdrawn above ✓.
+
+**=> SO THE CHAIN IS: THE GRAPH HAS THE `STORE` ✓, THE DEF FIRES ✓, THE FUEL IS FINE
+✓, AND THE MAP IS EMPTY ✗.** Everything downstream -- the range map ✗, the table ✗,
+the PAD arm ✗, the SHRINK arm ✗, the zero-fill ✗, the gate ✗ -- follows from that one
+empty map ✓✓.
 
 **=> AND UPSTREAM's `sink_of()`-SHAPED GRAPH HAS THE STORE, SO THE REALIZE MAP IS NOT
 EMPTY THERE.** Upstream's realize map holds every `STORE` (`indexing.py:36-37`) and the
