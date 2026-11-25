@@ -248,7 +248,16 @@ def rr_call_is_custom(+ar: O.Arena, +u: U32) -> Bool:
 
 # THE DISPATCH, ONE NODE. Every rule that MATCHES fires, because every rule
 # body returns `None` upstream.
-def rr_realize_one(+ar: O.Arena, +u: U32) -> List<&2, IX.IxReal>:
+# TODO(shader-pad-lane): THE REALIZE MAP IS EMPTY FOR THE RUNNER's GRAPH -- MEASURED
+# (`rmap=` IS EMPTY, `rmn=0`, `tbl=1`), SO `rr_p1.real` NEVER FIRES, NO RANGE IS EVER
+# MINTED, THE PROPAGATION HAS NO SEED AND THE WHOLE RANGE-MAP STAGE IS INERT (THE PAD
+# ARM, THE SHRINK ARM, THE ZERO-FILL AND THE GATE). UPSTREAM's MAP HOLDS EVERY `STORE`
+# (`indexing.py:36-37`) AND THE REALIZED NODE IS WHERE UPSTREAM SEEDS THE PROPAGATION
+# (`indexing.py:222-225`). THIS DEF HAS UPSTREAM's THREE RULES AND IT ANSWERS NOTHING.
+# THE NEXT MEASUREMENT IS THIS DEF, CALLED ON THE GRAPH's `STORE` DIRECTLY: DOES IT
+# ANSWER `[realize(store)]`, OR IS THE ENTRY LOST ON THE WAY INTO THE CONTEXT
+# (`ix_ctx_realize`, `ix_rmap_set`)?
+def rr_realize_one(+ar: O.Arena, +u: U32) -> List<&2, IX.IxReal]:
   Bool.pick(List<&2, IX.IxReal>, rr_is_store(ar, u), rr_store_entries(ar, u),
     Bool.pick(List<&2, IX.IxReal>, rr_is_mstack(ar, u), rr_mstack_real(ar, u),
       Bool.pick(List<&2, IX.IxReal>,
