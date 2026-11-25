@@ -91,8 +91,22 @@ Baseline measured 2026-11-25 (re-run the commands to move it):
       *Pass:* gate reports `sym_table 131/131 · rm_table 2/2 · valid_table 2/2`, 0 hazards,
       1 documented 6-row permutation, and 77 rows that drop a fast path (counted, not failed —
       `rej` is a filter, so narrower costs time and not an answer).
-      *Still to do:* `uop/fold.bend` and `codegen/decomp/dtype.bend` are the same class and are
-      not covered yet — `fold.bend` has no `PMEntry` at all, so its table has a different shape.
+      *Still to do:* `uop/fold.bend` — it has no `PMEntry` at all, so its table has a different
+      shape and the same treatment is a separate job.
+
+      **4.1b `codegen/decomp/dtype.bend` — a different answer, and the difference is the finding.**
+      Its rule table is **not** projectable: `l2i_pair` (`dtype.py:89`) wraps a rule as
+      `BITCAST(STACK(x))`, so 4 of `pm_long_decomp`'s 10 patterns *claim* `BITCAST` while the
+      port's rows claim the inner op, and the float rows are reordered with one merged
+      catch-all. A projection would report six rules as missing that are merely shaped
+      differently. What *is* directly comparable is the **op groups**, and two were wrong:
+      `dd_ops.all()` was 75 of `GroupOp.All`'s 76 (no `REFPARAM`), and the `GroupOp.Defines`
+      row spelled 3 of 5 (no `BINARY`, no `REFPARAM`). Fixed in `089670d84`.
+      *Pass:* `gates/dtype-table-gate.py` — `all 76/76 · Comparison 3/3 · Defines 5/5`, and it
+      prints the rule table as `NOT-PROJECTABLE` with the wrapper count, rather than deciding
+      something it cannot see.
+      *Shared:* `gates/pmtable.py` holds the parser and both pairing modes; `symbolic-table-gate.py`
+      was re-derived on top of it with unchanged output.
 
       **The behaviour is validated, and this is what validated it:** the three rows went from
       dead/filtered to live in `bd4be1206`, and the full corpus run after it is green — 38/38
