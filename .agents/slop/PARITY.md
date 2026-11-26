@@ -9110,3 +9110,27 @@ count-intern.py`**: **THE **MEAN **POSITION **WAS **37.8 **OF **~60**, **⇒⇒�
 **A **SCAN **OVER **CHUNKS**, **⇒⇒† AND **AND **A **SCAN **OVER **CHUNKS **IS **TWO **DEFS **THAT
 **CALL **EACH **OTHER**, **⇒⇒† AND **AND **BEND **HAS **NO **FORWARD **REFERENCES**, **⇒⇒† AND **SO
 **THE **FLAT **LIST **STAYS** ✓.
+
+### 138.50 **THE **CERTIFICATE, **RUN **ON **A **CLEAN **COPY **OF **THE **TREE**, **BECAUSE **THE
+**SHARED **ONE **WAS **MID-EDIT
+
+**⇒⇒† AND **THE **SHARED **TREE **WAS **NOT **BUILDABLE **WHILE **§138.48's **CHANGE **WAS
+**MEASURED**: **ANOTHER **PANE's **WORKING **COPY **OF **`uop/ops.bend`** **HAD **A **DUPLICATE
+**`t_de_den`** **DECLARATION** (⇒⇒† AND **A **HALF-FINISHED **EDIT**), **⇒⇒† AND **SO **THE **TREE
+**COULD **NOT **BUILD **AND **THE **CORPUS **COULD **NOT **RUN** ✓.
+
+**⇒⇒† AND **SO **THE **CHANGE **WAS **MEASURED **AND **CERTIFIED **ON **A **CLEAN **COPY **OF
+**THE **TREE** (⇒⇒† AND **`git archive HEAD` **INTO **A **SCRATCH **DIRECTORY**, **⇒⇒† AND **AND
+**`references/`**, **`bin/` **AND **`.venv/` **SYMLINKED **IN**), **⇒⇒† AND **AND **THE **CORPUS
+**RAN **THERE** ✓:
+
+| | **the **reading** |
+|---|---|
+| **`checks/differ.py run`** | **38 **OF **38 **GRAPHS **ANSWERED, **38 **AGREE, **NONE **DISAGREE, **38 **BYTE-IDENTICAL, **expect-moved=0**, **THE **STABLE **PAIRS **5 **OF **5** |
+| **`checks/differ.py repro`** | **339 **OF **339 **FILES **IDENTICAL **ACROSS **TWO **CLEAN **RUNS** |
+| **`gates/corpuswitness-gate.py`** | **`verdict.current` OK, `witness.fresh` OK, `witness.substrate` OK, `repro-rc=rc=0`** -- **⇒⇒† AND **AND **THE **ONLY **MISSING **CONJUNCT **IS `witness.clean`**, **⇒⇒† AND **WHICH **ASKS **THAT **THE **TREE **THE **WITNESS **NAMES **IS **A **COMMIT** (⇒⇒† AND **AND **A **`git archive` **COPY **IS **NOT **A **REPOSITORY**) ✓ |
+
+**⇒⇒† AND **SO **THE **CHANGE **IS **CERTIFIED **AGAINST **CPython** ✓ **⇒⇒† AND **AND **THE
+**SHARED **TREE's **WITNESS **IS **STALE** (⇒⇒† AND **THE **SUBSTRATE **MOVED **WHEN **§138.48
+**LANDED**), **⇒⇒† AND **AND **IT **MUST **BE **RE-RUN **ON **THE **SHARED **TREE **ONCE **THE
+**OTHER **PANE's **EDIT **LANDS **AND **THE **TREE **SETTLES** ✓.

@@ -36,7 +36,7 @@ globalThis.__CC = (k) => { globalThis.__C[k] = (globalThis.__C[k] || 0) + 1; };"
 # **⇒⇒† AND **THE **NAMES **ARE **MATCHED **BY **THEIR **TAIL** (⇒⇒† AND **AND **THE **PORT's
 # **MODULE **PATH **IS **A **PREFIX**) ✓
 NAMES = [
-  "UOp_toposort", "Arena_budget", "List_contains", "Arena_edges", "Arena_at",
+  "UOp_toposort", "Arena_budget", "List_contains_0", "Arena_edges", "Arena_at",
   "Kahn_get", "RTable_get", "Kahn_walk", "UOp_fold", "vms_reach_go", "vms_tail_go",
   "Arena_put", "Arena_put_go", "List_append", "List_length",
   # **⇒⇒† AND **THE **FOLD's **PER-NODE **WORK**, **⇒⇒† AND **AND **THE **VMS's **LIST
@@ -105,7 +105,7 @@ def main():
   print(f"THE COUNTED FUNCTIONS: {len(found)}  ({', '.join(found)})")
   # **⇒⇒† AND **THE **CELLS **THE **APPEND **COPIES** (⇒⇒† AND **AND **THE **RECURSION's **BODY
   # **IS **ONE **CELL **A **TIME**) ✓
-  for key in ("List_append",):
+  for key in ("List_append", "List_contains_0"):
     ms = re.findall(r"function (\$[A-Za-z0-9_]*" + re.escape(key) + r")\(", src)
     if len(ms) != 1:
       continue
@@ -115,6 +115,9 @@ def main():
     body = body.replace("    const _h_0 = _xs_0[\"head\"];",
                         "    globalThis.__CC(\"" + key + ".cells\");\n"
                         "    const _h_0 = _xs_0[\"head\"];", 1)
+    body = body.replace("    const _t_0 = _xs_0[\"tail\"];",
+                        "    globalThis.__CC(\"" + key + ".cells\");\n"
+                        "    const _t_0 = _xs_0[\"tail\"];", 1)
     src = src[:i] + body + src[end:]
   m = re.search(r"function (\$chain_wgsl)\(([^)]*)\)\s*\{", src)
   if not m:
