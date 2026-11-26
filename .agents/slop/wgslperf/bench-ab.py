@@ -81,6 +81,13 @@ def main():
     if not cand_port.exists():
       raise SystemExit("WARN: there is no scratch tree -- run `wgslbase.tree_port('scratch')` first")
     label = "SCRATCH"
+  elif "--tree" in sys.argv:
+    # **⇒⇒† AND **A **CLEAN **COPY **OF **`HEAD`**, **⇒⇒† AND **AND **THE **CANDIDATE **IS **A
+    # **PORT **DIRECTORY **IN **IT** (⇒⇒† AND **AND **THAT **IS **HOW **A **CHANGE **IS **TESTED
+    # **WHILE **ANOTHER **PANE **IS **MID-EDIT **IN **THE **SHARED **TREE**) ✓
+    src = pathlib.Path(sys.argv[sys.argv.index("--tree") + 1]) / "tinybendygrad"
+    cand_port = wgslbase.tree_port("candidate", src=src)
+    label = "THE TREE"
   else:
     cand_port = wgslbase.tree_port("candidate")
     label = "THE TREE"

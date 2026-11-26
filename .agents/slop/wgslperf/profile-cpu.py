@@ -24,15 +24,23 @@ import time
 R = pathlib.Path(__file__).resolve().parents[3]
 HERE = R / ".agents/slop/wgslperf"
 BEND = R / "bin/bend"
+
+sys.path.insert(0, str(HERE))
+import wgslbase
 PROF = HERE / "prof"
 DRIVER = HERE / "cpuprof.run.mjs"
 
 
-def build() -> pathlib.Path:
+def build(tree: pathlib.Path | None = None) -> pathlib.Path:
   """**THE **COMPILED **FORM**, **BUILT **FROM **THE **CURRENT **TREE** -- **⇒⇒† AND **AND **A
-  **STALE **BUILD **IS **A **SECOND **SOURCE **OF **TRUTH**."""
+  **STALE **BUILD **IS **A **SECOND **SOURCE **OF **TRUTH**.
+
+  **⇒⇒† AND **AND **A **`tree` **OVERRIDES **THE **WORKING **TREE** (⇒⇒† AND **AND **THAT **IS **HOW
+  **A **TREE **IS **MEASURED **WHILE **ANOTHER **PANE **IS **MID-EDIT **IN **THE **SHARED
+  **ONE**)**."""
   out = HERE / "wgslprof.cpu.mjs"
-  b = subprocess.run([str(BEND), str(HERE / "wgslprof.bend"), "-o", str(out)],
+  driver = wgslbase.driver_for(tree, "probundle") if tree else (HERE / "wgslprof.bend")
+  b = subprocess.run([str(BEND), str(driver), "-o", str(out)],
                      capture_output=True, text=True)
   if b.returncode != 0 or not out.exists():
     raise SystemExit(f"WARN: the driver did not build:\n{b.stderr[:1500]}")
@@ -72,7 +80,8 @@ def read(path: pathlib.Path):
 
 
 def main():
-  build()
+  tree = (pathlib.Path(sys.argv[sys.argv.index("--tree") + 1]) / "tinybendygrad") if "--tree" in sys.argv else None
+  build(tree)
   path = run_profile()
   byid, parent, hit, total = read(path)
   print(f"THE PROFILE: {path.name}  ({total:,} samples)")

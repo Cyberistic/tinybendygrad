@@ -9063,3 +9063,50 @@ count-intern.py`**: **THE **MEAN **POSITION **WAS **37.8 **OF **~60**, **⇒⇒�
 **CLEAN **RUNS**, **⇒⇒† AND **AND **`gates/corpuswitness-gate.py`** **READS **`claim state=OK
 **verdict=REPRODUCIBLE`** **WITH **THE **EXTRA **`witness.clean:OK`** (⇒⇒† AND **AND **THE **TREE **IT
 **NAMES **IS **A **COMMIT **AND **NOT **A **WORKING **COPY**) ✓.
+
+### 138.48 **THE **VMS's **FUEL **IS **THE **ARENA's **BUDGET, **AND **IT **IS **COMPUTED **ONCE
+
+**⇒⇒† AND **THE **VMS **IS **THE **LINEARIZER's **VALUE **MAP**, **⇒⇒† AND **AND **EVERY **WALK
+**IN **IT **COMPUTED **`O.Arena.budget(ar)`** -- **⇒⇒† AND **WHICH **IS **A **FOLD **OVER **EVERY
+**NODE **OF **THE **ARENA **AND **OVER **EVERY **SRC **OF **EVERY **NODE** ✓ **⇒⇒† AND **SO **EVERY
+**WALK **PAID **FOR **A **WHOLE-ARENA **FOLD**, **⇒⇒† AND **AND **THE **VMS **WALKS **THE **ARENA
+**PER **ELEMENT** ✓.
+
+**⇒⇒† AND **THE **BUDGET **IS **THE **SAME **FOR **EVERY **WALK**: **THE **ARENA **DOES **NOT
+**GROW **WHILE **THE **VMS **IS **COMPUTED** (⇒⇒† AND **EVERY **WALK **IN **IT **IS **A **READER** --
+**`UOp.toposort` **IS **A **WALK**, **`Arena.src_from` **IS **A **READ**, **⇒⇒† AND **AND
+**`vms_cons`/`vms_ends`/`vms_u`/`vms_enc`/`vms_row` **ARE **READERS**) ✓ **⇒⇒† AND **SO **THE
+**FUEL **IS **NOW **COMPUTED **ONCE, **AT **THE **TOP **OF **THE **VMS**, **AND **CARRIED **DOWN**
+(⇒⇒† AND **AND **`vms_reach`, **`vms_dep`, **`vms_dmin`, **`vms_tail` **AND **`vms_nd` **ALL **TAKE
+**IT **NOW**) ✓.
+
+**⇒⇒† AND **MEASURED**, **THE **WGSL **TURN** **1,072 **ms → 1,042 **ms **OF **WALL **AND
+**1,604 **ms → 1,560 **ms **OF **CPU** ✓ **AND **THE **WGSL **IS **BYTE-IDENTICAL** ✓.
+
+### 138.49 **THE **COUNTS **OF **THE **WALKS**, **AND **WHAT **IS **LEFT**
+
+**⇒⇒† AND **THE **WALKS **COUNTED **IN **THE **COMPILED **FORM**
+**(`.agents/slop/wgslperf/count-walks.py` **COUNTS **THEM**)**:
+
+| **the **walk** | **the **calls **a **turn** |
+|---|---|
+| **`List.append`** | **22,521,923** (⇒⇒† AND **12,441,923 **CELLS **COPIED** -- **⇒⇒† AND **SO **THE **APPENDs **ARE **SMALL-LIST **APPENDS**, **⇒⇒† AND **AND **THE **COST **IS **THE **CALLS**, **⇒⇒† AND **AND **THEY **ARE **THE **FOLD's **PER-NODE **WORK**) |
+| **`O.Arena.at`** | **3,577,720** (⇒⇒† AND **THE **CHUNKED **LOOKUP**) |
+| **`Kahn.get`** | **2,520,919** (⇒⇒† AND **THE **FOLD's **TABLE**) |
+| **`List.length`** | **2,175,990** |
+| **`Kahn.walk` / `UOp.fold`** | **1,838 **EACH** (⇒⇒† AND **THE **FOLD **IS **BUILT **1,838 **TIMES **A **TURN** -- **⇒⇒† AND **AND **THE **ARENA **IS **~475 **NODES**, **⇒⇒† AND **SO **THE **FOLD **IS **873K **NODE-STEPS**) |
+| **`O.UOp.toposort`** | **3,023** |
+| **`O.Arena.budget`** | **1,191** (⇒⇒† AND **DOWN **FROM **~14,000**, **⇒⇒† AND **AND **§138.48's **HOIST**) |
+
+**⇒⇒† AND **THE **REMAINING **TERMS **ARE **NEAR **THEIR **OPTIMUM**: **THE **FOLD's **TABLE
+**LOOKUP **IS **~10% **OF **THE **TURN** (⇒⇒† AND **THE **CHUNK **SIZE **IS **AT **THE **sqrt(N)
+**OPTIMUM** -- **THE **SPINE **WALK **IS **i/32 **AND **THE **CHUNK **WALK **IS **i%32**), **⇒⇒† AND
+**AND **`List.append` **IS **10%** (⇒⇒† AND **THE **FOLD's **PER-NODE **LISTS**), **⇒⇒† AND **AND **THE
+**GC **IS **6%** (⇒⇒† AND **THE **ALLOCATIONS**), **⇒⇒† AND **AND **THE **ARENA's **CHUNKED
+**LOOKUP **IS **7%**, **⇒⇒† AND **AND **THE **INTERNING's **SCAN **IS **4%** ✓.
+
+**⇒⇒† AND **AND **THE **ONE **TERM **THAT **IS **NOT **NEAR **ITS **OPTIMUM **IS **THE **ARENA's
+**FLAT **LIST** (⇒⇒† AND **IT **IS **O(n) **TO **APPEND**), **⇒⇒† AND **AND **REMOVING **IT **NEEDS
+**A **SCAN **OVER **CHUNKS**, **⇒⇒† AND **AND **A **SCAN **OVER **CHUNKS **IS **TWO **DEFS **THAT
+**CALL **EACH **OTHER**, **⇒⇒† AND **AND **BEND **HAS **NO **FORWARD **REFERENCES**, **⇒⇒† AND **SO
+**THE **FLAT **LIST **STAYS** ✓.

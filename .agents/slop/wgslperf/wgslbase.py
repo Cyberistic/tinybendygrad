@@ -48,9 +48,11 @@ def head_port(dirname: str, base: str = "HEAD") -> pathlib.Path:
   return dest
 
 
-def tree_port(dirname: str, fresh: bool = True) -> pathlib.Path:
-  """**A **COPY **OF **THE **WORKING **TREE's **PORT** -- **⇒⇒† AND **AND **THIS **IS **WHERE **A
-  **CHANGE **IS **TESTED **BEFORE **IT **TOUCHES **THE **SHARED **TREE**.
+def tree_port(dirname: str, fresh: bool = True, src: pathlib.Path | None = None) -> pathlib.Path:
+  """**A **COPY **OF **THE **PORT** -- **⇒⇒† AND **BY **DEFAULT **THE **WORKING **TREE's**, **⇒⇒† AND
+  **AND **A **`src` **OVERRIDES **IT** (⇒⇒† AND **AND **THAT **IS **HOW **A **CHANGE **IS **TESTED
+  **ON **A **CLEAN **COPY **OF **`HEAD` **WHILE **ANOTHER **PANE **IS **MID-EDIT **IN **THE
+  **SHARED **TREE**) ✓.
 
   **⇒⇒† AND **AND **`fresh=False` **LEAVES **AN **EXISTING **COPY **ALONE** (⇒⇒† AND **AND
   **RECREATING **IT **WOULD **WIPE **THE **EDIT **UNDER **TEST**)**."""
@@ -60,7 +62,7 @@ def tree_port(dirname: str, fresh: bool = True) -> pathlib.Path:
       return dest
     shutil.rmtree(dest)
   dest.parent.mkdir(parents=True, exist_ok=True)
-  shutil.copytree(R / "tinybendygrad", dest)
+  shutil.copytree(src or (R / "tinybendygrad"), dest)
   return dest
 
 
@@ -89,3 +91,17 @@ def build(driver: pathlib.Path, out: pathlib.Path):
   b = subprocess.run([str(BEND), str(driver), "-o", str(out)], capture_output=True, text=True)
   if b.returncode != 0 or not out.exists():
     raise SystemExit(f"WARN: {driver.name} did not build:\n{b.stderr[:1500]}")
+
+
+def driver_for(tree: pathlib.Path | None = None, name: str = "bundle") -> pathlib.Path:
+  """**THE **DRIVER **THAT **RUNS **THE **TURN **AGAINST **A **GIVEN **PORT**, **⇒⇒† AND **AND **THE
+  **WORKING **TREE **BY **DEFAULT** (⇒⇒† AND **AND **A **`tree` **OVERRIDES **IT**, **⇒⇒† AND **AND
+  **THAT **IS **HOW **A **CHANGE **IS **MEASURED **WHILE **ANOTHER **PANE **IS **MID-EDIT **IN **THE
+  **SHARED **TREE**) ✓."""
+  port = tree or (R / "tinybendygrad")
+  dest = HERE / name / "tinybendygrad"
+  if dest.exists():
+    shutil.rmtree(dest)
+  dest.parent.mkdir(parents=True, exist_ok=True)
+  shutil.copytree(port, dest)
+  return bundle(name, dest)
