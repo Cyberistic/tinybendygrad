@@ -9150,3 +9150,21 @@ count-intern.py`**: **THE **MEAN **POSITION **WAS **37.8 **OF **~60**, **⇒⇒�
 **SAME **ONE** (⇒⇒† AND **THE **CORPUS **MEASURED **THE **TREE's **CONTENT**, **⇒⇒† AND **AND **THE
 **CONTENT **IS **WHAT **THE **WITNESS **NAMES**) ✓ **⇒⇒† AND **SO **THE **CLAIM **GOES **GREEN
 **WHEN **THAT **EDIT **LANDS**, **WITHOUT **ANOTHER **CORPUS **RUN** ✓.
+
+### 138.52 **THE **CORRECTION **OF **§138.51**: **THE **OTHER **PANE's **EDIT **KEPT **MOVING**, **AND
+**THE **SHARED **TREE's **WITNESS **IS **RED **FOR **THAT **REASON
+
+**⇒⇒† AND **§138.51 **SAID **THE **DIGEST **WAS **THE **SAME **ONE **AND **THE **CLAIM **WOULD **GO
+**GREEN **WHEN **THE **EDIT **LANDED** ✓ **⇒⇒† AND **AND **THAT **WAS **TRUE **AT **THE **MOMENT **IT
+**WAS **WRITTEN** ✓ **⇒⇒† AND **AND **BUT **THE **EDIT **KEPT **MOVING** (⇒⇒† AND **THE **LIVE
+**DIGEST **IS **NOW `1a70995358a6d90c`** **AND **THE **RECORDED **ONE **IS **STILL
+**`1c3467170ca67fce`**) ✓ **⇒⇒† AND **SO **THE **SHARED **TREE's **`witness.substrate` **AND
+**`verdict.current` **ARE **RED **AGAIN** ✓.
+
+**⇒⇒† AND **AND **THE **CORRECTION**: **THE **CORPUS **MUST **BE **RE-RUN **ON **THE **SHARED
+**TREE **ONCE **THE **OTHER **PANE's **EDIT **LANDS **AND **THE **TREE **SETTLES** ✓ **⇒⇒† AND **AND
+**§138.50's **CERTIFICATE **STANDS **FOR **THE **CODE**: **THE **CHANGE **WAS **CERTIFIED **AGAINST
+**CPython **ON **A **CLEAN **COPY** (⇒⇒† AND **38 **OF **38 **GRAPHS **AGREE, **38 **BYTE-IDENTICAL,
+**339 **OF **339 **FILES **IDENTICAL **ACROSS **TWO **CLEAN **RUNS**) ✓ **⇒⇒† AND **AND **THE **SHARED
+**TREE's **CORPUS **IS **A **SEPARATE **CONCERN** (⇒⇒† AND **THE **OTHER **PANE's **UNCOMMITTED
+**EDIT**) ✓.
