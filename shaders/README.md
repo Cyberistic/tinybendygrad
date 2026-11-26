@@ -262,7 +262,7 @@ field's `__builtin_sqrtf` in it and the store `*(data0_256+((Lidx0+(16*Lidx1))%2
 | what | why |
 |---|---|
 | `UNHANDLED(Ops.MAX)` | the port's `code_for_base` is upstream's 21-key dict (`cstyle.py:153-161`) and that dict has no `MAX` arm -- **and neither does upstream's** (`cstyle.py` has no `MAX` at all). A `MAX` reaches the C because the port does not run upstream's symbolic normalization, which is a recorded deviation (`rangify.bend`: "the symbolic normalization upstream runs after it is NOT applied"). The `MAX` has to be lowered before the C, not taught to the emitter. |
-| `(&)?alu1:0.0f` | the `WHERE`'s CONDITION is missing: the gate is not riding on the range. MEASURED, the port's `AND` has two `CONST` operands where upstream's gate is a `CMPLT` -- so the valid is `True` and the zero-fill is unconditional. |
+| `((1&1)?alu1:0.0f)` -- the `WHERE`'s CONDITION IS A CONSTANT | TWO DEFECTS, ONE NOW FIXED. **FIXED**: the condition was EMPTY (`(&)?alu1:0.0f`) because the port's `ku_const_repr` had no `CBool` arm, so every bool const rendered as the empty string; upstream renders `"1" if c.val else "0"` (`cstyle.py:31`). MEASURED, the C now says `((1&1)?alu1:0.0f)`. **OPEN**: the gate is CONSTANTLY TRUE -- the port's `AND` has two `CONST` operands where upstream's gate is a `CMPLT` per axis -- so the valid is `True` and the zero-fill is unconditional. |
 | `weakint Lidx0` | the strong dtype: upstream's `UOp.dtype` is a property that never returns `weakint` (`tinygrad/mixin/dtype.py:17`), and the port has neither it nor `commit_int`. |
 | four nested range loops | the kernel's `END` closes FOUR ranges where upstream's closes TWO (`kg0_0_end_srcs=STORE RANGE RANGE`). |
 
