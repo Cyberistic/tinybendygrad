@@ -9134,3 +9134,19 @@ count-intern.py`**: **THE **MEAN **POSITION **WAS **37.8 **OF **~60**, **⇒⇒�
 **SHARED **TREE's **WITNESS **IS **STALE** (⇒⇒† AND **THE **SUBSTRATE **MOVED **WHEN **§138.48
 **LANDED**), **⇒⇒† AND **AND **IT **MUST **BE **RE-RUN **ON **THE **SHARED **TREE **ONCE **THE
 **OTHER **PANE's **EDIT **LANDS **AND **THE **TREE **SETTLES** ✓.
+
+### 138.51 **THE **CERTIFICATE, **ON **THE **SHARED **TREE**
+
+**⇒⇒† AND **WHEN **THE **OTHER **PANE's **EDIT **LANDED**, **THE **SHARED **TREE **BUILT **AND
+**THE **CORPUS **RAN **ON **IT**: **ONE **SETTLED **SUBSTRATE** (⇒⇒† AND **`substrate-start` **=
+**`substrate-end` **= `1c3467170ca67fce6`**) ✓ **⇒⇒† AND **AND **THE **VERDICT **IS **38 **OF **38
+**GRAPHS **ANSWERED, **38 **AGREE, **NONE **DISAGREE, **38 **BYTE-IDENTICAL, **expect-moved=0** ✓
+**⇒⇒† AND **AND **THE **REPRO **IS **340 **OF **340 **FILES **IDENTICAL **ACROSS **TWO **CLEAN
+**RUNS** ✓.
+
+**⇒⇒† AND **AND **THE **ONLY **RED **READING **IS `witness.clean`** (⇒⇒† AND **THE **TREE **THE
+**WITNESS **NAMES **MUST **BE **A **COMMIT**, **⇒⇒† AND **AND **ANOTHER **PANE's **WORKING **COPY
+**OF **`uop/divandmod.bend`** **IS **UNCOMMITTED**) ✓ **⇒⇒† AND **AND **THE **DIGEST **IS **THE
+**SAME **ONE** (⇒⇒† AND **THE **CORPUS **MEASURED **THE **TREE's **CONTENT**, **⇒⇒† AND **AND **THE
+**CONTENT **IS **WHAT **THE **WITNESS **NAMES**) ✓ **⇒⇒† AND **SO **THE **CLAIM **GOES **GREEN
+**WHEN **THAT **EDIT **LANDS**, **WITHOUT **ANOTHER **CORPUS **RUN** ✓.
