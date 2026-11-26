@@ -1407,6 +1407,20 @@ def trees() -> Gate:
 #   AND THE DIFFERENTIAL GATE'S ROWS ARE `gates/divandmod-cases.rows`'s
 #   `gcdmod_fires` AND `gcddiv_fires`.
 # TODO(p3) divandmod.py:38-49  symbol=fold_divmod_general  `Shared decomposition for folding rules` and :42-49
+#   THE ARM's SHAPE IS PORTED (`.agents/slop/loc/divandmod-cg-wip.bend`, THE
+#   WORKING COPY) AND THE PRODUCT IS THE EASY HALF -- BEND REFUSES MUTUAL
+#   RECURSION, SO THE PRODUCT IS **THE MASKS** OVER THE FACTORS
+#   (`itertools.product`'s ORDER IS THE MASKS' ORDER) AND THE TWO CHOICES PER
+#   FACTOR ARE `(r, r-c)` ON A TIE AND `min(r, r-c, key=abs)` OTHERWISE --
+#   **AND THE WALL IS THE PORT's FOLD AND NOT A CARTESIAN PRODUCT.** MEASURED
+#   2026-11-27: `F.UOp.vmin` ANSWERS `None` FOR A NODE WHOSE SRC0 IS AN ADD
+#   (`ADD(ADD(MUL(Pa,c6),c2),c2)` HAS **NO BOUND** AND `ADD(MUL(Pa,c6),c2)`
+#   **HAS** ONE), AND **A `None` BOUND READS AS "NOT NEGATIVE"**, SO THE
+#   `factor_remainder` ARM's `new_x.vmin<0` GUARD (divandmod.py:90) IS
+#   **VACUOUS** AND NO ROW TESTS IT.  AND `UOp.divides` PUTS ITS QUOTIENT IN A
+#   **BRANCH** OF THE ARENA (ops.bend:4257), SO A NODE BUILT AFTERWARDS IN THE
+#   CALLER's ARENA HAS A SRC THE FOLD'S ARENA DOES NOT CONTAIN AND THE FOLD
+#   RESOLVES **NOTHING** DOWNSTREAM OF IT.
 # TODO(p3) divandmod.py:51-65 `nest_by_factor: x//c -> (x//f)//(c//f),
 #  Variable Denominator / Fallback Rules  -- divandmod.py:72-96. These rules
 # PORTED: divandmod.py:78-96  `factor_remainder: (d*x+y)//d -> x+y//d` -- AND
