@@ -525,15 +525,20 @@ def vms_ends.go(+ar: O.Arena, +ns: List<&2, U32>, +acc: List<&2, U32>) -> List<&
 def vms_ends(+ar: O.Arena, +lst: List<&2, U32>) -> List<&2, U32>:
   vms_ends.go(ar, lst, Nil{})
 
-def vms_reach.go(+ar: O.Arena, +es: List<&2, U32>, +u: U32, +acc: List<&2, U32>) -> List<&2, U32>:
+# THE FUEL IS THE ARENA's BUDGET, AND IT IS THE SAME FOR EVERY WALK IN THE VMS: THE ARENA DOES
+# NOT GROW WHILE THE VMS IS COMPUTED (EVERY WALK HERE IS A READER). MEASURED, `Arena.budget` IS A
+# FOLD OVER EVERY NODE OF THE ARENA AND OVER EVERY SRC OF EVERY NODE, SO COMPUTING IT PER WALK
+# WAS AS EXPENSIVE AS THE WALK ITSELF.
+def vms_reach.go(+ar: O.Arena, +es: List<&2, U32>, +u: U32, +fuel: Nat,
+                 +acc: List<&2, U32>) -> List<&2, U32>:
   match es:
     case Nil{}: acc
-    case e <> t: vms_reach.go(ar, t, u, Bool.pick(List<&2, U32>,
-                   F.mem_u32(O.UOp.toposort(O.Arena.budget(ar), ar, e), u),
+    case e <> t: vms_reach.go(ar, t, u, fuel, Bool.pick(List<&2, U32>,
+                   F.mem_u32(O.UOp.toposort(fuel, ar, e), u),
                    List.append(&2, U32, acc, [e]), acc))
 
-def vms_reach(+ar: O.Arena, +es: List<&2, U32>, +u: U32) -> List<&2, U32>:
-  vms_reach.go(ar, es, u, Nil{})
+def vms_reach(+ar: O.Arena, +es: List<&2, U32>, +u: U32, +fuel: Nat) -> List<&2, U32>:
+  vms_reach.go(ar, es, u, fuel, Nil{})
 
 def vms_cons.go(+ar: O.Arena, +ns: List<&2, U32>, +u: U32, +acc: List<&2, U32>) -> List<&2, U32>:
   match ns:
@@ -589,52 +594,54 @@ def vms_nd.go(+ar: O.Arena, +ns: List<&2, U32>, +acc: U32) -> U32:
     case n <> t: vms_nd.go(ar, t, Bool.pick(U32, O.eq_op(O.Arena.op(ar, n), O.OpsEND{}),
                                           U32.add(acc, 1), acc))
 
-def vms_nd(+ar: O.Arena, +e: U32) -> U32:
-  vms_nd.go(ar, O.UOp.toposort(O.Arena.budget(ar), ar, e), 0)
+def vms_nd(+ar: O.Arena, +e: U32, +fuel: Nat) -> U32:
+  vms_nd.go(ar, O.UOp.toposort(fuel, ar, e), 0)
 
-def vms_dep(+ar: O.Arena, +es: List<&2, U32>, +u: U32) -> U32:
-  U32.from_nat(List.length(&2, U32, vms_reach(ar, es, u)))
+def vms_dep(+ar: O.Arena, +es: List<&2, U32>, +u: U32, +fuel: Nat) -> U32:
+  U32.from_nat(List.length(&2, U32, vms_reach(ar, es, u, fuel)))
 
 def vms_min(+a: U32, +b: U32) -> U32: Bool.pick(U32, U32.is_lt(a, b), a, b)
 
-def vms_dmin.go(+ar: O.Arena, +es: List<&2, U32>, +cs: List<&2, U32>, acc: U32) -> U32:
+def vms_dmin.go(+ar: O.Arena, +es: List<&2, U32>, +cs: List<&2, U32>, +fuel: Nat,
+                acc: U32) -> U32:
   match cs:
     case Nil{}: acc
-    case c <> t: vms_dmin.go(ar, es, t, vms_min(acc, vms_dep(ar, es, c)))
+    case c <> t: vms_dmin.go(ar, es, t, fuel, vms_min(acc, vms_dep(ar, es, c, fuel)))
 
-def vms_dmin(+ar: O.Arena, +es: List<&2, U32>, +cs: List<&2, U32>, +d: U32) -> U32:
-  vms_dmin.go(ar, es, cs, d)
+def vms_dmin(+ar: O.Arena, +es: List<&2, U32>, +cs: List<&2, U32>, +d: U32, +fuel: Nat) -> U32:
+  vms_dmin.go(ar, es, cs, fuel, d)
 
-def vms_tail.go(+ar: O.Arena, +es: List<&2, U32>, +dm: U32, +nmax: U32,
+def vms_tail.go(+ar: O.Arena, +es: List<&2, U32>, +dm: U32, +nmax: U32, +fuel: Nat,
                 +acc: List<&2, U32>) -> List<&2, U32>:
   match es:
     case Nil{}: acc
-    case e <> t: vms_tail.go(ar, t, dm, nmax, Bool.pick(List<&2, U32>,
-        Bool.not(U32.is_le(vms_nd(ar, e), U32.sub(nmax, dm))),
+    case e <> t: vms_tail.go(ar, t, dm, nmax, fuel, Bool.pick(List<&2, U32>,
+        Bool.not(U32.is_le(vms_nd(ar, e, fuel), U32.sub(nmax, dm))),
         List.append(&2, U32, acc, [e]), acc))
 
-def vms_val(+ar: O.Arena, +es: List<&2, U32>, +ns: List<&2, U32>, +u: U32) -> List<&2, U32>:
+def vms_val(+ar: O.Arena, +es: List<&2, U32>, +ns: List<&2, U32>, +u: U32, +fuel: Nat) -> List<&2, U32>:
   +cs = vms_cons(ar, ns, u)
-  +dm = vms_dmin(ar, es, cs, vms_dep(ar, es, u))
-  vms_u(ar, vms_tail.go(ar, es, dm, U32.from_nat(List.length(&2, U32, es)), Nil{}))
+  +dm = vms_dmin(ar, es, cs, vms_dep(ar, es, u, fuel), fuel)
+  vms_u(ar, vms_tail.go(ar, es, dm, U32.from_nat(List.length(&2, U32, es)), fuel, Nil{}))
 
-def vms_rg(+ar: O.Arena, +es: List<&2, U32>, +u: U32) -> List<&2, U32>:
-  F.set_union(vms_enc.go(ar, vms_reach(ar, es, u), u, Nil{}), [u])
+def vms_rg(+ar: O.Arena, +es: List<&2, U32>, +u: U32, +fuel: Nat) -> List<&2, U32>:
+  F.set_union(vms_enc.go(ar, vms_reach(ar, es, u, fuel), u, Nil{}), [u])
 
-def vms_one2(isrg: Bool, +ar: O.Arena, +es: List<&2, U32>, +ns: List<&2, U32>, +u: U32) -> List<&2, U32>:
-  +rs = Bool.pick(List<&2, U32>, isrg, vms_rg(ar, es, u), vms_val(ar, es, ns, u))
+def vms_one2(isrg: Bool, +ar: O.Arena, +es: List<&2, U32>, +ns: List<&2, U32>, +u: U32,
+             +fuel: Nat) -> List<&2, U32>:
+  +rs = Bool.pick(List<&2, U32>, isrg, vms_rg(ar, es, u, fuel), vms_val(ar, es, ns, u, fuel))
   List.concat(&2, U32, [[U32.from_nat(List.length(&2, U32, rs))], vms_row.go(ar, rs, Nil{})])
 
 def vms.go(+ar: O.Arena, +es: List<&2, U32>, +ns: List<&2, U32>, +lst: List<&2, U32>,
-           +acc: List<&2, U32>) -> List<&2, U32>:
+           +fuel: Nat, +acc: List<&2, U32>) -> List<&2, U32>:
   match lst:
     case Nil{}: acc
     case u <> t:
-      vms.go(ar, es, ns, t, List.append(&2, U32, acc,
-        vms_one2(O.eq_op(O.Arena.op(ar, u), O.OpsRANGE{}), ar, es, ns, u)))
+      vms.go(ar, es, ns, t, fuel, List.append(&2, U32, acc,
+        vms_one2(O.eq_op(O.Arena.op(ar, u), O.OpsRANGE{}), ar, es, ns, u, fuel)))
 
 def vms(+ar: O.Arena, +lst: List<&2, U32>) -> List<&2, U32>:
-  vms.go(ar, vms_ends(ar, lst), lst, lst, Nil{})
+  vms.go(ar, vms_ends(ar, lst), lst, lst, O.Arena.budget(ar), Nil{})
 
 def body_kus(+ar: O.Arena, +k: U32) -> (O.Arena & List<&2, C.KU>):
   +l = body_low(ar, SCH.sc_src0(ar, k))

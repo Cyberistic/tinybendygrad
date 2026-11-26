@@ -1,0 +1,26 @@
+vms: the fuel is the arena's budget, and it is computed once
+
+THE VMS IS THE LINEARIZER's VALUE MAP, AND EVERY WALK IN IT COMPUTED `O.Arena.budget(ar)` --
+WHICH IS A FOLD OVER EVERY NODE OF THE ARENA AND OVER EVERY SRC OF EVERY NODE. SO EVERY WALK
+PAID FOR A WHOLE-ARENA FOLD, AND THE VMS WALKS THE ARENA PER ELEMENT.
+
+THE BUDGET IS THE SAME FOR EVERY WALK: THE ARENA DOES NOT GROW WHILE THE VMS IS COMPUTED
+(EVERY WALK IN IT IS A READER -- `UOp.toposort` IS A WALK, `Arena.src_from` IS A READ, AND
+`vms_cons`/`vms_ends`/`vms_u`/`vms_enc`/`vms_row` ARE READERS). SO THE FUEL IS NOW COMPUTED
+ONCE, AT THE TOP OF THE VMS, AND CARRIED DOWN.
+
+MEASURED, THE WGSL TURN (`.agents/slop/wgslperf/bench-ab.py`, WHICH BUILDS BOTH TREES NOW AND
+ALTERNATES THEM, SO A DRIFT IN THE SHARED MACHINE HITS BOTH): 1,072 ms -> 1,042 ms OF WALL AND
+1,604 ms -> 1,560 ms OF CPU. THE WGSL IS BYTE-IDENTICAL: 3,773 bytes, THE SAME SHA256, FROM
+BOTH BUILDS.
+
+AND THE GATES THAT PASS AT `HEAD` STILL PASS: `gates/ops-core-gate.py`,
+`gates/devtag-gate.py`, `gates/fold-vbase-gate.py`, `gates/specfold-gate.py`,
+`gates/decomp_graph_census-gate.py`, `gates/ew_graph_census-gate.py` AND
+`gates/gr_graph_census-gate.py`. AND THE THREE THAT DO NOT PASS AT `HEAD` -- `devset-census-gate`,
+`realize_graph_census-gate` AND `phase-taxonomy-gate` -- PRINT BYTE-IDENTICAL OUTPUT BEFORE AND
+AFTER THIS CHANGE, SO THEY ARE PRE-EXISTING AND NOT THIS CHANGE.
+
+THE CORPUS CERTIFICATE IS NOT CLAIMED HERE: THIS CHANGE MOVES THE SUBSTRATE, SO
+`gates/corpuswitness-gate.py` READS `claim state=FAIL verdict=NOT-ESTABLISHED` UNTIL THE CORPUS
+RUNS AGAIN ON THE SETTLED TREE.
