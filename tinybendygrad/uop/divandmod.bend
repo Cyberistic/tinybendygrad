@@ -941,6 +941,111 @@ def dm_fr.arm.go(xneg: Bool, yneg: Bool, +ar: O.Arena, +d: U32, x: U32, y: U32) 
 def dm_fr.arm(+ar: O.Arena, +d: U32, +x: U32, +y: U32) -> Maybe<&2, O.Found>:
   dm_fr.arm.go(dm_fr.neg(ar, x), dm_fr.neg(ar, y), ar, d, x, y)
 
+# ---- THE CONSTANT DENOMINATOR -- divandmod.py:19-21.
+#
+# AND THE WHOLE "** Constant Denominator Rules **" BLOCK (divandmod.py:19-70)
+# IS INSIDE `if y.op is Ops.CONST and (c := y.val) > 0:` (divandmod.py:21), AND
+# SO THE TWO ARMS BELOW INHERIT THAT GUARD AND MUST **NOT** ANSWER A VARIABLE
+# DIVISOR.
+#
+# AND `c` IS READ BY `UOp.const_factor` (ops.py:1014-1017), WHICH ANSWERS A
+# CONST's VALUE AND **1** FOR EVERYTHING ELSE -- SO THE `y.op is Ops.CONST` TEST
+# IS SEPARATE AND NOT INFERRED FROM THE VALUE.
+#
+# AND THE VALUES ARE **U32** AND NOT `H.I64`, AND THE REASON IS MEASURED: A
+# PLAIN PARAMETER IS **CONSUMED ONCE** IN BEND (MEASURED: "a (consumed more than
+# once)"), AND THE DIVISOR IS READ IN SEVEN PLACES.  A `+` PARAMETER MAY BE
+# READ MANY TIMES.  AND THE CONST's VALUE IS TRUNCATED TO 32 BITS BY `H.lo32` --
+# WHICH IS WHAT `dm_val.go` ALREADY DOES FOR EVERY CONST IN THIS FILE -- AND
+# THE PORT's OWN FLOOR HELPERS (`dm_floordiv`, `dm_floormod`, ABOVE) ARE 32-BIT
+# AND TAKE `U32`s.
+def dm_cd.isconst(+ar: O.Arena, +y: U32) -> Bool:
+  O.eq_op(O.Arena.op(ar, y), O.OpsCONST{})
+
+def dm_cd.cval(+ar: O.Arena, +y: U32) -> U32:
+  H.lo32(O.UOp.const_factor(O.Arena.budget(ar), ar, y))
+
+def dm_cd.ok2(isconst: Bool, +c: U32) -> Bool:
+  Bool.and(isconst, Bool.and(Bool.not(H.i32_is_neg(c)), Bool.not(U32.is_zero(c))))
+
+def dm_cd.ok(+ar: O.Arena, +y: U32) -> Bool:
+  dm_cd.ok2(dm_cd.isconst(ar, y), dm_cd.cval(ar, y))
+
+# AND THE PEELED CONST, AND IT IS `x.pop_const()`'s SECOND HALF
+# (divandmod.py:16) -- AND `UOp.pop_const_val` ANSWERS `None` WHEN NOTHING WAS
+# PEELED, WHICH IS UPSTREAM's `identity_element(Ops.ADD, dt)` = **0**
+# (ops.py:57).
+def dm_pc.cv.go(c: O.Const) -> U32:
+  match c:
+    case O.CInt{i}: H.lo32(i)
+    case _: 0
+
+def dm_pc.cv(m: Maybe<&1, O.Const>) -> U32:
+  match m:
+    case Some{c}: dm_pc.cv.go(c)
+    case None{}: 0
+
+# ---- `exact division keeps the structure of x` -- divandmod.py:35-36.
+# `(q*c+k)//c -> q+k//c`.
+#
+# AND IT IS **NOT** IN THE PORT's WORK QUEUE, AND THAT IS A DEFECT THIS SECTION
+# FIXES: THE TODO BLOCK NAMED `:38-49` AND `:51-65` AND **NOTHING FOR `:36`**,
+# SO THE ARM WAS MISSING **AND NOT EVEN COUNTED** -- AND A QUEUE THAT DOES NOT
+# COUNT AN ARM IS A QUEUE THAT COUNTS WRONG.
+#
+# AND THE THREE FACTS UPSTREAM's LINE ASKS FOR (divandmod.py:36):
+#   `d.op is Ops.DIV` -- THE ROOT IS A DIVISION.
+#   `x_peeled.divides(c) IS NOT None` -- THE PEELED NUMERATOR IS EXACTLY
+#     DIVISIBLE BY THE CONSTANT DIVISOR.
+#   `const//c` -- AND IT IS A **FLOOR** DIVISION.
+#
+# AND THE ANSWER IS `q + const//c` (divandmod.py:36) AND `q` IS A **UOP** AND
+# `const//c` IS AN **INT**, SO THE INT IS THE **SECOND** SRC OF THE ADD
+# (elementwise.py:83 `add` -> `_broadcasted(x, reverse=False)` -> `lhs.alu(op,
+# rhs)`) -- AND THAT IS THE **OPPOSITE** ORDER FROM `int + uop`.
+def dm_ex.quot.go(ok: Bool, +d: O.Dv) -> Maybe<&2, O.Found>:
+  match ok:
+    case True{}: Some{O.Dv.f(d)}
+    case False{}: None{}
+
+# AND THE QUOTIENT, AND IT IS `x_peeled.divides(c)` (divandmod.py:36) -- AND THE
+# PORT's `UOp.divides` ANSWERS UPSTREAM's SHAPE: A `Dv` WHOSE `ok` SAYS
+# "DIVIDES" AND WHOSE `f` IS THE **QUOTIENT NODE**.
+def dm_ex.quot(+ar: O.Arena, +px: U32, +c: U32) -> Maybe<&2, O.Found>:
+  +d = O.UOp.divides(O.Arena.budget(ar), ar, H.i64_of_i32(c), px)
+  dm_ex.quot.go(O.Dv.ok(d), d)
+
+# AND THE ANSWER, AND IT IS `q + const//c` -- A UOP PLUS AN INT, SO THE INT IS
+# THE **SECOND** SRC.
+def dm_ex.answer(+ar: O.Arena, +q: O.Found, +cv: U32, +c: U32) -> O.Found:
+  +cc = O.UOp.const(O.Found.ar(q), O.CInt{H.i64_of_i32(dm_floordiv(cv, c))})
+  O.UOp.alu(O.Found.ar(cc), O.OpsADD{}, [O.Found.i(q), O.Found.i(cc)])
+
+def dm_ex.arm.go2(q: Maybe<&2, O.Found>, +ar: O.Arena, +cv: U32, +c: U32) -> Maybe<&2, O.Found>:
+  match q:
+    case Some{+qq}: Some{dm_ex.answer(O.Found.ar(qq), qq, cv, c)}
+    case None{}: None{}
+
+def dm_ex.arm.go3(ok: Bool, q: Maybe<&2, O.Found>, +ar: O.Arena, +cv: U32, +c: U32) -> Maybe<&2, O.Found>:
+  match ok:
+    case True{}: dm_ex.arm.go2(q, ar, cv, c)
+    case False{}: None{}
+
+def dm_ex.arm.go1(isdiv: Bool, ok: Bool, +ar: O.Arena, +px: U32, +cv: U32, +c: U32) -> Maybe<&2, O.Found>:
+  match isdiv:
+    case True{}: dm_ex.arm.go3(ok, dm_ex.quot(ar, px, c), ar, cv, c)
+    case False{}: None{}
+
+# AND THE ARM, AND IT IS THE CONSTANT DENOMINATOR's GUARD, THE `d.op is Ops.DIV`
+# TEST, THE `divides` TEST AND THE ANSWER -- AND `x_peeled` IS
+# `x.pop_const()` (divandmod.py:16) WHICH THE PORT HAS AS `UOp.pop_const_node`.
+def dm_ex.arm(+ar: O.Arena, +d: U32, +x: U32, +y: U32) -> Maybe<&2, O.Found>:
+  +c = dm_cd.cval(ar, y)
+  +cv = dm_pc.cv(O.UOp.pop_const_val(ar, x, O.OpsADD{}))
+  +px = O.UOp.pop_const_node(ar, x, O.OpsADD{})
+  dm_ex.arm.go1(O.eq_op(O.Arena.op(ar, d), O.OpsDIV{}),
+                dm_cd.ok2(dm_cd.isconst(ar, y), c), ar, px, cv, c)
+
 # `fold_divmod_general` -- divandmod.py:8-96. The `raise` is line 11 and it comes
 def fold_divmod_general.go(+ar: O.Arena, +d: U32, zero: Bool) -> Maybe<&2, O.Found>:
   match zero:
@@ -950,9 +1055,10 @@ def fold_divmod_general.go(+ar: O.Arena, +d: U32, zero: Bool) -> Maybe<&2, O.Fou
       dm_first2.go(dm_point(ar, d), dm_first2.go(dm_multiple_of.arm(ar, d),
                      dm_first2.go(dm_nd.arm(ar, d),
                        dm_first2.go(dm_rnm(ar, d),
-                         dm_first2.go(dm_dg_arm.g(O.Found.ar(g), d, g),
-                                     dm_fr.arm(O.Found.ar(g), d, O.Arena.src0(O.Found.ar(g), d),
-                                               O.Arena.src(O.Found.ar(g), d, 1)))))))
+                         dm_first2.go(dm_ex.arm(ar, d, O.Arena.src0(ar, d), O.Arena.src(ar, d, 1)),
+                           dm_first2.go(dm_dg_arm.g(O.Found.ar(g), d, g),
+                                       dm_fr.arm(O.Found.ar(g), d, O.Arena.src0(O.Found.ar(g), d),
+                                                 O.Arena.src(O.Found.ar(g), d, 1))))))))
 
 def fold_divmod_general(+ar: O.Arena, +d: U32) -> Maybe<&2, O.Found>:
   fold_divmod_general.go(ar, d, dm_zero(ar, d))

@@ -9,7 +9,7 @@ CASE GOES THROUGH THE **SAME LANE** THE GATE USES -- THE PORT's `.bend` DRIVER
 AND THE CPython ORACLE -- SO A PLANT THAT SAID "RED" ON A COPY THE GATE NEVER
 RUNS WOULD PROVE NOTHING.
 
-TWELVE CASES:
+FOURTEEN CASES:
 
   1. THE UN-MUTATED COPY IS GREEN -- the control.
   2. BREAKING THE ARM's `divides` GUARD REDDENS THE PORT's LANE -- the arm
@@ -32,6 +32,10 @@ TWELVE CASES:
  12. BREAKING THE `factor_remainder` ARM's ARENA THREADING REDDENS IT -- AND
      THE ARENA IS **ONE CHAIN** AND NOT A TREE OF BRANCHES, SO A STALE ARENA
      READS THE ARENA's BOTTOM NOOP NODE.
+ 13. BREAKING THE `exact division` ARM's `divides` GUARD REDDENS IT -- THE
+     ARM NEVER FIRES AND THE PORT's ANSWER IS A LATER ARM's.
+ 14. BREAKING THE `exact division` ARM's `const//c` REDDENS IT -- THE
+     ANSWER's TAIL BECOMES THE CONSTANT ITSELF.
 
 AND THE PLANT'S CLAIM IS ABOUT THE **DIFFERENTIAL** AND NOT ABOUT THE PORT's
 ANSWER: A PLANT THAT BROKE THE PORT's ARM AND ONLY CHECKED THAT THE PORT's
@@ -377,6 +381,54 @@ def main() -> int:
             print(f" 12 fr arena         {'RED' if ok else 'NOT RED'}  the record's arena is stale")
             if not ok:
                 bad.append("breaking the `factor_remainder` arm's arena threading did not redden the lanes")
+
+        # 13 -- THE `exact division` ARM's `divides` GUARD (divandmod.py:36):
+        # THE QUOTIENT NEVER EXISTS, SO THE ARM NEVER FIRES AND THE PORT's
+        # ANSWER FOR `ex_8a_2` IS A LATER ARM's -- AND THE LANES DISAGREE.
+        #
+        # AND MEASURED 2026-11-27: THIS IS THE CASE THAT PROVES THE **`:36`
+        # ARM** IS **LOAD-BEARING** AND NOT A VARIANT OF THE `:13` ARM -- AND
+        # THE ROW IS `ex_8a_2`, WHOSE NUMERATOR IS `(8a+2)` AND WHOSE ANSWER IS
+        # THE ARM's OWN `q + const//c`.
+        case13 = fresh(Path(td) / "case13")
+        f13 = case13 / "tinybendygrad" / "uop" / "divandmod.bend"
+        text13 = f13.read_text()
+        old13 = """def dm_ex.quot(+ar: O.Arena, +px: U32, +c: U32) -> Maybe<&2, O.Found>:
+  +d = O.UOp.divides(O.Arena.budget(ar), ar, H.i64_of_i32(c), px)
+  dm_ex.quot.go(O.Dv.ok(d), d)"""
+        new13 = """def dm_ex.quot(+ar: O.Arena, +px: U32, +c: U32) -> Maybe<&2, O.Found>:
+  None{}"""
+        if old13 not in text13:
+            bad.append("the `exact division` arm's `divides` guard moved")
+            print(" 13 ex divides       COULD NOT MUTATE")
+        else:
+            f13.write_text(text13.replace(old13, new13, 1))
+            ok = not agrees(case13)
+            print(f" 13 ex divides       {'RED' if ok else 'NOT RED'}  the arm stops firing")
+            if not ok:
+                bad.append("breaking the `exact division` arm's `divides` guard did not redden the lanes")
+
+        # 14 -- THE `exact division` ARM's `const//c` (divandmod.py:36): THE
+        # CONSTANT's QUOTIENT BECOMES THE CONSTANT ITSELF, SO THE ANSWER's TAIL
+        # CHANGES AND THE LANES DISAGREE.
+        #
+        # AND MEASURED 2026-11-27: `const//c` IS **0** FOR `ex_8a_2` (`2//4`),
+        # SO A MUTATION THAT KEPT IT AT ZERO WOULD CHANGE NOTHING -- **A PLANT
+        # THAT MUTATES A GUARD WHICH IS ALREADY SATISFIED PROVES NOTHING.**
+        case14 = fresh(Path(td) / "case14")
+        f14 = case14 / "tinybendygrad" / "uop" / "divandmod.bend"
+        text14 = f14.read_text()
+        old14 = """  +cc = O.UOp.const(O.Found.ar(q), O.CInt{H.i64_of_i32(dm_floordiv(cv, c))})"""
+        new14 = """  +cc = O.UOp.const(O.Found.ar(q), O.CInt{H.i64_of_i32(cv)})"""
+        if old14 not in text14:
+            bad.append("the `exact division` arm's `const//c` moved")
+            print(" 14 ex const//c      COULD NOT MUTATE")
+        else:
+            f14.write_text(text14.replace(old14, new14, 1))
+            ok = not agrees(case14)
+            print(f" 14 ex const//c      {'RED' if ok else 'NOT RED'}  the answer's tail is the constant")
+            if not ok:
+                bad.append("breaking the `exact division` arm's `const//c` did not redden the lanes")
 
         print(f"--plant: {'OK' if not bad else 'FAILED: ' + '; '.join(bad)}")
         return FAIL if bad else PASS

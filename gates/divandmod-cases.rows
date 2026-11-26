@@ -170,3 +170,16 @@ frc_6a_b_4|FRC|6|4|0|0
 # AND THE **MOD HALF** OF THE SAME SHAPE, AND IT IS `new_x%y` (divandmod.py:91)
 # AND NOT `new_x//y+sum(quo)` -- **A SECOND ANSWER SHAPE AND NOT A VARIANT.**
 frcm_6a_b_4|FRCM|6|4|0|0
+#
+# --- `exact division keeps the structure of x` -- divandmod.py:35-36.
+# `(q*c+k)//c -> q+k//c`.
+#
+# AND THE SHAPE IS `(k*a + d) // c` WITH `a` A **VARIABLE** AND `d` A CONST,
+# AND `k` **DIVIDES** `c` AND `d` DOES **NOT** -- SO THE NUMERATOR IS NOT
+# EXACTLY DIVISIBLE BY `c` AND THE ARM FIRES.
+#
+# AND MEASURED 2026-11-27 ON CPYTHON AT THE PIN: UPSTREAM ANSWERS
+# `ADD(MUL(Pa,c2),c0)` -- THE QUOTIENT `a*2` AND THEN `+ 0` (THE
+# `const//c`), AND THE `+ 0` IS **THE SECOND SRC** (`uop + int`).
+ex_8a_2|CG|8|4|0|2
+#

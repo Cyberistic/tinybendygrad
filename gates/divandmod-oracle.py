@@ -38,7 +38,7 @@ CASES = os.path.join(ROOT, "gates", "divandmod-cases.rows")
 
 from tinygrad.uop.ops import UOp, Ops, ParamArg
 from tinygrad import dtypes
-from tinygrad.uop.divandmod import fold_divmod_general
+from tinygrad.uop.divandmod import div_and_mod_symbolic
 
 # THE PARAMs ARE SIZED, AND THE SIZE IS PART OF THE VOCABULARY AND NOT A
 # CONSTANT OF THIS FILE: A PARAM WITH AN EMPTY `as_shape` MAKES `_shape` RAISE
@@ -116,6 +116,18 @@ def build(op, k, c, n, d):
         b = UOp.variable("b", 0, 100)
         mx = a.alu(Ops.MUL, const(k))
         return mx.alu(Ops.ADD, b).alu(root_op, const(c))
+    if op in ("CG", "CGM"):
+        # AND THE `fold_divmod_congruence` SHAPE, AND IT IS `(k*a + [b] + d) op c`
+        # WITH `a` AND `b` **VARIABLES** IN [0, 1] -- AND THE RANGE IS THE POINT:
+        # THE ARM's TEST IS `rem.vmin//c == rem.vmax//c`, SO THE RANGE OF THE
+        # NUMERATOR DECIDES WHETHER THE ARM FIRES.
+        root_op = Ops.MOD if op == "CGM" else Ops.DIV
+        a = UOp.variable("a", 0, 1)
+        num = a.alu(Ops.MUL, const(k))
+        for i in range(n):
+            num = num.alu(Ops.ADD, UOp.variable("b" if i == 0 else "z", 0, 1))
+        num = num.alu(Ops.ADD, const(d))
+        return num.alu(root_op, const(c))
     if op == "ND":
         # AND THE `nested_div` SHAPE, AND IT IS `(x % kc) // c` WITH `x` A PARAM
         # AND `kc` AND `c` CONSTs -- AND `c` DIVIDES `kc` SO THE ARM FIRES
@@ -168,9 +180,23 @@ def build(op, k, c, n, d):
 
 
 def answer(root):
-    """THE VERDICT FOR ONE GRAPH."""
+    """THE VERDICT FOR ONE GRAPH.
+
+    AND IT IS **THE MATCHER** AND NOT `fold_divmod_general` ALONE, AND THE
+    REASON IS MEASURED: THE PORT's DRIVER CALLS `div_and_mod_symbolic` -- THE
+    WHOLE THREE-ENTRY MATCHER -- AND THE ORACLE CALLED `fold_divmod_general`
+    (RULE 2 ALONE), SO **THE TWO INSTRUMENTS MEASURED TWO DIFFERENT
+    FUNCTIONS** AND THE SIXTEEN EXISTING ROWS AGREED ONLY BECAUSE **EVERY ONE
+    OF THEM AVOIDS RULES 0 AND 1**.  MEASURED 2026-11-27: WITH THE OLD
+    ORACLE A ROW WHOSE NUMERATOR IS `x + CONST` ANSWERED **RULE 1** IN THE PORT
+    AND **RULE 2** IN THE ORACLE, AND THE GATE SAID "DISAGREE" ON A ROW WHERE
+    THE PORT WAS RIGHT.
+
+    AND `rewrite` ANSWERS THE NEW NODE OR `None` (ops.py:1663), AND `None` IS
+    THE PORT's `nofold`.
+    """
     try:
-        got = fold_divmod_general(root)
+        got = div_and_mod_symbolic.rewrite(root)
     except ZeroDivisionError:
         return "RAISED ZeroDivisionError"
     except Exception as e:  # upstream's own crash on a graph it cannot answer

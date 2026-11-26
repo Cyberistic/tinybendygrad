@@ -258,6 +258,40 @@ def gp.fr(+ar: O.Arena, +k: U32, +c: U32, n: Nat, d: U32, ismod: Bool) -> O.Foun
   gp.modroot(O.Found.ar(den), O.Found.i(s2), O.Found.i(den), ismod)
 
 
+# AND THE `fold_divmod_congruence` SHAPE, AND IT IS `(k*a + [b] + d) op c` WITH
+# `a` AND `b` **VARIABLES** IN [0, 1] -- AND THE RANGE IS THE POINT: THE ARM's
+# TEST IS `rem.vmin//c == rem.vmax//c`, SO THE RANGE OF THE NUMERATOR DECIDES
+# WHETHER THE ARM FIRES.
+#
+# AND THE EXTRA TERMS, AND THEY ARE `b` AND `z` AND NOT `y` AND `z`, SO THE
+# ORACLE's READER AND THIS ONE NAME THEM THE SAME WAY.
+def gp.cg.name(k: Nat) -> String:
+  match k:
+    case 0n: "b"
+    case _: "z"
+
+def gp.cg.terms.go(n: Nat, +k: Nat, +s: O.Found) -> O.Found:
+  match n:
+    case 0n: s
+    case 1n++p:
+      +t = gp.var(O.Found.ar(s), gp.cg.name(k), 0, 1)
+      +s2 = gp.alu(O.Found.ar(t), O.OpsADD{}, O.Found.i(s), O.Found.i(t))
+      gp.cg.terms.go(p, Nat.add(k, 1n), s2)
+
+def gp.cg.terms(+ar: O.Arena, n: Nat, +s: O.Found) -> O.Found:
+  gp.cg.terms.go(n, 0n, s)
+
+def gp.cg(+ar: O.Arena, k: U32, c: U32, n: Nat, d: U32, ismod: Bool) -> O.Found:
+  +a = gp.var(ar, "a", 0, 1)
+  +kc = gp.const(O.Found.ar(a), k)
+  +mx = gp.alu(O.Found.ar(kc), O.OpsMUL{}, O.Found.i(a), O.Found.i(kc))
+  +s = gp.cg.terms(O.Found.ar(mx), n, mx)
+  +dc = gp.const(O.Found.ar(s), d)
+  +num = gp.alu(O.Found.ar(dc), O.OpsADD{}, O.Found.i(s), O.Found.i(dc))
+  +cc = gp.const(O.Found.ar(num), c)
+  gp.modroot(O.Found.ar(cc), O.Found.i(num), O.Found.i(cc), ismod)
+
+
 def gp.root(+ar: O.Arena, op: String, k: U32, c: U32, n: Nat, d: U32) -> O.Found:
   match op:
     case "MODCONST": gp.modconst(ar, k, c, n, d)
@@ -269,6 +303,8 @@ def gp.root(+ar: O.Arena, op: String, k: U32, c: U32, n: Nat, d: U32) -> O.Found
     case "ND": gp.nd(ar, k, c, False{})
     case "FRC": gp.frc(ar, k, c, False{})
     case "FRCM": gp.frc(ar, k, c, True{})
+    case "CG": gp.cg(ar, k, c, n, d, False{})
+    case "CGM": gp.cg(ar, k, c, n, d, True{})
     case "DIV": gp.mod(ar, k, c, n, d, False{})
     case _: gp.mod(ar, k, c, n, d, True{})
 

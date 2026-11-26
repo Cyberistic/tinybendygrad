@@ -228,9 +228,27 @@ a fixture where the quotient is on src1 AND the CONST is also on src1.
   `divides` AND `usum`, AND THE PORT HAD THE FIRST TWO** — AND `usum` IS NOW IN
   `ops.bend` (`mixin/elementwise.py:40`), BECAUSE THE IMPORT DIRECTION FORBIDS
   `uop/` REACHING `schedule/`.
-- `divandmod.py:42-49` `fold_divmod_congruence` — the worst one: a cartesian
-  product over per-term sign choices, then interval arithmetic over a symbolic
-  SUM. Bend has no cartesian product and no `min` over three with a key.
+- `divandmod.py:42-49` `fold_divmod_congruence` — **NOT DONE (2026-11-27), AND
+  ITS WALL IS **THE PORT's FOLD** AND NOT A CARTESIAN PRODUCT.** The arm's
+  SHAPE IS PORTED (`.agents/slop/loc/divandmod-cg-wip.bend`) and the product is
+  the easy half: Bend refuses mutual recursion, so the product is **the MASKS**
+  over the factors (`itertools.product`'s order is the masks' order) and the two
+  choices per factor are `(r, r-c)` on a tie and `min(r, r-c, key=abs)`
+  otherwise. **The wall is that the port's `F.UOp.vmin` answers `None` for a
+  node whose src0 is an ADD** — measured on `ADD(ADD(MUL(Pa,c6),c2),c2)`:
+  **no bound**, while `ADD(MUL(Pa,c6),c2)` **has** one. **And the same defect
+  makes the `factor_remainder` arm's `new_x.vmin<0` guard (divandmod.py:90)
+  VACUOUS**, because a `None` bound reads as "not negative" — so that guard is
+  tested by no row. **And the port's `UOp.divides` puts its quotient in a
+  BRANCH of the arena** (ops.bend:4257), so a node built afterwards in the
+  caller's arena has a src the fold's arena does not contain, and the fold then
+  resolves **nothing** downstream of it.
+- `divandmod.py:35-36` `exact division keeps the structure of x` — **DONE
+  (2026-11-27).** `(q*c+k)//c -> q+k//c`, and it was **missing from the work
+  queue** — the TODO block named `:38-49` and `:51-65` and nothing for `:36`,
+  so the arm was missing **and not counted**. It is `dm_ex.*` in
+  `tinybendygrad/uop/divandmod.bend`, its row is `ex_8a_2`, and the plant's
+  cases 13 and 14 prove it is load-bearing.
 - `divandmod.py:51-65` `nest_by_factor` — a set comprehension, then a RECURSIVE
   call to `fold_divmod_general` (mutual recursion, refused outright), then
   `backward_slice` twice. The largest single omission in the file.
