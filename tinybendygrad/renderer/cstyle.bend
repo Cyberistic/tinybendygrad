@@ -2106,10 +2106,15 @@ def ku_float_text(nan: Bool, fin: Bool, neg: Bool, +f: F32) -> String:
             case True{}: "((float)(-__builtin_inff()))"
             case False{}: "((float)(__builtin_inff()))"
 
+# A BOOL CONST IS "1" OR "0" -- UPSTREAM's `cstyle.py:31`: `UPat.cvar("c").cast(dtypes.bool),
+# lambda ctx,c: "1" if c.val else "0"`. WITHOUT THIS ARM EVERY BOOL CONST RENDERS AS THE
+# EMPTY STRING, AND A BOOLEAN ALU READS AS `(&)` -- MEASURED, THE SHADER's C SAID
+# `float alu2 = ((&)?alu1:0.0f);` (the `WHERE`'s CONDITION WAS TWO EMPTY STRINGS).
 def ku_const_repr(v: O.Const) -> String:
   match v:
     case O.CInt{i}: H.i64_dec(i)
     case O.CFloat{+f}: ku_float_text(H.f32_is_nan(f), H.f32_is_finite(f), H.f32_is_neg(f), f)
+    case O.CBool{b}: U32.show(Bool.to_u32(b))
     case _: ""
 
 def ku_const_repr.of(a: KUArg) -> String:
