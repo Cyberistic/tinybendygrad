@@ -1681,7 +1681,7 @@ def div_and_mod_symbolic(+fx: F.Folded, self: U32) -> Hit:
 #     NEEDS A SHAPE, AND `_shape` ON A SRC-LESS PARAM **RAISES** `IndexError`
 #     (ops.py:351 ASSERTS `len(self.src[0].as_shape) <= 1`).  **AND THE
 #     PORT's GCD IS 4 AND NOT 1** BECAUSE THE PORT's `const_factor` READS A
-#     PARAM's `multiple_of` (ops.bend:3891) AND UPSTREAM's `const_factor` FOR A
+#     PARAM's `multiple_of` (ops.bend:4013) AND UPSTREAM's `const_factor` FOR A
 #     PARAM IS **1** (ops.py:1020) -- **AND `multiple_of` DOES NOT EXIST AT THE
 #     PIN AT ALL** (MEASURED: `git show f5ac54685074:tinygrad/uop/ops.py | grep
 #     -c multiple_of` ANSWERS **0**).  SO THE ARM FIRES HERE AND NOT UPSTREAM.

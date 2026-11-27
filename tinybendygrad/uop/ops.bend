@@ -1705,11 +1705,6 @@ def UPat.early_reject(u: UPat) -> List<&2, Op>:
   match u:
     case UPat{_, _, _, _, _, _, _, _, _, er}: er
 
-def intern.find.pick(hit: Bool, k: U32, +nxt: Maybe<&2, U32>) -> Maybe<&2, U32>:
-  match hit:
-    case True{}: Some{k}
-    case False{}: nxt
-
 # THE SCAN IS THE WHOLE ARENA, AND THE COMPARISON IS THE COST. MEASURED, IT IS 20,818,516
 # NODE COMPARISONS A TURN OVER 85,340 SCANS OF AN ARENA OF ~244 NODES.
 #
