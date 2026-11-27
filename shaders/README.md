@@ -257,17 +257,18 @@ rendered: the C said `UNHANDLED(Ops.CALL)`. The runner unwraps it (`cus_body`) a
 kernel is now `circle(data0_256, data1_256, data2_256)`, 788 lines, with the distance
 field's `__builtin_sqrtf` in it and the store `*(data0_256+((Lidx0+(16*Lidx1))%256))`.
 
-**FOUR DEFECTS ARE LEFT IN THE C, AND EACH ONE IS NAMED.**
+**THE DEFECTS IN THE C, AND EACH ONE IS NAMED. TWO ARE FIXED, AND THE FIXES ARE MEASURED.**
 
 | what | why |
 |---|---|
-| `UNHANDLED(Ops.MAX)` | the port's `code_for_base` is upstream's 21-key dict (`cstyle.py:153-161`) and that dict has no `MAX` arm -- **and neither does upstream's** (`cstyle.py` has no `MAX` at all). A `MAX` reaches the C because the port does not run upstream's symbolic normalization, which is a recorded deviation (`rangify.bend`: "the symbolic normalization upstream runs after it is NOT applied"). The `MAX` has to be lowered before the C, not taught to the emitter. |
-| `((1&1&1)?alu1:0.0f)` -- the `WHERE`'s CONDITION IS CONSTANT | **TWO DEFECTS, BOTH NOW MEASURED.** The CONDITION was EMPTY (`(&)?alu1:0.0f`) because the port's `ku_const_repr` had no `CBool` arm; upstream renders `"1" if c.val else "0"` (`cstyle.py:31`). FIXED ✓. And the PORT's `PAD` ARM ANSWERED **ONE** ENTRY WHERE UPSTREAM'S `apply_movement_op` ANSWERS ONE PER AXIS (`indexing.py:169-173`) -- because the arm's walk called `rr_pad.arm` and NEVER RECURGED ✗✗, so the axis whose gate upstream DOES mint never got one ✗✗ and the valid folded over the IDENTITY range ✗ (whose valid is `True` ✗) ✗. FIXED ✓ -- MEASURED, the entry went from `in=60` to `in=61,62` ✓✓ and the C from `((1&1)?...)` to `((1&1&1)?...)` ✓. **WHAT IS STILL OPEN**: both of the fold's operands are CONSTANTS ✓, so the W axis's range does not yet CARRY its gate ✓ -- the fold reads the TABLE ENTRY ✓, and a kind-2 entry is a NODE (`ix_rg_node`'s kind-2 arm ✓) whose valid is its `WHERE`'s GATE ✓, so the reading is either of the node ✓ or of the arena it was minted in ✓. | **FIXED**: the condition was EMPTY (`(&)?alu1:0.0f`) because the port's `ku_const_repr` had no `CBool` arm, so every bool const rendered as the empty string; upstream renders `"1" if c.val else "0"` (`cstyle.py:31`). MEASURED, the C now says `((1&1)?alu1:0.0f)`. **OPEN**: the gate is CONSTANTLY TRUE -- the port's `AND` has two `CONST` operands where upstream's gate is a `CMPLT` per axis -- so the valid is `True` and the zero-fill is unconditional. |
+| `((1&1&1)?alu1:0.0f)` -- the `WHERE`'s CONDITION IS CONSTANT | **FIXED (2026-11-27).** The `WHERE` WAS **ITS OWN `src[2]`**: the `PAD` arm minted into a **STALE ARENA** (`rr_pad.arm` answered an ID and dropped the arena it grew), and the arena is append-only, so the `WHERE` landed at the `INVALID`'s index -- and a `WHERE` whose `src[2]` is not the `INVALID` has NO VALID (`ops.py:640`), so the valid folded to `True`. MEASURED, the fold's operand for the W axis is now the `AND` of the two `CMPLT`s and the C says `((1&1&((alu1<0)==0)&(alu1<alu0))?alu4:0.0f)` -- upstream's gate (`indexing.py:171`: `(r >= off) & (r < sh+off)`, `off=0`, `sh+off=16`). |
+| four nested range loops | **FIXED (2026-11-27).** The `END` closed SIX ranges where upstream's closes TWO (`kg0_0_end_srcs=STORE RANGE RANGE`), because the merge (`indexing.py:238-261`) minted a new range for every node with two consumers, and the comparison that decides it was INVERTED and compared POSITIONS. MEASURED against upstream's own range map: upstream's value chain is ONE pair of ranges and the DISTANCE FIELD gets the second pair, because its consumers read it at different ranges. The port now answers the same, and the `END` closes TWO ranges. |
+| `UNHANDLED(Ops.MAX)` | the port's `code_for_base` is upstream's 21-key dict (`cstyle.py:153-161`) and that dict has no `MAX` arm -- **and neither does upstream's** (`cstyle.py` has no `MAX` at all). Upstream lowers it in the **LATE** rewrite (`codegen/decomp/op.py:84`: `MAX(a, b) -> (a < b).where(b, a)`), and the port HAS that rule (`codegen/decomp/op.bend`'s rule 18) and the late stage (`runtime/device.bend`'s `late_apply`) -- **but the runner's own chain skips the lowering passes**, so a `MAX` reaches the C. The `MAX` has to be lowered before the C, not taught to the emitter. |
 | `weakint Lidx0` | the strong dtype: upstream's `UOp.dtype` is a property that never returns `weakint` (`tinygrad/mixin/dtype.py:17`), and the port has neither it nor `commit_int`. |
-| four nested range loops | the kernel's `END` closes FOUR ranges where upstream's closes TWO (`kg0_0_end_srcs=STORE RANGE RANGE`). |
+| **`kernels=0` -- THE SPLIT REFUSES THE `STAGE`** (2026-11-27) | **THE NEXT BLOCKER, AND A REGRESSION IN THE MILESTONE.** Upstream realizes the distance field (`indexing.py:261`), so the port's kernel graph now carries a `STAGE` -- and the port's `sk_walk` REFUSES a `STAGE` ("no `BufferizeOpts`"), so the schedule answers `kernels=0` and the C is empty. Upstream's `to_define_global` (`rangeify.py:283-296`) does not name a `STAGE` at all: a realized node's `STAGE` becomes a `STORE` first (`bufferize_to_store`, `rangeify.py:211`). The port's `STAGE` carries no `BufferizeOpts` (`rr_ap_stage_node` answers `ANone{}`), so the port refuses instead. The `TODO(shader-pad-lane)` comment in `sk_walk` names it. |
 
-**THE MEASUREMENT THAT EXPLAINS THE REST: THE RANGE MAP IS EMPTY.** The probe's row
-`rmpad` (the range map's entry for the shader's `PAD`) reads
+**THE MEASUREMENT THAT EXPLAINED THE REST: THE RANGE MAP IS EMPTY -- AND THAT IS
+WITHDRAWN.** The probe's row `rmpad` (the range map's entry for the shader's `PAD`) read
 
     rmpad=rm=False False in= out= tbl=1 rmn=0
 
@@ -277,6 +278,17 @@ stage is INERT for this graph: the PAD arm, the SHRINK arm, the zero-fill and th
 never run, and the kernel graph's four ranges and its `WHERE` come from the ENGINE's own
 stage (`eng_after_rangeify`), which is why the schedule builds a kernel but the gate does
 not ride.
+
+**=> WITHDRAWN 2026-11-27: THE READING WAS THE PROBE's OWN STALE ARENA** (the same
+withdrawal the section below makes for the realize map): the map is NOT empty -- it holds
+FORTY-FOUR entries (`rmn=44`) and the table holds EIGHTY-ONE -- and the seed is the
+`STORE` (`rmap=56:STORE`). **WHAT IS MEASURED NOW**: the map holds the `STORE` and the
+DISTANCE FIELD -- upstream's answer -- and the `PAD`'s input positions answer
+`61:0:RANGE 62:2:WHERE` (a kind-2 entry IS a node and its valid is its `WHERE`'s gate).
+
+**=> AND EVERY PARAGRAPH BELOW THAT SAYS THE MAP IS EMPTY IS WITHDRAWN WITH IT** (they
+are the record of the hunt, and the hunt was a stale arena) ✓ -- **WHAT IS LEFT OF THEM
+IS THE UPSTREAM LINE THEY QUOTE** ✓.
 
 **WHY, AND IT IS UPSTREAM's LINE.** Upstream's propagation starts at the REALIZED node:
 `if x in rctx.realize_map: out_rngs = tuple(rctx.new_range(s) for s in x.shape)`
