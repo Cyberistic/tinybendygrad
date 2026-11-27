@@ -25,6 +25,20 @@
 # `x//div`), and Bend refuses mutual recursion, so even the shape of that rule is
 # P3 and not only its arithmetic.
 #
+# AND THE WALL IS **MEASURED** AND NOT ASSUMED (2026-11-27), AND IT IS **HARDER
+# THAN "BEND REFUSES MUTUAL RECURSION"**:
+#   1. BEND **DOES** TAKE A FUNCTION AS A PARAMETER, AND IT MAY BE USED MANY
+#      TIMES (THE PORT's `List.map(~A, ~B, ~f, xs)` SAYS THE SAME) -- SO THE
+#      RECURSION *COULD* BE A **VALUE** INSTEAD OF A DEF CALL.
+#   2. **AND THE VALUE CANNOT BE THE DEF ITSELF.** `helper(rec, x)` IS REFUSED:
+#      "expected : a call smaller than rec(x) ... observed : rec" -- AND THE
+#      REFUSAL IS THE SAME WITH THE RECURSION AS THE **LAST** ARGUMENT AND A
+#      **SHRINKING** ARGUMENT BEFORE IT (`helper(tail, rec, x)`).  **SO A SELF
+#      REFERENCE PASSED AS A VALUE IS REFUSED, AND SO THE ONLY WAY LEFT IS TO
+#      INLINE THE WHOLE LADDER INTO ONE SELF-RECURSIVE DEF** -- WHICH IS A
+#      **SHAPE** PROBLEM AND NOT AN ARITHMETIC ONE, AND THE ARM IS NOT PORTED
+#      UNTIL THAT SHAPE IS DECIDED.
+#
 # FIVE DIVERGENCES, stated rather than hidden.
 #   A. NO PROMOTION CASTs. Python's `UOp.__init__` runs `dtype_from_uop` and
 #      `ops.bend`'s `UOp.new` does not, so the trees here are the ones Python
@@ -1849,6 +1863,19 @@ def trees() -> Gate:
 #   NODE's OWN ARENA** (`O.Found.ar(x)`) AND THE FOLD IS GIVEN **THE NODE's OWN
 #   ARENA**.
 # TODO(p3) divandmod.py:51-65 `nest_by_factor: x//c -> (x//f)//(c//f),
+#   AND ITS WALL IS **MEASURED** (2026-11-27) AND IT IS **THE RECURSION'S
+#   SHAPE**: THE ARM CALLS `fold_divmod_general(x//div)` (divandmod.py:61) AND
+#   BEND REFUSES **MUTUAL** RECURSION.  **AND BEND DOES TAKE A FUNCTION AS A
+#   PARAMETER** (SO THE RECURSION *COULD* BE A VALUE) **BUT A SELF REFERENCE
+#   PASSED AS A VALUE IS REFUSED** -- "expected : a call smaller than rec(x) ...
+#   observed : rec" -- AND IT IS REFUSED WITH THE RECURSION AS THE LAST
+#   ARGUMENT AND A SHRINKING ARGUMENT BEFORE IT.  SO THE ONLY WAY LEFT IS TO
+#   INLINE THE LADDER INTO ONE SELF-RECURSIVE DEF, AND **THE ARM IS NOT PORTED
+#   UNTIL THAT SHAPE IS DECIDED**.  AND ITS OTHER TWO PIECES ARE MEASURED
+#   AVAILABLE: THE PORT HAS `H.gcd` (helpers.py:2165), `O.UOp.backward_slice`
+#   (ops.py:264) AND `O.UOp.usum` -- AND WHAT IS **NOT** PORTED IS CPYTHON's SET
+#   (WHOSE ITERATION ORDER THE ANSWER'S `min` OVER THE SIZE DEPENDS ON ONLY ON
+#   A TIE) AND `x.ufix` (WHICH IS A CONST IN THE PORT's `weakint` WORLD).
 #  Variable Denominator / Fallback Rules  -- divandmod.py:72-96. These rules
 # PORTED: divandmod.py:78-96  `factor_remainder: (d*x+y)//d -> x+y//d` -- AND
 #   THE ARM IS IN `tinybendygrad/uop/divandmod.bend` AS `dm_fr.*` AND THE
