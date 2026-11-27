@@ -9,7 +9,7 @@ CASE GOES THROUGH THE **SAME LANE** THE GATE USES -- THE PORT's `.bend` DRIVER
 AND THE CPython ORACLE -- SO A PLANT THAT SAID "RED" ON A COPY THE GATE NEVER
 RUNS WOULD PROVE NOTHING.
 
-FOURTEEN CASES:
+SEVENTEEN CASES:
 
   1. THE UN-MUTATED COPY IS GREEN -- the control.
   2. BREAKING THE ARM's `divides` GUARD REDDENS THE PORT's LANE -- the arm
@@ -36,6 +36,12 @@ FOURTEEN CASES:
      ARM NEVER FIRES AND THE PORT's ANSWER IS A LATER ARM's.
  14. BREAKING THE `exact division` ARM's `const//c` REDDENS IT -- THE
      ANSWER's TAIL BECOMES THE CONSTANT ITSELF.
+ 15. BREAKING THE `fold_divmod_congruence` ARM's TWO-CHOICE TEST REDDENS IT --
+     THE ARM ALWAYS TAKES THE SINGLE CHOICE.
+ 16. BREAKING THE `fold_divmod_congruence` ARM's ARENA THREADING REDDENS IT --
+     THE CHAIN'S ARENA IS STALE AND THE FOLD NEVER SEES THE `rem`.
+ 17. BREAKING THE `fold_divmod_congruence` ARM's SINGLE CHOICE REDDENS IT --
+     THE CHOICE IS ALWAYS `r` AND NOT `min(r, r-c, key=abs)`.
 
 AND THE PLANT'S CLAIM IS ABOUT THE **DIFFERENTIAL** AND NOT ABOUT THE PORT's
 ANSWER: A PLANT THAT BROKE THE PORT's ARM AND ONLY CHECKED THAT THE PORT's
@@ -429,6 +435,79 @@ def main() -> int:
             print(f" 14 ex const//c      {'RED' if ok else 'NOT RED'}  the answer's tail is the constant")
             if not ok:
                 bad.append("breaking the `exact division` arm's `const//c` did not redden the lanes")
+
+        # 15 -- THE `fold_divmod_congruence` ARM's **TWO-CHOICE** TEST: THE
+        # ARM ALWAYS TAKES THE SINGLE CHOICE `min(r, r-c, key=abs)`, SO THE
+        # `cg_3a_0` ROW -- WHOSE **FIRST** CHOICE `r` = 3 IS THE ONE THAT FIRES
+        # -- ANSWERS A DIFFERENT TREE.
+        case15 = fresh(Path(td) / "case15")
+        f15 = case15 / "tinybendygrad" / "uop" / "divandmod.bend"
+        text15 = f15.read_text()
+        old15 = """def dm_cg.two(+n: U32, +r: U32, +c: U32) -> Bool:
+  Bool.or(dm_cg.one(n), dm_cg.tie(r, c))"""
+        new15 = """def dm_cg.two(+n: U32, +r: U32, +c: U32) -> Bool:
+  False{}"""
+        if old15 not in text15:
+            bad.append("the congruence arm's two-choice test moved")
+            print(" 15 cg two choices   COULD NOT MUTATE")
+        else:
+            f15.write_text(text15.replace(old15, new15, 1))
+            ok = not agrees(case15)
+            print(f" 15 cg two choices   {'RED' if ok else 'NOT RED'}  the arm always takes one choice")
+            if not ok:
+                bad.append("breaking the congruence arm's two-choice test did not redden the lanes")
+
+        # 16 -- THE `fold_divmod_congruence` ARM's **ARENA THREADING**: THE
+        # CHAIN RUNS THROUGH THE PREVIOUS NODE's OWN ARENA (`O.Found.ar(x)`) AND
+        # NOT THROUGH A CALLER's, BECAUSE `O.UOp.alu` TAKES A **PLAIN** ARENA
+        # AND THE GROWTH IS **NOT THREADED BACK** (ops.bend:2020).
+        #
+        # AND MEASURED 2026-11-27: WITH A STALE ARENA THE `rem` LIVES IN A
+        # BRANCH THE FOLD NEVER SEES, `F.UOp.vmin` ANSWERS `None` FOR IT, AND
+        # **A `None` BOUND READS AS "NOT NEGATIVE"** -- SO THE ARM NEVER FIRES
+        # AND IT NEVER SAYS WHY.  **SO THE ARENA IS LOAD-BEARING AND NOT A
+        # DETAIL.**
+        case16 = fresh(Path(td) / "case16")
+        f16 = case16 / "tinybendygrad" / "uop" / "divandmod.bend"
+        text16 = f16.read_text()
+        old16 = """def dm_cg.mulc(+ar: O.Arena, +k: U32, +v: U32) -> O.Found:
+  +ck = O.UOp.const(ar, O.CInt{H.i64_of_i32(k)})
+  O.UOp.alu(O.Found.ar(ck), O.OpsMUL{}, [O.Found.i(ck), v])"""
+        new16 = """def dm_cg.mulc(+ar: O.Arena, +k: U32, +v: U32) -> O.Found:
+  +ck = O.UOp.const(ar, O.CInt{H.i64_of_i32(k)})
+  O.UOp.alu(ar, O.OpsMUL{}, [O.Found.i(ck), v])"""
+        if old16 not in text16:
+            bad.append("the congruence arm's arena threading moved")
+            print(" 16 cg arena         COULD NOT MUTATE")
+        else:
+            f16.write_text(text16.replace(old16, new16, 1))
+            ok = not agrees(case16)
+            print(f" 16 cg arena         {'RED' if ok else 'NOT RED'}  the chain's arena is stale")
+            if not ok:
+                bad.append("breaking the congruence arm's arena threading did not redden the lanes")
+
+        # 17 -- THE `fold_divmod_congruence` ARM's SINGLE CHOICE: THE CHOICE IS
+        # ALWAYS `r` AND NOT `min(r, r-c, key=abs)`, SO THE `cg_3a_b_1` ROW --
+        # WHOSE SECOND FACTOR HAS **ONE** CHOICE AND ITS `r` IS **1** -- ANSWERS
+        # A DIFFERENT TREE.
+        case17 = fresh(Path(td) / "case17")
+        f17 = case17 / "tinybendygrad" / "uop" / "divandmod.bend"
+        text17 = f17.read_text()
+        old17 = """def dm_cg.pick.go(lt: Bool, +r: U32, +c: U32) -> U32:
+  match lt:
+    case True{}: r
+    case False{}: U32.sub(r, c)"""
+        new17 = """def dm_cg.pick.go(lt: Bool, +r: U32, +c: U32) -> U32:
+  r"""
+        if old17 not in text17:
+            bad.append("the congruence arm's single choice moved")
+            print(" 17 cg single choice COULD NOT MUTATE")
+        else:
+            f17.write_text(text17.replace(old17, new17, 1))
+            ok = not agrees(case17)
+            print(f" 17 cg single choice {'RED' if ok else 'NOT RED'}  the choice is always r")
+            if not ok:
+                bad.append("breaking the congruence arm's single choice did not redden the lanes")
 
         print(f"--plant: {'OK' if not bad else 'FAILED: ' + '; '.join(bad)}")
         return FAIL if bad else PASS

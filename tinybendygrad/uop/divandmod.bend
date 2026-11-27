@@ -1046,6 +1046,435 @@ def dm_ex.arm(+ar: O.Arena, +d: U32, +x: U32, +y: U32) -> Maybe<&2, O.Found>:
   dm_ex.arm.go1(O.eq_op(O.Arena.op(ar, d), O.OpsDIV{}),
                 dm_cd.ok2(dm_cd.isconst(ar, y), c), ar, px, cv, c)
 
+# ---- `fold_divmod_congruence` -- divandmod.py:42-49, AND THE SHARED
+# DECOMPOSITION AT divandmod.py:39-40.
+#
+# AND THE ARM IS **THE CARTESIAN PRODUCT** (divandmod.py:46) AND NOT A LOOP, AND
+# **THE FIRST COMBINATION THAT FIRES IS THE ANSWER** -- SO THE ORDER OF THE
+# PRODUCT IS PART OF THE ANSWER AND NOT A DETAIL: `itertools.product` VARIES
+# THE **FIRST** FACTOR SLOWEST.
+#
+# AND THE CHOICES ARE PER TERM (divandmod.py:45) AND THERE ARE **TWO** OF THEM
+# WHEN `r*2 == c` (AN EXACT TIE) **OR** WHEN THERE IS **ONE** TERM, AND **ONE**
+# OTHERWISE, AND THE ONE IS `min(r, r-c, key=abs)` -- **AND NOT `r`**, WHICH IS
+# THE SECOND HALF OF WHAT THE LINE SAYS.
+#
+# AND THE `rem` TREE AND THE ANSWER's TREES ARE **BUILT WHILE THE COMBINATION
+# IS BUILT** AND NOT AT THE LEAF, AND THAT IS A CHOICE AND NOT AN ACCIDENT:
+# THE ANSWER's SUM IS OVER `zip(factors, rems, terms)` (divandmod.py:49) AND
+# BUILDING IT AT THE LEAF WOULD NEED A **THREE**-LIST ZIP, AND THE PORT's
+# PRODUCT CARRIES THE TWO HALVES AS TWO ACCUMULATORS INSTEAD.  THE TREES ARE
+# THE SAME EITHER WAY: THE GATE COMPARES **TREES** AND NOT ARENA INDICES.
+#
+# AND **THE ARENA IS **ONE CHAIN** AND NOT A TREE OF BRANCHES**, AND THE RULE IS
+# THE PORT's OWN: `O.UOp.alu` AND `O.UOp.const` TAKE A **PLAIN** `ar`
+# (ops.bend:2020, :2139), **SO THE GROWTH IS NOT THREADED BACK** AND A CALLER's
+# `ar` BINDING IS **STALE** AFTER THE CALL.  SO EVERY NODE HERE IS BUILT IN **THE
+# PREVIOUS NODE's OWN ARENA** (`O.Found.ar(x)`), AND THE FOLD IS GIVEN **THE
+# NODE's OWN ARENA**.  MEASURED 2026-11-27: WITH A STALE ARENA THE `rem` LIVES
+# IN A BRANCH THE FOLD NEVER SEES, `F.UOp.vmin` ANSWERS `None` FOR IT, AND **A
+# `None` BOUND READS AS "NOT NEGATIVE"** -- SO THE ARM NEVER FIRES AND IT NEVER
+# SAYS WHY.
+#
+# AND THE CONTEXT, AND IT IS THE DIVISOR's VALUE, THE PEELED CONST, THE TERM
+# COUNT (FOR THE `len(terms)==1` TEST) AND WHETHER THE ROOT IS A MODULATION --
+# AND IT HOLDS NO ARENA, SO IT IS **COPYABLE** AND NOT LINEAR.
+type Cgx is Data:
+  Cgx{c: U32, cv: U32, n: U32, ismod: Bool}
+
+def Cgx.c(x: Cgx) -> U32:
+  match x:
+    case Cgx{c, cv, n, ismod}: c
+
+def Cgx.cv(x: Cgx) -> U32:
+  match x:
+    case Cgx{c, cv, n, ismod}: cv
+
+def Cgx.n(x: Cgx) -> U32:
+  match x:
+    case Cgx{c, cv, n, ismod}: n
+
+def Cgx.ismod(x: Cgx) -> Bool:
+  match x:
+    case Cgx{c, cv, n, ismod}: ismod
+
+# AND THE CONTEXT's BUILDER, AND IT IS A DEF OF ITS OWN BECAUSE A **RECORD
+# CONSTRUCTOR WITH A COMPUTED FIELD CANNOT BE BOUND TO A VARIABLE** (MEASURED
+# 2026-11-27: "expected : an annotated term (cannot infer)").
+def dm_cg.ctx(+c: U32, +cv: U32, +n: U32, ismod: Bool) -> Cgx:
+  Cgx{c, cv, n, ismod}
+
+# AND THE TERMS AND THE FACTORS, AND UPSTREAM's `decomp` IS A LIST OF PAIRS AND
+# `zip(*decomp)` SPLITS IT INTO TWO LISTS (divandmod.py:39-40), AND THE PORT
+# KEEPS THE TWO LISTS AND NOT THE PAIRS.
+type Cg is Data:
+  Cg{ar: O.Arena, terms: List<&2, U32>, fs: List<&2, U32>, ok: Bool}
+
+def Cg.ar(x: Cg) -> O.Arena:
+  match x:
+    case Cg{ar, terms, fs, ok}: ar
+
+def Cg.terms(x: Cg) -> List<&2, U32>:
+  match x:
+    case Cg{ar, terms, fs, ok}: terms
+
+def Cg.fs(x: Cg) -> List<&2, U32>:
+  match x:
+    case Cg{ar, terms, fs, ok}: fs
+
+def Cg.ok(x: Cg) -> Bool:
+  match x:
+    case Cg{ar, terms, fs, ok}: ok
+
+# AND THE EMPTY DECOMPOSITION, AND IT IS A LIST OF NO TERMS AND NO FACTORS.
+def dm_cg.empty(+ar: O.Arena) -> Cg:
+  Cg{ar, Nil{}, Nil{}, True{}}
+
+# AND THE DECOMPOSITION, AND IT IS `[(u.divides(f:=u.const_factor()),f) for u in
+# uops_no_const]` (divandmod.py:39) -- AND THE PORT's `UOp.divides` ANSWERS
+# UPSTREAM's SHAPE, AND **A FAILED** `divides` **MEANS UPSTREAM CRASHES** (THE
+# `terms` LIST THEN HOLDS A `None` AND `r*v` IS A `TypeError`), SO THE PORT
+# ANSWERS "NO FOLD" INSTEAD, AND A CASE THAT COMPARES A PORT ANSWER AGAINST AN
+# UPSTREAM CRASH IS NOT A DIFFERENTIAL ROW.
+#
+# AND THE ARENA OF THE DECOMPOSITION, AND IT IS **THE `divides`' OWN BRANCH** AND
+# NOT THE CALLER's -- MEASURED 2026-11-27: `UOp.divides` BUILDS ITS QUOTIENT IN
+# `Found.ar(Dv.f(d))` (ops.bend:4257) AND **THAT BRANCH IS NOT THE CALLER's
+# ARENA**, SO A NODE BUILT AFTERWARDS IN THE CALLER's ARENA HAS A SRC THE
+# CALLER's ARENA DOES NOT CONTAIN -- AND THE FOLD THEN RESOLVES **NOTHING**
+# DOWNSTREAM OF IT.
+def dm_cg.dec.step(ok: Bool, +d: O.Dv, +f: U32, +acc: Cg) -> Cg:
+  match ok:
+    case True{}: Cg{O.Found.ar(O.Dv.f(d)),
+                   List.append(&2, U32, Cg.terms(acc), [O.Found.i(O.Dv.f(d))]),
+                   List.append(&2, U32, Cg.fs(acc), [f]), Cg.ok(acc)}
+    case False{}: Cg{O.Found.ar(O.Dv.f(d)), Cg.terms(acc), Cg.fs(acc), False{}}
+
+def dm_cg.dec.go(+us: List<&2, U32>, +ar: O.Arena, +acc: Cg) -> Cg:
+  match us:
+    case Nil{}: acc
+    case u <> t:
+      +f = H.lo32(O.UOp.const_factor(O.Arena.budget(ar), ar, u))
+      +d = O.UOp.divides(O.Arena.budget(ar), ar, H.i64_of_i32(f), u)
+      +n = dm_cg.dec.step(O.Dv.ok(d), d, f, acc)
+      dm_cg.dec.go(t, O.Found.ar(O.Dv.f(d)), n)
+
+# AND THE REMAINDER, AND IT IS `r = f % c` (divandmod.py:45) -- AND IT IS
+# PYTHON's `%`, WHICH IS A **FLOORED** REMAINDER AND NOT A TRUNCATED ONE
+# (helpers.py:78), AND THE PORT's `dm_floormod` IS THE SAME FLOORED ONE.
+def dm_cg.rem_of(+c: U32, +f: U32) -> U32:
+  dm_floormod(f, c)
+
+# AND THE TIE, AND IT IS `r*2 == c` (divandmod.py:45).
+def dm_cg.tie(+r: U32, +c: U32) -> Bool:
+  U32.is_eq(U32.mul(r, 2), c)
+
+# AND THE **ONE TERM** TEST, AND IT IS `len(terms)==1` (divandmod.py:45).
+def dm_cg.one(+n: U32) -> Bool:
+  U32.is_eq(n, 1)
+
+# AND THE SINGLE CHOICE, AND IT IS `min(r, r-c, key=abs)` (divandmod.py:45) --
+# AND `r` IS IN `[0, c)` AND `r-c` IS NEGATIVE, SO THE SMALLER IN MAGNITUDE IS
+# `r` WHEN `2r < c` AND `r-c` WHEN `2r > c`; AND THE TIE `2r == c` IS THE
+# **OTHER** BRANCH OF THE LINE, SO IT NEVER REACHES HERE.
+def dm_cg.pick.go(lt: Bool, +r: U32, +c: U32) -> U32:
+  match lt:
+    case True{}: r
+    case False{}: U32.sub(r, c)
+
+def dm_cg.pick(+r: U32, +c: U32) -> U32:
+  dm_cg.pick.go(U32.is_lt(U32.mul(r, 2), c), r, c)
+
+# AND THE TWO CHOICES, AND IT IS `(r, r-c)` WHEN `r*2 == c` **OR** WHEN THERE IS
+# **ONE** TERM (divandmod.py:45) -- AND THE PORT's ANSWER IS A BOOL AND NOT A
+# LIST OF TWO, AND THE PRODUCT's SECOND BRANCH IS THE FALLBACK.
+def dm_cg.two(+n: U32, +r: U32, +c: U32) -> Bool:
+  Bool.or(dm_cg.one(n), dm_cg.tie(r, c))
+
+# AND THE PRODUCT's ACCUMULATOR, AND IT IS THE RUNNING SUM (THE `rem` SO FAR,
+# WHICH STARTS AT PYTHON's `sum`'s INT `0`) AND THE RUNNING LIST OF THE
+# QUOTIENT TERMS (THE `sum((f-r)//c * v)` SO FAR).
+type Cgs is Data:
+  Cgs{ar: O.Arena, rem: U32, ms: List<&2, U32>, ok: Bool}
+
+def Cgs.ar(x: Cgs) -> O.Arena:
+  match x:
+    case Cgs{ar, rem, ms, ok}: ar
+
+def Cgs.rem(x: Cgs) -> U32:
+  match x:
+    case Cgs{ar, rem, ms, ok}: rem
+
+def Cgs.ms(x: Cgs) -> List<&2, U32>:
+  match x:
+    case Cgs{ar, rem, ms, ok}: ms
+
+def Cgs.ok(x: Cgs) -> Bool:
+  match x:
+    case Cgs{ar, rem, ms, ok}: ok
+
+# AND THE ZERO, AND IT IS PYTHON's `sum`'s INT `0` (divandmod.py:47) -- AND IT IS
+# BUILT **HERE** AND NOT BY THE CALLER, BECAUSE THE CHAIN MUST RUN THROUGH IT.
+def dm_cg.zero(+ar: O.Arena) -> Cgs:
+  +z = O.UOp.const(ar, O.CInt{H.i64_of_i32(0)})
+  Cgs{O.Found.ar(z), O.Found.i(z), Nil{}, True{}}
+
+# AND THE `rem` TERM, AND IT IS `r*v` WITH `r` AN **INT** AND `v` A UOP, SO IT
+# IS `int * uop` -> `__rmul__` -> `self.mul(x, True)` -> `_broadcasted(x,
+# reverse=True)` -> `(y, self)` -> `lhs.alu(MUL, rhs)` (elementwise.py:299) --
+# **SO THE CONST IS THE FIRST SRC**.
+def dm_cg.mulc(+ar: O.Arena, +k: U32, +v: U32) -> O.Found:
+  +ck = O.UOp.const(ar, O.CInt{H.i64_of_i32(k)})
+  O.UOp.alu(O.Found.ar(ck), O.OpsMUL{}, [O.Found.i(ck), v])
+
+# AND THE QUOTIENT TERM OF THE DIV ANSWER, AND IT IS `(f-r)//c * v`
+# (divandmod.py:49) -- AND IT IS A **FLOOR** DIVISION AND NOT A TRUNCATED ONE.
+def dm_cg.quot_term(+ar: O.Arena, +f: U32, +r: U32, +c: U32, +v: U32) -> O.Found:
+  dm_cg.mulc(ar, dm_floordiv(U32.sub(f, r), c), v)
+
+# AND THE SUM SO FAR, AND IT IS PYTHON's `sum` (divandmod.py:47) WHICH STARTS
+# WITH THE INT `0` -- SO THE FIRST TERM IS `ADD(c0, r0)` AND NOT `r0`.
+def dm_cg.add(+acc: U32, +m: O.Found) -> O.Found:
+  O.UOp.alu(O.Found.ar(m), O.OpsADD{}, [acc, O.Found.i(m)])
+
+# AND THE BOUNDS, AND IT IS `rem.vmin//c` AND `rem.vmax//c`
+# (divandmod.py:47) -- AND THE FOLD IS GIVEN **THE `rem`'s OWN ARENA** AND NOT
+# A CALLER's, BECAUSE A NODE BUILT IN A CALLER's ARENA IS **NOT IN IT**.
+type Cgb is Data:
+  Cgb{ok: Bool, qmin: U32, qmax: U32}
+
+def Cgb.ok(x: Cgb) -> Bool:
+  match x:
+    case Cgb{ok, qmin, qmax}: ok
+
+def Cgb.qmin(x: Cgb) -> U32:
+  match x:
+    case Cgb{ok, qmin, qmax}: qmin
+
+def Cgb.qmax(x: Cgb) -> U32:
+  match x:
+    case Cgb{ok, qmin, qmax}: qmax
+
+# AND THE TEST, AND IT IS `rem.vmin//c == rem.vmax//c` (divandmod.py:47) --
+# **A MATCH MAY NOT SCRUTINISE A COMPUTED VALUE**, SO THE COMPARISON IS A CALL
+# AND ITS RESULT IS A **PARAMETER** OF THE DEF THAT MATCHES ON IT.
+def dm_cg.same(+b: Cgb) -> Bool:
+  U32.is_eq(Cgb.qmin(b), Cgb.qmax(b))
+
+# AND THE BOUND, AND IT IS `F.BndInt{neg, mag}` -- A SIGN AND A MAGNITUDE --
+# AND THE VALUE IS THE SIGNED MAGNITUDE, TRUNCATED TO 32 BITS.
+def dm_cg.bnd.go(b: F.Bnd) -> U32:
+  match b:
+    case F.BndInt{neg, mag}: H.lo32(H.i64_neg(neg, mag))
+    case _: 0
+
+# AND A BOUND AND ITS ABSENCE, AND THEY ARE ONE RECORD BECAUSE A `Maybe` MAY
+# NOT BE READ TWICE.
+type Cbv is Data:
+  Cbv{has: Bool, v: U32}
+
+def Cbv.has(x: Cbv) -> Bool:
+  match x:
+    case Cbv{has, v}: has
+
+def Cbv.v(x: Cbv) -> U32:
+  match x:
+    case Cbv{has, v}: v
+
+def dm_cg.bv(m: Maybe<&2, F.Bnd>) -> Cbv:
+  match m:
+    case Some{b}: Cbv{True{}, dm_cg.bnd.go(b)}
+    case None{}: Cbv{False{}, 0}
+
+def dm_cg.bounds(+ar: O.Arena, +rem: U32, +c: U32) -> Cgb:
+  +fx = F.folded(ar)
+  +bt = F.mm.sweep(F.Folded.ar(fx), F.Folded.t(fx))
+  +lo = dm_cg.bv(F.UOp.vmin(F.Folded.ar(fx), bt, rem))
+  +hi = dm_cg.bv(F.UOp.vmax(F.Folded.ar(fx), bt, rem))
+  Cgb{Bool.and(Cbv.has(lo), Cbv.has(hi)),
+      dm_floordiv(Cbv.v(lo), c), dm_floordiv(Cbv.v(hi), c)}
+
+# AND THE MOD ANSWER, AND IT IS `rem - rem.vmin//c*c` (divandmod.py:48) -- AND A
+# UOP MINUS AN INT IS `a.alu(Ops.ADD, -b)` (elementwise.py:122) WITH `b` **UFIX**ED
+# TO A UOP CONST FIRST (elementwise.py:25 `ufix`), AND A UOP's NEGATION IS
+# `self.mul(-1)` -> `MUL(b, CONST -1)` (elementwise.py:142) -- SO THE ANSWER IS
+# `ADD(rem, MUL(CONST k, CONST -1))` WITH **THE CONST FIRST** IN THE MUL.
+def dm_cg.answer.mod(+rem: O.Found, +qmin: U32, +c: U32) -> O.Found:
+  +ck = O.UOp.const(O.Found.ar(rem), O.CInt{H.i64_of_i32(U32.mul(qmin, c))})
+  +cn = O.UOp.const(O.Found.ar(ck), O.CInt{H.i64_neg(True{}, H.i64_of_i32(1))})
+  +m = O.UOp.alu(O.Found.ar(cn), O.OpsMUL{}, [O.Found.i(ck), O.Found.i(cn)])
+  O.UOp.alu(O.Found.ar(m), O.OpsADD{}, [O.Found.i(rem), O.Found.i(m)])
+
+# AND THE DIV ANSWER, AND IT IS `sum((f-r)//c * v for f,r,v in zip(factors,rems,
+# terms)) + const//c + rem.vmin//c` (divandmod.py:49) -- AND THE SUM STARTS
+# WITH THE INT `0` AND BOTH CONSTANTS ARE ADDED **LAST** AND AS THE **SECOND**
+# SRC.
+def dm_cg.answer.div(+acc: Cgs, +qmin: U32, +ctx: Cgx) -> O.Found:
+  +s = dm_fr.sum(Cgs.ar(acc), Cgs.ms(acc))
+  +cc = O.UOp.const(O.Found.ar(s), O.CInt{H.i64_of_i32(dm_floordiv(Cgx.cv(ctx), Cgx.c(ctx)))})
+  +a = O.UOp.alu(O.Found.ar(cc), O.OpsADD{}, [O.Found.i(s), O.Found.i(cc)])
+  +cq = O.UOp.const(O.Found.ar(a), O.CInt{H.i64_of_i32(qmin)})
+  O.UOp.alu(O.Found.ar(cq), O.OpsADD{}, [O.Found.i(a), O.Found.i(cq)])
+
+# AND THE LEAF, AND IT IS THE BODY OF THE PRODUCT's LOOP
+# (divandmod.py:46-49) -- AND THE `rem` IS `sum(r*v for r,v in zip(rems,terms)) +
+# const%c` (divandmod.py:47) AND THE CONST IS ADDED **LAST** AND AS THE
+# **SECOND** SRC (`uop + int`).
+def dm_cg.leaf.go2(same: Bool, ismod: Bool, +b: Cgb, +acc: Cgs, +ctx: Cgx, +rem: O.Found) -> Maybe<&2, O.Found>:
+  match same:
+    case True{}:
+      match ismod:
+        case True{}: Some{dm_cg.answer.mod(rem, Cgb.qmin(b), Cgx.c(ctx))}
+        case False{}: Some{dm_cg.answer.div(acc, Cgb.qmin(b), ctx)}
+    case False{}: None{}
+
+def dm_cg.leaf.go1(ok: Bool, same: Bool, ismod: Bool, +b: Cgb, +acc: Cgs, +ctx: Cgx, +rem: O.Found) -> Maybe<&2, O.Found>:
+  match ok:
+    case True{}: dm_cg.leaf.go2(same, ismod, b, acc, ctx, rem)
+    case False{}: None{}
+
+def dm_cg.leaf(+acc: Cgs, +ctx: Cgx) -> Maybe<&2, O.Found>:
+  +cv = O.UOp.const(Cgs.ar(acc), O.CInt{H.i64_of_i32(dm_floormod(Cgx.cv(ctx), Cgx.c(ctx)))})
+  +rem = O.UOp.alu(O.Found.ar(cv), O.OpsADD{}, [Cgs.rem(acc), O.Found.i(cv)])
+  +b = dm_cg.bounds(O.Found.ar(rem), O.Found.i(rem), Cgx.c(ctx))
+  dm_cg.leaf.go1(Cgb.ok(b), dm_cg.same(b), Cgx.ismod(ctx), b, acc, ctx, rem)
+
+# AND THE CHOICE OF ONE FACTOR UNDER A MASK, AND IT IS THE **SECOND** CHOICE
+# WHEN THE MASK's BIT IS SET AND THE **FIRST** OTHERWISE -- AND THE FIRST IS
+# `r` FOR A FACTOR WITH TWO CHOICES AND `min(r, r-c, key=abs)` FOR ONE.
+def dm_cg.choice(+set: Bool, +r: U32, +two: Bool, +c: U32) -> U32:
+  match set:
+    case True{}: U32.sub(r, c)
+    case False{}:
+      match two:
+        case True{}: r
+        case False{}: dm_cg.pick(r, c)
+
+# AND A MASK IS VALID ONLY IF EVERY FACTOR WITH **ONE** CHOICE HAS ITS BIT
+# CLEAR -- AND AN INVALID MASK IS NOT ONE OF `itertools.product`'s COMBINATIONS
+# AND IS SKIPPED.
+def dm_cg.maskok(set: Bool, two: Bool) -> Bool:
+  Bool.or(Bool.not(set), two)
+
+# AND ONE TERM's CONTRIBUTION, AND IT IS THE `rem` TERM, THE SUM SO FAR AND THE
+# QUOTIENT TERM -- AND **THE ARENA IS THE ACCUMULATOR's OWN**, SO THE CHAIN
+# RUNS THROUGH THE ACCUMULATOR.
+def dm_cg.step.go(+t: U32, +f: U32, +r: U32, set: Bool, two: Bool, +acc: Cgs, +ctx: Cgx) -> Cgs:
+  +mv = dm_cg.mulc(Cgs.ar(acc), r, t)
+  +s = dm_cg.add(Cgs.rem(acc), mv)
+  +mq = dm_cg.quot_term(O.Found.ar(s), f, r, Cgx.c(ctx), t)
+  Cgs{O.Found.ar(mq), O.Found.i(s), List.append(&2, U32, Cgs.ms(acc), [O.Found.i(mq)]),
+      Bool.and(Cgs.ok(acc), dm_cg.maskok(set, two))}
+
+# AND ONE COMBINATION, AND IT IS THE FOLD OVER THE FACTORS, AND THE BIT FOR
+# FACTOR `i` IS THE **MOST** SIGNIFICANT BIT FOR THE **FIRST** FACTOR.
+def dm_cg.mask.go(+fs: List<&2, U32>, +ts: List<&2, U32>, +acc: Cgs, +mask: U32, +bit: U32, +ctx: Cgx) -> Maybe<&2, Cgs>:
+  match fs:
+    case Nil{}: Some{acc}
+    case f <> ft:
+      match ts:
+        case Nil{}: None{}
+        case t <> ts2:
+          +r = dm_cg.rem_of(Cgx.c(ctx), f)
+          +two = dm_cg.two(Cgx.n(ctx), r, Cgx.c(ctx))
+          +set = U32.is_ne(U32.and(mask, bit), 0)
+          +ch = dm_cg.choice(set, r, two, Cgx.c(ctx))
+          +n = dm_cg.step.go(t, f, ch, set, two, acc, ctx)
+          dm_cg.mask.go(ft, ts2, n, mask, U32.shr(bit), ctx)
+
+# AND THE EVALUATION OF ONE COMBINATION, AND IT IS THE LEAF -- AND AN
+# **INVALID** MASK (ONE THAT SETS A BIT FOR A FACTOR WITH ONE CHOICE) IS NOT A
+# COMBINATION AT ALL AND IS NOT EVALUATED.
+def dm_cg.eval2(ok: Bool, +na: Cgs, +ctx: Cgx) -> Maybe<&2, O.Found>:
+  match ok:
+    case True{}: dm_cg.leaf(na, ctx)
+    case False{}: None{}
+
+def dm_cg.eval(n: Maybe<&2, Cgs>, +ctx: Cgx) -> Maybe<&2, O.Found>:
+  match n:
+    case Some{+na}: dm_cg.eval2(Cgs.ok(na), na, ctx)
+    case None{}: None{}
+
+# AND THE HIT, AND IT IS THE ANSWER AND MAYBE IT.
+type Cgp is Data:
+  Cgp{ar: O.Arena, hit: Maybe<&2, O.Found>}
+
+def Cgp.ar(x: Cgp) -> O.Arena:
+  match x:
+    case Cgp{ar, hit}: ar
+
+def Cgp.hit(x: Cgp) -> Maybe<&2, O.Found>:
+  match x:
+    case Cgp{ar, hit}: hit
+
+# AND THE **FIRST** HIT WINS, AND IT IS THE PRODUCT's ORDER THAT SAYS SO
+# (divandmod.py:46) -- AND A LATER HIT MUST NOT REPLACE IT.
+def dm_cg.put2(+x: Cgp, +g: O.Found) -> Cgp:
+  match x:
+    case Cgp{ar, hit}:
+      match hit:
+        case Some{h}: x
+        case None{}: Cgp{ar, Some{g}}
+
+def dm_cg.put(a: Maybe<&2, O.Found>, +x: Cgp) -> Cgp:
+  match a:
+    case Some{g}: dm_cg.put2(x, g)
+    case None{}: x
+
+# AND THE MASKS, AND IT IS `itertools.product(*rem_choices)`
+# (divandmod.py:46) -- AND THE **FIRST** FACTOR VARIES SLOWEST, AND THE ORDER
+# IS PART OF THE ANSWER BECAUSE THE FIRST FIRING COMBINATION IS IT.
+#
+# AND BEND REFUSES **MUTUAL RECURSION** (THE HEADER NAMES THE WALL FOR
+# `nest_by_factor`), AND A BACKTRACKING SEARCH NEEDS ONE, SO THE PRODUCT IS
+# **THE MASKS** OVER THE FACTORS INSTEAD: THE CHOICE FOR FACTOR `i` IS THE
+# **FIRST** WHEN ITS BIT IS **0** AND THE **SECOND** WHEN IT IS **1**, AND THE
+# FIRST FACTOR IS THE **MOST** SIGNIFICANT BIT, SO THE MASKS **0, 1, 2, ...**
+# ARE `itertools.product`'s ORDER.
+def dm_cg.masks.go(+fuel: Nat, +acc: List<&2, U32>, +m: U32) -> List<&2, U32>:
+  match fuel:
+    case 0n: acc
+    case 1n++p: dm_cg.masks.go(p, List.append(&2, U32, acc, [m]), U32.add(m, 1))
+
+def dm_cg.prod.go(+ms: List<&2, U32>, +bit0: U32, +fs: List<&2, U32>, +ts: List<&2, U32>, +acc: Cgs, +hit: Cgp, +ctx: Cgx) -> Cgp:
+  match ms:
+    case Nil{}: hit
+    case m <> mt:
+      +n = dm_cg.mask.go(fs, ts, acc, m, bit0, ctx)
+      +a = dm_cg.eval(n, ctx)
+      +hit2 = dm_cg.put(a, hit)
+      dm_cg.prod.go(mt, bit0, fs, ts, acc, hit2, ctx)
+
+def dm_cg.prod(+n: U32, +fs: List<&2, U32>, +ts: List<&2, U32>, +acc: Cgs, +ctx: Cgx) -> Maybe<&2, O.Found>:
+  +limit = U32.shln(1, U32.to_nat(n))
+  +bit0 = U32.shr(limit)
+  +ms = dm_cg.masks.go(U32.to_nat(limit), Nil{}, 0)
+  Cgp.hit(dm_cg.prod.go(ms, bit0, fs, ts, acc, Cgp{Cgs.ar(acc), None{}}, ctx))
+
+# AND THE ARM, AND IT IS THE CONSTANT DENOMINATOR's GUARD, THE TERMS, THE
+# DECOMPOSITION AND THE PRODUCT.
+def dm_cg.arm.go3(ok: Bool, +acc: Cg, +c: U32, +cv: U32, ismod: Bool) -> Maybe<&2, O.Found>:
+  match ok:
+    case True{}:
+      +ctx = dm_cg.ctx(c, cv, U32.from_nat(List.length(&2, U32, Cg.terms(acc))), ismod)
+      dm_cg.prod(U32.from_nat(List.length(&2, U32, Cg.terms(acc))), Cg.fs(acc), Cg.terms(acc),
+                 dm_cg.zero(Cg.ar(acc)), ctx)
+    case False{}: None{}
+
+def dm_cg.arm.go2(+ar: O.Arena, +d: U32, +x: U32, +y: U32, +c: U32, +cv: U32) -> Maybe<&2, O.Found>:
+  +us = dm_rnm.terms(ar, x)
+  +acc = dm_cg.dec.go(us, ar, dm_cg.empty(ar))
+  dm_cg.arm.go3(Cg.ok(acc), acc, c, cv, O.eq_op(O.Arena.op(ar, d), O.OpsMOD{}))
+
+def dm_cg.arm.go1(ok: Bool, +ar: O.Arena, +d: U32, +x: U32, +y: U32, +c: U32) -> Maybe<&2, O.Found>:
+  match ok:
+    case True{}: dm_cg.arm.go2(ar, d, x, y, c, dm_pc.cv(O.UOp.pop_const_val(ar, x, O.OpsADD{})))
+    case False{}: None{}
+
+def dm_cg.arm(+ar: O.Arena, +d: U32, +x: U32, +y: U32) -> Maybe<&2, O.Found>:
+  +c = dm_cd.cval(ar, y)
+  dm_cg.arm.go1(dm_cd.ok2(dm_cd.isconst(ar, y), c), ar, d, x, y, c)
+
 # `fold_divmod_general` -- divandmod.py:8-96. The `raise` is line 11 and it comes
 def fold_divmod_general.go(+ar: O.Arena, +d: U32, zero: Bool) -> Maybe<&2, O.Found>:
   match zero:
@@ -1056,9 +1485,10 @@ def fold_divmod_general.go(+ar: O.Arena, +d: U32, zero: Bool) -> Maybe<&2, O.Fou
                      dm_first2.go(dm_nd.arm(ar, d),
                        dm_first2.go(dm_rnm(ar, d),
                          dm_first2.go(dm_ex.arm(ar, d, O.Arena.src0(ar, d), O.Arena.src(ar, d, 1)),
-                           dm_first2.go(dm_dg_arm.g(O.Found.ar(g), d, g),
-                                       dm_fr.arm(O.Found.ar(g), d, O.Arena.src0(O.Found.ar(g), d),
-                                                 O.Arena.src(O.Found.ar(g), d, 1))))))))
+                           dm_first2.go(dm_cg.arm(ar, d, O.Arena.src0(ar, d), O.Arena.src(ar, d, 1)),
+                             dm_first2.go(dm_dg_arm.g(O.Found.ar(g), d, g),
+                                         dm_fr.arm(O.Found.ar(g), d, O.Arena.src0(O.Found.ar(g), d),
+                                                   O.Arena.src(O.Found.ar(g), d, 1)))))))))
 
 def fold_divmod_general(+ar: O.Arena, +d: U32) -> Maybe<&2, O.Found>:
   fold_divmod_general.go(ar, d, dm_zero(ar, d))
@@ -1406,21 +1836,22 @@ def trees() -> Gate:
 #   (x//gcd)//(y//gcd)` -- AND THE **MOD HALF** (`ret*gcd`) IS PORTED WITH IT,
 #   AND THE DIFFERENTIAL GATE'S ROWS ARE `gates/divandmod-cases.rows`'s
 #   `gcdmod_fires` AND `gcddiv_fires`.
-# TODO(p3) divandmod.py:38-49  symbol=fold_divmod_general  `Shared decomposition for folding rules` and :42-49
-#   THE ARM's SHAPE IS PORTED (`.agents/slop/loc/divandmod-cg-wip.bend`, THE
-#   WORKING COPY) AND THE PRODUCT IS THE EASY HALF -- BEND REFUSES MUTUAL
-#   RECURSION, SO THE PRODUCT IS **THE MASKS** OVER THE FACTORS
-#   (`itertools.product`'s ORDER IS THE MASKS' ORDER) AND THE TWO CHOICES PER
-#   FACTOR ARE `(r, r-c)` ON A TIE AND `min(r, r-c, key=abs)` OTHERWISE --
-#   **AND THE WALL IS THE PORT's FOLD AND NOT A CARTESIAN PRODUCT.** MEASURED
-#   2026-11-27: `F.UOp.vmin` ANSWERS `None` FOR A NODE WHOSE SRC0 IS AN ADD
-#   (`ADD(ADD(MUL(Pa,c6),c2),c2)` HAS **NO BOUND** AND `ADD(MUL(Pa,c6),c2)`
-#   **HAS** ONE), AND **A `None` BOUND READS AS "NOT NEGATIVE"**, SO THE
-#   `factor_remainder` ARM's `new_x.vmin<0` GUARD (divandmod.py:90) IS
-#   **VACUOUS** AND NO ROW TESTS IT.  AND `UOp.divides` PUTS ITS QUOTIENT IN A
-#   **BRANCH** OF THE ARENA (ops.bend:4257), SO A NODE BUILT AFTERWARDS IN THE
-#   CALLER's ARENA HAS A SRC THE FOLD'S ARENA DOES NOT CONTAIN AND THE FOLD
-#   RESOLVES **NOTHING** DOWNSTREAM OF IT.
+# DONE(p3) divandmod.py:38-49  symbol=fold_divmod_general  `Shared decomposition for folding rules` and :42-49
+#   PORTED (2026-11-27) AS `dm_cg.*` AND THE ROWS ARE `gates/divandmod-cases.rows`'s
+#   NINE `cg_*` ROWS AND THE PLANT's CASES 15, 16 AND 17 PROVE THE ARM, ITS
+#   TWO-CHOICE TEST AND ITS ARENA THREADING ARE LOAD-BEARING.  **AND THE
+#   PRODUCT IS THE MASKS OVER THE FACTORS** -- BEND REFUSES MUTUAL RECURSION, SO
+#   A BACKTRACKING SEARCH CANNOT BE WRITTEN, AND THE MASKS' ORDER **IS**
+#   `itertools.product`'s ORDER (THE FIRST FACTOR IS THE MOST SIGNIFICANT BIT)
+#   -- AND THE TWO CHOICES PER FACTOR ARE `(r, r-c)` ON A TIE AND
+#   `min(r, r-c, key=abs)` OTHERWISE.  **AND THE WALL WAS THE PORT's OWN ARENA
+#   CONVENTION AND NOT THE PRODUCT**: `O.UOp.alu` AND `O.UOp.const` TAKE A
+#   **PLAIN** ARENA (ops.bend:2020, :2139) AND **THE GROWTH IS NOT THREADED
+#   BACK**, SO A NODE BUILT IN A CALLER's ARENA LIVES IN A **BRANCH** AND THE
+#   FOLD NEVER SEES IT -- AND A `None` BOUND READS AS "NOT NEGATIVE", SO THE
+#   ARM SILENTLY NEVER FIRES.  **SO EVERY NODE HERE IS BUILT IN THE PREVIOUS
+#   NODE's OWN ARENA** (`O.Found.ar(x)`) AND THE FOLD IS GIVEN **THE NODE's OWN
+#   ARENA**.
 # TODO(p3) divandmod.py:51-65 `nest_by_factor: x//c -> (x//f)//(c//f),
 #  Variable Denominator / Fallback Rules  -- divandmod.py:72-96. These rules
 # PORTED: divandmod.py:78-96  `factor_remainder: (d*x+y)//d -> x+y//d` -- AND
