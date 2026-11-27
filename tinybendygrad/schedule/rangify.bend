@@ -784,30 +784,41 @@ def rr_pad.arm(keep: Bool, +ar: O.Arena, +pos: U32, +o: U32, +e: U32, +sh: U32,
 def rr_pad.keep(off_zero: Bool, end: U32, sh: U32) -> Bool:
   Bool.and(off_zero, U32.is_eq(end, sh))
 
+
+# THE WALK MUST RECURSE ON THE TAILS (`rr_shr.go` DOES ✓). THE FIRST VERSION OF THIS ARM
+# CALLED `rr_pad.arm` AND STOPPED ✗✗ -- SO IT ANSWERED **ONE** ENTRY (THE FIRST AXIS ✗)
+# AND THE SECOND AXIS -- THE ONE WHOSE GATE UPSTREAM MINTS ✗ -- NEVER GOT ONE ✗✗. THAT IS
+# WHY THE `WHERE`'s CONDITION WAS CONSTANT (`1&1` ✓): THE VALID FOLDED OVER THE H AXIS's
+# IDENTITY RANGE ✗, WHOSE VALID IS `True` ✗.
+# THE ARENA AND THE ACCUMULATOR CROSS AS A PAIR PARAMETER, BECAUSE THE ARM's ANSWER IS A
+# PAIR AND A COMPUTED PAIR MAY NOT BE DESTRUCTURED (A MATCH MAY NOT SCRUTINISE A COMPUTED
+# VALUE) -- AND BEND CHECKS DEFS IN FILE ORDER, SO A MUTUAL RECURSION IS IMPOSSIBLE ✗✗:
+# THE WALK IS ONE SELF-RECURSIVE DEF ✓ AND THE ARM's ANSWER IS PASSED AS AN ARGUMENT ✓.
 def rr_pad.go(+ps: List<&2, U32>, +offs: List<&2, U32>, +ends: List<&2, U32>,
-              +dims: List<&2, U32>, +ar: O.Arena, +tbl: List<&2, IX.IxRange>,
-              +acc: List<&2, IX.IxRange>) -> (O.Arena & List<&2, IX.IxRange>):
+              +dims: List<&2, U32>, p: (O.Arena & List<&2, IX.IxRange>),
+              +tbl: List<&2, IX.IxRange>) -> (O.Arena & List<&2, IX.IxRange>):
   match ps:
-    case Nil{}: (ar, acc)
+    case Nil{}: p
     case pos <> pt:
       match offs:
-        case Nil{}: (ar, acc)
+        case Nil{}: p
         case o <> ot:
           match ends:
-            case Nil{}: (ar, acc)
+            case Nil{}: p
             case e <> et:
               match dims:
-                case Nil{}: (ar, acc)
+                case Nil{}: p
                 case sh <> sht:
+                  (ar, acc) = p
                   +k = rr_pad.keep(U32.is_zero(o), e, sh)
-                  rr_pad.arm(k, ar, pos, o, e, sh, tbl, acc)
+                  rr_pad.go(pt, ot, et, sht, rr_pad.arm(k, ar, pos, o, e, sh, tbl, acc), tbl)
 
 def rr_pad(+ar: O.Arena, +tb: F.Table, +x: U32, +out: List<&2, U32>,
            +tbl: List<&2, IX.IxRange>) -> (O.Arena & List<&2, IX.IxRange>):
   +offs = rr_marg(ar, x)
   +ends = MX.mxm_as_shape(ar, O.Arena.src(ar, x, 2))
   +dims = IX.rr_dims(ar, tb, O.Arena.src0(ar, x))
-  rr_pad.go(out, offs, ends, dims, ar, tbl, Nil{})
+  rr_pad.go(out, offs, ends, dims, (ar, Nil{}), tbl)
 
 # `apply_movement_op`'s FOUR arms, with the arena they grow and the ENTRIES they answer.
 def rr_mvx(op: O.Op, +ar: O.Arena, +tb: F.Table, +x: U32, +arg: List<&2, U32>, +out: List<&2, U32>, +tbl: List<&2, IX.IxRange>) -> (O.Arena & List<&2, IX.IxRange>):
