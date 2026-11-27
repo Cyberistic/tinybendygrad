@@ -1399,10 +1399,6 @@ def dm_cg.eval(n: Maybe<&2, Cgs>, +ctx: Cgx) -> Maybe<&2, O.Found>:
 type Cgp is Data:
   Cgp{ar: O.Arena, hit: Maybe<&2, O.Found>}
 
-def Cgp.ar(x: Cgp) -> O.Arena:
-  match x:
-    case Cgp{ar, hit}: ar
-
 def Cgp.hit(x: Cgp) -> Maybe<&2, O.Found>:
   match x:
     case Cgp{ar, hit}: hit
