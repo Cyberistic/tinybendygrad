@@ -2162,6 +2162,33 @@ def rr_rngm_row.of(p: (O.Arena & RrMap), +n: U32) -> String:
                  " rmn=", U32.show(U32.from_nat(List.length(&2, IX.IxRngs, IX.IxRMap.es(rngm)))),
                  " rmapn=", U32.show(U32.from_nat(List.length(&2, IX.IxReal, IX.IxMap.es(IX.IxCtx.rmap(RrMap.ctx(m))))))])
 
+# THE INPUT POSITIONS' TABLE ENTRIES: THE KIND AND THE OP OF THE NODE EACH ONE NAMES.
+# A KIND-2 ENTRY IS A NODE (`ix_rg_node`'s KIND-2 ARM ✓) AND ITS VALID IS THE GATE OF
+# ITS `WHERE` ✓ -- SO THIS ROW SAYS WHETHER THE `PAD`'s AXES NAME A `WHERE` OR A `RANGE`.
+def rr_rngm_ins.go(+ar: O.Arena, +tbl: List<&2, IX.IxRange>, +ps: List<&2, U32>,
+                   +acc: List<&2, String>) -> List<&2, String>:
+  match ps:
+    case Nil{}: acc
+    case p <> t:
+      +e = IX.ix_tbl_at(tbl, p)
+      +f = IX.ix_rg_node(O.AXIS_WEAK{}, ar, e)
+      +k = IX.IxRange.kind(e)
+      +op = rr_op_name(O.Arena.op(O.Found.ar(f), O.Found.i(f)))
+      rr_rngm_ins.go(ar, tbl, t, List.append(&2, String, acc,
+        [String.concat([U32.show(p), ":", U32.show(k), ":", op])]))
+
+def rr_rngm_ins(+ar: O.Arena, +tbl: List<&2, IX.IxRange>, +ps: List<&2, U32>) -> String:
+  String.join(rr_rngm_ins.go(ar, tbl, ps, Nil{}), " ")
+
+def rr_rngm_ins_row.of(p: (O.Arena & RrMap), +n: U32) -> String:
+  (+a, +m) = p
+  +e = IX.ix_rngm_get(IX.IxCtx.rngm(RrMap.ctx(m)), n)
+  rr_rngm_ins(a, RrMap.tbl(m), rr_ap_inp.of(e))
+
+def rr_rngm_ins_row(+ar: O.Arena, +sink: U32, +n: U32) -> String:
+  +tb = F.Folded.t(F.folded(ar))
+  rr_rngm_ins_row.of(rr_range_map(ar, tb, sink), n)
+
 def rr_rngm_row(+ar: O.Arena, +sink: U32, +n: U32) -> String:
   +tb = F.Folded.t(F.folded(ar))
   rr_rngm_row.of(rr_range_map(ar, tb, sink), n)
