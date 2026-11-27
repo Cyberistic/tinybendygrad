@@ -749,13 +749,17 @@ def rr_shrink(+ar: O.Arena, +x: U32, +out: List<&2, U32>, +tbl: List<&2, IX.IxRa
 #     AND THE PORT HAS IT AS `UOp.valid_of` (`ops.bend:1905`);
 #   * AND THE IDENTITY CASE MUST KEEP THE *TABLE ENTRY* -- MEASURED, minting a
 #     fresh entry moved the END and the index math onto different RANGE nodes.
-def rr_pad.cst(+ar: O.Arena, v: U32) -> U32:
-  +c = O.UOp.cconst(ar, O.CInt{H.i64_of_i32(v)}, S.int32())
-  O.Found.i(c)
+# THE TWO MINTS THAT ANSWER AN ID AND MUST ANSWER THE ARENA TOO. THE ARENA IS APPEND-ONLY
+# AND A NODE's ID IS ITS INDEX, SO A MINT INTO A **STALE** ARENA PUTS THE NEW NODE AT AN
+# OCCUPIED INDEX: MEASURED, THE `WHERE` GOT THE `INVALID`'s INDEX, AND SO IT WAS ITS OWN
+# `src[2]` -- AND A `WHERE` WHOSE `src[2]` IS NOT THE `INVALID` HAS NO VALID
+# (`ops.py:640` READS `src[2]`), SO THE GATE FOLDED TO `True` AND THE ZERO FILL WAS
+# UNCONDITIONAL. THE SHRINK ARM (`rr_shr.go`) ALREADY THREADED THE ARENA THIS WAY.
+def rr_pad.cst(+ar: O.Arena, v: U32) -> O.Found:
+  O.UOp.cconst(ar, O.CInt{H.i64_of_i32(v)}, S.int32())
 
-def rr_pad.invalid(+ar: O.Arena) -> U32:
-  +c = O.UOp.const(ar, O.CInvalid{})
-  O.Found.i(c)
+def rr_pad.invalid(+ar: O.Arena) -> O.Found:
+  O.UOp.const(ar, O.CInvalid{})
 
 # THE `r >= off` HALF: `NOT (r < off)`, AS UPSTREAM WRITES IT.
 def rr_pad.ge(+ar: O.Arena, +r: U32, +off: U32) -> O.Found:
@@ -770,14 +774,16 @@ def rr_pad.arm(keep: Bool, +ar: O.Arena, +pos: U32, +o: U32, +e: U32, +sh: U32,
     case True{}: (ar, List.append(&2, IX.IxRange, acc, [IX.ix_tbl_at(tbl, pos)]))
     case False{}:
       +f = IX.ix_rg_node(O.AXIS_WEAK{}, ar, IX.ix_tbl_at(tbl, pos))
-      +c0 = rr_pad.cst(ar, o)
-      +hi = O.UOp.alu(ar, O.OpsADD{}, [rr_pad.cst(ar, sh), c0])
-      +lo = O.UOp.alu(O.Found.ar(hi), O.OpsSUB{}, [O.Found.i(f), c0])
-      +lt = O.UOp.alu(O.Found.ar(lo), O.OpsCMPLT{}, [O.Found.i(f), O.Found.i(hi)])
-      +ge = rr_pad.ge(O.Found.ar(lt), O.Found.i(f), c0)
+      +n = O.Found.i(f)
+      +c0 = rr_pad.cst(O.Found.ar(f), o)
+      +ch = rr_pad.cst(O.Found.ar(c0), sh)
+      +hi = O.UOp.alu(O.Found.ar(ch), O.OpsADD{}, [O.Found.i(ch), O.Found.i(c0)])
+      +lo = O.UOp.alu(O.Found.ar(hi), O.OpsSUB{}, [n, O.Found.i(c0)])
+      +lt = O.UOp.alu(O.Found.ar(lo), O.OpsCMPLT{}, [n, O.Found.i(hi)])
+      +ge = rr_pad.ge(O.Found.ar(lt), n, O.Found.i(c0))
       +cnd = O.UOp.alu(O.Found.ar(ge), O.OpsAND{}, [O.Found.i(ge), O.Found.i(lt)])
       +inv = rr_pad.invalid(O.Found.ar(cnd))
-      +v = O.UOp.valid_of(O.Found.ar(cnd), O.Found.i(lo), inv, O.Found.i(cnd))
+      +v = O.UOp.valid_of(O.Found.ar(inv), O.Found.i(lo), O.Found.i(inv), O.Found.i(cnd))
       (O.Found.ar(v), List.append(&2, IX.IxRange, acc, [IX.ix_rg_n(O.Found.i(v))]))
 
 # THE IDENTITY TEST, AS UPSTREAM WRITES IT: `sz == sh and off == 0`.
