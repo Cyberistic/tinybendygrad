@@ -13,7 +13,7 @@ Closed categories keep one row and no prose. Open ones keep the head of their bl
 | category | bar | done | status |
 |---|---|---|---|
 | `recovery` | `[########.......]` | 11/15 | the plan is `.agents/slop/checklist.md`; Phases 0-2 and 4.1 done 2026-11-25 |
-| `wgsl-perf` | `[##########]` | 10/10 | THE WGSL TURN IS ~22x FASTER (24,862 ms -> ~1,110 ms): THE FOLD WAS |
+| `wgsl-perf` | `[##########]` | 10/10 | THE WGSL TURN IS ~25x FASTER (24,862 ms -> ~1,000 ms): THE FOLD WAS |
 84% OF IT AND WAS A KAHN SORT OF AN ARENA WHOSE INDEX ORDER IS ALREADY A TOPOLOGICAL ORDER
 (0 VIOLATIONS IN 1,698,277 EDGES), AND THE TABLE's LOOKUP WAS 35.7% OF THE TURN. THE NEXT
 LEVER IS THE ARENA's O(n) ACCESSORS. |
@@ -191,7 +191,7 @@ LEVER IS THE ARENA's O(n) ACCESSORS. |
 
 ### wgsl-perf  `[##########]` 10/10
 
-wgsl-perf     [##########] 10/10      THE WGSL TURN IS ~22x FASTER: 24,862 ms -> ~1,110 ms, AND
+wgsl-perf     [##########] 10/10      THE WGSL TURN IS ~25x FASTER: 24,862 ms -> ~1,000 ms, AND
                                          THE WGSL IS BYTE-IDENTICAL (3,773 bytes, sha256
                                          366d44bb...eea30) AT EVERY STEP.
                                          THE **SEVEN **CHANGES, **AND **EVERY **ONE **IS **MEASURED**:
@@ -240,9 +240,15 @@ wgsl-perf     [##########] 10/10      THE WGSL TURN IS ~22x FASTER: 24,862 ms ->
                                          **ORDER** **AND **THEY **DO **NOT **MOVE**). **AND **THE
                                          **ARENA's **DEFAULT **NODE **IS **BUILT **ONLY **ON **A **MISS**,
                                          **AND **THE **TOPOSORT's **CACHE **IS **CONCED** (⇒⇒† AND
-                                         **`List.append` **COPIES **THE **WHOLE **LIST**).
-                                         THE **SEVEN **CHANGES **OF **THIS **UNIT**: **THE **TURN
-                                         **3,373 **ms -> ~1,110 **ms **OF **WALL** (⇒⇒† AND **AND **THE
+                                         **`List.append` **COPIES **THE **WHOLE **LIST**). **AND **THE **VMS's **FUEL
+                                         **IS **THE **ARENA's **BUDGET **AND **IT **IS **COMPUTED
+                                         **ONCE** (⇒⇒† AND **THE **BUDGET **IS **A **FOLD **OVER
+                                         **EVERY **NODE **AND **EVERY **SRC**, **⇒⇒† AND **AND **THE
+                                         **VMS **WALKS **THE **ARENA **PER **ELEMENT**): **`Arena.budget`
+                                         **IS **1,191 **CALLS **A **TURN**, **⇒⇒† AND **DOWN **FROM
+                                         **~14,000** ✓.
+                                         THE **EIGHT **CHANGES **OF **THIS **UNIT**: **THE **TURN
+                                         **3,373 **ms -> ~1,000 **ms **OF **WALL** (⇒⇒† AND **AND **THE
                                          **WGSL **IS **BYTE-IDENTICAL**, **⇒⇒† AND **AND **THE **CORPUS
                                          **IS **GREEN **ON **THIS **TREE** (⇒⇒† AND **38 **OF **38
                                          **GRAPHS **AGREE, **38 **BYTE-IDENTICAL, **expect-moved=0**,
