@@ -1022,6 +1022,14 @@ def sk_walk(fuel: Nat, todo: List<&2, U32>,
           # read an intermediate through one -- MEASURED: the two-kernel chain's second store never
           # split (`fwd_lk` = `2/CALL>SINK STORE>INDEX`) and only a PARAM-shaped read made it split.
           +isafter = M.mp_is(ar, n, O.OpsAFTER{})
+          # TODO(shader-pad-lane) A STAGE IS A REFUSAL AND IT IS NOT ONE. UPSTREAM'S
+          # `to_define_global` (`rangeify.py:283-296`) DOES NOT NAME A STAGE AT ALL: A
+          # REALIZED NODE'S STAGE IS TURNED INTO A STORE FIRST (`bufferize_to_store`,
+          # `rangeify.py:211`), AND THE SPLIT THEN SEES A STORE. THE PORT'S STAGE CARRIES
+          # NO `BufferizeOpts` (`rr_ap_stage_node` ANSWERS `ANone{}`), SO THE PORT
+          # REFUSES INSTEAD. MEASURED 2026-11-27: THE SHADER's KERNEL GRAPH CARRIES THE
+          # DISTANCE FIELD's STAGE (UPSTREAM REALIZES IT, `indexing.py:261`), THE SPLIT
+          # REFUSES IT, AND THE SCHEDULE ANSWERS `kernels=0`.
           +isref = Bool.or(M.mp_is(ar, n, O.OpsSTAGE{}), M.mp_is(ar, n, O.OpsCALL{}))
           +alu = Bool.and(ispar, sk_alu(F.addrspace_of.param(O.Arena.arg(ar, n))))
           +addbuf = Bool.and(take, Bool.or(isbuf, Bool.or(isafter, Bool.and(ispar, Bool.not(alu)))))

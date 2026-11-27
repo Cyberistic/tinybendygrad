@@ -584,49 +584,82 @@ def rr_one_rngs.of(m: Maybe<&2, IX.IxRngs>, +ar: O.Arena, +tb: F.Table, +ctx: IX
 def rr_one_rngs(+ar: O.Arena, +tb: F.Table, +ctx: IX.IxCtx, +c: U32, +x: U32) -> List<&2, U32>:
   rr_one_rngs.of(IX.ix_rngm_get(IX.IxCtx.rngm(ctx), c), ar, tb, ctx, c, x)
 
-# the merge -- `indexing.py:238-261`. => the port's answer is upstream's
-# fallback for every axis: a new RANGE and the axis realized. upstream keeps
-# the RANGE when every consumer agrees and refines it with `.valid`, which is
-# W3 (`UOp.valid` is not ported) -- => the agree case is a named deviation.
-# => and the branch is not exercised by the measured program: no node has two
-# consumers in the RANGE map (measured, and `rr_cons_rngs` is the instrument).
-def rr_merge(+ar: O.Arena, +tb: F.Table, +ctx: IX.IxCtx, +x: U32, +tbl: List<&2, IX.IxRange>) -> RrRs:
-  +n = rr_new.all(IX.rr_dims(ar, tb, x), tbl, Nil{})
-  RrRs{0, RrRs.rs(n), RrRs.tbl(n)}
+# THE MERGE -- upstream's `indexing.py:238-261`. `all_all_same` IS **ONE** DECISION FOR
+# THE WHOLE NODE: WHEN THE CONSUMERS AGREE ON EVERY AXIS, THEIR RANGE IS KEPT (REFINED
+# WITH THE OR OF THEIR VALIDS, WHICH THE PORT LEAVES OUT -- THE VALIDS ARE ALL `True` HERE
+# AND UPSTREAM's SYMBOLIC REMOVES THE REFINEMENT TOO); AND WHEN THEY DO NOT, A NEW RANGE
+# IS MINTED FOR **EVERY** AXIS AND THE NODE IS REALIZED.
+#
+# THE PORT ALWAYS MINTED, SO EVERY NODE WITH TWO CONSUMERS GOT ITS OWN RANGES: THE
+# SHADER's KERNEL END CLOSED **SIX** RANGES WHERE UPSTREAM's CLOSES **TWO**, AND THE C
+# NESTS SIX LOOPS. MEASURED against upstream's own range map (`shaders/README.md`'s
+# oracle): upstream's value chain is ONE pair of ranges (r0, r1) and the DISTANCE FIELD
+# gets the second pair (r2, r3) because ITS consumers read it at different ranges.
+def rr_merge.keep(+ar: O.Arena, +tb: F.Table, +ctx: IX.IxCtx, +x: U32,
+                  +cs: List<&2, U32>, +tbl: List<&2, IX.IxRange>) -> RrRs:
+  +ref = rr_one_rngs(ar, tb, ctx, Maybe.default(&2, U32, List.head(&2, U32, cs), 0), x)
+  RrRs{0, ref, tbl}
+
+def rr_merge.go(+ar: O.Arena, +tb: F.Table, +ctx: IX.IxCtx, +x: U32, +cs: List<&2, U32>,
+                +tbl: List<&2, IX.IxRange>, same: Bool) -> RrRs:
+  match same:
+    case True{}: rr_merge.keep(ar, tb, ctx, x, cs, tbl)
+    case False{}: rr_new.all(IX.rr_dims(ar, tb, x), tbl, Nil{})
+
+def rr_merge(+ar: O.Arena, +tb: F.Table, +ctx: IX.IxCtx, +x: U32, +cs: List<&2, U32>,
+              +tbl: List<&2, IX.IxRange>, +dis: List<&2, U32>) -> RrRs:
+  rr_merge.go(ar, tb, ctx, x, cs, tbl, U32.is_eq(U32.from_nat(List.length(&2, U32, dis)), 0))
 
 # THE AXES ON WHICH THE CONSUMERS DISAGREE -- upstream's `_realize_axis`
-# (`indexing.py:245-267`): UPSTREAM COMPARES THE CONSUMERS' RANGES PER AXIS AND REALIZES
-# THE AXES WHERE THEY DIFFER. THE FIRST DRAFT COMPARED THE WHOLE LISTS, SO IT REALIZED
-# EVERY AXIS WHEN THE CONSUMERS DIFFERED AT ALL -- A COARSER DECISION THAN UPSTREAM'S, AND
-# THE COARSE ONE DISCONNECTED THE FW TERM (the reachable set fell 64 -> 39 and the END left
-# it).
+# (`indexing.py:245-267`). UPSTREAM'S DECISION IS **ONE** FOR THE WHOLE NODE:
+# `all_all_same` GATES THE WHOLE LOOP, SO WHEN THE CONSUMERS DISAGREE ON ANY AXIS EVERY
+# AXIS IS NEW AND THE NODE IS REALIZED ON EVERY AXIS; AND WHEN THEY AGREE ON EVERY AXIS
+# THEIR RANGE IS KEPT (`rr_merge`).
+#
+# THE PORT COMPARED THE **POSITIONS**, AND THE TABLE IS APPEND-ONLY AND EVERY MOVE RE-PUTS
+# ITS ENTRIES, SO TWO CONSUMERS THAT NAME THE SAME RANGE NEVER AGREED. MEASURED: THE
+# SHADER's KERNEL END CLOSED SIX RANGES WHERE UPSTREAM's CLOSES TWO.
+#
+# AND THE AXIS INDEX DID NOT ADVANCE: THE LIST SAID `0,0` FOR A TWO-AXIS NODE. MEASURED:
+# THE REALIZE MAP's AXES READ `0,0` FOR EVERY NODE IT HELD.
 def rr_axis_same.go(+ar: O.Arena, +tb: F.Table, +ctx: IX.IxCtx, +cs: List<&2, U32>,
-                    +x: U32, +ref: List<&2, U32>, +i: Nat, acc: Bool) -> Bool:
+                    +x: U32, +tbl: List<&2, IX.IxRange>, +ref: List<&2, U32>,
+                    +i: U32, acc: Bool) -> Bool:
   match cs:
     case Nil{}: acc
     case c <> t:
-      +a = Bool.and(acc, U32.is_eq(IX.ix_nth(rr_one_rngs(ar, tb, ctx, c, x), i), IX.ix_nth(ref, i)))
-      rr_axis_same.go(ar, tb, ctx, t, x, ref, i, a)
+      +a = Bool.and(acc, IX.ix_rg_eq(IX.ix_tbl_at(tbl, IX.ix_nth(rr_one_rngs(ar, tb, ctx, c, x), U32.to_nat(i))),
+                                    IX.ix_tbl_at(tbl, IX.ix_nth(ref, U32.to_nat(i)))))
+      rr_axis_same.go(ar, tb, ctx, t, x, tbl, ref, i, a)
+
+# THE AXIS INDICES, AS A LIST: A `Nat` PARAMETER MAY ONLY SHRINK, SO AN INDEX THAT
+# ADVANCES CANNOT BE A `Nat` (`rr_disagree_axis.go`'s `i` WAS `0n` FOR EVERY AXIS --
+# MEASURED: THE REALIZE MAP's AXES READ `0,0` FOR EVERY NODE IT HELD).
+def rr_axis_ids.go(+ds: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
+  match ds:
+    case Nil{}: acc
+    case d <> t: rr_axis_ids.go(t, List.append(&2, U32, acc, [U32.from_nat(List.length(&2, U32, acc))]))
 
 def rr_disagree_axis.go(+ar: O.Arena, +tb: F.Table, +ctx: IX.IxCtx, +cs: List<&2, U32>,
-                        +x: U32, +ref: List<&2, U32>, +i: Nat, +n: Nat,
+                        +x: U32, +tbl: List<&2, IX.IxRange>, +ref: List<&2, U32>,
+                        +axes: List<&2, U32>,
                         acc: List<&2, U32>) -> List<&2, U32>:
-  match n:
-    case 0n: acc
-    case 1n+k:
+  match axes:
+    case Nil{}: acc
+    case i <> rest:
       +l = acc
-      +a = Bool.pick(List<&2, U32>, rr_axis_same.go(ar, tb, ctx, cs, x, ref, i, True{}),
-                List.append(&2, U32, l, [U32.from_nat(i)]), l)
-      rr_disagree_axis.go(ar, tb, ctx, cs, x, ref, i, k, a)
+      +a = Bool.pick(List<&2, U32>, rr_axis_same.go(ar, tb, ctx, cs, x, tbl, ref, i, True{}),
+                l, List.append(&2, U32, l, [i]))
+      rr_disagree_axis.go(ar, tb, ctx, cs, x, tbl, ref, rest, a)
 
 def rr_disagree_axes(+ar: O.Arena, +tb: F.Table, +ctx: IX.IxCtx, +cs: List<&2, U32>,
-                      +x: U32) -> List<&2, U32>:
+                      +x: U32, +tbl: List<&2, IX.IxRange>) -> List<&2, U32>:
   match cs:
     case Nil{}: Nil{}
     case c <> t:
       +ref = rr_one_rngs(ar, tb, ctx, c, x)
-      List.reverse(&2, U32, rr_disagree_axis.go(ar, tb, ctx, t, x, ref, 0n,
-        List.length(&2, U32, IX.rr_dims(ar, tb, x)), Nil{}))
+      List.reverse(&2, U32, rr_disagree_axis.go(ar, tb, ctx, t, x, tbl, ref,
+        rr_axis_ids.go(IX.rr_dims(ar, tb, x), Nil{}), Nil{}))
 
 # UPSTREAM'S REALIZE SET: THE AXES WHERE THE CONSUMERS DISAGREE (`_realize_axis`), AND
 # NOT EVERY AXIS.
@@ -925,8 +958,9 @@ def rr_p1.one(+ar: O.Arena, +tb: F.Table, +ctx: IX.IxCtx, +m: RrMap, x: U32, +c:
 
 def rr_p1.many(+ar: O.Arena, +tb: F.Table, +ctx: IX.IxCtx, +m: RrMap, +x: U32,
                +cs: List<&2, U32>) -> RrMap:
-  +n = rr_merge(ar, tb, ctx, x, RrMap.tbl(m))
-  +ctx2 = rr_realize_axes(rr_disagree_axes(ar, tb, ctx, cs, x), ctx, x)
+  +dis = rr_disagree_axes(ar, tb, ctx, cs, x, RrMap.tbl(m))
+  +n = rr_merge(ar, tb, ctx, x, cs, RrMap.tbl(m), dis)
+  +ctx2 = rr_realize_axes(dis, ctx, x)
   RrMap{ctx2, RrMap.ends(m), RrRs.tbl(n), RrRs.rs(n), RrRs.rs(n), RrMap.e(m), RrMap.b(m), RrMap.ne(m)}
 
 def rr_p1.pick(zero: Bool, one: Bool, +ar: O.Arena, +tb: F.Table, +ctx: IX.IxCtx, +m: RrMap,

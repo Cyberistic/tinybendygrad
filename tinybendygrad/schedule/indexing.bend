@@ -231,6 +231,19 @@ def ix_rg_r(idx: U32, ext: U32) -> IxRange: IxRange{0, idx, ext}
 
 def ix_rg_is_c0(x: IxRange) -> Bool: U32.is_eq(IxRange.kind(x), 1)
 
+# TWO ENTRIES NAME THE SAME RANGE IFF THEY ARE THE SAME ENTRY. A KIND-0 ENTRY IS A RANGE
+# AND ITS (IDX, EXT) IS ITS IDENTITY (`ix_rg_r` MAKES `UOp.range(ext, idx)`), AND A KIND-2
+# ENTRY IS A NODE AND THE NODE ID IS ITS IDENTITY.
+#
+# WHY IT IS NEEDED: THE TABLE IS APPEND-ONLY AND EVERY MOVE RE-PUTS ITS ENTRIES, SO THE
+# SAME RANGE HAS MANY POSITIONS. UPSTREAM'S MAP IS KEYED BY THE RANGE NODE AND COMPARES
+# THE NODES (`indexing.py:243`: `r.get_idx()`), SO TWO CONSUMERS THAT NAME THE SAME RANGE
+# AGREE -- AND THE PORT COMPARED THE POSITIONS, SO THEY NEVER DID.
+def ix_rg_eq(+a: IxRange, +b: IxRange) -> Bool:
+  Bool.and(U32.is_eq(IxRange.kind(a), IxRange.kind(b)),
+    Bool.and(U32.is_eq(IxRange.idx(a), IxRange.idx(b)),
+              U32.is_eq(IxRange.ext(a), IxRange.ext(b))))
+
 # KIND 2 IS A NODE: an index expression that is NOT a single RANGE. Upstream's range
 # map is keyed by UOp, so `_apply_reshape` can return `sum / % / //` nodes into it; this
 # table is `{kind, idx, ext}`, so the node needs an arm. `idx` is the ARENA INDEX and
