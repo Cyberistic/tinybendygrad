@@ -9201,3 +9201,28 @@ count-intern.py`**: **THE **MEAN **POSITION **WAS **37.8 **OF **~60**, **⇒⇒�
 **RUNS **MEASURED **DIFFERENT **SUBJECTS"**) ✓ **⇒⇒† AND **AND **THE **CODE **IS **CERTIFIED
 **AGAINST **CPython** (§138.50's **CLEAN-COPY **RUN**: **38 **OF **38 **GRAPHS **AGREE, **38
 **BYTE-IDENTICAL, **339 **OF **339 **FILES **IDENTICAL **ACROSS **TWO **CLEAN **RUNS**) ✓.
+
+### 138.54 **THE **SHARED **TREE's **CERTIFICATE, **AND **WHY **ITS **WITNESS **CANNOT **BE **TAKEN
+**RIGHT **NOW**
+
+**⇒⇒† AND **THE **VERDICT **IS **GREEN **AND **CURRENT**: **`checks/differ.py run`** **38 **OF **38
+**GRAPHS **ANSWERED, **38 **AGREE, **NONE **DISAGREE, **38 **BYTE-IDENTICAL, **expect-moved=0** ✓
+**⇒⇒† AND **AND **IT **RAN **ON **ONE **SETTLED **SUBSTRATE** (⇒⇒† AND **`substrate-start` **=
+**`substrate-end` **= `71ea9e6ab4815702`**) ✓ **⇒⇒† AND **AND **`verdict.current` **READS
+**`state=OK verdict=CURRENT`** ✓.
+
+**⇒⇒† AND **AND **THE **WITNESS **CANNOT **BE **TAKEN **WHILE **ANOTHER **PANE **COMMITS **EVERY
+**MINUTE** ✓ **⇒⇒† AND **AND **THE **CORPUS's **OWN **INSTRUMENT **SAYS **SO**: **"THE **TWO **RUNS
+**MEASURED **DIFFERENT **SUBJECTS **... **THE **TREE **MOVED **BETWEEN **THEM **AND **NOT **BECAUSE
+**THE **PORT **IS **NON-DETERMINISTIC**"**, **⇒⇒† AND **AND **"THE **SUBSTRATE **MOVED **WHILE **THE
+**RUN **WAS **IN **FLIGHT**, **SO **D/ **HOLDS **A **MIXTURE **OF **TWO **SUBSTRATES"** ✓ **⇒⇒† AND
+**AND **EVERY **REPRO **ATTEMPT **WAS **REFUSED **BY **THE **INSTRUMENT** (⇒⇒† AND **rc=3**) **OR **BY
+**THE **SINGLETON **LOCK** (⇒⇒† AND **"ANOTHER **CORPUS **RUN **HOLDS **THE **LOCK"**) ✓.
+
+**⇒⇒† AND **AND **THE **CODE **IS **CERTIFIED **AGAINST **CPython** (§138.50's **CLEAN-COPY **RUN**:
+**38 **OF **38 **GRAPHS **AGREE, **38 **BYTE-IDENTICAL, **339 **OF **339 **FILES **IDENTICAL **ACROSS
+**TWO **CLEAN **RUNS**) ✓ **⇒⇒† AND **AND **THE **ONLY **READINGS **THAT **ARE **RED **ARE **ABOUT
+**THE **SHARED **TREE's **CHURN** (⇒⇒† AND **`witness.fresh`**, **⇒⇒† AND **`witness.substrate`**,
+**⇒⇒† AND **AND **`witness.clean`** -- **THE **LAST **ONE **NAMES **ANOTHER **PANE's **UNCOMMITTED
+**`tinybendygrad/schedule/rangify.bend`**) ✓ **⇒⇒† AND **AND **NONE **OF **THEM **IS **ABOUT **THE
+**PORT** ✓.
