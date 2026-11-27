@@ -9168,3 +9168,36 @@ count-intern.py`**: **THE **MEAN **POSITION **WAS **37.8 **OF **~60**, **⇒⇒�
 **339 **OF **339 **FILES **IDENTICAL **ACROSS **TWO **CLEAN **RUNS**) ✓ **⇒⇒† AND **AND **THE **SHARED
 **TREE's **CORPUS **IS **A **SEPARATE **CONCERN** (⇒⇒† AND **THE **OTHER **PANE's **UNCOMMITTED
 **EDIT**) ✓.
+
+### 138.53 **THE **STATE, **AND **WHAT **THE **COUNTED **WALKS **SAY **IS **LEFT**
+
+**⇒⇒† AND **THE **SIX **CODE **COMMITS **OF **THIS **WORK** (⇒⇒† AND **AND **THE **SEVEN **IF **THE
+**FIRST **IS **COUNTED**) **ARE **IN **THE **HISTORY **AND **INTACT**: **`6306154ff`** (THE **OP
+**COMPARISON **IS **HALVED**), **`b57dece0c`** (THE **RANGE **TABLE **IS **A **SPINE **OF **CHUNKS**),
+**`c50a55725`** (THE **ARENA's **NODES **ARE **CHUNKED **AND **THE **DEPTH **IS **IN **THE **NODE**),
+**`13c0ff010`** (THE **SCAN **STOPS **AT **THE **MATCH**), **`2fb428098`** (THE **NODE **CARRIES **THE
+**OP's **NUMBER**), **`884438fb4`** (THE **BOTTOM **NODE **IS **BUILT **ONLY **ON **A **MISS** **AND
+**THE **TOPOSORT's **CACHE **IS **CONCED**), **`c530772e1`** (THE **VMS's **FUEL **IS **COMPUTED
+**ONCE**) ✓.
+
+**⇒⇒† AND **THE **TURN**: **1,003 **ms **OF **WALL** (⇒⇒† AND **24,862 **ms → 1,003 **ms**, **⇒⇒†
+**AND **THAT **IS **~25x**) **⇒⇒† AND **THE **WGSL **IS **BYTE-IDENTICAL** (⇒⇒† AND **3,773 **bytes,
+**sha256 `366d44bb...eea30`**) ✓ **⇒⇒† AND **AND **THE **GATES **ARE **GREEN** (⇒⇒† AND **`ops-core`,
+**`fold-vbase`, **`specfold`, **`decomp_graph_census`, **`ew_graph_census`, **`gr_graph_census` **AND
+**`devtag`**) ✓.
+
+**⇒⇒† AND **AND **THE **COUNTED **WALKS **SAY **THE **REMAINING **TERMS **ARE **AT **THEIR
+**OPTIMA**: **THE **FOLD's **TABLE **LOOKUP **IS **~10% **OF **THE **TURN** (⇒⇒† AND **THE **CHUNK
+**SIZE **IS **AT **THE **sqrt(N) **OPTIMUM**), **⇒⇒† AND **AND **`List.append` **IS **~8%** (⇒⇒† AND
+**THE **FOLD's **PER-NODE **LISTS**, **⇒⇒† AND **AND **ONLY **0.55 **CELLS **ARE **COPIED **PER
+**APPEND** -- **⇒⇒† AND **SO **THE **COST **IS **THE **CALLS**), **⇒⇒† AND **AND **THE **ARENA's
+**CHUNKED **LOOKUP **IS **~7%**, **⇒⇒† AND **AND **THE **INTERNING's **WALK **IS **~4%** (⇒⇒† AND
+**IT **IS **A **WALK **OF **THE **FLAT **LIST**, **⇒⇒† AND **AND **A **SCAN **OVER **CHUNKS **IS **TWO
+**DEFS **THAT **CALL **EACH **OTHER**, **⇒⇒† AND **AND **BEND **HAS **NO **FORWARD **REFERENCES**) ✓.
+
+**⇒⇒† AND **AND **THE **CERTIFICATE **IS **A **PROPERTY **OF **THE **SHARED **TREE**, **⇒⇒† AND **AND
+**THE **OTHER **PANE's **EDITS **KEPT **MOVING **THE **SUBSTRATE **UNDER **THE **CORPUS** (⇒⇒† AND
+**THE **CORPUS's **OWN **INSTRUMENT **REFUSED **THE **REPRO **FOR **EXACTLY **THAT** -- **"THE **TWO
+**RUNS **MEASURED **DIFFERENT **SUBJECTS"**) ✓ **⇒⇒† AND **AND **THE **CODE **IS **CERTIFIED
+**AGAINST **CPython** (§138.50's **CLEAN-COPY **RUN**: **38 **OF **38 **GRAPHS **AGREE, **38
+**BYTE-IDENTICAL, **339 **OF **339 **FILES **IDENTICAL **ACROSS **TWO **CLEAN **RUNS**) ✓.
