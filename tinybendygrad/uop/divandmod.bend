@@ -1876,6 +1876,13 @@ def trees() -> Gate:
 #   (ops.py:264) AND `O.UOp.usum` -- AND WHAT IS **NOT** PORTED IS CPYTHON's SET
 #   (WHOSE ITERATION ORDER THE ANSWER'S `min` OVER THE SIZE DEPENDS ON ONLY ON
 #   A TIE) AND `x.ufix` (WHICH IS A CONST IN THE PORT's `weakint` WORLD).
+#
+#   **AND THE ARM IS A REAL GAP AND NOT A COSMETIC ONE**: MEASURED 2026-11-27,
+#   THE PORT ANSWERS `nofold` FOR `(a*4 + b)//12` (a IN [-10, 10], b IN
+#   [0, 3]) WHERE UPSTREAM ANSWERS `DIV(...,c3)` -- **AND THAT SHAPE IS
+#   UPSTREAM's OWN TEST** (`test/null/test_uop_symbolic.py:608`) -- AND THE ROW IS
+#   **NOT** IN `gates/divandmod-cases.rows` BECAUSE THAT FILE's OWN RULE IS "A
+#   CASE THAT REACHES AN ARM THE PORT DOES NOT HAVE IS NOT IN THIS FILE".
 #  Variable Denominator / Fallback Rules  -- divandmod.py:72-96. These rules
 # PORTED: divandmod.py:78-96  `factor_remainder: (d*x+y)//d -> x+y//d` -- AND
 #   THE ARM IS IN `tinybendygrad/uop/divandmod.bend` AS `dm_fr.*` AND THE

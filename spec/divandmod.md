@@ -249,20 +249,29 @@ a fixture where the quotient is on src1 AND the CONST is also on src1.
   so the arm was missing **and not counted**. It is `dm_ex.*` in
   `tinybendygrad/uop/divandmod.bend`, its row is `ex_8a_2`, and the plant's
   cases 13 and 14 prove it is load-bearing.
-- `divandmod.py:51-65` `nest_by_factor` — **NOT DONE, AND ITS WALL IS
-  **MEASURED** (2026-11-27).** The arm calls `fold_divmod_general(x//div)`
-  (divandmod.py:61) and Bend refuses **mutual** recursion. **Bend does take a
-  function as a parameter** — so the recursion *could* be a value — **but a self
-  reference passed as a value is refused**: "expected : a call smaller than
-  rec(x) ... observed : rec", and the refusal is the same with the recursion as
-  the last argument and a shrinking argument before it. **So the only way left
-  is to inline the whole ladder into one self-recursive def**, and that is a
-  shape decision, not an arithmetic one. The arm's other two pieces are
-  measured available: the port has `H.gcd` (helpers.py:2165),
-  `O.UOp.backward_slice` (ops.py:264) and `O.UOp.usum`; what is **not** ported
-  is CPython's set (whose iteration order the answer's `min` over the size
-  depends on only on a tie) and `x.ufix` (a constant in the port's `weakint`
-  world). The largest single omission in the file.
+- `divandmod.py:51-65` `nest_by_factor` — **NOT DONE, AND IT IS A REAL GAP**
+  (measured 2026-11-27: the port answers `nofold` for `(a*4 + b)//12` where
+  upstream answers `DIV(...,c3)`, and that shape is **upstream's own test**,
+  `test/null/test_uop_symbolic.py:608`). Its wall is **measured** in four
+  parts. **(1)** Bend *does* take a function as a parameter, and it may be used
+  many times — so the recursion *could* be a value. **(2)** But a self
+  reference passed as a value is refused — "expected : a call smaller than
+  rec(x) ... observed : rec" — and it is refused with the recursion as the last
+  argument and a shrinking argument before it. **(3)** A `Data` record cannot
+  hold a function ("expected : Data, observed : Type"), so the recursion cannot
+  travel in the record the arm otherwise needs. **(4)** A record whose field
+  shrinks *does* satisfy the "smaller call" check, so a fuel in a record works
+  and is not the wall. **The impasse is a type, not a syntax**: the def that
+  calls the recursion and the recursion itself must have the *same* type, and
+  the caller needs an *extra* parameter (the recursion) — so the recursion
+  cannot be the caller. The only way out is a **state machine** (one
+  self-recursive def with a phase field), which is a shape decision, not an
+  arithmetic one. The arm's other two pieces are measured available: the port
+  has `H.gcd` (helpers.py:2165), `O.UOp.backward_slice` (ops.py:264) and
+  `O.UOp.usum`; what is **not** ported is CPython's set (whose iteration order
+  the answer's `min` over the size depends on only on a tie) and `x.ufix` (a
+  constant in the port's `weakint` world). The largest single omission in the
+  file.
 
 **AND THERE ARE TWO ARMS HERE AND NOT THREE.** Upstream's `divandmod.py` has
 `fold_divmod_congruence` (`:42-49`) and `nest_by_factor` (`:51-65`) and **no**
