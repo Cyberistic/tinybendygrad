@@ -2183,7 +2183,8 @@ def rr_rngm_ins(+ar: O.Arena, +tbl: List<&2, IX.IxRange>, +ps: List<&2, U32>) ->
 def rr_rngm_ins_row.of(p: (O.Arena & RrMap), +n: U32) -> String:
   (+a, +m) = p
   +e = IX.ix_rngm_get(IX.IxCtx.rngm(RrMap.ctx(m)), n)
-  rr_rngm_ins(a, RrMap.tbl(m), rr_ap_inp.of(e))
+  String.concat(["in=", rr_rngm_ins(a, RrMap.tbl(m), rr_ap_inp.of(e)),
+                 " out=", rr_rngm_ins(a, RrMap.tbl(m), rr_ap_out.of(e))])
 
 def rr_rngm_ins_row(+ar: O.Arena, +sink: U32, +n: U32) -> String:
   +tb = F.Folded.t(F.folded(ar))
