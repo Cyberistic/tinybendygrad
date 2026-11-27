@@ -9,7 +9,7 @@ CASE GOES THROUGH THE **SAME LANE** THE GATE USES -- THE PORT's `.bend` DRIVER
 AND THE CPython ORACLE -- SO A PLANT THAT SAID "RED" ON A COPY THE GATE NEVER
 RUNS WOULD PROVE NOTHING.
 
-SEVENTEEN CASES:
+EIGHTEEN CASES:
 
   1. THE UN-MUTATED COPY IS GREEN -- the control.
   2. BREAKING THE ARM's `divides` GUARD REDDENS THE PORT's LANE -- the arm
@@ -42,6 +42,8 @@ SEVENTEEN CASES:
      THE CHAIN'S ARENA IS STALE AND THE FOLD NEVER SEES THE `rem`.
  17. BREAKING THE `fold_divmod_congruence` ARM's SINGLE CHOICE REDDENS IT --
      THE CHOICE IS ALWAYS `r` AND NOT `min(r, r-c, key=abs)`.
+ 18. BREAKING THE `factor_remainder` ARM's `vmin` GUARD REDDENS IT -- THE BOUND
+     IS NEVER NEGATIVE -- AND IT IS THE **ONLY** ROW THAT EXERCISES IT.
 
 AND THE PLANT'S CLAIM IS ABOUT THE **DIFFERENTIAL** AND NOT ABOUT THE PORT's
 ANSWER: A PLANT THAT BROKE THE PORT's ARM AND ONLY CHECKED THAT THE PORT's
@@ -508,6 +510,34 @@ def main() -> int:
             print(f" 17 cg single choice {'RED' if ok else 'NOT RED'}  the choice is always r")
             if not ok:
                 bad.append("breaking the congruence arm's single choice did not redden the lanes")
+
+        # 18 -- THE `factor_remainder` ARM's **`vmin` GUARD** (divandmod.py:79):
+        # THE BOUND IS NEVER NEGATIVE, SO THE ARM **DOES NOT STOP** ON A
+        # NEGATIVE NUMERATOR -- AND THE `fr_neg` ROW, WHOSE NUMERATOR's `vmin`
+        # IS NEGATIVE, ANSWERS A REWRITE WHERE THE ORACLE ANSWERS `nofold`.
+        #
+        # AND MEASURED 2026-11-27: **EVERY OTHER `fr_*` ROW's NUMERATOR IS
+        # NON-NEGATIVE**, SO THIS IS THE **ONLY** ROW THAT EXERCISES THE GUARD
+        # -- AND **A GUARD NO ROW CAN DISTINGUISH FROM AN ABSENT ONE IS NOT A
+        # GUARD, IT IS A COMMENT.**
+        case18 = fresh(Path(td) / "case18")
+        f18 = case18 / "tinybendygrad" / "uop" / "divandmod.bend"
+        text18 = f18.read_text()
+        old18 = """def dm_fr.neg3(b: F.Bnd) -> Bool:
+  match b:
+    case F.BndInt{neg, mag}: neg
+    case _: False{}"""
+        new18 = """def dm_fr.neg3(b: F.Bnd) -> Bool:
+  False{}"""
+        if old18 not in text18:
+            bad.append("the `factor_remainder` arm's `vmin` guard moved")
+            print(" 18 fr vmin guard    COULD NOT MUTATE")
+        else:
+            f18.write_text(text18.replace(old18, new18, 1))
+            ok = not agrees(case18)
+            print(f" 18 fr vmin guard    {'RED' if ok else 'NOT RED'}  the guard never fires")
+            if not ok:
+                bad.append("breaking the `factor_remainder` arm's `vmin` guard did not redden the lanes")
 
         print(f"--plant: {'OK' if not bad else 'FAILED: ' + '; '.join(bad)}")
         return FAIL if bad else PASS

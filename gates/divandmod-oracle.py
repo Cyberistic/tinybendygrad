@@ -136,6 +136,22 @@ def build(op, k, c, n, d):
         # AND `k` IS THE **INNER** DIVISOR's WHOLE VALUE AND `c` IS THE **OUTER**
         # ONE, AND BOTH READERS TAKE THEM THE SAME WAY.
         return mk_param("x").alu(Ops.MOD, const(k)).alu(Ops.DIV, const(c))
+    if op in ("FRN", "FRNM"):
+        # AND THE **NEGATIVE** VARIANT OF THE `factor_remainder` SHAPE, AND
+        # `a` IS IN **[-10, 10]** -- AND IT IS THE ROW THAT EXERCISES THE ARM's
+        # `y.vmin<0 or x.vmin<0` GUARD (divandmod.py:79).
+        root_op = Ops.MOD if op == "FRNM" else Ops.DIV
+        a = UOp.variable("a", -10, 10)
+        d = UOp.variable("d", 1, 10)
+        b = UOp.variable("b", 0, 10)
+        ad = a.alu(Ops.MUL, d)
+        if k != 1:
+            ad = ad.alu(Ops.MUL, const(k))
+        num = ad.alu(Ops.ADD, b)
+        for i in range(n):
+            num = num.alu(Ops.ADD, const(k + i))
+        den = d.alu(Ops.MUL, const(c)) if c != 1 else d
+        return num.alu(root_op, den)
     if op in ("FRDIV", "FRMOD"):
         # AND THE `factor_remainder` SHAPE, AND IT IS `(d*a*k + b + ...) op
         # (c*d)` WITH **`d` A VARIABLE** -- AND THE VARIABLE IS THE WHOLE POINT,

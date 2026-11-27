@@ -244,6 +244,24 @@ def gp.fr.mul(+ar: O.Arena, +x: O.Found, k: U32, +y: O.Found) -> O.Found:
 #
 # AND THE SHAPE IS UPSTREAM's OWN TEST's SHAPE (test/null/test_uop_symbolic.py
 # :584-590) AND NOT A NEW ONE.
+# AND THE **NEGATIVE** VARIANT, AND IT IS THE SAME SHAPE WITH `a` IN
+# **[-10, 10]** -- AND IT IS THE ROW THAT EXERCISES THE ARM's
+# `y.vmin<0 or x.vmin<0` GUARD (divandmod.py:79), WHICH EVERY OTHER `fr_*` ROW
+# CANNOT REACH BECAUSE **THEIR NUMERATORS ARE NON-NEGATIVE**.
+def gp.frn(+ar: O.Arena, +k: U32, +c: U32, n: Nat, d: U32, ismod: Bool) -> O.Found:
+  +kc = gp.const(ar, k)
+  +a = gp.var(O.Found.ar(kc), "a", U32.sub(0, 10), 10)
+  +dv = gp.var(O.Found.ar(a), "d", 1, 10)
+  +b = gp.var(O.Found.ar(dv), "b", 0, 10)
+  +ad = gp.alu(O.Found.ar(b), O.OpsMUL{}, O.Found.i(a), O.Found.i(dv))
+  +ak = gp.fr.mul(O.Found.ar(ad), ad, k, kc)
+  +s = gp.alu(O.Found.ar(ak), O.OpsADD{}, O.Found.i(ak), O.Found.i(b))
+  +s2 = gp.fr.terms(O.Found.ar(s), s, n, k)
+  +cc = gp.const(O.Found.ar(s2), c)
+  +den = gp.fr.mul(O.Found.ar(cc), dv, c, cc)
+  gp.modroot(O.Found.ar(den), O.Found.i(s2), O.Found.i(den), ismod)
+
+
 def gp.fr(+ar: O.Arena, +k: U32, +c: U32, n: Nat, d: U32, ismod: Bool) -> O.Found:
   +kc = gp.const(ar, k)
   +a = gp.var(O.Found.ar(kc), "a", 0, 10)
@@ -301,6 +319,8 @@ def gp.root(+ar: O.Arena, op: String, k: U32, c: U32, n: Nat, d: U32) -> O.Found
     case "FRMOD": gp.fr(ar, k, c, n, d, True{})
     case "FRDIV": gp.fr(ar, k, c, n, d, False{})
     case "ND": gp.nd(ar, k, c, False{})
+    case "FRN": gp.frn(ar, k, c, n, d, False{})
+    case "FRNM": gp.frn(ar, k, c, n, d, True{})
     case "FRC": gp.frc(ar, k, c, False{})
     case "FRCM": gp.frc(ar, k, c, True{})
     case "CG": gp.cg(ar, k, c, n, d, False{})

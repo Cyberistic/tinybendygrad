@@ -1074,19 +1074,26 @@ upstream-suite   [###.........] 3/3   **THE UPSTREAM SUITE IS BEING PORTED ONE F
       (A STALE ARENA MAKES THE ARM NEVER FIRE).  **AND `UOp.divides` PUTS ITS
       QUOTIENT IN A BRANCH (ops.bend:4257) AND THE ARM FOLWS IT** -- THE
       DECOMPOSITION's ARENA IS **THE `divides`' OWN BRANCH**.
-      **THE ROWS:** `gates/divandmod-cases.rows`'s FOUR `fr_*` ROWS, FIVE `nd_*`
+      **AND THE `factor_remainder` ARM's `vmin` GUARD (divandmod.py:79) WAS
+      **NOT EXERCISED BY ANY ROW**, AND THAT IS A LAW NO ROW CAN SEE.** EVERY
+      `fr_*` ROW's NUMERATOR IS NON-NEGATIVE, SO A GUARD THAT ALWAYS SAID
+      "FALSE" ANSWERED THE SAME -- **AND A GUARD NO ROW CAN DISTINGUISH FROM
+      AN ABSENT ONE IS NOT A GUARD, IT IS A COMMENT.** THE `fr_neg` AND
+      `fr_negm` ROWS (THE SAME SHAPE WITH `a` IN **[-10, 10]**) ARE IT, AND THE
+      PLANT's CASE 18 IS THE GUARD.
+      **THE ROWS:** `gates/divandmod-cases.rows`'s SIX `fr_*` ROWS, FIVE `nd_*`
       ROWS, TWO `frc_*` ROWS, THE `ex_8a_2` ROW AND THE NINE `cg_*` ROWS, READ
       BY BOTH THE DRIVER AND THE ORACLE, AND `gates/ops-core.bend`'s `de_den`
-      ROW. **THE GATE:** TWENTY-SIX ROWS, TWENTY-SIX AGREE;
+      ROW. **THE GATE:** TWENTY-EIGHT ROWS, TWENTY-EIGHT AGREE;
       `gates/ops-core-gate.py`: FORTY-FIVE ROWS, THREE LANES;
-      `gates/divandmod-plant.py`: SEVENTEEN CASES, ALL RED.
-      **THE PLANT:** SEVENTEEN CASES, ALL RED -- THE `+sum(quo)`, THE SUM's
+      `gates/divandmod-plant.py`: EIGHTEEN CASES, ALL RED.
+      **THE PLANT:** EIGHTEEN CASES, ALL RED -- THE `+sum(quo)`, THE SUM's
       LEADING `+0`, THE `x.const_like(0)`, THE CONSTANT BRANCH's TEST, THE
       POSITIVE-QUOTIENT GUARD, THE CONSTANT BRANCH's MULTIPLICATION, **THE
-      `factor_remainder` ARM's ARENA THREADING**, THE `:36` ARM's `divides`
-      GUARD, THE `:36` ARM's `const//c`, **THE CONGRUENCE ARM's TWO-CHOICE
-      TEST, ITS SINGLE CHOICE AND ITS ARENA THREADING** -- SO EVERY PART IS
-      LOAD-BEARING.
+      `factor_remainder` ARM's ARENA THREADING AND ITS `vmin` GUARD**, THE `:36`
+      ARM's `divides` GUARD, THE `:36` ARM's `const//c`, **THE CONGRUENCE
+      ARM's TWO-CHOICE TEST, ITS SINGLE CHOICE AND ITS ARENA THREADING** -- SO
+      EVERY PART IS LOAD-BEARING.
       **AND THE GATE's ROW COUNT IS READ FROM THE CASE FILE** AND IS NOT A
       HAND-KEPT NUMBER, BECAUSE A SECOND COPY OF A LIST A GENERATOR OWNS IS
       WHAT THE AGENT RULES CALL OUT BY NAME.

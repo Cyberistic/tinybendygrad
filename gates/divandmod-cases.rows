@@ -125,6 +125,21 @@ fr_k20|FRDIV|20|5|0|0
 # AND A NUMERATOR WITH THREE TERMS, AND THE EXTRA CONST TERMS GO TO `rem`.
 fr_three|FRDIV|1|1|2|0
 #
+# --- THE `factor_remainder` ARM's **`vmin` GUARD** (divandmod.py:79).
+# `(y.vmin<0 or x.vmin<0) -> None`.
+#
+# AND **NO OTHER ROW REACHES IT**, AND THE REASON IS MEASURED: EVERY `fr_*` ROW's
+# NUMERATOR IS **NON-NEGATIVE**, SO A GUARD THAT ALWAYS SAID "FALSE" WOULD
+# ANSWER THE SAME -- AND **A GUARD NO ROW CAN DISTINGUISH FROM AN ABSENT ONE IS
+# NOT A GUARD, IT IS A COMMENT.**
+#
+# AND THE SHAPE IS THE `factor_remainder` SHAPE WITH `a` IN **[-10, 10]** -- AND
+# THE NUMERATOR's `vmin` IS THEN **NEGATIVE** -- AND THE ARM **DOES NOT FIRE**
+# AND A **LATER** ARM ANSWERS.
+fr_neg|FRN|1|1|0|0
+# AND THE **MOD HALF** OF THE SAME SHAPE, AND IT IS A SECOND ANSWER SHAPE.
+fr_negm|FRNM|1|1|0|0
+#
 # --- `nested_div` (divandmod.py:23).  `(x%(k*c))//c -> (x//c)%k`.
 #
 # AND THE SHAPE IS `(x % kc) // c` WITH `x` A **SIZED** PARAM AND `kc` AND
